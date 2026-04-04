@@ -7,6 +7,7 @@ import { Subscription } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { DonationsService } from '../../core/services/donations.service';
+import { DonationFlowStateService } from '../../core/services/donation-flow-state.service';
 import { PublicBranch } from '../../core/models/branch.model';
 import { DonationCheckoutRequest } from '../../core/models/donation.model';
 
@@ -201,6 +202,7 @@ export class DonatePage implements OnDestroy {
   constructor(
     private readonly fb: FormBuilder,
     private readonly donationsService: DonationsService,
+    private readonly donationFlowState: DonationFlowStateService,
     private readonly selectedBranchService: SelectedBranchService,
     private readonly router: Router
   ) {
@@ -239,6 +241,15 @@ export class DonatePage implements OnDestroy {
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: response => {
+          this.donationFlowState.setSummary({
+            branchName: this.branch?.name,
+            branchId: this.branch?.id,
+            category: formValue.category || undefined,
+            amount: payload.amount,
+            donorEmail: payload.donor_email,
+            transactionReference: response.transaction_reference,
+            timestamp: Date.now(),
+          });
           window.location.href = response.checkout_url;
         },
         error: () => {

@@ -16,6 +16,14 @@ const routes: Routes = [
     loadComponent: () => import('./features/branches/branch-select.page').then(m => m.BranchSelectPage)
   },
   {
+    path: 'donate/success',
+    loadComponent: () => import('./features/donations/success.page').then(m => m.DonateSuccessPage)
+  },
+  {
+    path: 'donate/cancel',
+    loadComponent: () => import('./features/donations/cancel.page').then(m => m.DonateCancelPage)
+  },
+  {
     path: 'donate',
     loadComponent: () => import('./features/donations/donate.page').then(m => m.DonatePage)
   },
