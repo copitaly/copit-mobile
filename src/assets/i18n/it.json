@@ -1,0 +1,24 @@
+{
+  "app": {
+    "title": "App Donatori"
+  },
+  "home": {
+    "title": "Benvenuto",
+    "subtitle": "Sostieni la tua comunità con una donazione rapida"
+  },
+  "donation": {
+    "title": "Effettua una donazione",
+    "selectBranch": "Seleziona una sede",
+    "selectCategory": "Scegli una categoria",
+    "amount": "Importo",
+    "email": "Indirizzo email",
+    "continue": "Continua"
+  },
+  "common": {
+    "loading": "Caricamento…",
+    "error": "Si è verificato un errore",
+    "retry": "Riprova",
+    "cancel": "Annulla",
+    "success": "Operazione riuscita"
+  }
+}

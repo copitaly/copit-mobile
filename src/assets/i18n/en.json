@@ -1,0 +1,24 @@
+{
+  "app": {
+    "title": "Donor Mobile"
+  },
+  "home": {
+    "title": "Welcome",
+    "subtitle": "Support your community with a quick donation"
+  },
+  "donation": {
+    "title": "Make a Donation",
+    "selectBranch": "Select a branch",
+    "selectCategory": "Choose a category",
+    "amount": "Amount",
+    "email": "Email address",
+    "continue": "Continue"
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "success": "Success"
+  }
+}
