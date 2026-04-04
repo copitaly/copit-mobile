@@ -1,0 +1,7 @@
+{
+  "name": "copit-mobile",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
