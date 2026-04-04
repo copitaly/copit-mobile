@@ -197,3 +197,27 @@ That’s the last missing piece.
 only missing deep-link handling
 
 You’re in excellent shape.
+--------------------------------------------------
+Current screens in the donor app:
+
+Home (/ / HomePage)
+
+Purpose: Landing page for donors; explains the campaign and steers them toward making a gift.
+Key elements: centered hero card with “COP Giving Mobile” headline, subtitle, supporting sentence, and a primary “Give now” button that navigates to /branches.
+Branch selector (/branches / BranchSelectPage)
+
+Purpose: Lets donors search for and pick a donation-ready branch before starting checkout.
+Key elements: transparent Ionic header (“Choose a donation branch”), a raised search bar, loading/error/empty states (cards with spinner or retry button), and a list of branch cards showing name, district, area, and branch code. Tapping a branch saves it to SelectedBranchService and goes to /donate.
+Donation form (/donate / DonatePage)
+
+Purpose: Collects donation details (branch, category, amount, optional email) and triggers the backend checkout.
+Key elements: Selected branch card, reactive form with labeled ion-select (categories), ion-input for amount and email, validation messaging, primary “Give now” button that posts to /api/donations/checkout/, stores the summary in both state and sessionStorage, and redirects the browser to Stripe.
+Success confirmation (/donate/success / DonateSuccessPage)
+
+Purpose: Shows verified donation details after Stripe redirects back; verifies session with /api/donations/verify-checkout-session/.
+Key elements: Thank-you card with summary copy, optional backend-verified status line, detail rows for branch, category, amount, reference, email, session ID, “Give again” and “Back home” buttons, and loading/error states tied to the verification call. Falls back to the stored summary if verification can’t run.
+Cancel/reset (/donate/cancel / DonateCancelPage)
+
+Purpose: Informs the donor when they cancel/abort the Stripe flow; optionally shows what they were about to give.
+Key elements: Card confirming no payment went through, optional branch/category/amount (from stored summary), primary “Try again” button linking to /branches, and secondary “Back home” button.
+Each screen is a standalone Ionic component with its own template/styles, uses shared services (SelectedBranchService, DonationFlowStateService, DonationsService), and routes are wired through AppRoutingModule.

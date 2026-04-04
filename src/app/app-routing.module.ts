@@ -4,10 +4,14 @@ import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 const routes: Routes = [
   {
     path: '',
-    loadComponent: () => import('./features/home/home.page').then(m => m.HomePage)
+    loadComponent: () => import('./features/splash/splash.page').then(m => m.SplashPage)
   },
   {
     path: 'home',
+    loadComponent: () => import('./features/home/home.page').then(m => m.HomePage)
+  },
+  {
+    path: 'splash',
     redirectTo: '',
     pathMatch: 'full'
   },

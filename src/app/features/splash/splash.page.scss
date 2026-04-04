@@ -1,0 +1,128 @@
+﻿:host {
+  display: block;
+  height: 100%;
+  --splash-bg-top: #1b2f5b;
+  --splash-bg-bottom: #051a44;
+}
+
+.splash-content {
+  --background: linear-gradient(180deg, var(--splash-bg-top), var(--splash-bg-bottom));
+  background: var(--background);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  position: relative;
+}
+
+ion-content::part(scroll) {
+  height: 100%;
+}
+
+.splash-content::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 40%, rgba(240, 198, 105, 0.35), transparent 55%);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.splash-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.splash-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: center;
+}
+
+.logo-wrap {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+  animation: haloPulse 2.6s ease infinite;
+}
+
+.logo-wrap img {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  animation: logoFloat 1.8s ease-in-out infinite;
+}
+
+.text-block {
+  opacity: 0;
+  animation: textFade 1.4s ease 0.35s forwards;
+}
+
+.text-block h1 {
+  margin: 0;
+  font-size: 2.6rem;
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.text-block p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.15em;
+}
+
+@keyframes haloPulse {
+  0% {
+    transform: scale(0.98);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.98);
+    opacity: 0.85;
+  }
+}
+
+@keyframes logoFloat {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes textFade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
