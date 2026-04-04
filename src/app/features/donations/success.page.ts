@@ -215,20 +215,13 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    const persisted = this.donationFlowState.getStoredSummary();
-    if (persisted) {
-      this.summary = persisted;
-      this.donationFlowState.clear();
-    } else {
-      this.sub = this.donationFlowState.summary$.subscribe(summary => {
-        this.summary = summary;
-      });
-    }
     this.querySub = this.route.queryParamMap.subscribe(params => {
       const sessionId = params.get('session_id');
       this.sessionId = sessionId ?? undefined;
       if (sessionId) {
         this.startVerification(sessionId);
+      } else {
+        this.loadSessionSummary();
       }
     });
   }
@@ -252,28 +245,45 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
     this.verifiedDetails = undefined;
     this.verifying = true;
     this.verificationSub?.unsubscribe();
+    this.sub?.unsubscribe();
     this.verificationSub = this.donationsService
       .verifyCheckoutSession(sessionId)
       .pipe(finalize(() => (this.verifying = false)))
       .subscribe({
         next: response => {
           this.verifiedDetails = response;
-          const existing = this.summary ?? {};
-          this.summary = {
-            ...existing,
-            branchName: response.church?.name ?? existing.branchName,
-            category: response.category ?? existing.category,
-            amount: response.amount ? Number(response.amount) : existing.amount,
-            donorEmail: response.donor_email ?? existing.donorEmail,
-            transactionReference: response.transaction_reference ?? existing.transactionReference,
-          };
-          if (!response.verified) {
+          if (response.verified) {
+            this.summary = {
+              branchName: response.church?.name ?? this.summary?.branchName,
+              category: response.category ?? this.summary?.category,
+              amount: response.amount ? Number(response.amount) : this.summary?.amount,
+              donorEmail: response.donor_email ?? this.summary?.donorEmail,
+              transactionReference:
+                response.transaction_reference ?? this.summary?.transactionReference,
+            };
+            this.donationFlowState.clear();
+          } else {
             this.verificationError = 'This checkout session could not be verified.';
+            this.loadSessionSummary();
           }
         },
         error: () => {
           this.verificationError = 'Unable to verify this checkout session.';
+          this.loadSessionSummary();
         },
+    });
+  }
+
+  private loadSessionSummary(): void {
+    this.sub?.unsubscribe();
+    const persisted = this.donationFlowState.getStoredSummary();
+    if (persisted) {
+      this.summary = persisted;
+      this.donationFlowState.clear();
+    } else {
+      this.sub = this.donationFlowState.summary$.subscribe(summary => {
+        this.summary = summary;
       });
+    }
   }
 }
