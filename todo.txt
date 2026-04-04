@@ -1,0 +1,199 @@
+🧭 Where You Are Now vs What Comes Next (Native App + Stripe Flow)
+
+Here’s the complete picture of your current architecture and what remains before real-device testing.
+
+✅ What is already done (fully working)
+
+You now have a secure end-to-end donation flow.
+
+1. Mobile donation flow
+Branch list → Donation form → Stripe checkout → Return → Success page
+2. Stripe integration
+Checkout session created in backend
+Sessions created per connected church account
+Redirect URLs generated using DONOR_APP_URL
+3. Secure backend verification
+
+Frontend does NOT trust redirect anymore:
+
+/donate/success?session_id=...
+        ↓
+Frontend calls backend verify endpoint
+        ↓
+Backend retrieves Stripe session (correct connected account)
+        ↓
+Returns verified donation details
+        ↓
+Frontend renders confirmed summary
+
+Priority logic on success page:
+
+Verified backend data
+        ↓
+sessionStorage fallback
+        ↓
+generic message
+
+This is production-grade verification.
+
+4. Redirect bridge (web → app)
+
+You created:
+
+/donor-redirect/donate/success
+/donor-redirect/donate/cancel
+
+Hosted on Firebase.
+
+These pages:
+
+Stripe → Firebase page → copit:// deep link → app
+
+Example:
+
+https://copit-staging.web.app/donor-redirect/donate/success
+        ↓
+copit://donate/success?session_id=...
+5. Environment setup
+
+You decided to keep them the same:
+
+FRONTEND_APP_URL=https://copit-staging.web.app
+DONOR_APP_URL=https://copit-staging.web.app
+
+Backend builds:
+
+${DONOR_APP_URL}/donor-redirect/donate/success
+${DONOR_APP_URL}/donor-redirect/donate/cancel
+🚧 What is NOT done yet (native-only step)
+
+You have not configured Capacitor yet.
+
+This means:
+
+redirect bridge works
+deep link exists
+BUT app cannot open from copit:// yet
+
+Right now:
+
+Stripe → redirect page → copit://... (nothing happens)
+
+because the OS doesn’t know your app handles copit://.
+
+🧱 What you will do later (when ready)
+
+When you’re ready to test on a real device:
+
+Step 1 — Add Capacitor
+ionic build
+npx cap init
+npx cap add ios
+npx cap add android
+Step 2 — Register deep link scheme
+
+You will register:
+
+copit://
+iOS
+
+Add URL scheme in Info.plist
+
+Android
+
+Add intent filter in AndroidManifest.xml
+
+Step 3 — App deep-link listener
+
+App listens for:
+
+copit://donate/success?session_id=...
+copit://donate/cancel
+
+Then routes internally to:
+
+/donate/success
+/donate/cancel
+Step 4 — Real device test flow
+Phone app
+   ↓
+Stripe Checkout (browser)
+   ↓
+Stripe redirects to Firebase
+   ↓
+Firebase redirect page
+   ↓
+copit:// deep link
+   ↓
+App opens
+   ↓
+Verify session with backend
+   ↓
+Show success screen
+📦 Current architecture (final)
+Mobile App
+   ↓
+Stripe Checkout
+   ↓
+Stripe redirect
+   ↓
+Firebase redirect page
+   ↓
+copit:// deep link
+   ↓
+App opens
+   ↓
+Backend verification
+   ↓
+Confirmed donation UI
+🟢 What you can keep doing now
+
+Continue using:
+
+ionic serve
+
+You can:
+
+build UI
+refine donation flow
+polish success page
+add features
+
+You just cannot test:
+
+deep link opening
+native return behavior
+
+until Capacitor is added.
+
+🟡 When you should switch to Capacitor
+
+Do it when:
+
+UI is stable
+donation flow finalized
+ready for device testing
+
+You are close, but not required yet.
+
+🧠 Mental model
+
+You already built:
+
+✔ Stripe flow
+✔ verification
+✔ redirect bridge
+
+Later you will only add:
+
+✔ native deep link handler
+
+That’s the last missing piece.
+
+✅ You are currently at
+
+100% web-ready
+90% native-ready
+only missing deep-link handling
+
+You’re in excellent shape.
