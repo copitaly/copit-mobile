@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
-type QueryParams = Record<string, string | number | boolean | null | undefined>;
+export type QueryParams = Record<string, string | number | boolean | null | undefined>;
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -13,12 +13,48 @@ export class ApiService {
     return environment.apiBaseUrl.replace(/\/+$/, '');
   }
 
+  private isAbsoluteUrl(path: string): boolean {
+    return /^https?:\/\//i.test(path);
+  }
+
+  private ensureTrailingSlash(value: string): string {
+    if (!value) {
+      return '';
+    }
+
+    const searchIndex = value.indexOf('?');
+    const hashIndex = value.indexOf('#');
+    const endIndex = Math.min(
+      searchIndex === -1 ? value.length : searchIndex,
+      hashIndex === -1 ? value.length : hashIndex
+    );
+
+    const main = value.slice(0, endIndex);
+    const suffix = value.slice(endIndex);
+    const normalizedMain = main ? (main.endsWith('/') ? main : `${main}/`) : '';
+    return `${normalizedMain}${suffix}`;
+  }
+
+  private normalizePath(path: string): string {
+    if (this.isAbsoluteUrl(path)) {
+      return this.ensureTrailingSlash(path);
+    }
+
+    const trimmedPath = path.replace(/^\/*/, '').replace(/\/+$/, '');
+    const normalized = trimmedPath ? `${trimmedPath}/` : '';
+    return normalized;
+  }
+
   private buildUrl(path: string): string {
-    const trimmedPath = path.replace(/^\/+/, '').replace(/\/+$/, '');
-    if (!trimmedPath) {
+    if (this.isAbsoluteUrl(path)) {
+      return this.ensureTrailingSlash(path);
+    }
+
+    const normalizedPath = this.normalizePath(path);
+    if (!normalizedPath) {
       return this.baseUrl;
     }
-    return `${this.baseUrl}/${trimmedPath}`;
+    return `${this.baseUrl}/${normalizedPath}`;
   }
 
   private buildParams(params?: QueryParams): HttpParams {
@@ -38,7 +74,11 @@ export class ApiService {
   }
 
   get<T>(path: string, params?: QueryParams): Observable<T> {
-    return this.http.get<T>(this.buildUrl(path), {
+    const url = this.buildUrl(path);
+    if (!environment.production) {
+      console.log('[ApiService] GET', url);
+    }
+    return this.http.get<T>(url, {
       params: this.buildParams(params),
     });
   }

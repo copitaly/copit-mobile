@@ -3,14 +3,26 @@ import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 
 const routes: Routes = [
   {
-    path: 'home',
-    loadChildren: () => import('./home/home.module').then( m => m.HomePageModule)
+    path: '',
+    loadComponent: () => import('./features/home/home.page').then(m => m.HomePage)
   },
   {
-    path: '',
-    redirectTo: 'home',
+    path: 'home',
+    redirectTo: '',
     pathMatch: 'full'
   },
+  {
+    path: 'branches',
+    loadComponent: () => import('./features/branches/branch-select.page').then(m => m.BranchSelectPage)
+  },
+  {
+    path: 'donate',
+    loadComponent: () => import('./features/donations/donate.page').then(m => m.DonatePage)
+  },
+  {
+    path: '**',
+    redirectTo: ''
+  }
 ];
 
 @NgModule({
