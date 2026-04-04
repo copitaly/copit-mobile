@@ -11,3 +11,17 @@ export interface DonationCheckoutResponse {
   donation_id: number;
   transaction_reference: string;
 }
+
+export interface DonationCheckoutVerificationResponse {
+  verified: boolean;
+  payment_status: string;
+  transaction_reference?: string;
+  amount?: string;
+  currency?: string;
+  category?: string;
+  donor_email?: string;
+  church?: {
+    id?: number;
+    name?: string;
+  };
+}
