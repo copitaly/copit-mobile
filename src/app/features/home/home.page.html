@@ -1,15 +1,73 @@
 ﻿<ion-page>
-  <ion-content fullscreen class="landing-content">
-    <div class="content-wrap">
-      <div class="text-group">
-        <h1>COP Giving Mobile</h1>
-        <p class="subtitle">Healthy communities start here</p>
-        <p class="supporting">
-          Secure local church giving ensures your contribution serves the neighbors who need it most.
-        </p>
+  <ion-content fullscreen class="home-content">
+    <div class="hero">
+      <div class="hero-content">
+        <p class="hero-label">COP Giving Mobile</p>
+        <h1>Give to Your Local Church</h1>
+        <p class="hero-subtitle">Support your community with tithes, offerings, and special gifts—securely and instantly.</p>
+        <ion-button expand="block" class="hero-cta" size="large" (click)="goToBranches()">Give Now</ion-button>
       </div>
-
-      <ion-button expand="block" size="large" (click)="goToBranches()">Give now</ion-button>
     </div>
+
+    <section class="trust-row">
+      <article class="trust-card">
+        <div class="icon-circle">
+          <ion-icon name="lock-closed" aria-hidden="true"></ion-icon>
+        </div>
+        <h3>Secure</h3>
+        <p>Encrypted giving</p>
+      </article>
+      <article class="trust-card">
+        <div class="icon-circle">
+          <ion-icon name="flash" aria-hidden="true"></ion-icon>
+        </div>
+        <h3>Instant</h3>
+        <p>Real-time processing</p>
+      </article>
+      <article class="trust-card">
+        <div class="icon-circle">
+          <ion-icon name="document-text" aria-hidden="true"></ion-icon>
+        </div>
+        <h3>Receipt</h3>
+        <p>Tax-ready records</p>
+      </article>
+    </section>
+
+    <section class="coming-soon">
+      <div class="section-header">
+        <h2>Coming Soon</h2>
+        <span class="badge">Preview</span>
+      </div>
+      <article class="feature-card">
+        <div class="feature-icon">
+          <ion-icon name="book-outline" aria-hidden="true"></ion-icon>
+        </div>
+        <div>
+          <h3>Bible Study</h3>
+          <p>Weekly studies &amp; inspiration</p>
+        </div>
+        <ion-icon name="chevron-forward" class="card-chevron" aria-hidden="true"></ion-icon>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon">
+          <ion-icon name="hand-left-outline" aria-hidden="true"></ion-icon>
+        </div>
+        <div>
+          <h3>Prayer Requests</h3>
+          <p>Share needs and receive support</p>
+        </div>
+        <ion-icon name="chevron-forward" class="card-chevron" aria-hidden="true"></ion-icon>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon">
+          <ion-icon name="sunny-outline" aria-hidden="true"></ion-icon>
+        </div>
+        <div>
+          <h3>Devotionals</h3>
+          <p>Daily encouragement from the Word</p>
+        </div>
+        <ion-icon name="chevron-forward" class="card-chevron" aria-hidden="true"></ion-icon>
+      </article>
+    </section>
   </ion-content>
 </ion-page>
