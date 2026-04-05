@@ -1,9 +1,24 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { DonationFlowStateService, DonationCheckoutSummary } from '../../core/services/donation-flow-state.service';
+import { ApiService } from '../../core/services/api.service';
+
+interface VerifyCheckoutSessionResponse {
+  verified: boolean;
+  payment_status?: string;
+  transaction_reference?: string;
+  amount?: string;
+  currency?: string;
+  category?: string;
+  donor_email?: string;
+  church?: {
+    id?: number;
+    name?: string;
+  };
+}
 
 @Component({
   standalone: true,
@@ -24,6 +39,17 @@ import { DonationFlowStateService, DonationCheckoutSummary } from '../../core/se
           <p class="fallback-note" *ngIf="!summary">
             We couldn't display the donation details right now, but your gift has been processed.
           </p>
+
+          <div class="summary-card" *ngIf="summary">
+            <p class="summary-label" *ngIf="summary.branchName">Branch</p>
+            <p class="summary-value" *ngIf="summary.branchName">{{ summary.branchName }}</p>
+            <p class="summary-label" *ngIf="summary.category">Category</p>
+            <p class="summary-value" *ngIf="summary.category">{{ summary.category }}</p>
+            <p class="summary-label" *ngIf="summary.amount !== undefined">Amount</p>
+            <p class="summary-value" *ngIf="summary.amount !== undefined">{{ formatAmount(summary.amount) }}</p>
+            <p class="summary-label" *ngIf="summary.transactionReference">Reference</p>
+            <p class="summary-value" *ngIf="summary.transactionReference">{{ summary.transactionReference }}</p>
+          </div>
 
           <div class="actions">
             <ion-button expand="block" class="cta" (click)="goToBranches()">Give again</ion-button>
@@ -124,6 +150,41 @@ import { DonationFlowStateService, DonationCheckoutSummary } from '../../core/se
         font-weight: 400;
       }
 
+      .summary-card {
+        width: 100%;
+        max-width: 520px;
+        background: #fff;
+        border-radius: 18px;
+        padding: 1rem 1.25rem;
+        box-shadow: 0 6px 16px rgba(11, 26, 54, 0.08);
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        margin-top: 0.6rem;
+      }
+
+      .summary-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(11, 26, 54, 0.4);
+        margin: 0;
+      }
+
+      .summary-value {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #0b1a36;
+      }
+
+      .session-id {
+        font-size: 0.8rem;
+        font-weight: 400;
+        color: rgba(11, 26, 54, 0.7);
+        word-break: break-all;
+      }
+
       .actions {
         width: 100%;
         max-width: 520px;
@@ -166,30 +227,60 @@ import { DonationFlowStateService, DonationCheckoutSummary } from '../../core/se
 })
 export class DonateSuccessPage implements OnInit, OnDestroy {
   summary: DonationCheckoutSummary | null = null;
-  private sub?: Subscription;
+  private verifySub?: Subscription;
 
   constructor(
+    private readonly api: ApiService,
     private readonly donationFlowState: DonationFlowStateService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
-    const stored = this.donationFlowState.getStoredSummary();
-    if (stored) {
-      this.summary = stored;
-      this.donationFlowState.clear();
+    const sessionId = this.route.snapshot.queryParamMap.get('session_id');
+    if (sessionId) {
+      this.verifySub = this.api
+        .get<VerifyCheckoutSessionResponse>('donations/verify-checkout-session/', {
+          session_id: sessionId,
+        })
+        .subscribe({
+          next: response => {
+            if (response.verified) {
+              this.summary = this.mapVerificationResponse(response);
+              this.donationFlowState.clear();
+            } else {
+              this.applyStoredSummary();
+            }
+          },
+          error: () => this.applyStoredSummary(),
+        });
     } else {
-      this.sub = this.donationFlowState.summary$.subscribe(summary => {
-        this.summary = summary;
-        if (summary) {
-          this.donationFlowState.clear();
-        }
-      });
+      this.applyStoredSummary();
     }
   }
 
   ngOnDestroy(): void {
-    this.sub?.unsubscribe();
+    this.verifySub?.unsubscribe();
+  }
+
+  private applyStoredSummary(): void {
+    const stored = this.donationFlowState.getStoredSummary();
+    if (stored) {
+      this.summary = stored;
+      this.donationFlowState.clear();
+    }
+  }
+
+  private mapVerificationResponse(response: VerifyCheckoutSessionResponse): DonationCheckoutSummary {
+    const amount = response.amount ? Number(response.amount) : undefined;
+    return {
+      branchName: response.church?.name ?? undefined,
+      category: response.category ?? undefined,
+      amount,
+      currency: response.currency,
+      donorEmail: response.donor_email ?? undefined,
+      transactionReference: response.transaction_reference ?? undefined,
+    };
   }
 
   goToBranches(): void {

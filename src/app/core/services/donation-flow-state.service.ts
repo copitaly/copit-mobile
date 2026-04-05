@@ -5,6 +5,7 @@ export interface DonationCheckoutSummary {
   branchName?: string;
   category?: string;
   amount?: number;
+  currency?: string;
   donorEmail?: string;
   transactionReference?: string;
   branchId?: number;
