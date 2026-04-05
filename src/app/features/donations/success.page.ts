@@ -14,53 +14,24 @@ import { DonationFlowStateService, DonationCheckoutSummary } from '../../core/se
     <ion-page>
       <ion-content fullscreen class="success-content">
         <div class="success-hero">
-          <h1>Thank you</h1>
-          <p>Your donation was successful</p>
-        </div>
-
-        <div class="success-card">
           <ion-icon name="checkmark-circle" class="success-icon" aria-hidden="true"></ion-icon>
-          <h2>Your gift has been received</h2>
-          <p>We appreciate your support for the local church.</p>
+          <h1>Thank you</h1>
+          <p class="hero-subtitle">Your gift has been received</p>
         </div>
 
-        <div class="summary-card" *ngIf="summary; else noSummary">
-          <div class="detail">
-            <span>Branch</span>
-            <strong>{{ summary.branchName ?? 'Details unavailable' }}</strong>
+        <div class="success-body">
+          <p class="primary-copy">We appreciate your generous support for the local church.</p>
+          <p class="fallback-note" *ngIf="!summary">
+            We couldn't display the donation details right now, but your gift has been processed.
+          </p>
+
+          <div class="actions">
+            <ion-button expand="block" class="cta" (click)="goToBranches()">Give again</ion-button>
+            <ion-button expand="block" fill="outline" class="secondary" (click)="goHome()">Back home</ion-button>
           </div>
-          <div class="detail" *ngIf="summary.category">
-            <span>Category</span>
-            <strong>{{ summary.category }}</strong>
-          </div>
-          <div class="detail" *ngIf="summary.amount !== undefined">
-            <span>Amount</span>
-            <strong>{{ formatAmount(summary.amount) }}</strong>
-          </div>
-          <div class="detail" *ngIf="summary.donorEmail">
-            <span>Email</span>
-            <strong>{{ summary.donorEmail }}</strong>
-          </div>
-          <div class="detail" *ngIf="summary.transactionReference">
-            <span>Reference</span>
-            <strong>{{ summary.transactionReference }}</strong>
-          </div>
+
+          <p class="footer-note">A confirmation email has been sent if provided.</p>
         </div>
-
-        <ng-template #noSummary>
-          <div class="summary-card">
-            <p class="muted">
-              We couldn't display the donation details right now, but your gift has been processed.
-            </p>
-          </div>
-        </ng-template>
-
-        <div class="actions">
-          <ion-button expand="block" class="cta" (click)="goToBranches()">Give again</ion-button>
-          <ion-button expand="block" fill="outline" (click)="goHome()">Back home</ion-button>
-        </div>
-
-        <p class="footer-note">A confirmation email has been sent if provided.</p>
       </ion-content>
     </ion-page>
   `,
@@ -75,90 +46,88 @@ import { DonationFlowStateService, DonationCheckoutSummary } from '../../core/se
         --background: #0b1d73;
         background: #0b1d73;
         color: #fff;
-        padding-bottom: 2rem;
+        min-height: 100vh;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        --padding-bottom: 0;
+      }
+
+      ion-content.success-content::part(scroll) {
+        min-height: 100%;
+        display: flex;
+        flex-direction: column;
       }
 
       .success-hero {
-        padding: 1.2rem 1.25rem 1rem;
-        background: linear-gradient(180deg, #081b61, #0b1d73 75%);
+        padding: 1.9rem 1.5rem 1rem;
+        background: linear-gradient(180deg, #071f63, #0b1d73 90%);
         display: flex;
         flex-direction: column;
-        gap: 0.15rem;
-        box-shadow: 0 12px 30px rgba(2, 18, 54, 0.4);
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+      }
+
+      .success-icon {
+        font-size: 3.5rem;
+        color: #0b703f;
+        padding: 0.5rem;
+        border-radius: 50%;
+        background: rgba(19, 128, 75, 0.15);
+        box-shadow: 0 0 12px rgba(5, 70, 33, 0.25);
       }
 
       .success-hero h1 {
         margin: 0;
-        font-size: 1.75rem;
+        font-size: 1.85rem;
         font-weight: 600;
+        color: #fff;
       }
 
-      .success-hero p {
+      .hero-subtitle {
         margin: 0;
-        font-size: 0.95rem;
-        opacity: 0.9;
+        font-size: 1rem;
+        opacity: 0.88;
+        color: #fff;
       }
 
-      .success-card,
-      .summary-card {
+      .success-body {
+        flex: 1 1 auto;
+        min-height: 0;
         background: #f5f6fa;
-        border-radius: 20px;
-        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.25);
-        margin: -1.5rem auto 1.25rem;
-        padding: 1.5rem;
-        max-width: 520px;
-        color: #0b1d73;
-      }
-
-      .success-card {
-        text-align: center;
-      }
-
-      .success-icon {
-        font-size: 3rem;
-        color: #0b703f;
-        margin-bottom: 0.75rem;
-      }
-
-      .success-card h2 {
-        margin: 0;
-        font-size: 1.5rem;
-        font-weight: 600;
-      }
-
-      .success-card p {
-        margin: 0.25rem 0 0;
-        font-size: 0.95rem;
-        color: #475467;
-      }
-
-      .detail {
+        padding: 2rem 1.5rem 1.4rem;
         display: flex;
-        justify-content: space-between;
-        border-bottom: 1px solid #e2e8f0;
-        padding: 0.6rem 0;
-        font-size: 0.95rem;
-        color: #475467;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        border-top-left-radius: 24px;
+        border-top-right-radius: 24px;
+        justify-content: flex-start;
       }
 
-      .detail strong {
-        color: #0b1a36;
-      }
-
-      .detail:last-child {
-        border-bottom: none;
-      }
-
-      .muted {
+      .primary-copy {
         margin: 0;
-        color: #475467;
-        font-size: 0.95rem;
+        font-size: 1rem;
+        color: #0b1a36;
+        line-height: 1.5;
         text-align: center;
+      }
+
+      .fallback-note {
+        max-width: 520px;
+        margin: 0;
+        font-size: 0.85rem;
+        color: rgba(11, 26, 54, 0.7);
+        text-align: center;
+        line-height: 1.4;
+        font-weight: 400;
       }
 
       .actions {
+        width: 100%;
         max-width: 520px;
-        margin: 0.5rem auto;
+        margin-top: 1rem;
         display: flex;
         flex-direction: column;
         gap: 0.65rem;
@@ -173,22 +142,26 @@ import { DonationFlowStateService, DonationCheckoutSummary } from '../../core/se
       .actions .cta {
         --background: #d9a30a;
         --color: #011b2d;
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
       }
 
-      .actions ion-button[fill='outline'] {
-        --border-color: #0f2a59;
-        --color: #0f2a59;
+      .actions .secondary {
+        --border-color: rgba(11, 26, 54, 0.25);
+        --color: #0b1a36;
+        background: transparent;
+        border: 1px solid rgba(11, 26, 54, 0.25);
+        box-shadow: none;
       }
 
       .footer-note {
-        margin: 1rem auto 0;
+        margin: auto auto 0;
+        align-self: center;
         max-width: 520px;
         text-align: center;
-        color: #cbd5f5;
+        color: rgba(203, 213, 245, 0.9);
         font-size: 0.85rem;
       }
-    `,
+    `
   ],
 })
 export class DonateSuccessPage implements OnInit, OnDestroy {
