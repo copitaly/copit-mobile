@@ -122,7 +122,7 @@ interface VerifyCheckoutSessionResponse {
         flex: 1 1 auto;
         min-height: 0;
         background: #f5f6fa;
-        padding: 2rem 1.5rem 1.4rem;
+        padding: 2rem 1.5rem 0.8rem;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -188,10 +188,10 @@ interface VerifyCheckoutSessionResponse {
       .actions {
         width: 100%;
         max-width: 520px;
-        margin-top: 1rem;
+        margin-top: 0.6rem;
         display: flex;
         flex-direction: column;
-        gap: 0.65rem;
+        gap: 0.5rem;
       }
 
       .actions ion-button {
@@ -215,7 +215,7 @@ interface VerifyCheckoutSessionResponse {
       }
 
       .footer-note {
-        margin: auto auto 0;
+        margin: 0.25rem auto 0;
         align-self: center;
         max-width: 520px;
         text-align: center;
