@@ -1,15 +1,9 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { finalize } from 'rxjs/operators';
-import {
-  DonationFlowStateService,
-  DonationCheckoutSummary,
-} from '../../core/services/donation-flow-state.service';
-import { DonationsService } from '../../core/services/donations.service';
-import { DonationCheckoutVerificationResponse } from '../../core/models/donation.model';
+import { DonationFlowStateService, DonationCheckoutSummary } from '../../core/services/donation-flow-state.service';
 
 @Component({
   standalone: true,
@@ -18,143 +12,131 @@ import { DonationCheckoutVerificationResponse } from '../../core/models/donation
   selector: 'app-donate-success',
   template: `
     <ion-page>
-      <ion-header>
-        <ion-toolbar>
-          <ion-title>Donation complete</ion-title>
-        </ion-toolbar>
-      </ion-header>
+      <ion-content fullscreen class="success-content">
+        <div class="success-hero">
+          <h1>Thank you</h1>
+          <p>Your donation was successful</p>
+        </div>
 
-      <ion-content fullscreen class="status-page">
-        <div class="panel">
-            <ion-card>
-              <ion-card-header>
-                <ion-card-title>Thank you!</ion-card-title>
-                <ion-card-subtitle>Donation complete</ion-card-subtitle>
-              </ion-card-header>
-              <ion-card-content>
-                <div class="summary-copy">
-                  <p class="headline">Your donation has been recorded.</p>
-                  <p class="muted">
-                    A confirmation email may arrive shortly. Reach out to the team if you need an immediate receipt.
-                  </p>
-                </div>
+        <div class="success-card">
+          <ion-icon name="checkmark-circle" class="success-icon" aria-hidden="true"></ion-icon>
+          <h2>Your gift has been received</h2>
+          <p>We appreciate your support for the local church.</p>
+        </div>
 
-                <p class="status-line" *ngIf="verifying">Verifying payment details…</p>
-                <p class="status-line" *ngIf="verifiedDetails">
-                  Payment status: <strong>{{ verifiedDetails.payment_status }}</strong>
-                  <span *ngIf="verifiedDetails.verified"> (verified)</span>
-                  <span *ngIf="!verifiedDetails.verified"> (pending)</span>
-                </p>
-                <p class="status-line error" *ngIf="verificationError">{{ verificationError }}</p>
-
-                <ng-container *ngIf="summary as current; else fallback">
-                  <div class="detail">
-                    <span>Branch</span>
-                    <strong>{{ current.branchName ?? 'Unknown branch' }}</strong>
-                  </div>
-                  <div class="detail" *ngIf="current.category">
-                    <span>Category</span>
-                    <strong>{{ current.category }}</strong>
-                  </div>
-                  <div class="detail" *ngIf="current.amount !== undefined">
-                    <span>Amount</span>
-                    <strong>€{{ current.amount.toFixed(2) }}</strong>
-                  </div>
-                  <div class="detail" *ngIf="current.transactionReference">
-                    <span>Reference</span>
-                    <strong>{{ current.transactionReference }}</strong>
-                  </div>
-                  <div class="detail" *ngIf="current.donorEmail">
-                    <span>Email</span>
-                    <strong>{{ current.donorEmail }}</strong>
-                  </div>
-                </ng-container>
-
-                <ng-template #fallback>
-                  <p class="muted">
-                    We couldn’t display the saved summary because this page was loaded directly. Check your email for confirmation.
-                  </p>
-                </ng-template>
-
-                <p class="session" *ngIf="sessionId">Session ID: {{ sessionId }}</p>
-              </ion-card-content>
-            </ion-card>
-          <div class="actions">
-            <ion-button expand="block" (click)="goToBranches()">Give again</ion-button>
-            <ion-button expand="block" fill="outline" (click)="goHome()">Back home</ion-button>
+        <div class="summary-card" *ngIf="summary; else noSummary">
+          <div class="detail">
+            <span>Branch</span>
+            <strong>{{ summary.branchName ?? 'Details unavailable' }}</strong>
+          </div>
+          <div class="detail" *ngIf="summary.category">
+            <span>Category</span>
+            <strong>{{ summary.category }}</strong>
+          </div>
+          <div class="detail" *ngIf="summary.amount !== undefined">
+            <span>Amount</span>
+            <strong>{{ formatAmount(summary.amount) }}</strong>
+          </div>
+          <div class="detail" *ngIf="summary.donorEmail">
+            <span>Email</span>
+            <strong>{{ summary.donorEmail }}</strong>
+          </div>
+          <div class="detail" *ngIf="summary.transactionReference">
+            <span>Reference</span>
+            <strong>{{ summary.transactionReference }}</strong>
           </div>
         </div>
+
+        <ng-template #noSummary>
+          <div class="summary-card">
+            <p class="muted">
+              We couldn't display the donation details right now, but your gift has been processed.
+            </p>
+          </div>
+        </ng-template>
+
+        <div class="actions">
+          <ion-button expand="block" class="cta" (click)="goToBranches()">Give again</ion-button>
+          <ion-button expand="block" fill="outline" (click)="goHome()">Back home</ion-button>
+        </div>
+
+        <p class="footer-note">A confirmation email has been sent if provided.</p>
       </ion-content>
     </ion-page>
   `,
   styles: [
     `
       :host {
-        --ion-background-color: #f9fbff;
+        display: block;
+        --ion-background-color: #0b1d73;
       }
 
-      ion-card {
-        margin: 0;
-        border-radius: 20px;
+      .success-content {
+        --background: #0b1d73;
+        background: #0b1d73;
+        color: #fff;
+        padding-bottom: 2rem;
       }
 
-      .status-page {
-        --background: #f5f7fb;
-        background: radial-gradient(circle at top, #ffffff 0%, #f0f4ff 55%, #dfe7f6 100%);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 1.5rem;
-        min-height: 100vh;
-      }
-
-      .panel {
-        width: 100%;
-        max-width: 540px;
+      .success-hero {
+        padding: 1.2rem 1.25rem 1rem;
+        background: linear-gradient(180deg, #081b61, #0b1d73 75%);
         display: flex;
         flex-direction: column;
-        gap: 1.25rem;
+        gap: 0.15rem;
+        box-shadow: 0 12px 30px rgba(2, 18, 54, 0.4);
       }
 
-      .panel ion-card {
-        background: #ffffff;
-        padding: 1.5rem;
-        box-shadow: 0 30px 60px rgba(15, 23, 42, 0.12);
-      }
-
-      .summary-copy {
-        margin-bottom: 1rem;
-      }
-
-      .summary-copy .headline {
-        font-size: 1.25rem;
-        font-weight: 600;
+      .success-hero h1 {
         margin: 0;
-        color: #101828;
+        font-size: 1.75rem;
+        font-weight: 600;
       }
 
-      .summary-copy .muted {
-        margin: 0.25rem 0 0;
-        color: #475467;
+      .success-hero p {
+        margin: 0;
         font-size: 0.95rem;
-        line-height: 1.5;
+        opacity: 0.9;
       }
 
-      .status-line {
-        font-size: 0.92rem;
-        margin-bottom: 0.35rem;
+      .success-card,
+      .summary-card {
+        background: #f5f6fa;
+        border-radius: 20px;
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.25);
+        margin: -1.5rem auto 1.25rem;
+        padding: 1.5rem;
+        max-width: 520px;
+        color: #0b1d73;
+      }
+
+      .success-card {
+        text-align: center;
+      }
+
+      .success-icon {
+        font-size: 3rem;
+        color: #0b703f;
+        margin-bottom: 0.75rem;
+      }
+
+      .success-card h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+
+      .success-card p {
+        margin: 0.25rem 0 0;
+        font-size: 0.95rem;
         color: #475467;
-      }
-
-      .status-line.error {
-        color: #b91c1c;
       }
 
       .detail {
         display: flex;
         justify-content: space-between;
-        border-bottom: 1px solid #e5e7eb;
-        padding: 0.5rem 0;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 0.6rem 0;
         font-size: 0.95rem;
         color: #475467;
       }
@@ -167,10 +149,31 @@ import { DonationCheckoutVerificationResponse } from '../../core/models/donation
         border-bottom: none;
       }
 
+      .muted {
+        margin: 0;
+        color: #475467;
+        font-size: 0.95rem;
+        text-align: center;
+      }
+
+      .actions {
+        max-width: 520px;
+        margin: 0.5rem auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+      }
+
       .actions ion-button {
+        border-radius: 999px;
+        height: 52px;
         font-weight: 600;
-        border-radius: 12px;
-        height: 48px;
+      }
+
+      .actions .cta {
+        --background: #d9a30a;
+        --color: #011b2d;
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
       }
 
       .actions ion-button[fill='outline'] {
@@ -178,112 +181,53 @@ import { DonationCheckoutVerificationResponse } from '../../core/models/donation
         --color: #0f2a59;
       }
 
-      .session {
-        margin-top: 0.75rem;
-        font-size: 0.7rem;
-        color: #475467;
-        text-align: right;
-      }
-
-      @media (max-width: 600px) {
-        .panel {
-          gap: 0.85rem;
-        }
-
-        .panel ion-card {
-          padding: 1.25rem;
-        }
+      .footer-note {
+        margin: 1rem auto 0;
+        max-width: 520px;
+        text-align: center;
+        color: #cbd5f5;
+        font-size: 0.85rem;
       }
     `,
   ],
 })
 export class DonateSuccessPage implements OnInit, OnDestroy {
   summary: DonationCheckoutSummary | null = null;
-  sessionId?: string;
-  verifying = false;
-  verifiedDetails?: DonationCheckoutVerificationResponse;
-  verificationError?: string;
   private sub?: Subscription;
-  private verificationSub?: Subscription;
-  private querySub?: Subscription;
 
   constructor(
-    private readonly router: Router,
-    private readonly route: ActivatedRoute,
     private readonly donationFlowState: DonationFlowStateService,
-    private readonly donationsService: DonationsService
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
-    this.querySub = this.route.queryParamMap.subscribe(params => {
-      const sessionId = params.get('session_id');
-      this.sessionId = sessionId ?? undefined;
-      if (sessionId) {
-        this.startVerification(sessionId);
-      } else {
-        this.loadSessionSummary();
-      }
-    });
+    const stored = this.donationFlowState.getStoredSummary();
+    if (stored) {
+      this.summary = stored;
+      this.donationFlowState.clear();
+    } else {
+      this.sub = this.donationFlowState.summary$.subscribe(summary => {
+        this.summary = summary;
+        if (summary) {
+          this.donationFlowState.clear();
+        }
+      });
+    }
   }
 
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
-    this.querySub?.unsubscribe();
-    this.verificationSub?.unsubscribe();
-  }
-
-  goHome(): void {
-    this.router.navigate(['/']);
   }
 
   goToBranches(): void {
     this.router.navigate(['/branches']);
   }
 
-  private startVerification(sessionId: string): void {
-    this.verificationError = undefined;
-    this.verifiedDetails = undefined;
-    this.verifying = true;
-    this.verificationSub?.unsubscribe();
-    this.sub?.unsubscribe();
-    this.verificationSub = this.donationsService
-      .verifyCheckoutSession(sessionId)
-      .pipe(finalize(() => (this.verifying = false)))
-      .subscribe({
-        next: response => {
-          this.verifiedDetails = response;
-          if (response.verified) {
-            this.summary = {
-              branchName: response.church?.name ?? this.summary?.branchName,
-              category: response.category ?? this.summary?.category,
-              amount: response.amount ? Number(response.amount) : this.summary?.amount,
-              donorEmail: response.donor_email ?? this.summary?.donorEmail,
-              transactionReference:
-                response.transaction_reference ?? this.summary?.transactionReference,
-            };
-            this.donationFlowState.clear();
-          } else {
-            this.verificationError = 'This checkout session could not be verified.';
-            this.loadSessionSummary();
-          }
-        },
-        error: () => {
-          this.verificationError = 'Unable to verify this checkout session.';
-          this.loadSessionSummary();
-        },
-    });
+  goHome(): void {
+    this.router.navigate(['/']);
   }
 
-  private loadSessionSummary(): void {
-    this.sub?.unsubscribe();
-    const persisted = this.donationFlowState.getStoredSummary();
-    if (persisted) {
-      this.summary = persisted;
-      this.donationFlowState.clear();
-    } else {
-      this.sub = this.donationFlowState.summary$.subscribe(summary => {
-        this.summary = summary;
-      });
-    }
+  formatAmount(amount: number): string {
+    return `€${amount.toFixed(2)}`;
   }
 }
