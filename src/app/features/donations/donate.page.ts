@@ -1,7 +1,7 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { IonicModule, ToggleCustomEvent } from '@ionic/angular';
+import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { finalize } from 'rxjs/operators';
@@ -76,20 +76,13 @@ import { DonationCheckoutRequest } from '../../core/models/donation.model';
                   formControlName="amount"
                   placeholder="Custom amount"
                   inputmode="decimal"
+                  pattern="[0-9]*"
                 ></ion-input>
               </ion-item>
 
               <ion-item class="custom-email" fill="solid">
                 <ion-input type="email" placeholder="Email (optional)" formControlName="donor_email"></ion-input>
               </ion-item>
-
-              <div class="recurring-card">
-                <div>
-                  <p class="label">Monthly Recurring</p>
-                  <p class="hint">Donate every month automatically</p>
-                </div>
-                <ion-toggle [checked]="recurring" (ionChange)="toggleRecurring($event)"></ion-toggle>
-              </div>
 
               <ion-text color="danger" *ngIf="errorMessage" class="form-error">
                 {{ errorMessage }}
@@ -250,27 +243,16 @@ import { DonationCheckoutRequest } from '../../core/models/donation.model';
         color: #111b45;
       }
 
-      .recurring-card {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1rem;
-        border-radius: 18px;
-        background: #fff;
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
-        gap: 1rem;
-      }
-
-      .recurring-card .label {
-        margin: 0;
+      .custom-amount input {
+        text-align: center;
         font-weight: 600;
-        color: #111b45;
+        -moz-appearance: textfield;
       }
 
-      .recurring-card .hint {
-        margin: 0.15rem 0 0;
-        font-size: 0.85rem;
-        color: #475467;
+      .custom-amount input::-webkit-outer-spin-button,
+      .custom-amount input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
       }
 
       .cta {
@@ -325,8 +307,6 @@ export class DonatePage implements OnDestroy {
   errorMessage?: string;
   branch: PublicBranch | null = null;
   private branchSub: Subscription;
-
-  recurring = false;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -420,10 +400,6 @@ export class DonatePage implements OnDestroy {
   displayAmount(): string {
     const amt = Number(this.form.get('amount')?.value ?? 0);
     return amt ? `€${amt}` : 'Choose an amount';
-  }
-
-  toggleRecurring(event: ToggleCustomEvent): void {
-    this.recurring = event.detail.checked ?? false;
   }
 
   getHierarchy(branch: PublicBranch): string {
