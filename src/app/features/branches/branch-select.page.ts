@@ -31,7 +31,6 @@ import { PublicBranch } from '../../core/models/branch.model';
             <ion-searchbar
               [(ngModel)]="searchTerm"
               placeholder="Search by name or district..."
-              show-cancel-button="focus"
               debounce="300"
               (ionInput)="onSearchChange()"
               class="branch-search"
@@ -151,10 +150,10 @@ import { PublicBranch } from '../../core/models/branch.model';
 
       .branch-surface {
         background: #f5f6fa;
-        border-top-left-radius: 28px;
-        border-top-right-radius: 28px;
+        border-top-left-radius: 22px;
+        border-top-right-radius: 22px;
         margin-top: 0;
-        padding: 1.25rem 1.25rem 2rem;
+        padding: 0.9rem 1.25rem 1.8rem;
         display: flex;
         justify-content: center;
         flex: 1;
@@ -184,6 +183,12 @@ import { PublicBranch } from '../../core/models/branch.model';
         box-shadow: 0 6px 14px rgba(2, 18, 54, 0.06);
         --padding-start: 1rem;
         --padding-end: 1rem;
+        height: 44px;
+        --placeholder-color: rgba(3, 23, 63, 0.45);
+      }
+
+      .branch-search::part(search-icon) {
+        opacity: 0.45;
       }
 
       .state-card {
