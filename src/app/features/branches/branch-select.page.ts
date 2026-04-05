@@ -1,4 +1,4 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
+ï»¿import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
@@ -21,9 +21,8 @@ import { PublicBranch } from '../../core/models/branch.model';
             <span>Back</span>
           </div>
           <div class="hero-copy">
-            <p class="hero-label">COP Giving Mobile</p>
-            <h1>Select your church</h1>
-            <p class="hero-subtitle">Choose a local congregation you'd like to support today.</p>
+            <h1>Choose your church</h1>
+            <p class="hero-subtitle">Your donation goes directly to the selected branch.</p>
           </div>
         </div>
 
@@ -37,10 +36,9 @@ import { PublicBranch } from '../../core/models/branch.model';
               (ionInput)="onSearchChange()"
               class="branch-search"
             ></ion-searchbar>
-
             <div *ngIf="loading" class="state-card">
               <ion-spinner name="crescent"></ion-spinner>
-              <ion-text>Loading branches…</ion-text>
+              <ion-text>Loading branchesâ€¦</ion-text>
             </div>
 
             <div *ngIf="!loading && error" class="state-card">
@@ -67,8 +65,8 @@ import { PublicBranch } from '../../core/models/branch.model';
                   <div class="label-top">
                     <h2>{{ branch.name }}</h2>
                     <p class="hierarchy" *ngIf="getHierarchy(branch) as hierarchy">{{ hierarchy }}</p>
+                    <p class="code" *ngIf="branch.branch_code">{{ branch.branch_code }}</p>
                   </div>
-                  <p class="code" *ngIf="branch.branch_code">{{ branch.branch_code }}</p>
                 </ion-label>
 
                 <ion-icon name="chevron-forward" slot="end" aria-hidden="true"></ion-icon>
@@ -111,7 +109,7 @@ import { PublicBranch } from '../../core/models/branch.model';
 
       .branch-hero {
         background: linear-gradient(180deg, #081b61, #0b1d73 80%);
-        padding: 2rem 1.25rem 1.25rem;
+        padding: 0.8rem 1rem 0.6rem;
         border-bottom-left-radius: 28px;
         border-bottom-right-radius: 28px;
         box-shadow: 0 18px 45px rgba(2, 18, 54, 0.35);
@@ -120,45 +118,42 @@ import { PublicBranch } from '../../core/models/branch.model';
       .hero-back {
         display: inline-flex;
         align-items: center;
-        gap: 0.4rem;
+        gap: 0.15rem;
         color: #ffffff;
         font-size: 0.95rem;
+        font-weight: 500;
         cursor: pointer;
-        margin-bottom: 1rem;
+        margin-bottom: 0.4rem;
       }
 
       .hero-copy {
         color: #ffffff;
         text-align: left;
-      }
-
-      .hero-label {
-        text-transform: uppercase;
-        letter-spacing: 0.3em;
-        font-size: 0.75rem;
-        opacity: 0.75;
-        margin: 0 0 0.4rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
       }
 
       .hero-copy h1 {
-        font-size: 2.3rem;
+        font-size: 1.85rem;
         margin: 0;
         font-weight: 600;
-        line-height: 1.1;
+        line-height: 1.2;
       }
 
       .hero-subtitle {
         margin: 0;
-        font-size: 1rem;
-        line-height: 1.35;
-        opacity: 0.9;
+        font-size: 0.95rem;
+        line-height: 1.4;
+        opacity: 0.75;
+        max-width: 380px;
       }
 
       .branch-surface {
         background: #f5f6fa;
         border-top-left-radius: 28px;
         border-top-right-radius: 28px;
-        margin-top: -14px;
+        margin-top: 0;
         padding: 1.25rem 1.25rem 2rem;
         display: flex;
         justify-content: center;
@@ -171,15 +166,22 @@ import { PublicBranch } from '../../core/models/branch.model';
         max-width: 520px;
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        gap: 1.25rem;
         overflow: auto;
         padding-bottom: 2rem;
+      }
+
+      ion-list {
+        margin-top: 0.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
       }
 
       .branch-search {
         --background: #ffffff;
         --border-radius: 16px;
-        box-shadow: 0 12px 24px rgba(2, 18, 54, 0.08);
+        box-shadow: 0 6px 14px rgba(2, 18, 54, 0.06);
         --padding-start: 1rem;
         --padding-end: 1rem;
       }
@@ -205,7 +207,7 @@ import { PublicBranch } from '../../core/models/branch.model';
         background: #ffffff;
         border-radius: 22px;
         padding: 1rem 1.2rem;
-        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.07);
         --background: transparent;
         align-items: center;
       }
@@ -304,7 +306,7 @@ export class BranchSelectPage implements OnInit {
     if (branch.area?.name) {
       parts.push(`${branch.area.name} Area`);
     }
-    return parts.join(' • ');
+    return parts.join(' â€¢ ');
   }
 
   onSearchChange(): void {
