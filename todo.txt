@@ -221,3 +221,11 @@ Cancel/reset (/donate/cancel / DonateCancelPage)
 Purpose: Informs the donor when they cancel/abort the Stripe flow; optionally shows what they were about to give.
 Key elements: Card confirming no payment went through, optional branch/category/amount (from stored summary), primary “Try again” button linking to /branches, and secondary “Back home” button.
 Each screen is a standalone Ionic component with its own template/styles, uses shared services (SelectedBranchService, DonationFlowStateService, DonationsService), and routes are wired through AppRoutingModule.
+------------------
+Optional (Future Phase 2 improvement)
+
+Later you can add:
+
+"Saved churches"
+"Recently donated"
+"My local church"
