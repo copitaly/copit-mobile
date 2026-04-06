@@ -1,0 +1,131 @@
+:host {
+  display: block;
+  --ion-background-color: #0b1d73;
+}
+
+ion-content.status-page::part(scroll) {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.status-page {
+  --background: #0b1d73;
+  background: #0b1d73;
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  --padding-bottom: 0;
+}
+
+.status-hero {
+  padding: 1.9rem 1.5rem 1rem;
+  background: linear-gradient(180deg, #071f63, #0b1d73 90%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.status-icon {
+  font-size: 3.5rem;
+  color: rgba(255, 255, 255, 0.9);
+  padding: 0.5rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.status-hero h1 {
+  margin: 0;
+  font-size: 1.85rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.hero-subtitle {
+  margin: 0;
+  font-size: 1rem;
+  opacity: 0.88;
+  color: #fff;
+}
+
+.status-body {
+  flex: 1 1 auto;
+  background: #f5f6fa;
+  padding: 2rem 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+}
+
+.message-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.status-header {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0b1a36;
+}
+
+.status-subtext {
+  margin: 0;
+  font-size: 0.95rem;
+  color: rgba(11, 26, 54, 0.6);
+  text-align: center;
+}
+
+.message-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.actions {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.6rem;
+}
+
+.actions ion-button {
+  border-radius: 999px;
+  height: 52px;
+  font-weight: 600;
+}
+
+.actions .cta {
+  --background: #d9a30a;
+  --color: #011b2d;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+.actions .secondary {
+  --border-color: rgba(11, 26, 54, 0.25);
+  --color: #0b1a36;
+  background: transparent;
+  border: 1px solid rgba(11, 26, 54, 0.25);
+  box-shadow: none;
+}
+
+.confirmation-note {
+  margin: 0.8rem auto 0.4rem;
+  max-width: 520px;
+  text-align: center;
+  color: rgba(11, 26, 54, 0.7);
+  font-size: 0.83rem;
+  font-weight: 500;
+  line-height: 1.4;
+}

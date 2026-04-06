@@ -1,0 +1,23 @@
+<ion-page>
+  <ion-content fullscreen class="status-page">
+    <div class="status-hero">
+      <ion-icon name="remove-circle-outline" class="status-icon" aria-hidden="true"></ion-icon>
+      <h1>Payment canceled</h1>
+      <p class="hero-subtitle">No payment was taken.</p>
+    </div>
+
+    <div class="status-body">
+      <div class="message-block">
+        <p class="status-header">Your donation was not completed</p>
+        <p class="status-subtext">You can try again whenever you are ready.</p>
+      </div>
+
+      <p class="confirmation-note">Your card or account has not been charged.</p>
+
+      <div class="actions">
+        <ion-button expand="block" class="cta" (click)="goToBranches()">Try again</ion-button>
+        <ion-button expand="block" fill="outline" class="secondary" (click)="goHome()">Back to Home</ion-button>
+      </div>
+    </div>
+  </ion-content>
+</ion-page>
