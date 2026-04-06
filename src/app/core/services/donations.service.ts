@@ -5,6 +5,7 @@ import {
   DonationCheckoutRequest,
   DonationCheckoutResponse,
   DonationCheckoutVerificationResponse,
+  DonationMobileCheckoutResponse,
 } from '../models/donation.model';
 
 @Injectable({ providedIn: 'root' })
@@ -24,5 +25,11 @@ export class DonationsService {
     return this.api.get<DonationCheckoutVerificationResponse>(this.verifyEndpoint, {
       session_id: sessionId,
     } as const);
+  }
+
+  createMobileCheckout(
+    payload: DonationCheckoutRequest
+  ): Observable<DonationMobileCheckoutResponse> {
+    return this.api.post<DonationMobileCheckoutResponse>('donations/mobile/checkout/', payload);
   }
 }

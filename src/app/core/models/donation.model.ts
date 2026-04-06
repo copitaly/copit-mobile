@@ -25,3 +25,9 @@ export interface DonationCheckoutVerificationResponse {
     name?: string;
   };
 }
+
+export interface DonationMobileCheckoutResponse {
+  client_secret: string;
+  donation_id: number;
+  transaction_reference: string;
+}

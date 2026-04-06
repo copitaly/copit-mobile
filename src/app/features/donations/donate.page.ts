@@ -10,6 +10,7 @@ import { DonationsService } from '../../core/services/donations.service';
 import { DonationFlowStateService } from '../../core/services/donation-flow-state.service';
 import { PublicBranch } from '../../core/models/branch.model';
 import { DonationCheckoutRequest } from '../../core/models/donation.model';
+import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/stripe-payment.service';
 
 @Component({
   standalone: true,
@@ -66,7 +67,7 @@ import { DonationCheckoutRequest } from '../../core/models/donation.model';
                   [class.selected]="isAmount(option)"
                   (click)="setAmount(option)"
                 >
-                  €{{ option }}
+                  {{ option }}
                 </button>
               </div>
 
@@ -94,6 +95,21 @@ import { DonationCheckoutRequest } from '../../core/models/donation.model';
                 <ion-spinner *ngIf="loading" name="crescent" slot="start"></ion-spinner>
               </ion-button>
               <p class="trust-text">Payments processed securely via Stripe</p>
+              <ion-text color="danger" *ngIf="nativeError" class="form-error">
+                {{ nativeError }}
+              </ion-text>
+              <ion-button
+                type="button"
+                expand="block"
+                fill="outline"
+                class="cta native"
+                [disabled]="form.invalid || nativeLoading"
+                (click)="startNativePayment()"
+              >
+                <ion-icon name="phone-portrait" slot="start"></ion-icon>
+                <span *ngIf="!nativeLoading">Pay inside the app</span>
+                <ion-spinner *ngIf="nativeLoading" name="crescent" slot="start"></ion-spinner>
+              </ion-button>
             </form>
           </ng-container>
 
@@ -264,6 +280,14 @@ import { DonationCheckoutRequest } from '../../core/models/donation.model';
         box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
       }
 
+      .cta.native {
+        --background: transparent;
+        --color: #0b1d73;
+        --border-width: 1px;
+        --border-color: rgba(11, 26, 54, 0.35);
+        box-shadow: none;
+      }
+
       .cta ion-icon {
         font-size: 1.1rem;
       }
@@ -305,6 +329,8 @@ export class DonatePage implements OnDestroy {
   });
   loading = false;
   errorMessage?: string;
+  nativeLoading = false;
+  nativeError?: string;
   branch: PublicBranch | null = null;
   private branchSub: Subscription;
 
@@ -313,7 +339,8 @@ export class DonatePage implements OnDestroy {
     private readonly donationsService: DonationsService,
     private readonly donationFlowState: DonationFlowStateService,
     private readonly selectedBranchService: SelectedBranchService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly stripePaymentService: StripePaymentService
   ) {
     this.branchSub = this.selectedBranchService.selectedBranch$.subscribe(branch => {
       this.branch = branch;
@@ -321,44 +348,21 @@ export class DonatePage implements OnDestroy {
   }
 
   submit(): void {
-    if (!this.branch) {
-      this.errorMessage = 'Please pick a branch first.';
+    if (!this.readyForPayment()) {
       return;
     }
 
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      this.errorMessage = 'Please fill the required fields.';
-      return;
-    }
-
-    const formValue = this.form.value;
-    const payload: DonationCheckoutRequest = {
-      church_id: this.branch.id,
-      category: formValue.category || undefined,
-      amount: Number(formValue.amount),
-      donor_email: formValue.donor_email || undefined,
-    };
-
-    console.log('[DonatePage] checkout payload category', payload.category);
-
+    const payload = this.buildPayload();
     this.loading = true;
     this.errorMessage = undefined;
+    this.nativeError = undefined;
 
     this.donationsService
       .createCheckout(payload)
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: response => {
-          this.donationFlowState.setSummary({
-            branchName: this.branch?.name,
-            branchId: this.branch?.id,
-            category: formValue.category || undefined,
-            amount: payload.amount,
-            donorEmail: payload.donor_email,
-            transactionReference: response.transaction_reference,
-            timestamp: Date.now(),
-          });
+          this.persistSummary(payload, response.transaction_reference);
           window.location.href = response.checkout_url;
         },
         error: () => {
@@ -367,8 +371,79 @@ export class DonatePage implements OnDestroy {
       });
   }
 
+  startNativePayment(): void {
+    if (!this.readyForPayment()) {
+      return;
+    }
+
+    const payload = this.buildPayload();
+    this.nativeLoading = true;
+    this.nativeError = undefined;
+    this.errorMessage = undefined;
+
+    this.donationsService
+      .createMobileCheckout(payload)
+      .pipe(finalize(() => (this.nativeLoading = false)))
+      .subscribe({
+        next: response => {
+          this.persistSummary(payload, response.transaction_reference);
+          this.stripePaymentService.presentPaymentSheet(response.client_secret).then(result =>
+            this.handlePaymentSheetOutcome(result)
+          );
+        },
+        error: () => {
+          this.nativeError = 'Unable to start native payment. Please try again.';
+        },
+      });
+  }
+
   ngOnDestroy(): void {
     this.branchSub.unsubscribe();
+  }
+
+  handlePaymentSheetOutcome(result: { status: PaymentSheetOutcome; errorMessage?: string }): void {
+    if (result.status === 'completed') {
+      this.router.navigate(['/donate/success']);
+    } else if (result.status === 'canceled') {
+      this.router.navigate(['/donate/cancel']);
+    } else {
+      this.nativeError = result.errorMessage ?? 'Payment failed. Please try again.';
+    }
+  }
+
+  private readyForPayment(): boolean {
+    if (!this.branch) {
+      this.errorMessage = 'Please pick a branch first.';
+      return false;
+    }
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.errorMessage = 'Please fill the required fields.';
+      return false;
+    }
+    return true;
+  }
+
+  private buildPayload(): DonationCheckoutRequest {
+    const formValue = this.form.value;
+    return {
+      church_id: this.branch!.id,
+      category: formValue.category || undefined,
+      amount: Number(formValue.amount),
+      donor_email: formValue.donor_email || undefined,
+    };
+  }
+
+  private persistSummary(payload: DonationCheckoutRequest, transactionReference: string): void {
+    this.donationFlowState.setSummary({
+      branchName: this.branch?.name,
+      branchId: this.branch?.id,
+      category: payload.category || undefined,
+      amount: payload.amount,
+      donorEmail: payload.donor_email,
+      transactionReference,
+      timestamp: Date.now(),
+    });
   }
 
   goToBranches(): void {
@@ -399,7 +474,7 @@ export class DonatePage implements OnDestroy {
 
   displayAmount(): string {
     const amt = Number(this.form.get('amount')?.value ?? 0);
-    return amt ? `€${amt}` : 'Choose an amount';
+    return amt ? `${amt}` : 'Choose an amount';
   }
 
   getHierarchy(branch: PublicBranch): string {
@@ -410,6 +485,6 @@ export class DonatePage implements OnDestroy {
     if (branch.area?.name) {
       parts.push(`${branch.area.name} Area`);
     }
-    return parts.join(' • ');
+    return parts.join(' â¢ ');
   }
 }

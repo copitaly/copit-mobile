@@ -6,6 +6,8 @@ export const environment = {
   production: false,
   apiBaseUrl: 'http://localhost:8000/api',
   appOrigin: 'http://localhost:8100',
+  stripePublishableKey: 'pk_test_replace_me',
+  stripeMerchantDisplayName: 'COP Italy Mobile',
 };
 
 /*
