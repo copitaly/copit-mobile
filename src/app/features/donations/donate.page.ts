@@ -44,7 +44,7 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
               </div>
             </div>
 
-            <form [formGroup]="form" (ngSubmit)="submit()" class="donate-form">
+            <form [formGroup]="form" (ngSubmit)="startNativePayment()" class="donate-form">
               <div class="section-label">CATEGORY</div>
               <div class="grid category-grid">
                 <button
@@ -90,21 +90,14 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
               </ion-text>
 
               <ion-button
-                type="button"
+                type="submit"
                 expand="block"
-                fill="outline"
-                class="cta native"
+                class="cta"
                 [disabled]="form.invalid || nativeLoading"
-                (click)="startNativePayment()"
               >
-                <ion-icon name="phone-portrait" slot="start"></ion-icon>
-                <span *ngIf="!nativeLoading">Pay inside the app</span>
-                <ion-spinner *ngIf="nativeLoading" name="crescent" slot="start"></ion-spinner>
-              </ion-button>
-              <ion-button type="submit" expand="block" class="cta" [disabled]="form.invalid || loading">
                 <ion-icon name="lock-closed" slot="start"></ion-icon>
-                <span *ngIf="!loading">Give {{ displayAmount() }} Securely</span>
-                <ion-spinner *ngIf="loading" name="crescent" slot="start"></ion-spinner>
+                <span *ngIf="!nativeLoading">Give {{ displayAmount() }} Securely</span>
+                <ion-spinner *ngIf="nativeLoading" name="crescent" slot="start"></ion-spinner>
               </ion-button>
               <p class="trust-text">Payments processed securely via Stripe</p>
               <ion-text color="danger" *ngIf="nativeError" class="form-error">
