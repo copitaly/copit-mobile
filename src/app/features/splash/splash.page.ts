@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 
 const APP_TITLE = 'COP Italy';
 const TAGLINE = 'Giving • Prayer • Events • Devotionals';
-const SPLASH_DURATION_MS = 20000;
+const SPLASH_DURATION_MS = 5000;
 
 @Component({
   standalone: true,

@@ -2,7 +2,7 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, OnInit } from '@angular/c
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, tap } from 'rxjs';
 import { DonationFlowStateService, DonationCheckoutSummary } from '../../core/services/donation-flow-state.service';
 import { ApiService } from '../../core/services/api.service';
 
@@ -224,6 +224,8 @@ interface VerifyCheckoutSessionResponse {
 })
 export class DonateSuccessPage implements OnInit, OnDestroy {
   summary: DonationCheckoutSummary | null = null;
+  private readonly log = console;
+  private isVerifying = false;
   private verifySub?: Subscription;
 
   constructor(
@@ -235,21 +237,31 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     const sessionId = this.route.snapshot.queryParamMap.get('session_id');
+    this.log.log('[DonateSuccessPage] session_id', sessionId ?? '<none>');
     if (sessionId) {
       this.verifySub = this.api
         .get<VerifyCheckoutSessionResponse>('donations/verify-checkout-session/', {
           session_id: sessionId,
         })
+        .pipe(
+          // optional quiet log before request (side effect)
+          tap(() => this.startVerification(sessionId))
+        )
         .subscribe({
           next: response => {
             if (response.verified) {
               this.summary = this.mapVerificationResponse(response);
               this.donationFlowState.clear();
+              this.log.log('[DonateSuccessPage] backend verified session', sessionId);
             } else {
               this.applyStoredSummary();
+              this.log.warn('[DonateSuccessPage] verification returned verified=false', sessionId);
             }
           },
-          error: () => this.applyStoredSummary(),
+          error: error => {
+            this.log.error('[DonateSuccessPage] verification request error', error);
+            this.applyStoredSummary();
+          },
         });
     } else {
       this.applyStoredSummary();
@@ -265,7 +277,10 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
     if (stored) {
       this.summary = stored;
       this.donationFlowState.clear();
+      this.log.log('[DonateSuccessPage] sessionStorage fallback used', stored);
+      return;
     }
+    this.log.warn('[DonateSuccessPage] no summary available, showing fallback copy');
   }
 
   private mapVerificationResponse(response: VerifyCheckoutSessionResponse): DonationCheckoutSummary {
@@ -289,6 +304,11 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
   }
 
   formatAmount(amount: number): string {
-    return `â‚¬${amount.toFixed(2)}`;
+    return `€${amount.toFixed(2)}`;
+  }
+
+  private startVerification(sessionId: string): void {
+    this.isVerifying = true;
+    this.log.log('[DonateSuccessPage] starting verification request', sessionId);
   }
 }

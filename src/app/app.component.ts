@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { DeepLinkService } from './core/services/deep-link.service';
 
 @Component({
   selector: 'app-root',
@@ -7,7 +8,7 @@ import { Component } from '@angular/core';
   standalone: false,
 })
 export class AppComponent {
-  constructor() {
+  constructor(private readonly deepLinkService: DeepLinkService) {
     console.log('[AppComponent] rendered at', new Date().toISOString());
   }
 }
