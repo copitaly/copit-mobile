@@ -67,7 +67,7 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
                   [class.selected]="isAmount(option)"
                   (click)="setAmount(option)"
                 >
-                  {{ option }}
+                  €{{ option }}
                 </button>
               </div>
 
@@ -474,7 +474,7 @@ export class DonatePage implements OnDestroy {
 
   displayAmount(): string {
     const amt = Number(this.form.get('amount')?.value ?? 0);
-    return amt ? `${amt}` : 'Choose an amount';
+    return amt ? `€${amt}` : 'Choose an amount';
   }
 
   getHierarchy(branch: PublicBranch): string {
@@ -485,6 +485,6 @@ export class DonatePage implements OnDestroy {
     if (branch.area?.name) {
       parts.push(`${branch.area.name} Area`);
     }
-    return parts.join(' â¢ ');
+    return parts.join(' • ');
   }
 }
