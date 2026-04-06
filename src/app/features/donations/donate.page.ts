@@ -89,15 +89,6 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
                 {{ errorMessage }}
               </ion-text>
 
-              <ion-button type="submit" expand="block" class="cta" [disabled]="form.invalid || loading">
-                <ion-icon name="lock-closed" slot="start"></ion-icon>
-                <span *ngIf="!loading">Give {{ displayAmount() }} Securely</span>
-                <ion-spinner *ngIf="loading" name="crescent" slot="start"></ion-spinner>
-              </ion-button>
-              <p class="trust-text">Payments processed securely via Stripe</p>
-              <ion-text color="danger" *ngIf="nativeError" class="form-error">
-                {{ nativeError }}
-              </ion-text>
               <ion-button
                 type="button"
                 expand="block"
@@ -110,6 +101,15 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
                 <span *ngIf="!nativeLoading">Pay inside the app</span>
                 <ion-spinner *ngIf="nativeLoading" name="crescent" slot="start"></ion-spinner>
               </ion-button>
+              <ion-button type="submit" expand="block" class="cta" [disabled]="form.invalid || loading">
+                <ion-icon name="lock-closed" slot="start"></ion-icon>
+                <span *ngIf="!loading">Give {{ displayAmount() }} Securely</span>
+                <ion-spinner *ngIf="loading" name="crescent" slot="start"></ion-spinner>
+              </ion-button>
+              <p class="trust-text">Payments processed securely via Stripe</p>
+              <ion-text color="danger" *ngIf="nativeError" class="form-error">
+                {{ nativeError }}
+              </ion-text>
             </form>
           </ng-container>
 
@@ -333,6 +333,7 @@ export class DonatePage implements OnDestroy {
   nativeError?: string;
   branch: PublicBranch | null = null;
   private branchSub: Subscription;
+  private pendingMobileDonationId?: number;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -386,7 +387,13 @@ export class DonatePage implements OnDestroy {
       .pipe(finalize(() => (this.nativeLoading = false)))
       .subscribe({
         next: response => {
+          console.log('[DonatePage] mobile checkout response', {
+            donationId: response.donation_id,
+            transactionReference: response.transaction_reference,
+            clientSecretPreview: response.client_secret.slice(0, 8) + '...',
+          });
           this.persistSummary(payload, response.transaction_reference);
+          this.pendingMobileDonationId = response.donation_id;
           this.stripePaymentService.presentPaymentSheet(response.client_secret).then(result =>
             this.handlePaymentSheetOutcome(result)
           );
@@ -402,13 +409,22 @@ export class DonatePage implements OnDestroy {
   }
 
   handlePaymentSheetOutcome(result: { status: PaymentSheetOutcome; errorMessage?: string }): void {
+    console.log('[DonatePage] PaymentSheet raw result', result);
     if (result.status === 'completed') {
-      this.router.navigate(['/donate/success']);
+      this.logPaymentOutcome('completed', this.pendingMobileDonationId);
+      this.router.navigate(['/donate/success'], {
+        queryParams: { donation_id: this.pendingMobileDonationId },
+      });
+      this.pendingMobileDonationId = undefined;
     } else if (result.status === 'canceled') {
       this.router.navigate(['/donate/cancel']);
     } else {
       this.nativeError = result.errorMessage ?? 'Payment failed. Please try again.';
     }
+  }
+
+  private logPaymentOutcome(status: PaymentSheetOutcome, donationId?: number): void {
+    console.log('[DonatePage] native PaymentSheet outcome', { status, donationId });
   }
 
   private readyForPayment(): boolean {

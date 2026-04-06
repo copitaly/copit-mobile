@@ -31,3 +31,17 @@ export interface DonationMobileCheckoutResponse {
   donation_id: number;
   transaction_reference: string;
 }
+
+export interface DonationMobileVerificationResponse {
+  verified: boolean;
+  donation_id: number;
+  church?: {
+    id?: number;
+    name?: string;
+  };
+  category?: string;
+  amount?: string;
+  currency?: string;
+  transaction_reference?: string;
+  status?: string;
+}

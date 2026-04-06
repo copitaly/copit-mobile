@@ -6,6 +6,7 @@ import {
   DonationCheckoutResponse,
   DonationCheckoutVerificationResponse,
   DonationMobileCheckoutResponse,
+  DonationMobileVerificationResponse,
 } from '../models/donation.model';
 
 @Injectable({ providedIn: 'root' })
@@ -31,5 +32,11 @@ export class DonationsService {
     payload: DonationCheckoutRequest
   ): Observable<DonationMobileCheckoutResponse> {
     return this.api.post<DonationMobileCheckoutResponse>('donations/mobile/checkout/', payload);
+  }
+
+  verifyMobilePayment(donationId: number): Observable<DonationMobileVerificationResponse> {
+    return this.api.get<DonationMobileVerificationResponse>('donations/verify-mobile-payment/', {
+      donation_id: donationId,
+    } as const);
   }
 }

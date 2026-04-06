@@ -20,6 +20,20 @@ interface VerifyCheckoutSessionResponse {
   };
 }
 
+interface VerifyMobilePaymentResponse {
+  verified: boolean;
+  donation_id: number;
+  church?: {
+    id?: number;
+    name?: string;
+  };
+  category?: string;
+  amount?: string;
+  currency?: string;
+  transaction_reference?: string;
+  status?: string;
+}
+
 @Component({
   standalone: true,
   imports: [CommonModule, IonicModule],
@@ -237,39 +251,74 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     const sessionId = this.route.snapshot.queryParamMap.get('session_id');
-    this.log.log('[DonateSuccessPage] session_id', sessionId ?? '<none>');
+    const donationIdParam = this.route.snapshot.queryParamMap.get('donation_id');
+    this.log.log('[DonateSuccessPage] params', { sessionId, donationId: donationIdParam ?? '<none>' });
     if (sessionId) {
-      this.verifySub = this.api
-        .get<VerifyCheckoutSessionResponse>('donations/verify-checkout-session/', {
-          session_id: sessionId,
-        })
-        .pipe(
-          // optional quiet log before request (side effect)
-          tap(() => this.startVerification(sessionId))
-        )
-        .subscribe({
-          next: response => {
-            if (response.verified) {
-              this.summary = this.mapVerificationResponse(response);
-              this.donationFlowState.clear();
-              this.log.log('[DonateSuccessPage] backend verified session', sessionId);
-            } else {
-              this.applyStoredSummary();
-              this.log.warn('[DonateSuccessPage] verification returned verified=false', sessionId);
-            }
-          },
-          error: error => {
-            this.log.error('[DonateSuccessPage] verification request error', error);
-            this.applyStoredSummary();
-          },
-        });
-    } else {
-      this.applyStoredSummary();
+      this.verifyHosted(sessionId);
+      return;
     }
+    if (donationIdParam) {
+      const donationId = Number(donationIdParam);
+      if (!Number.isNaN(donationId)) {
+        this.verifyNative(donationId);
+        return;
+      }
+    }
+    this.applyStoredSummary();
   }
 
   ngOnDestroy(): void {
     this.verifySub?.unsubscribe();
+  }
+
+  private verifyHosted(sessionId: string): void {
+    this.log.log('[DonateSuccessPage] verifying hosted session', sessionId);
+    this.verifySub = this.api
+      .get<VerifyCheckoutSessionResponse>('donations/verify-checkout-session/', {
+        session_id: sessionId,
+      })
+      .pipe(tap(() => this.startVerification(sessionId)))
+      .subscribe({
+        next: response => {
+          if (response.verified) {
+            this.summary = this.mapVerificationResponse(response);
+            this.donationFlowState.clear();
+            this.log.log('[DonateSuccessPage] backend verified session', sessionId);
+          } else {
+            this.applyStoredSummary();
+            this.log.warn('[DonateSuccessPage] verification returned verified=false (hosted)', sessionId);
+          }
+        },
+        error: error => {
+          this.log.error('[DonateSuccessPage] hosted verification error', error);
+          this.applyStoredSummary();
+        },
+      });
+  }
+
+  private verifyNative(donationId: number): void {
+    this.log.log('[DonateSuccessPage] verifying native donation', donationId);
+    this.verifySub = this.api
+      .get<VerifyMobilePaymentResponse>('donations/verify-mobile-payment/', {
+        donation_id: donationId,
+      })
+      .pipe(tap(() => this.startVerification(`mobile:${donationId}`)))
+      .subscribe({
+        next: response => {
+          if (response.verified) {
+            this.summary = this.mapMobileResponse(response);
+            this.donationFlowState.clear();
+            this.log.log('[DonateSuccessPage] mobile verification succeeded', donationId);
+          } else {
+            this.applyStoredSummary();
+            this.log.warn('[DonateSuccessPage] verification returned verified=false (mobile)', donationId);
+          }
+        },
+        error: error => {
+          this.log.error('[DonateSuccessPage] mobile verification error', error);
+          this.applyStoredSummary();
+        },
+      });
   }
 
   private applyStoredSummary(): void {
@@ -295,6 +344,18 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
     };
   }
 
+  private mapMobileResponse(response: VerifyMobilePaymentResponse): DonationCheckoutSummary {
+    const amount = response.amount ? Number(response.amount) : undefined;
+    return {
+      branchName: response.church?.name ?? undefined,
+      category: response.category ?? undefined,
+      amount,
+      currency: response.currency,
+      donorEmail: undefined,
+      transactionReference: response.transaction_reference ?? undefined,
+    };
+  }
+
   goToBranches(): void {
     this.router.navigate(['/branches']);
   }
@@ -304,7 +365,7 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
   }
 
   formatAmount(amount: number): string {
-    return `€${amount.toFixed(2)}`;
+    return `Â€${amount.toFixed(2)}`;
   }
 
   private startVerification(sessionId: string): void {
