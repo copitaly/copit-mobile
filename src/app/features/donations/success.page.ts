@@ -51,12 +51,14 @@ interface VerifyCheckoutSessionResponse {
             <p class="summary-value" *ngIf="summary.transactionReference">{{ summary.transactionReference }}</p>
           </div>
 
+          <p class="confirmation-note">
+            A confirmation email has been sent if provided.
+          </p>
+
           <div class="actions">
             <ion-button expand="block" class="cta" (click)="goToBranches()">Give again</ion-button>
             <ion-button expand="block" fill="outline" class="secondary" (click)="goHome()">Back home</ion-button>
           </div>
-
-          <p class="footer-note">A confirmation email has been sent if provided.</p>
         </div>
       </ion-content>
     </ion-page>
@@ -155,19 +157,19 @@ interface VerifyCheckoutSessionResponse {
         max-width: 520px;
         background: #fff;
         border-radius: 18px;
-        padding: 1rem 1.25rem;
+        padding: 1.25rem 1.5rem;
         box-shadow: 0 6px 16px rgba(11, 26, 54, 0.08);
         display: flex;
         flex-direction: column;
-        gap: 0.25rem;
-        margin-top: 0.6rem;
+        gap: 0.5rem;
+        margin-top: 1rem;
       }
 
       .summary-label {
         font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: rgba(11, 26, 54, 0.4);
+        color: rgba(11, 26, 54, 0.45);
         margin: 0;
       }
 
@@ -176,13 +178,6 @@ interface VerifyCheckoutSessionResponse {
         font-size: 1rem;
         font-weight: 600;
         color: #0b1a36;
-      }
-
-      .session-id {
-        font-size: 0.8rem;
-        font-weight: 400;
-        color: rgba(11, 26, 54, 0.7);
-        word-break: break-all;
       }
 
       .actions {
@@ -214,13 +209,15 @@ interface VerifyCheckoutSessionResponse {
         box-shadow: none;
       }
 
-      .footer-note {
-        margin: 0.25rem auto 0;
+      .confirmation-note {
+        margin: 1.4rem auto 0.6rem;
         align-self: center;
         max-width: 520px;
         text-align: center;
-        color: rgba(203, 213, 245, 0.9);
+        color: rgba(15, 34, 61, 0.75);
         font-size: 0.85rem;
+        line-height: 1.4;
+        font-weight: 500;
       }
     `
   ],
