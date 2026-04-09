@@ -166,16 +166,16 @@ import { PublicBranch } from '../../core/models/branch.model';
         max-width: 520px;
         display: flex;
         flex-direction: column;
-        gap: 1.25rem;
+        gap: 0.9rem; /* tighten spacing between search bar and card list */
         overflow: auto;
         padding-bottom: 2rem;
       }
 
       ion-list {
-        margin-top: 0.25rem;
+        margin-top: 0.15rem;
         display: flex;
         flex-direction: column;
-        gap: 0.85rem;
+        gap: 0.6rem;
       }
 
       .branch-search {
@@ -213,9 +213,10 @@ import { PublicBranch } from '../../core/models/branch.model';
         background: #ffffff;
         border-radius: 22px;
         padding: 1rem 1.2rem;
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.07);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
         --background: transparent;
         align-items: center;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
       }
 
       .branch-card ion-label {
@@ -223,10 +224,22 @@ import { PublicBranch } from '../../core/models/branch.model';
         flex: 1;
       }
 
-      ion-icon[slot='start'],
-      ion-icon[slot='end'] {
+      ion-icon[slot='start'] {
         color: #0b1d73;
         font-size: 24px;
+        align-self: center;
+        margin-right: 0.35rem;
+      }
+
+      ion-icon[slot='end'] {
+        color: rgba(3, 23, 63, 0.65);
+        font-size: 18px;
+        margin-right: 0.25rem;
+      }
+
+      .branch-card:active {
+        transform: scale(0.98);
+        box-shadow: 0 12px 22px rgba(0, 0, 0, 0.08);
       }
 
       .label-top {
@@ -235,22 +248,23 @@ import { PublicBranch } from '../../core/models/branch.model';
         gap: 0.25rem;
       }
 
-      h2 {
-        margin: 0;
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #03173f;
-      }
+        h2 {
+          margin: 0;
+          font-size: 1rem;
+          font-weight: 600;
+          line-height: 1.2;
+          color: #03173f;
+        }
 
-      .hierarchy {
-        margin: 0;
-        font-size: 0.85rem;
-        color: rgba(3, 23, 63, 0.65);
-        white-space: normal;
-        line-height: 1.4;
-        word-break: break-word;
-        /* allow two lines of hierarchy without truncation */
-      }
+        .hierarchy {
+          margin: 0;
+          font-size: 0.85rem;
+          font-weight: 400;
+          line-height: 1.35;
+          color: rgba(3, 23, 63, 0.78);
+          white-space: normal;
+          word-break: break-word;
+        }
 
       .code {
         font-size: 0.8rem;
