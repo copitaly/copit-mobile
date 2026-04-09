@@ -35,9 +35,14 @@ import { PublicBranch } from '../../core/models/branch.model';
               (ionInput)="onSearchChange()"
               class="branch-search"
             ></ion-searchbar>
-            <div *ngIf="loading" class="state-card">
-              <ion-spinner name="crescent"></ion-spinner>
-              <ion-text>Loading branches…</ion-text>
+            <div *ngIf="loading" class="skeleton-stack" aria-live="polite">
+              <div class="branch-card skeleton" *ngFor="let item of [1, 2, 3]">
+                <span class="icon-placeholder"></span>
+                <div class="label-top">
+                  <span class="skeleton-line title"></span>
+                  <span class="skeleton-line hierarchy"></span>
+                </div>
+              </div>
             </div>
 
             <div *ngIf="!loading && error" class="state-card">
@@ -45,11 +50,18 @@ import { PublicBranch } from '../../core/models/branch.model';
               <ion-button fill="clear" (click)="loadBranches()">Retry</ion-button>
             </div>
 
-            <div *ngIf="!loading && !error && branches.length === 0" class="state-card">
-              <ion-text>No donation-ready branches found.</ion-text>
+            <div *ngIf="!loading && !error && branches.length === 0" class="state-card empty-state">
+              <div class="empty-copy">
+                <h3>{{ searchTerm ? 'No matching branches' : 'No branches available' }}</h3>
+                <p>
+                  {{ searchTerm
+                    ? 'Try a different church name, district, or area.'
+                    : 'There are currently no donation branches available. Please try again later.' }}
+                </p>
+              </div>
             </div>
 
-            <ion-list *ngIf="branches.length > 0" lines="none">
+            <ion-list *ngIf="!loading && branches.length > 0" lines="none">
               <ion-item
                 button
                 [detail]="false"
@@ -171,6 +183,62 @@ import { PublicBranch } from '../../core/models/branch.model';
         padding-bottom: 2rem;
       }
 
+      .skeleton-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+      }
+
+      .branch-card.skeleton {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.2rem;
+        border-radius: 22px;
+        box-shadow: none;
+        background: #ffffff;
+        animation: pulse 1.2s infinite ease-in-out;
+      }
+
+      .icon-placeholder {
+        width: 32px;
+        height: 32px;
+        border-radius: 12px;
+        background: rgba(11, 26, 115, 0.1);
+        margin-right: 0.5rem;
+      }
+
+      .branch-card.skeleton .label-top {
+        gap: 0.35rem;
+      }
+
+      .skeleton-line {
+        display: block;
+        background: rgba(11, 26, 115, 0.08);
+        border-radius: 999px;
+      }
+
+      .skeleton-line.title {
+        width: 120px;
+        height: 14px;
+      }
+
+      .skeleton-line.hierarchy {
+        width: 80px;
+        height: 10px;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
       ion-list {
         margin-top: 0.15rem;
         display: flex;
@@ -201,6 +269,32 @@ import { PublicBranch } from '../../core/models/branch.model';
         align-items: center;
         gap: 0.65rem;
         box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+      }
+
+      .state-card.empty-state {
+        flex-direction: column;
+        gap: 0.35rem;
+        padding: 1.2rem 1.25rem;
+      }
+
+      .empty-copy {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+
+      .empty-copy h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: rgba(3, 23, 63, 0.9);
+      }
+
+      .empty-copy p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: rgba(3, 23, 63, 0.65);
       }
 
       ion-list {

@@ -414,3 +414,14 @@ Deliver:
 - route/state updates
 - safe guards for missing branch context
 - concise notes in code where behavior changed"```
+
+---
+2. Add “recent branch” (big UX gain)
+
+Since users usually donate to the same branch:
+
+store last selected branch
+show it at top as "Your branch"
+auto-scroll to it
+
+This will reduce friction significantly.
