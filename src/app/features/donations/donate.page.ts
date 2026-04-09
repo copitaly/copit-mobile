@@ -19,7 +19,7 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
   selector: 'app-donate',
   template: `
     <ion-page>
-      <div class="donate-hero app-header">
+      <div class="donate-hero app-header app-header--inner">
         <div class="app-header__inner">
           <button class="hero-back app-header__back" (click)="goBack()" type="button">
             <ion-icon class="app-back-icon" name="chevron-back" aria-hidden="true"></ion-icon>

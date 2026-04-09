@@ -51,7 +51,8 @@ body {
 
 .app-header {
   background: linear-gradient(180deg, #081b61, #0b1d73 80%);
-  padding: calc(1.4rem + env(safe-area-inset-top, 0px)) 1.25rem 1.1rem;
+  --header-extra-top: 1.4rem;
+  padding: calc(var(--header-extra-top) + env(safe-area-inset-top, 0px)) 1.25rem 1.1rem;
   color: #ffffff;
   display: flex;
   flex-direction: column;
@@ -59,6 +60,10 @@ body {
   box-shadow: 0 18px 45px rgba(2, 18, 54, 0.35);
   position: relative;
   z-index: 1;
+}
+
+.app-header--inner {
+  --header-extra-top: 0.6rem;
 }
 
 .app-header__back {

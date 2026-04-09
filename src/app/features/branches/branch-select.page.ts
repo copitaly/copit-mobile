@@ -15,7 +15,7 @@ import { PublicBranch } from '../../core/models/branch.model';
   template: `
     <ion-page>
       <ion-content fullscreen class="branch-content">
-        <div class="branch-hero app-header">
+        <div class="branch-hero app-header app-header--inner">
           <div class="app-header__inner">
             <button class="hero-back app-header__back" type="button" (click)="goBack()">
               <ion-icon class="app-back-icon" name="chevron-back" aria-hidden="true"></ion-icon>
