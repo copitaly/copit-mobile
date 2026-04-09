@@ -15,19 +15,21 @@ import { PublicBranch } from '../../core/models/branch.model';
   template: `
     <ion-page>
       <ion-content fullscreen class="branch-content">
-        <div class="branch-hero">
-        <button class="hero-back" type="button" (click)="goBack()">
-          <ion-icon name="chevron-back" aria-hidden="true"></ion-icon>
-          <span>Back</span>
-        </button>
-          <div class="hero-copy">
-            <h1>Choose your church</h1>
-            <p class="hero-subtitle">Your donation goes directly to the selected branch.</p>
+        <div class="branch-hero app-header">
+          <div class="app-header__inner">
+            <button class="hero-back app-header__back" type="button" (click)="goBack()">
+              <ion-icon name="chevron-back" aria-hidden="true"></ion-icon>
+              <span>Back</span>
+            </button>
+            <div class="app-header__copy">
+              <h1 class="app-header__title">Choose your church</h1>
+              <p class="app-header__subtitle">Your donation goes directly to the selected branch.</p>
+            </div>
           </div>
         </div>
 
-        <div class="branch-surface">
-          <div class="surface-stack">
+        <div class="surface branch-surface">
+          <div class="surface__content">
             <ion-searchbar
               [(ngModel)]="searchTerm"
               placeholder="Search by name or district..."
@@ -82,7 +84,9 @@ import { PublicBranch } from '../../core/models/branch.model';
                       </div>
                     </ion-label>
 
-                    <ion-icon name="chevron-forward" slot="end" aria-hidden="true"></ion-icon>
+                    <span class="branch-card__chevron" aria-hidden="true">
+                      <ion-icon name="chevron-forward"></ion-icon>
+                    </span>
                   </ion-item>
                 </ion-list>
               </ng-container>
@@ -108,7 +112,9 @@ import { PublicBranch } from '../../core/models/branch.model';
                         </div>
                       </ion-label>
 
-                      <ion-icon name="chevron-forward" slot="end" aria-hidden="true"></ion-icon>
+                      <span class="branch-card__chevron" aria-hidden="true">
+                        <ion-icon name="chevron-forward"></ion-icon>
+                      </span>
                     </ion-item>
                   </ion-list>
                 </div>
@@ -150,73 +156,8 @@ import { PublicBranch } from '../../core/models/branch.model';
       }
 
       .branch-hero {
-        background: linear-gradient(180deg, #081b61, #0b1d73 80%);
-        padding: calc(1.4rem + env(safe-area-inset-top, 0px)) 1rem 0.6rem; /* safe-area-aware header spacing */
         border-bottom-left-radius: 28px;
         border-bottom-right-radius: 28px;
-        box-shadow: 0 18px 45px rgba(2, 18, 54, 0.35);
-      }
-
-      .hero-back {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.15rem;
-        color: #ffffff;
-        font-size: 0.95rem;
-        font-weight: 500;
-        cursor: pointer;
-        margin-bottom: 0.6rem;
-        padding: 0.4rem 0.4rem;
-        min-height: 44px;
-        border-radius: 999px;
-        border: none;
-        background: transparent;
-        justify-content: flex-start;
-      }
-
-      .hero-copy {
-        color: #ffffff;
-        text-align: left;
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-      }
-
-      .hero-copy h1 {
-        font-size: 1.85rem;
-        margin: 0;
-        font-weight: 600;
-        line-height: 1.2;
-      }
-
-      .hero-subtitle {
-        margin: 0;
-        font-size: 0.95rem;
-        line-height: 1.4;
-        opacity: 0.75;
-        max-width: 380px;
-      }
-
-      .branch-surface {
-        background: #f5f6fa;
-        border-top-left-radius: 22px;
-        border-top-right-radius: 22px;
-        margin-top: 0;
-        padding: 0.9rem 1.25rem 1.8rem;
-        display: flex;
-        justify-content: center;
-        flex: 1;
-        overflow: hidden;
-      }
-
-      .surface-stack {
-        width: 100%;
-        max-width: 520px;
-        display: flex;
-        flex-direction: column;
-        gap: 0.9rem; /* tighten spacing between search bar and card list */
-        overflow: auto;
-        padding-bottom: 2rem;
       }
 
       .skeleton-stack {
@@ -362,10 +303,16 @@ import { PublicBranch } from '../../core/models/branch.model';
         margin-right: 0.35rem;
       }
 
-      ion-icon[slot='end'] {
-        color: rgba(3, 23, 63, 0.65);
+      .branch-card__chevron {
+        width: 28px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .branch-card__chevron ion-icon {
+        color: rgba(3, 23, 63, 0.55);
         font-size: 18px;
-        margin-right: 0.25rem;
       }
 
       .branch-card:active {

@@ -19,18 +19,23 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
   selector: 'app-donate',
   template: `
     <ion-page>
-      <div class="donate-hero">
-        <button class="hero-back" (click)="goBack()" type="button">
-          <ion-icon name="chevron-back" aria-hidden="true"></ion-icon>
-          <span>Back</span>
-        </button>
-        <h1>Make a Donation</h1>
-        <p>Support your local church safely and securely.</p>
+      <div class="donate-hero app-header">
+        <div class="app-header__inner">
+          <button class="hero-back app-header__back" (click)="goBack()" type="button">
+            <ion-icon name="chevron-back" aria-hidden="true"></ion-icon>
+            <span>Back</span>
+          </button>
+          <div class="app-header__copy">
+            <h1 class="app-header__title">Make a Donation</h1>
+            <p class="app-header__subtitle">Support your local church safely and securely.</p>
+          </div>
+        </div>
       </div>
 
       <ion-content fullscreen class="donate-content">
-        <div class="donate-surface">
-          <ng-container *ngIf="branch; else missingBranch">
+        <div class="surface donate-surface">
+          <div class="surface__content">
+            <ng-container *ngIf="branch; else missingBranch">
             <div class="branch-card" (click)="goToBranches()" tabindex="0" role="button">
               <div class="branch-icon">
                 <ion-icon name="location"></ion-icon>
@@ -108,14 +113,14 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
                 {{ nativeError }}
               </ion-text>
             </form>
-          </ng-container>
-
-          <ng-template #missingBranch>
+            </ng-container>
+            <ng-template #missingBranch>
             <div class="empty-state">
               <p>Please choose a branch before continuing.</p>
               <ion-button expand="block" (click)="goToBranches()">Choose a branch</ion-button>
             </div>
           </ng-template>
+          </div>
         </div>
       </ion-content>
     </ion-page>
@@ -132,54 +137,8 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
       }
 
       .donate-hero {
-        background: linear-gradient(180deg, #081b61, #0b1d73 70%);
-        padding: calc(1.4rem + env(safe-area-inset-top, 0px)) 1.25rem 1.1rem; /* safe-area aware header */
-        color: #fff;
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        box-shadow: 0 18px 45px rgba(2, 18, 54, 0.35);
         position: relative;
         z-index: 1;
-      }
-
-      .donate-hero h1 {
-        margin: 0;
-        font-size: 1.75rem;
-        font-weight: 600;
-      }
-
-      .donate-hero p {
-        margin: 0;
-        font-size: 0.95rem;
-        opacity: 0.85;
-      }
-
-      .hero-back {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        color: #ffffff;
-        font-size: 0.95rem;
-        font-weight: 500;
-        cursor: pointer;
-        margin-bottom: 0.5rem;
-        padding: 0.4rem 0;
-        min-height: 48px;
-        border: none;
-        background: transparent;
-        outline: none;
-        z-index: 2;
-        pointer-events: auto;
-      }
-
-      .donate-surface {
-        background: #f5f6fa;
-        border-top-left-radius: 24px;
-        border-top-right-radius: 24px;
-        padding: 1.5rem 1.25rem 2rem;
-        min-height: 100vh;
       }
 
       .branch-card {
