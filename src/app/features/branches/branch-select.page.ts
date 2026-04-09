@@ -16,10 +16,10 @@ import { PublicBranch } from '../../core/models/branch.model';
     <ion-page>
       <ion-content fullscreen class="branch-content">
         <div class="branch-hero">
-          <div class="hero-back" (click)="goBack()">
-            <ion-icon name="chevron-back" aria-hidden="true"></ion-icon>
-            <span>Back</span>
-          </div>
+        <button class="hero-back" type="button" (click)="goBack()">
+          <ion-icon name="chevron-back" aria-hidden="true"></ion-icon>
+          <span>Back</span>
+        </button>
           <div class="hero-copy">
             <h1>Choose your church</h1>
             <p class="hero-subtitle">Your donation goes directly to the selected branch.</p>
@@ -151,7 +151,7 @@ import { PublicBranch } from '../../core/models/branch.model';
 
       .branch-hero {
         background: linear-gradient(180deg, #081b61, #0b1d73 80%);
-        padding: calc(1rem + env(safe-area-inset-top, 0px)) 1rem 0.6rem; /* safe-area-aware header spacing */
+        padding: calc(1.4rem + env(safe-area-inset-top, 0px)) 1rem 0.6rem; /* safe-area-aware header spacing */
         border-bottom-left-radius: 28px;
         border-bottom-right-radius: 28px;
         box-shadow: 0 18px 45px rgba(2, 18, 54, 0.35);
@@ -166,6 +166,12 @@ import { PublicBranch } from '../../core/models/branch.model';
         font-weight: 500;
         cursor: pointer;
         margin-bottom: 0.6rem;
+        padding: 0.4rem 0.4rem;
+        min-height: 44px;
+        border-radius: 999px;
+        border: none;
+        background: transparent;
+        justify-content: flex-start;
       }
 
       .hero-copy {
