@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
 
-const APP_TITLE = 'COP Italy';
+const APP_TITLE = 'C.O.P Italy';
 const TAGLINE = 'Giving • Prayer • Events • Devotionals';
 const SPLASH_DURATION_MS = 5000;
 
