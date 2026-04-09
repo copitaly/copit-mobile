@@ -61,29 +61,59 @@ import { PublicBranch } from '../../core/models/branch.model';
               </div>
             </div>
 
-            <ion-list *ngIf="!loading && branches.length > 0" lines="none">
-              <ion-item
-                button
-                [detail]="false"
-                lines="none"
-              *ngFor="let branch of branches"
-              (click)="selectBranch(branch)"
-              class="branch-card"
-            >
-                <!-- disable Ionic detail indicator so only our chevron shows -->
-                <ion-icon name="location" slot="start" aria-hidden="true"></ion-icon>
+            <ng-container *ngIf="!loading && branches.length > 0">
+              <ng-container *ngIf="isSearching; else groupedList">
+                <ion-list lines="none">
+                  <ion-item
+                    button
+                    [detail]="false"
+                    lines="none"
+                    *ngFor="let branch of filteredBranches"
+                    (click)="selectBranch(branch)"
+                    class="branch-card"
+                  >
+                    <ion-icon name="location" slot="start" aria-hidden="true"></ion-icon>
 
-                <ion-label>
-                  <div class="label-top">
-                    <h2>{{ branch.name }}</h2>
-                    <p class="hierarchy" *ngIf="getHierarchy(branch) as hierarchy">{{ hierarchy }}</p>
-                    <p class="code" *ngIf="branch.branch_code">{{ branch.branch_code }}</p>
-                  </div>
-                </ion-label>
+                    <ion-label>
+                      <div class="label-top">
+                        <h2>{{ branch.name }}</h2>
+                        <p class="hierarchy" *ngIf="getHierarchy(branch) as hierarchy">{{ hierarchy }}</p>
+                        <p class="code" *ngIf="branch.branch_code">{{ branch.branch_code }}</p>
+                      </div>
+                    </ion-label>
 
-                <ion-icon name="chevron-forward" slot="end" aria-hidden="true"></ion-icon>
-              </ion-item>
-            </ion-list>
+                    <ion-icon name="chevron-forward" slot="end" aria-hidden="true"></ion-icon>
+                  </ion-item>
+                </ion-list>
+              </ng-container>
+              <ng-template #groupedList>
+                <div *ngFor="let section of groupedBranches" class="district-section">
+                  <div class="district-header">{{ section.district || 'Other districts' }}</div>
+                  <ion-list lines="none">
+                    <ion-item
+                      button
+                      [detail]="false"
+                      lines="none"
+                      *ngFor="let branch of section.branches"
+                      (click)="selectBranch(branch)"
+                      class="branch-card"
+                    >
+                      <ion-icon name="location" slot="start" aria-hidden="true"></ion-icon>
+
+                      <ion-label>
+                        <div class="label-top">
+                          <h2>{{ branch.name }}</h2>
+                          <p class="hierarchy" *ngIf="getHierarchy(branch) as hierarchy">{{ hierarchy }}</p>
+                          <p class="code" *ngIf="branch.branch_code">{{ branch.branch_code }}</p>
+                        </div>
+                      </ion-label>
+
+                      <ion-icon name="chevron-forward" slot="end" aria-hidden="true"></ion-icon>
+                    </ion-item>
+                  </ion-list>
+                </div>
+              </ng-template>
+            </ng-container>
           </div>
         </div>
       </ion-content>
@@ -310,7 +340,8 @@ import { PublicBranch } from '../../core/models/branch.model';
         box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
         --background: transparent;
         align-items: center;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+        will-change: transform;
       }
 
       .branch-card ion-label {
@@ -333,7 +364,21 @@ import { PublicBranch } from '../../core/models/branch.model';
 
       .branch-card:active {
         transform: scale(0.98);
-        box-shadow: 0 12px 22px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+      }
+
+      .district-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+      }
+
+      .district-header {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: rgba(3, 23, 63, 0.7);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
       }
 
       .label-top {
@@ -428,6 +473,26 @@ export class BranchSelectPage implements OnInit {
 
   onSearchChange(): void {
     this.loadBranches(this.searchTerm);
+  }
+
+  get isSearching(): boolean {
+    return Boolean(this.searchTerm?.trim());
+  }
+
+  get filteredBranches(): PublicBranch[] {
+    return this.branches;
+  }
+
+  get groupedBranches(): { district: string | null; branches: PublicBranch[] }[] {
+    const groups = new Map<string | null, PublicBranch[]>();
+    this.branches.forEach(branch => {
+      const key = branch.district?.name?.trim() || 'Other districts';
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(branch);
+    });
+    return Array.from(groups.entries()).map(([district, branches]) => ({ district, branches }));
   }
 
   selectBranch(branch: PublicBranch): void {
