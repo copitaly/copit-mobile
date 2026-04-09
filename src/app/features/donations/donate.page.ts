@@ -20,10 +20,10 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
   template: `
     <ion-page>
       <div class="donate-hero">
-        <div class="hero-back" (click)="goBack()">
+        <button class="hero-back" (click)="goBack()" type="button">
           <ion-icon name="chevron-back" aria-hidden="true"></ion-icon>
           <span>Back</span>
-        </div>
+        </button>
         <h1>Make a Donation</h1>
         <p>Support your local church safely and securely.</p>
       </div>
@@ -31,12 +31,15 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
       <ion-content fullscreen class="donate-content">
         <div class="donate-surface">
           <ng-container *ngIf="branch; else missingBranch">
-            <div class="branch-card">
+            <div class="branch-card" (click)="goToBranches()" tabindex="0" role="button">
               <div class="branch-icon">
                 <ion-icon name="location"></ion-icon>
               </div>
               <div class="branch-info">
-                <h2>{{ branch.name }}</h2>
+                <div class="branch-title-row">
+                  <h2>{{ branch.name }}</h2>
+                  <span class="change-link" (click)="goToBranches(); $event.stopPropagation()">Change</span>
+                </div>
                 <p *ngIf="branch.district || branch.area">{{ getHierarchy(branch) }}</p>
               </div>
               <div class="branch-code" *ngIf="branch.branch_code">
@@ -74,12 +77,13 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
               <ion-item class="custom-amount" fill="solid">
                 <ion-input
                   type="number"
-                  formControlName="amount"
-                  placeholder="Custom amount"
+                  [value]="customAmountInputValue"
+                  placeholder="Enter custom amount"
                   inputmode="decimal"
                   pattern="[0-9]*"
+                  (ionInput)="handleCustomAmountInput($event)"
                 ></ion-input>
-              </ion-item>
+                </ion-item>
 
               <ion-item class="custom-email" fill="solid">
                 <ion-input type="email" placeholder="Email (optional)" formControlName="donor_email"></ion-input>
@@ -89,16 +93,16 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
                 {{ errorMessage }}
               </ion-text>
 
-              <ion-button
-                type="submit"
-                expand="block"
-                class="cta"
-                [disabled]="form.invalid || nativeLoading"
-              >
-                <ion-icon name="lock-closed" slot="start"></ion-icon>
-                <span *ngIf="!nativeLoading">Give {{ displayAmount() }} Securely</span>
-                <ion-spinner *ngIf="nativeLoading" name="crescent" slot="start"></ion-spinner>
-              </ion-button>
+                <ion-button
+                  type="submit"
+                  expand="block"
+                  class="cta"
+                  [disabled]="!ctaEnabled || nativeLoading"
+                >
+                  <ion-icon name="lock-closed" slot="start"></ion-icon>
+                  <span>{{ ctaLabel }}</span>
+                  <ion-spinner *ngIf="nativeLoading" name="crescent" slot="start"></ion-spinner>
+                </ion-button>
               <p class="trust-text">Payments processed securely via Stripe</p>
               <ion-text color="danger" *ngIf="nativeError" class="form-error">
                 {{ nativeError }}
@@ -129,7 +133,7 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
 
       .donate-hero {
         background: linear-gradient(180deg, #081b61, #0b1d73 70%);
-        padding: 1.1rem 1.25rem 1rem;
+        padding: calc(1rem + env(safe-area-inset-top, 0px)) 1.25rem 1.1rem; /* safe-area aware header */
         color: #fff;
         display: flex;
         flex-direction: column;
@@ -149,6 +153,22 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
         opacity: 0.85;
       }
 
+      .hero-back {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: #ffffff;
+        font-size: 0.95rem;
+        font-weight: 500;
+        cursor: pointer;
+        margin-bottom: 0.5rem;
+        padding: 0.35rem 0;
+        min-height: 44px;
+        border: none;
+        background: transparent;
+      }
+
       .donate-surface {
         background: #f5f6fa;
         border-top-left-radius: 24px;
@@ -166,6 +186,7 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
         gap: 0.9rem;
         padding: 1rem;
         margin-bottom: 1rem;
+        cursor: pointer;
       }
 
       .branch-icon {
@@ -178,6 +199,12 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
         align-items: center;
         color: #0b1d73;
         font-size: 1.2rem;
+      }
+
+      .branch-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
       }
 
       .branch-info h2 {
@@ -201,6 +228,21 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
         letter-spacing: 0.2em;
       }
 
+      .branch-title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .change-link {
+        font-size: 0.8rem;
+        color: rgba(3, 23, 63, 0.6);
+        cursor: pointer;
+        white-space: nowrap;
+        align-self: center;
+      }
+
       .donate-form {
         display: flex;
         flex-direction: column;
@@ -217,7 +259,7 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
       .grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.6rem;
+        gap: 0.45rem;
       }
 
       .chip {
@@ -267,10 +309,14 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
       .cta {
         --background: #d9a30a;
         --color: #011b2d;
-        font-weight: 600;
+        font-weight: 700;
         border-radius: 999px;
         height: 52px;
         box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+      }
+
+      .cta:disabled {
+        --color: rgba(1, 27, 45, 0.7);
       }
 
       .cta.native {
@@ -283,6 +329,7 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
 
       .cta ion-icon {
         font-size: 1.1rem;
+        margin-right: 0.35rem;
       }
 
       .trust-text {
@@ -325,6 +372,8 @@ export class DonatePage implements OnDestroy {
   nativeLoading = false;
   nativeError?: string;
   branch: PublicBranch | null = null;
+  customAmountInputValue = '';
+  selectedAmountPreset: number | null = null;
   private branchSub: Subscription;
   private pendingMobileDonationId?: number;
 
@@ -475,10 +524,40 @@ export class DonatePage implements OnDestroy {
 
   setAmount(value: number): void {
     this.form.get('amount')?.setValue(value);
+    this.selectedAmountPreset = value;
+    this.customAmountInputValue = '';
   }
 
   isAmount(value: number): boolean {
     return Number(this.form.get('amount')?.value ?? 0) === value;
+  }
+
+  handleCustomAmountInput(event: CustomEvent): void {
+    const inputValue = event.detail?.value ?? '';
+    this.customAmountInputValue = inputValue;
+    const numeric = Number(inputValue);
+    if (!Number.isNaN(numeric) && numeric > 0) {
+      this.form.get('amount')?.setValue(numeric);
+    } else {
+      this.form.get('amount')?.setValue(null);
+    }
+    this.selectedAmountPreset = null;
+  }
+
+  get ctaEnabled(): boolean {
+    const amount = Number(this.form.get('amount')?.value ?? 0);
+    return amount > 0 && this.form.valid;
+  }
+
+  get ctaLabel(): string {
+    if (this.nativeLoading) {
+      return 'Processing…';
+    }
+    const amount = Number(this.form.get('amount')?.value ?? 0);
+    if (amount <= 0) {
+      return 'Choose an amount to continue';
+    }
+    return `Give €${amount.toFixed(2)} securely`;
   }
 
   displayAmount(): string {
