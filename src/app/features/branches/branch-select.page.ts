@@ -52,12 +52,13 @@ import { PublicBranch } from '../../core/models/branch.model';
             <ion-list *ngIf="branches.length > 0" lines="none">
               <ion-item
                 button
-                detail
+                [detail]="false"
                 lines="none"
-                *ngFor="let branch of branches"
-                (click)="selectBranch(branch)"
-                class="branch-card"
-              >
+              *ngFor="let branch of branches"
+              (click)="selectBranch(branch)"
+              class="branch-card"
+            >
+                <!-- disable Ionic detail indicator so only our chevron shows -->
                 <ion-icon name="location" slot="start" aria-hidden="true"></ion-icon>
 
                 <ion-label>
@@ -108,7 +109,7 @@ import { PublicBranch } from '../../core/models/branch.model';
 
       .branch-hero {
         background: linear-gradient(180deg, #081b61, #0b1d73 80%);
-        padding: 0.8rem 1rem 0.6rem;
+        padding: calc(1rem + env(safe-area-inset-top, 0px)) 1rem 0.6rem; /* safe-area-aware header spacing */
         border-bottom-left-radius: 28px;
         border-bottom-right-radius: 28px;
         box-shadow: 0 18px 45px rgba(2, 18, 54, 0.35);
@@ -122,7 +123,7 @@ import { PublicBranch } from '../../core/models/branch.model';
         font-size: 0.95rem;
         font-weight: 500;
         cursor: pointer;
-        margin-bottom: 0.4rem;
+        margin-bottom: 0.6rem;
       }
 
       .hero-copy {
@@ -245,7 +246,10 @@ import { PublicBranch } from '../../core/models/branch.model';
         margin: 0;
         font-size: 0.85rem;
         color: rgba(3, 23, 63, 0.65);
-        white-space: nowrap;
+        white-space: normal;
+        line-height: 1.4;
+        word-break: break-word;
+        /* allow two lines of hierarchy without truncation */
       }
 
       .code {

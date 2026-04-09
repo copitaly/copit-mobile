@@ -229,3 +229,188 @@ Later you can add:
 "Saved churches"
 "Recently donated"
 "My local church"
+---------------------------------------------------------------------
+Add Apple Pay / Google Pay (one config change away)
+Thought for 8s
+
+Yes — and it’s a bit more than one config change.
+
+For PaymentSheet to show Apple Pay and Google Pay, you need both code config and native platform setup.
+
+Apple Pay needs:
+
+an Apple Merchant ID
+an Apple Pay certificate in Stripe
+the Apple Pay capability enabled in Xcode
+PaymentSheet configured with applePay using your merchant ID and business country code.
+
+Google Pay needs:
+
+Google Pay enabled in your Android app manifest with com.google.android.gms.wallet.api.enabled=true
+Stripe Android/PaymentSheet setup on Android
+a device/account with Google Pay available for testing.
+
+Also, Stripe’s mobile docs make clear that PaymentSheet is the recommended in-app UI and can surface Apple Pay and Google Pay when configured.
+
+What to do next
+
+For Apple Pay:
+
+Create a Merchant ID in Apple Developer.
+In Stripe Dashboard, generate the Apple Pay certificate for that Merchant ID.
+In Xcode, add Signing & Capabilities → Apple Pay and select that Merchant ID.
+In your PaymentSheet config, pass:
+merchantId
+merchantCountryCode
+
+For Google Pay:
+
+Add this inside the Android <application> tag:
+<meta-data
+  android:name="com.google.android.gms.wallet.api.enabled"
+  android:value="true" />
+Make sure your Android setup supports Google Pay and your test device has a payment method configured.
+In your app code
+
+Your StripePaymentService will need PaymentSheet config extended to include:
+
+Apple Pay config
+Google Pay config
+likely merchant display name / country code values from environment
+Recommended rollout
+
+Do Google Pay first on Android, because it’s usually faster to validate.
+Then do Apple Pay on iPhone once the Merchant ID/certificate/capability are in place.
+
+Use this in the mobile repo:
+
+codex "Add Apple Pay and Google Pay support to the existing Ionic Angular + Capacitor Stripe PaymentSheet integration.
+
+Context:
+- Native Stripe PaymentSheet flow is already working end-to-end.
+- We want PaymentSheet to surface Apple Pay on iOS and Google Pay on Android.
+- The app uses a Capacitor-compatible Stripe plugin and a StripePaymentService wrapper.
+- Keep the existing native payment flow intact.
+
+Tasks:
+1. Inspect the current StripePaymentService and PaymentSheet configuration.
+2. Extend environment config with the minimum needed values:
+   - stripeMerchantDisplayName
+   - stripeCountryCode
+   - applePayMerchantId
+   - googlePayCountryCode if needed by the plugin/config
+3. Update StripePaymentService so PaymentSheet includes:
+   - Apple Pay configuration on iOS
+   - Google Pay configuration on Android
+4. Add the required Android manifest metadata for Google Pay if not already present:
+   <meta-data android:name=\"com.google.android.gms.wallet.api.enabled\" android:value=\"true\" />
+5. Identify and report the required iOS manual setup steps that cannot be fully automated in code:
+   - Apple Merchant ID
+   - Apple Pay capability in Xcode
+   - Stripe Apple Pay certificate setup
+6. Do not redesign the donate UI.
+7. Keep hosted checkout removed/hidden as currently configured.
+8. Add concise logs indicating whether Apple Pay / Google Pay config is being enabled in PaymentSheet.
+9. At the end, report:
+   - files changed
+   - what manual Apple Pay setup is still required
+   - how to test Google Pay on Android
+   - how to test Apple Pay on iPhone"
+
+Before you do Apple Pay, make sure what you’re selling is eligible for external payment handling in-app on iOS. Stripe notes that app payment rules differ for digital goods/content/subscriptions in some cases.
+----------------------------------------------------------------------------------------------------------------------------
+
+Brief summary
+
+Keeping Stripe Connect is the right call for your current architecture. With one branch = one connected account, branch selection is not just reporting metadata anymore; it directly affects payout routing and donation eligibility, so you should keep branch selection in the donor flow, but make it faster and smarter rather than removing it. Your docs also show the current flow is already production-ready end to end, including branch-specific routing, native/mobile payment support, webhook reconciliation, and verified success screens.
+
+So the best app changes are:
+
+Do not remove branch selection
+Because funds are routed per branch account, the donor must still choose a branch before payment. Your current flow and payment architecture depend on that.
+Make branch selection faster
+Keep /branches, but add:
+“Recent branches”
+“My branch” pinned at top
+auto-select last used branch on return visits
+district/area shortcuts
+This keeps Stripe Connect intact while reducing friction. Your current branch step already has search and clean cards, so this is an enhancement, not a rewrite.
+Add Quick Give after branch is known
+Since branch is required for routing, Quick Give should work like:
+Home shows “Give again to Milan Central”
+tap goes straight to /donate with last branch preselected
+user can still change branch
+This is better than skipping branch universally.
+Keep donate as the main optimization point
+Your donate screen already has category chips, preset amounts, custom amount, optional email, and recurring toggle stub. That means the biggest win is not a new screen, but smarter defaults:
+remember last category
+remember last amount
+prefill donor email if previously used
+show category-specific presets
+move recurring from stub to working feature later
+
+Upgrade the success screen into a re-donation loop
+You already have verified summary + “Give again”. Make “Give again” actually reuse:
+branch
+category
+amount
+That creates a much stronger repeat-donation path.
+Add branch availability states in donor app
+Since donations must only go to onboarded, active branches, donor-facing branch cards should visibly show:
+Available
+Temporarily unavailable
+Setup in progress
+Your onboarding model already depends on donation-enabled status, so exposing that state in the app will reduce failed attempts and confusion.
+Do not merge away branch identity
+Because Stripe Connect needs branch-level readiness and branch-level routing, the app should reinforce trust by showing the selected branch clearly on donate and success screens. Your current UI already does that well, so preserve it.
+
+My recommended priority order is:
+
+P1: recent branch + last-used branch preselection
+P2: quick give from home using remembered branch
+P3: smarter donate defaults
+P4: donor-visible branch availability state
+P5: make recurring actually work
+
+Codex CLI command
+
+codex "Refactor the donor mobile app UX while keeping Stripe Connect and branch-based payout routing fully intact.
+
+Context:
+- One branch = one Stripe connected account.
+- Branch selection must remain part of the payment flow because payouts are routed per branch.
+- Current screens already exist: /home, /branches, /donate, /donate/success, /donate/cancel.
+- Current donate flow and verification logic are already working.
+
+Implement these product changes only:
+1. Keep the branch selection step, but optimize it:
+   - Add a 'Recent branches' section at the top of /branches.
+   - Persist the last selected branch locally.
+   - If a last-selected branch exists, show it pinned first as 'My branch'.
+   - Keep search and full branch list below.
+2. Improve Home screen:
+   - Add a 'Give again' card when a previous donation context exists locally.
+   - Show last branch, last category, and last amount.
+   - CTA should navigate directly to /donate with that branch preselected.
+   - Also add quick amount buttons that still respect the selected/remembered branch.
+3. Improve Donate screen:
+   - Prefill last-used category and amount if available.
+   - Prefill donor email if previously entered.
+   - Keep branch clearly visible and add a 'Change branch' action.
+   - Add category-specific preset amount behavior without breaking custom amount entry.
+4. Improve Success screen:
+   - Make 'Give again' reuse previous branch/category/amount.
+   - Keep backend verification as the source of truth.
+5. Add donor-facing branch availability handling:
+   - If a branch is not donation-enabled, show a disabled/select-blocked state with clear messaging.
+   - Do not allow checkout for unavailable branches.
+6. Keep existing Stripe Connect payment flow, verification logic, and current routes intact.
+7. Do not change backend payment architecture unless strictly required.
+8. Keep implementation production-ready and consistent with the existing visual system.
+
+Deliver:
+- updated Ionic/Angular components
+- any required local persistence service
+- route/state updates
+- safe guards for missing branch context
+- concise notes in code where behavior changed"```
