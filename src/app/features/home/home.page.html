@@ -1,6 +1,6 @@
 ﻿<ion-page>
   <ion-content fullscreen class="home-content">
-    <div class="hero">
+    <div class="hero hero-v2">
       <div class="hero-content">
         <p class="hero-label">C.O.P Italy</p>
         <h1>Give to Your Local Church</h1>
@@ -10,27 +10,25 @@
     </div>
 
     <section class="trust-row">
-      <article class="trust-card">
-        <div class="icon-circle">
-          <ion-icon name="lock-closed" aria-hidden="true"></ion-icon>
-        </div>
-        <h3>Secure</h3>
-        <p>Encrypted giving</p>
+      <article class="trust-pill">
+        <ion-icon name="lock-closed" aria-hidden="true"></ion-icon>
+        <span>Secure</span>
       </article>
-      <article class="trust-card">
-        <div class="icon-circle">
-          <ion-icon name="flash" aria-hidden="true"></ion-icon>
-        </div>
-        <h3>Instant</h3>
-        <p>Real-time processing</p>
+      <article class="trust-pill">
+        <ion-icon name="flash" aria-hidden="true"></ion-icon>
+        <span>Instant</span>
       </article>
-      <article class="trust-card">
-        <div class="icon-circle">
-          <ion-icon name="document-text" aria-hidden="true"></ion-icon>
-        </div>
-        <h3>Receipt</h3>
-        <p>Tax-ready records</p>
+      <article class="trust-pill">
+        <ion-icon name="document-text" aria-hidden="true"></ion-icon>
+        <span>Receipts</span>
       </article>
+    </section>
+
+    <section class="shortcut-card" (click)="goToBranches()">
+      <div>
+        <h3 class="shortcut-title">Choose your branch</h3>
+      </div>
+      <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
     </section>
 
     <section class="coming-soon">
