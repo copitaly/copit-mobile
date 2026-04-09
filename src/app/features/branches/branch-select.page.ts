@@ -18,7 +18,7 @@ import { PublicBranch } from '../../core/models/branch.model';
         <div class="branch-hero app-header">
           <div class="app-header__inner">
             <button class="hero-back app-header__back" type="button" (click)="goBack()">
-              <ion-icon name="chevron-back" aria-hidden="true"></ion-icon>
+              <ion-icon class="app-back-icon" name="chevron-back" aria-hidden="true"></ion-icon>
               <span>Back</span>
             </button>
             <div class="app-header__copy">
