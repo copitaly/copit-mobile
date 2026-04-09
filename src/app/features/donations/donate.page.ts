@@ -133,12 +133,14 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
 
       .donate-hero {
         background: linear-gradient(180deg, #081b61, #0b1d73 70%);
-        padding: calc(1rem + env(safe-area-inset-top, 0px)) 1.25rem 1.1rem; /* safe-area aware header */
+        padding: calc(1.4rem + env(safe-area-inset-top, 0px)) 1.25rem 1.1rem; /* safe-area aware header */
         color: #fff;
         display: flex;
         flex-direction: column;
         gap: 0.25rem;
         box-shadow: 0 18px 45px rgba(2, 18, 54, 0.35);
+        position: relative;
+        z-index: 1;
       }
 
       .donate-hero h1 {
@@ -163,10 +165,13 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
         font-weight: 500;
         cursor: pointer;
         margin-bottom: 0.5rem;
-        padding: 0.35rem 0;
-        min-height: 44px;
+        padding: 0.4rem 0;
+        min-height: 48px;
         border: none;
         background: transparent;
+        outline: none;
+        z-index: 2;
+        pointer-events: auto;
       }
 
       .donate-surface {
@@ -509,7 +514,9 @@ export class DonatePage implements OnDestroy {
   }
 
   goBack(): void {
-    this.router.navigate(['/branches']);
+    this.router.navigate(['/branches']).catch(() => {
+      window.location.href = '/branches';
+    });
   }
 
   setCategory(option: string): void {
