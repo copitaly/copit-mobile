@@ -338,6 +338,7 @@ import { PublicBranch } from '../../core/models/branch.model';
         display: flex;
         flex-direction: column;
         gap: 0.25rem;
+        min-width: 0;
       }
 
         h2 {
@@ -354,8 +355,9 @@ import { PublicBranch } from '../../core/models/branch.model';
           font-weight: 400;
           line-height: 1.35;
           color: rgba(3, 23, 63, 0.78);
-          white-space: normal;
-          word-break: break-word;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
       .code {
