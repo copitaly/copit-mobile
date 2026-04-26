@@ -13,41 +13,78 @@ import { AuthService } from '../../core/services/auth.service';
   selector: 'app-login',
   template: `
     <ion-page>
-      <div class="auth-hero">
-        <button class="auth-back" type="button" (click)="goHome()">
-          <ion-icon name="chevron-back" aria-hidden="true"></ion-icon>
-          <span>Home</span>
-        </button>
-        <div class="auth-hero__copy">
-          <p class="auth-kicker">Member Access</p>
-          <h1>Sign in</h1>
-          <p>Access your giving profile and keep your details up to date.</p>
-        </div>
-      </div>
-
       <ion-content fullscreen class="auth-content">
-        <div class="auth-card">
-          <form [formGroup]="form" (ngSubmit)="submit()">
-            <ion-item fill="solid" class="auth-field">
-              <ion-input formControlName="identifier" label="Email or phone" labelPlacement="stacked"></ion-input>
-            </ion-item>
-            <ion-item fill="solid" class="auth-field">
-              <ion-input formControlName="password" type="password" label="Password" labelPlacement="stacked"></ion-input>
-            </ion-item>
+        <div class="auth-hero app-header app-header--inner">
+          <div class="app-header__inner">
+            <button class="auth-back app-header__back" type="button" aria-label="Back" (click)="goHome()">
+              <ion-icon class="app-back-icon" name="arrow-back" aria-hidden="true"></ion-icon>
+            </button>
+            <div class="app-header__copy auth-hero__copy">
+              <h1 class="app-header__title">Welcome back</h1>
+              <p class="app-header__subtitle">Sign in to continue</p>
+            </div>
+          </div>
+        </div>
 
-            <ion-text color="danger" *ngIf="errorMessage" class="auth-error">
-              {{ errorMessage }}
-            </ion-text>
+        <div class="surface auth-surface">
+          <div class="surface__content auth-surface__content">
+            <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+              <label class="auth-label" for="login-identifier">Email or phone number</label>
+              <ion-item fill="solid" class="auth-field">
+                <ion-input
+                  id="login-identifier"
+                  formControlName="identifier"
+                  placeholder="you@example.com"
+                  autocomplete="username"
+                ></ion-input>
+              </ion-item>
 
-            <ion-button expand="block" type="submit" class="auth-submit" [disabled]="form.invalid || loading">
-              <ion-spinner *ngIf="loading" slot="start" name="crescent"></ion-spinner>
-              <span>Continue</span>
-            </ion-button>
-          </form>
+              <label class="auth-label" for="login-password">Password</label>
+              <ion-item fill="solid" class="auth-field">
+                <ion-input
+                  id="login-password"
+                  formControlName="password"
+                  [type]="showPassword ? 'text' : 'password'"
+                  placeholder="Password"
+                  autocomplete="current-password"
+                ></ion-input>
+                <button
+                  type="button"
+                  class="password-toggle"
+                  aria-label="Toggle password visibility"
+                  (click)="togglePasswordVisibility()"
+                >
+                  <ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'" aria-hidden="true"></ion-icon>
+                </button>
+              </ion-item>
 
-          <button class="auth-link" type="button" (click)="goToRegister()">
-            Create an account
-          </button>
+              <div class="forgot-row">
+                <button type="button" class="forgot-link" (click)="onForgotPassword()">
+                  Forgot password?
+                </button>
+              </div>
+
+              <div class="auth-feedback" [class.auth-feedback--visible]="!!errorMessage">
+                <ion-text color="danger" *ngIf="errorMessage" class="auth-error">
+                  {{ errorMessage }}
+                </ion-text>
+              </div>
+
+              <ion-button expand="block" type="submit" class="auth-submit" [disabled]="!canSubmit">
+                <ion-spinner *ngIf="loading" slot="start" name="crescent"></ion-spinner>
+                <span>{{ loading ? 'Signing in...' : 'Continue' }}</span>
+              </ion-button>
+            </form>
+
+            <p class="auth-register-copy">
+              Don't have an account?
+              <button class="auth-link" type="button" (click)="goToRegister()">Create an account</button>
+            </p>
+
+            <p class="auth-legal">
+              By continuing you agree to our Terms &amp; Privacy Policy.
+            </p>
+          </div>
         </div>
       </ion-content>
     </ion-page>
@@ -58,85 +95,212 @@ import { AuthService } from '../../core/services/auth.service';
         display: block;
       }
 
-      .auth-hero {
-        background: linear-gradient(180deg, #081b61, #0b1d73 80%);
-        color: #fff;
-        padding: calc(env(safe-area-inset-top) + 1.5rem) 1.25rem 1.25rem;
+      ion-page {
+        background: #0b1d73;
       }
 
-      .auth-back {
-        border: 0;
-        background: transparent;
-        color: rgba(255, 255, 255, 0.86);
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        padding: 0;
-        margin-bottom: 1rem;
-        font: inherit;
+      ion-content.auth-content {
+        --background: #0b1d73;
+        --keyboard-offset: 0px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
       }
 
-      .auth-hero__copy h1,
-      .auth-hero__copy p,
-      .auth-kicker {
-        margin: 0;
-      }
-
-      .auth-kicker {
-        opacity: 0.68;
-        text-transform: uppercase;
-        letter-spacing: 0.2em;
-        font-size: 0.72rem;
-        margin-bottom: 0.45rem;
-      }
-
-      .auth-hero__copy h1 {
-        font-size: 2rem;
-        margin-bottom: 0.4rem;
-      }
-
-      .auth-hero__copy p:last-child {
-        color: rgba(255, 255, 255, 0.88);
+      .auth-content::part(scroll) {
+        flex: 1;
+        min-height: 100%;
+        display: flex;
+        flex-direction: column;
       }
 
       .auth-content {
-        --background: #f4f6fb;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
       }
 
-      .auth-card {
-        margin: -0.25rem 1.25rem 1.5rem;
-        background: #fff;
-        border-radius: 22px;
-        padding: 1.25rem;
-        box-shadow: 0 14px 36px rgba(6, 21, 74, 0.12);
+      .auth-hero {
+        width: 100%;
+        padding-bottom: 1.75rem;
+      }
+
+      .auth-back {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.14);
+        backdrop-filter: blur(6px);
+        justify-content: center;
+        padding: 0;
+        min-height: 40px;
+      }
+
+      .auth-back ion-icon {
+        font-size: 1.1rem;
+      }
+
+      .auth-hero__copy {
+        text-align: center;
+        align-items: center;
+      }
+
+      .auth-surface {
+        margin-top: -0.08rem;
+        padding-top: 1rem;
+        box-shadow: 0 -6px 22px rgba(2, 18, 54, 0.08);
+        border-radius: 24px 24px 0 0;
+      }
+
+      .auth-surface__content {
+        width: 100%;
+        gap: 0;
+        padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+      }
+
+      .auth-form {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+
+      .auth-label {
+        display: block;
+        margin: 0 0 0.42rem;
+        color: #304468;
+        font-size: 0.9rem;
+        font-weight: 600;
+        line-height: 1.3;
       }
 
       .auth-field {
-        --background: #f5f7fc;
-        --border-radius: 16px;
-        margin-bottom: 0.9rem;
+        --background: #f2f3f6;
+        --border-radius: 18px;
+        --padding-start: 0.65rem;
+        --inner-padding-end: 0.35rem;
+        --inner-padding-top: 0.42rem;
+        --inner-padding-bottom: 0.42rem;
+        margin-bottom: 0.95rem;
+        border: 1px solid rgba(47, 66, 107, 0.12);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+        transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+        overflow: hidden;
+        border-radius: 999px;
+      }
+
+      .auth-field.item-has-focus,
+      .auth-field.ion-focused {
+        --background: #f7f9ff;
+        border-color: rgba(32, 59, 144, 0.48);
+        box-shadow: 0 0 0 3px rgba(32, 59, 144, 0.12);
+      }
+
+      .forgot-row {
+        display: flex;
+        justify-content: flex-end;
+        margin: -0.3rem 0 0.72rem;
+      }
+
+      .forgot-link {
+        border: 0;
+        background: transparent;
+        color: #163c9a;
+        font: inherit;
+        font-size: 0.94rem;
+        font-weight: 600;
+        padding: 0;
+      }
+
+      .password-toggle {
+        border: 0;
+        background: transparent;
+        color: rgba(48, 68, 104, 0.54);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        align-self: center;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        margin: 0;
+        padding: 0;
+        opacity: 0.9;
+        line-height: 1;
+      }
+
+      .password-toggle ion-icon {
+        font-size: 1.05rem;
+      }
+
+      .auth-feedback {
+        min-height: 1.6rem;
+        display: flex;
+        align-items: center;
+        margin: 0 0 0.35rem;
+      }
+
+      .auth-feedback--visible {
+        min-height: auto;
       }
 
       .auth-submit {
         --background: #f5b628;
+        --background-hover: #f5b628;
+        --background-activated: #d79d1f;
         --border-radius: 999px;
-        margin-top: 0.6rem;
+        --box-shadow: 0 10px 22px rgba(245, 182, 40, 0.24);
+        margin-top: 0.15rem;
         font-weight: 600;
+        min-height: 52px;
+      }
+
+      .auth-submit.button-disabled {
+        --background: #f2d998;
+        --background-hover: #f2d998;
+        --color: rgba(36, 52, 92, 0.5);
+        --box-shadow: none;
+        opacity: 0.72;
+        filter: saturate(0.8);
+      }
+
+      .auth-register-copy {
+        margin: 1.2rem 0 0;
+        text-align: center;
+        color: #41557a;
+        font-size: 1rem;
+        line-height: 1.45;
       }
 
       .auth-link {
         border: 0;
         background: transparent;
-        color: #0b1d73;
+        color: #163c9a;
         font: inherit;
         font-weight: 600;
-        margin-top: 1rem;
-        width: 100%;
+        padding: 0;
       }
 
       .auth-error {
         display: block;
-        margin: 0.25rem 0 0.5rem;
+        margin: 0;
+        line-height: 1.35;
+      }
+
+      .auth-legal {
+        margin: 1.1rem auto 0;
+        text-align: center;
+        color: rgba(55, 73, 109, 0.76);
+        font-size: 0.88rem;
+        line-height: 1.45;
+        padding: 0 0.4rem 0;
+      }
+
+      @media (max-height: 760px) {
+        .auth-surface {
+          margin-top: -0.06rem;
+          padding-top: 0.95rem;
+        }
       }
     `,
   ],
@@ -149,6 +313,7 @@ export class LoginPage {
 
   loading = false;
   errorMessage = '';
+  showPassword = false;
 
   constructor(
     private readonly authService: AuthService,
@@ -156,8 +321,13 @@ export class LoginPage {
     private readonly router: Router
   ) {}
 
+  get canSubmit(): boolean {
+    const { identifier, password } = this.form.getRawValue();
+    return !!identifier.trim() && !!password.trim() && !this.loading;
+  }
+
   submit(): void {
-    if (this.form.invalid || this.loading) {
+    if (!this.canSubmit) {
       this.form.markAllAsTouched();
       return;
     }
@@ -184,5 +354,13 @@ export class LoginPage {
 
   goHome(): void {
     void this.router.navigate(['/home']);
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
+  }
+
+  onForgotPassword(): void {
+    console.info('[LoginPage] Forgot password route not implemented yet.');
   }
 }
