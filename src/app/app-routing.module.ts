@@ -11,6 +11,18 @@ const routes: Routes = [
     loadComponent: () => import('./features/home/home.page').then(m => m.HomePage)
   },
   {
+    path: 'login',
+    loadComponent: () => import('./features/auth/login.page').then(m => m.LoginPage)
+  },
+  {
+    path: 'register',
+    loadComponent: () => import('./features/auth/register.page').then(m => m.RegisterPage)
+  },
+  {
+    path: 'profile',
+    loadComponent: () => import('./features/auth/profile.page').then(m => m.ProfilePage)
+  },
+  {
     path: 'splash',
     redirectTo: '',
     pathMatch: 'full'

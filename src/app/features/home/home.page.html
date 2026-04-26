@@ -1,8 +1,28 @@
 ﻿<ion-page>
   <ion-content fullscreen class="home-content">
     <div class="hero hero-v2">
+      <ng-container *ngIf="isAuthenticated$ | async as isAuthenticated; else guestAccountButton">
+        <button
+          type="button"
+          class="hero-account"
+          aria-label="Account"
+          (click)="goToAccount(isAuthenticated)"
+        >
+          <ion-icon [name]="isAuthenticated ? 'person-circle' : 'person-outline'" aria-hidden="true"></ion-icon>
+        </button>
+      </ng-container>
+      <ng-template #guestAccountButton>
+        <button
+          type="button"
+          class="hero-account"
+          aria-label="Account"
+          (click)="goToAccount(false)"
+        >
+          <ion-icon name="person-outline" aria-hidden="true"></ion-icon>
+        </button>
+      </ng-template>
       <div class="hero-content">
-        <p class="hero-label">C.O.P Italy</p>
+        <p class="hero-label">C.O.P. ITALY</p>
         <h1>Give to Your Local Church</h1>
         <p class="hero-subtitle">Support your community with tithes, offerings, and special gifts. securely and instantly.</p>
         <ion-button expand="block" class="hero-cta" size="large" (click)="goToBranches()">Give Now</ion-button>
