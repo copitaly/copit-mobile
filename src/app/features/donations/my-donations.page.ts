@@ -188,7 +188,7 @@ import { MemberRecentDonation } from '../../core/models/user.model';
       }
 
       .donation-card {
-        padding: 1.1rem 1.15rem;
+        padding: 0.95rem 1.05rem;
       }
 
       .donation-card__top {
@@ -200,7 +200,7 @@ import { MemberRecentDonation } from '../../core/models/user.model';
       .donation-amount {
         margin: 0 0 0.3rem;
         color: #b98710;
-        font-size: 0.94rem;
+        font-size: 1.04rem;
         font-weight: 700;
         letter-spacing: 0.02em;
       }
@@ -248,9 +248,9 @@ import { MemberRecentDonation } from '../../core/models/user.model';
       .donation-meta {
         display: flex;
         flex-direction: column;
-        gap: 0.65rem;
-        margin-top: 1rem;
-        padding-top: 0.95rem;
+        gap: 0.45rem;
+        margin-top: 0.8rem;
+        padding-top: 0.8rem;
         border-top: 1px solid rgba(3, 23, 63, 0.08);
       }
 
@@ -459,7 +459,16 @@ export class MyDonationsPage implements OnInit {
   }
 
   formatStatus(status: string): string {
-    return status ? status.replace(/_/g, ' ') : 'Pending';
+    switch ((status || '').toLowerCase()) {
+      case 'checkout_created':
+        return 'Pending';
+      case 'paid':
+        return 'Completed';
+      case 'failed':
+        return 'Failed';
+      default:
+        return status ? status.replace(/_/g, ' ') : 'Pending';
+    }
   }
 
   statusClass(status: string): string {
