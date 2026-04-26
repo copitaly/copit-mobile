@@ -151,15 +151,18 @@ import { AuthService } from '../../core/services/auth.service';
 
       .auth-surface {
         margin-top: -0.08rem;
-        padding-top: 1rem;
+        padding-top: 1.25rem;
         box-shadow: 0 -6px 22px rgba(2, 18, 54, 0.08);
         border-radius: 24px 24px 0 0;
       }
 
       .auth-surface__content {
         width: 100%;
+        max-width: 420px;
+        margin: 0 auto;
         gap: 0;
-        padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+        padding-top: 0.35rem;
+        padding-bottom: calc(1.1rem + env(safe-area-inset-bottom));
       }
 
       .auth-form {
@@ -202,7 +205,7 @@ import { AuthService } from '../../core/services/auth.service';
       .forgot-row {
         display: flex;
         justify-content: flex-end;
-        margin: -0.3rem 0 0.72rem;
+        margin: -0.2rem 0 0.8rem;
       }
 
       .forgot-link {
@@ -241,7 +244,7 @@ import { AuthService } from '../../core/services/auth.service';
         min-height: 1.6rem;
         display: flex;
         align-items: center;
-        margin: 0 0 0.35rem;
+        margin: 0 0 0.45rem;
       }
 
       .auth-feedback--visible {
@@ -269,7 +272,7 @@ import { AuthService } from '../../core/services/auth.service';
       }
 
       .auth-register-copy {
-        margin: 1.2rem 0 0;
+        margin: 1.3rem 0 0;
         text-align: center;
         color: #41557a;
         font-size: 1rem;
@@ -292,7 +295,7 @@ import { AuthService } from '../../core/services/auth.service';
       }
 
       .auth-legal {
-        margin: 1.1rem auto 0;
+        margin: 0.95rem auto 0;
         text-align: center;
         color: rgba(55, 73, 109, 0.76);
         font-size: 0.88rem;
@@ -303,7 +306,7 @@ import { AuthService } from '../../core/services/auth.service';
       @media (max-height: 760px) {
         .auth-surface {
           margin-top: -0.06rem;
-          padding-top: 0.95rem;
+          padding-top: 1.1rem;
         }
       }
     `,
