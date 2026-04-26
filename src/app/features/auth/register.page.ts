@@ -121,11 +121,19 @@ import { AuthService } from '../../core/services/auth.service';
                     <ion-input
                       id="register-confirm-password"
                       formControlName="confirm_password"
-                      type="password"
+                      [type]="showConfirmPassword ? 'text' : 'password'"
                       placeholder="Re-enter password"
                       autocomplete="new-password"
                       (ionInput)="clearErrorMessage()"
                     ></ion-input>
+                    <button
+                      type="button"
+                      class="password-toggle"
+                      aria-label="Toggle confirm password visibility"
+                      (click)="toggleConfirmPasswordVisibility()"
+                    >
+                      <ion-icon [name]="showConfirmPassword ? 'eye-off-outline' : 'eye-outline'" aria-hidden="true"></ion-icon>
+                    </button>
                   </ion-item>
                   <p class="field-error" *ngIf="showConfirmRequiredError">Confirm your password.</p>
                   <p class="field-error" *ngIf="showPasswordMismatchError">Your passwords do not match.</p>
@@ -222,11 +230,11 @@ import { AuthService } from '../../core/services/auth.service';
 
       .auth-surface__content {
         width: 100%;
-        max-width: 440px;
+        max-width: 456px;
         margin: 0 auto;
         gap: 0;
         padding-top: 0.35rem;
-        padding-bottom: calc(1.1rem + env(safe-area-inset-bottom));
+        padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
       }
 
       .auth-card {
@@ -255,7 +263,7 @@ import { AuthService } from '../../core/services/auth.service';
 
       .auth-label {
         display: block;
-        margin: 0 0 0.42rem;
+        margin: 0 0 0.5rem;
         color: #304468;
         font-size: 0.9rem;
         font-weight: 600;
@@ -368,12 +376,12 @@ import { AuthService } from '../../core/services/auth.service';
       }
 
       .auth-legal {
-        margin: 0.95rem auto 0;
+        margin: 1.2rem auto 0;
         text-align: center;
         color: rgba(55, 73, 109, 0.76);
         font-size: 0.88rem;
         line-height: 1.45;
-        padding: 0 0.4rem 0;
+        padding: 0 0.6rem 0;
       }
 
       @media (max-width: 420px) {
@@ -410,6 +418,7 @@ export class RegisterPage implements OnDestroy {
   loading = false;
   errorMessage = '';
   showPassword = false;
+  showConfirmPassword = false;
   private errorDismissTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
@@ -470,6 +479,10 @@ export class RegisterPage implements OnDestroy {
 
   togglePasswordVisibility(): void {
     this.showPassword = !this.showPassword;
+  }
+
+  toggleConfirmPasswordVisibility(): void {
+    this.showConfirmPassword = !this.showConfirmPassword;
   }
 
   clearErrorMessage(): void {
