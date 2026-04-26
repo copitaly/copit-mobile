@@ -9,7 +9,9 @@ import {
   AuthTokenResponse,
   MemberLoginRequest,
   MemberProfile,
+  MemberRecentDonation,
   MemberRegisterRequest,
+  PaginatedResponse,
 } from '../models/user.model';
 
 @Injectable({ providedIn: 'root' })
@@ -102,6 +104,33 @@ export class AuthService {
       );
   }
 
+  getMemberDonations(nextPageUrl?: string | null): Observable<PaginatedResponse<MemberRecentDonation>> {
+    const token = this.getStoredAccessToken();
+    if (!token) {
+      return this.refreshAccessToken().pipe(
+        switchMap((refreshedToken) => this.fetchMemberDonations(refreshedToken, nextPageUrl)),
+        catchError((error) => this.handleRefreshFailure(error).pipe(
+          switchMap(() => throwError(() => error))
+        ))
+      );
+    }
+
+    return this.fetchMemberDonations(token, nextPageUrl).pipe(
+      catchError((error) => {
+        if (!this.isUnauthorized(error)) {
+          return throwError(() => error);
+        }
+
+        return this.refreshAccessToken().pipe(
+          switchMap((refreshedToken) => this.fetchMemberDonations(refreshedToken, nextPageUrl)),
+          catchError((refreshError) =>
+            this.handleRefreshFailure(refreshError).pipe(switchMap(() => throwError(() => refreshError)))
+          )
+        );
+      })
+    );
+  }
+
   logout(): void {
     this.sendCookieBackedAuthRequest<void>(this.logoutUrl, 'POST', {})
       .pipe(catchError(() => EMPTY))
@@ -172,6 +201,17 @@ export class AuthService {
         withCredentials: true,
       })
       .pipe(tap((profile) => this.setAuthenticatedProfile(profile)));
+  }
+
+  private fetchMemberDonations(
+    token: string,
+    nextPageUrl?: string | null
+  ): Observable<PaginatedResponse<MemberRecentDonation>> {
+    const url = nextPageUrl || this.buildUrl('members/me/donations');
+    return this.http.get<PaginatedResponse<MemberRecentDonation>>(url, {
+      headers: this.buildAuthHeaders(token),
+      withCredentials: true,
+    });
   }
 
   private sendCookieBackedAuthRequest<T>(

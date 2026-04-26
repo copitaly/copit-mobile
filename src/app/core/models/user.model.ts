@@ -34,6 +34,13 @@ export interface MemberRecentDonation {
   paid_at: string | null;
 }
 
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
 export interface MemberProfile extends AuthUser {
   date_joined: string;
   donation_summary: MemberDonationSummary;

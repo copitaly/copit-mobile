@@ -23,6 +23,10 @@ const routes: Routes = [
     loadComponent: () => import('./features/auth/profile.page').then(m => m.ProfilePage)
   },
   {
+    path: 'my-donations',
+    loadComponent: () => import('./features/donations/my-donations.page').then(m => m.MyDonationsPage)
+  },
+  {
     path: 'splash',
     redirectTo: '',
     pathMatch: 'full'

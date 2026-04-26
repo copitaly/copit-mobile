@@ -538,7 +538,7 @@ export class ProfilePage implements OnInit {
       title: 'My Donations',
       subtitle: 'View your giving history',
       icon: 'heart-outline',
-      soon: true,
+      route: '/my-donations',
     },
     {
       title: 'Saved Churches',
