@@ -122,6 +122,11 @@ type QuickAction = {
                 </div>
               </section>
 
+              <ion-button expand="block" class="give-now-button" (click)="goToDonationFlow()">
+                <ion-icon name="gift-outline" slot="start" aria-hidden="true"></ion-icon>
+                <span>Give now</span>
+              </ion-button>
+
               <ion-button expand="block" fill="outline" class="logout-button" (click)="logout()">
                 <ion-icon name="log-out-outline" slot="start" aria-hidden="true"></ion-icon>
                 <span>Log out</span>
@@ -436,6 +441,18 @@ type QuickAction = {
         margin-top: 0.2rem;
       }
 
+      .give-now-button {
+        --background: #f5b628;
+        --background-hover: #f5b628;
+        --background-activated: #d79d1f;
+        --border-radius: 999px;
+        --box-shadow: 0 10px 22px rgba(245, 182, 40, 0.24);
+        --color: #0b1d73;
+        min-height: 52px;
+        font-weight: 700;
+        margin-top: 0.15rem;
+      }
+
       .logout-button::part(native) {
         box-shadow: none;
         background: rgba(255, 255, 255, 0.7);
@@ -604,6 +621,10 @@ export class ProfilePage implements OnInit {
   logout(): void {
     this.authService.logout();
     void this.router.navigate(['/home']);
+  }
+
+  goToDonationFlow(): void {
+    void this.router.navigate(['/branches']);
   }
 
   goHome(): void {
