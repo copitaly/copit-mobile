@@ -1,8 +1,9 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule, IonInput } from '@ionic/angular';
 
 import { AuthService } from '../../core/services/auth.service';
 
@@ -36,17 +37,20 @@ import { AuthService } from '../../core/services/auth.service';
                   formControlName="identifier"
                   placeholder="you@example.com"
                   autocomplete="username"
+                  (ionInput)="clearErrorMessage()"
                 ></ion-input>
               </ion-item>
 
               <label class="auth-label" for="login-password">Password</label>
               <ion-item fill="solid" class="auth-field">
                 <ion-input
+                  #passwordInput
                   id="login-password"
                   formControlName="password"
                   [type]="showPassword ? 'text' : 'password'"
                   placeholder="Password"
                   autocomplete="current-password"
+                  (ionInput)="clearErrorMessage()"
                 ></ion-input>
                 <button
                   type="button"
@@ -305,7 +309,11 @@ import { AuthService } from '../../core/services/auth.service';
     `,
   ],
 })
-export class LoginPage {
+export class LoginPage implements OnDestroy {
+  private static readonly errorDismissDelayMs = 3500;
+
+  @ViewChild('passwordInput', { read: IonInput }) passwordInput?: IonInput;
+
   readonly form = this.formBuilder.nonNullable.group({
     identifier: ['', Validators.required],
     password: ['', Validators.required],
@@ -314,6 +322,7 @@ export class LoginPage {
   loading = false;
   errorMessage = '';
   showPassword = false;
+  private errorDismissTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private readonly authService: AuthService,
@@ -326,6 +335,10 @@ export class LoginPage {
     return !!identifier.trim() && !!password.trim() && !this.loading;
   }
 
+  ngOnDestroy(): void {
+    this.clearErrorDismissTimer();
+  }
+
   submit(): void {
     if (!this.canSubmit) {
       this.form.markAllAsTouched();
@@ -333,13 +346,18 @@ export class LoginPage {
     }
 
     this.loading = true;
-    this.errorMessage = '';
+    this.clearErrorMessage();
     this.authService.login(this.form.getRawValue()).subscribe({
       next: () => {
         void this.router.navigate(['/profile']);
       },
-      error: () => {
-        this.errorMessage = 'Unable to sign in right now. Please check your details and try again.';
+      error: (error: unknown) => {
+        const isCredentialError = this.isCredentialError(error);
+        this.setErrorMessage(this.getLoginErrorMessage(error));
+        if (isCredentialError) {
+          this.form.controls.password.setValue('');
+          void this.focusPasswordField();
+        }
         this.loading = false;
       },
       complete: () => {
@@ -360,7 +378,49 @@ export class LoginPage {
     this.showPassword = !this.showPassword;
   }
 
+  clearErrorMessage(): void {
+    this.clearErrorDismissTimer();
+    this.errorMessage = '';
+  }
+
   onForgotPassword(): void {
     console.info('[LoginPage] Forgot password route not implemented yet.');
+  }
+
+  private isCredentialError(error: unknown): boolean {
+    return error instanceof HttpErrorResponse && (error.status === 400 || error.status === 401);
+  }
+
+  private getLoginErrorMessage(error: unknown): string {
+    if (!(error instanceof HttpErrorResponse)) {
+      return 'Something went wrong. Please try again.';
+    }
+
+    if (this.isCredentialError(error)) {
+      return 'We couldn’t sign you in. Check your email/phone and password.';
+    }
+
+    return 'Something went wrong. Please try again.';
+  }
+
+  private async focusPasswordField(): Promise<void> {
+    await Promise.resolve();
+    await this.passwordInput?.setFocus();
+  }
+
+  private setErrorMessage(message: string): void {
+    this.clearErrorDismissTimer();
+    this.errorMessage = message;
+    this.errorDismissTimer = setTimeout(() => {
+      this.errorMessage = '';
+      this.errorDismissTimer = null;
+    }, LoginPage.errorDismissDelayMs);
+  }
+
+  private clearErrorDismissTimer(): void {
+    if (this.errorDismissTimer) {
+      clearTimeout(this.errorDismissTimer);
+      this.errorDismissTimer = null;
+    }
   }
 }

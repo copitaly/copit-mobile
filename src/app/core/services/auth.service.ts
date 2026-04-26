@@ -16,8 +16,9 @@ export class AuthService {
   // TODO: Replace localStorage token persistence with a platform-secure storage solution
   // (for example Capacitor Preferences plus OS-backed secure storage) before production release.
   private static readonly accessTokenStorageKey = 'copit.member.access_token';
+  private static readonly currentUserStorageKey = 'copit.member.current_user';
 
-  private readonly currentUserSubject = new BehaviorSubject<MemberProfile | null>(null);
+  private readonly currentUserSubject = new BehaviorSubject<MemberProfile | null>(this.getStoredCurrentUser());
   private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasStoredToken());
   private readonly authLoadingSubject = new BehaviorSubject<boolean>(false);
 
@@ -44,7 +45,9 @@ export class AuthService {
   login(payload: MemberLoginRequest): Observable<MemberProfile> {
     this.authLoadingSubject.next(true);
     return this.http
-      .post<AuthTokenResponse>(this.buildUrl('auth/member-token'), payload)
+      .post<AuthTokenResponse>(this.buildUrl('auth/member-token'), payload, {
+        withCredentials: true,
+      })
       .pipe(
         tap((response) => this.storeAccessToken(response.access)),
         map((response) => this.toMemberProfileFromAuthResponse(response)),
@@ -56,7 +59,9 @@ export class AuthService {
   register(payload: MemberRegisterRequest): Observable<MemberProfile> {
     this.authLoadingSubject.next(true);
     return this.http
-      .post<AuthTokenResponse>(this.buildUrl('auth/register'), payload)
+      .post<AuthTokenResponse>(this.buildUrl('auth/register'), payload, {
+        withCredentials: true,
+      })
       .pipe(
         tap((response) => this.storeAccessToken(response.access)),
         map((response) => this.toMemberProfileFromAuthResponse(response)),
@@ -75,6 +80,7 @@ export class AuthService {
     return this.http
       .get<MemberProfile>(this.buildUrl('members/me'), {
         headers: this.buildAuthHeaders(token),
+        withCredentials: true,
       })
       .pipe(
         tap((profile) => this.setAuthenticatedProfile(profile)),
@@ -92,12 +98,14 @@ export class AuthService {
   private setAuthenticatedProfile(profile: MemberProfile): void {
     this.currentUserSubject.next(profile);
     this.isAuthenticatedSubject.next(true);
+    this.storeCurrentUser(profile);
   }
 
   private clearSession(): void {
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
     localStorage.removeItem(AuthService.accessTokenStorageKey);
+    localStorage.removeItem(AuthService.currentUserStorageKey);
   }
 
   private storeAccessToken(token: string): void {
@@ -107,6 +115,28 @@ export class AuthService {
 
   private getStoredAccessToken(): string | null {
     return localStorage.getItem(AuthService.accessTokenStorageKey);
+  }
+
+  private storeCurrentUser(profile: MemberProfile): void {
+    localStorage.setItem(AuthService.currentUserStorageKey, JSON.stringify(profile));
+  }
+
+  private getStoredCurrentUser(): MemberProfile | null {
+    if (typeof localStorage === 'undefined') {
+      return null;
+    }
+
+    const storedProfile = localStorage.getItem(AuthService.currentUserStorageKey);
+    if (!storedProfile) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(storedProfile) as MemberProfile;
+    } catch {
+      localStorage.removeItem(AuthService.currentUserStorageKey);
+      return null;
+    }
   }
 
   private hasStoredToken(): boolean {
