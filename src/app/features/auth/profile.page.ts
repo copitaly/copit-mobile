@@ -1,7 +1,8 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
+import { Subscription } from 'rxjs';
 
 import { AuthService } from '../../core/services/auth.service';
 import { MemberProfile } from '../../core/models/user.model';
@@ -528,10 +529,11 @@ type QuickAction = {
     `,
   ],
 })
-export class ProfilePage implements OnInit {
+export class ProfilePage implements OnInit, OnDestroy {
   profile: MemberProfile | null = null;
   loading = true;
   errorMessage = '';
+  private currentUserSubscription?: Subscription;
 
   readonly quickActions: QuickAction[] = [
     {
@@ -589,8 +591,19 @@ export class ProfilePage implements OnInit {
   }
 
   ngOnInit(): void {
-    this.profile = this.authService.currentUserSnapshot;
+    this.currentUserSubscription = this.authService.currentUser$.subscribe((user) => {
+      this.profile = user;
+      if (user) {
+        this.loading = false;
+        this.errorMessage = '';
+      }
+    });
+
     this.loadProfile();
+  }
+
+  ngOnDestroy(): void {
+    this.currentUserSubscription?.unsubscribe();
   }
 
   loadProfile(): void {

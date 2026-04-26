@@ -50,7 +50,7 @@ import { MemberRecentDonation } from '../../core/models/user.model';
             <div *ngIf="!loading && !errorMessage && donations.length === 0" class="state-card empty-state">
               <div class="state-copy">
                 <h2>No donations yet</h2>
-                <p>Your giving history will appear here once you make a donation.</p>
+                <p>Start giving to support your church</p>
               </div>
               <ion-button expand="block" class="give-now-button" (click)="goToDonationFlow()">
                 <ion-icon name="gift-outline" slot="start" aria-hidden="true"></ion-icon>
@@ -94,6 +94,11 @@ import { MemberRecentDonation } from '../../core/models/user.model';
               >
                 <ion-spinner *ngIf="loadingMore" slot="start" name="crescent"></ion-spinner>
                 <span>{{ loadingMore ? 'Loading more...' : 'Load more' }}</span>
+              </ion-button>
+
+              <ion-button expand="block" class="give-now-button give-now-button--footer" (click)="goToDonationFlow()">
+                <ion-icon name="gift-outline" slot="start" aria-hidden="true"></ion-icon>
+                <span>Give now</span>
               </ion-button>
             </div>
           </div>
@@ -335,6 +340,10 @@ import { MemberRecentDonation } from '../../core/models/user.model';
         font-weight: 700;
       }
 
+      .give-now-button--footer {
+        margin-top: 0.55rem;
+      }
+
       .skeleton {
         animation: pulse 1.2s infinite ease-in-out;
       }
@@ -461,10 +470,12 @@ export class MyDonationsPage implements OnInit {
   formatStatus(status: string): string {
     switch ((status || '').toLowerCase()) {
       case 'checkout_created':
+      case 'pending':
         return 'Pending';
       case 'paid':
         return 'Completed';
       case 'failed':
+      case 'cancelled':
         return 'Failed';
       default:
         return status ? status.replace(/_/g, ' ') : 'Pending';

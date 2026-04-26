@@ -52,6 +52,18 @@ export class AuthService {
     return this.isAuthenticatedSubject.value;
   }
 
+  setCurrentUser(user: MemberProfile | null): void {
+    if (user) {
+      this.currentUserSubject.next(user);
+      this.isAuthenticatedSubject.next(true);
+      this.storeCurrentUser(user);
+      return;
+    }
+
+    this.currentUserSubject.next(null);
+    localStorage.removeItem(AuthService.currentUserStorageKey);
+  }
+
   login(payload: MemberLoginRequest): Observable<MemberProfile> {
     this.authLoadingSubject.next(true);
     return this.http
@@ -59,9 +71,9 @@ export class AuthService {
         withCredentials: true,
       })
       .pipe(
-        tap((response) => this.storeAccessToken(this.extractAccessToken(response))),
-        map((response) => this.toMemberProfileFromAuthResponse(response)),
-        tap((profile) => this.setAuthenticatedProfile(profile)),
+        map((response) => this.extractAccessToken(response)),
+        tap((token) => this.storeAccessToken(token)),
+        switchMap((token) => this.fetchCurrentUser(token)),
         finalize(() => this.authLoadingSubject.next(false))
       );
   }
@@ -140,16 +152,14 @@ export class AuthService {
   }
 
   private setAuthenticatedProfile(profile: MemberProfile): void {
-    this.currentUserSubject.next(profile);
+    this.setCurrentUser(profile);
     this.isAuthenticatedSubject.next(true);
-    this.storeCurrentUser(profile);
   }
 
   private clearSession(): void {
-    this.currentUserSubject.next(null);
+    this.setCurrentUser(null);
     this.isAuthenticatedSubject.next(false);
     localStorage.removeItem(AuthService.accessTokenStorageKey);
-    localStorage.removeItem(AuthService.currentUserStorageKey);
   }
 
   private storeAccessToken(token: string): void {
