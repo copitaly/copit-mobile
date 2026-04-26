@@ -1,7 +1,8 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError, finalize, map, tap } from 'rxjs/operators';
+import { DOCUMENT } from '@angular/common';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { Inject, Injectable } from '@angular/core';
+import { BehaviorSubject, EMPTY, Observable, of, throwError } from 'rxjs';
+import { catchError, finalize, map, switchMap, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 import {
@@ -17,19 +18,26 @@ export class AuthService {
   // (for example Capacitor Preferences plus OS-backed secure storage) before production release.
   private static readonly accessTokenStorageKey = 'copit.member.access_token';
   private static readonly currentUserStorageKey = 'copit.member.current_user';
+  private static readonly csrfCookieName = 'csrftoken';
 
   private readonly currentUserSubject = new BehaviorSubject<MemberProfile | null>(this.getStoredCurrentUser());
   private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasStoredToken());
   private readonly authLoadingSubject = new BehaviorSubject<boolean>(false);
+  private readonly refreshUrl = this.buildUrl('auth/token/refresh');
+  private readonly logoutUrl = this.buildUrl('auth/logout');
+  private readonly csrfUrl = this.buildUrl('auth/csrf');
 
   readonly currentUser$ = this.currentUserSubject.asObservable();
   readonly isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
   readonly authLoading$ = this.authLoadingSubject.asObservable();
 
-  constructor(private readonly http: HttpClient) {
-    if (this.hasStoredToken()) {
+  constructor(
+    private readonly http: HttpClient,
+    @Inject(DOCUMENT) private readonly document: Document
+  ) {
+    if (this.hasStoredToken() || this.currentUserSnapshot) {
       this.getCurrentUser().subscribe({
-        error: () => this.logout(),
+        error: () => undefined,
       });
     }
   }
@@ -49,7 +57,7 @@ export class AuthService {
         withCredentials: true,
       })
       .pipe(
-        tap((response) => this.storeAccessToken(response.access)),
+        tap((response) => this.storeAccessToken(this.extractAccessToken(response))),
         map((response) => this.toMemberProfileFromAuthResponse(response)),
         tap((profile) => this.setAuthenticatedProfile(profile)),
         finalize(() => this.authLoadingSubject.next(false))
@@ -63,7 +71,7 @@ export class AuthService {
         withCredentials: true,
       })
       .pipe(
-        tap((response) => this.storeAccessToken(response.access)),
+        tap((response) => this.storeAccessToken(this.extractAccessToken(response))),
         map((response) => this.toMemberProfileFromAuthResponse(response)),
         tap((profile) => this.setAuthenticatedProfile(profile)),
         finalize(() => this.authLoadingSubject.next(false))
@@ -73,26 +81,33 @@ export class AuthService {
   getCurrentUser(): Observable<MemberProfile | null> {
     const token = this.getStoredAccessToken();
     if (!token) {
-      this.clearSession();
-      return of(null);
+      return this.refreshAccessToken().pipe(
+        switchMap((refreshedToken) => this.fetchCurrentUser(refreshedToken)),
+        catchError((error) => this.handleRefreshFailure(error))
+      );
     }
 
-    return this.http
-      .get<MemberProfile>(this.buildUrl('members/me'), {
-        headers: this.buildAuthHeaders(token),
-        withCredentials: true,
-      })
+    return this.fetchCurrentUser(token)
       .pipe(
-        tap((profile) => this.setAuthenticatedProfile(profile)),
         catchError((error) => {
-          this.clearSession();
-          throw error;
+          if (!this.isUnauthorized(error)) {
+            return throwError(() => error);
+          }
+
+          return this.refreshAccessToken().pipe(
+            switchMap((refreshedToken) => this.fetchCurrentUser(refreshedToken)),
+            catchError((refreshError) => this.handleRefreshFailure(refreshError))
+          );
         })
       );
   }
 
   logout(): void {
-    this.clearSession();
+    this.sendCookieBackedAuthRequest<void>(this.logoutUrl, 'POST', {})
+      .pipe(catchError(() => EMPTY))
+      .subscribe({
+        complete: () => this.clearSession(),
+      });
   }
 
   private setAuthenticatedProfile(profile: MemberProfile): void {
@@ -143,16 +158,107 @@ export class AuthService {
     return typeof localStorage !== 'undefined' && !!localStorage.getItem(AuthService.accessTokenStorageKey);
   }
 
+  private refreshAccessToken(): Observable<string> {
+    return this.sendCookieBackedAuthRequest<{ access: string }>(this.refreshUrl, 'POST', {}).pipe(
+      map((response) => this.extractAccessToken(response)),
+      tap((token) => this.storeAccessToken(token))
+    );
+  }
+
+  private fetchCurrentUser(token: string): Observable<MemberProfile> {
+    return this.http
+      .get<MemberProfile>(this.buildUrl('members/me'), {
+        headers: this.buildAuthHeaders(token),
+        withCredentials: true,
+      })
+      .pipe(tap((profile) => this.setAuthenticatedProfile(profile)));
+  }
+
+  private sendCookieBackedAuthRequest<T>(
+    url: string,
+    method: 'POST',
+    body: object
+  ): Observable<T> {
+    const csrfToken = this.getCsrfToken();
+    if (csrfToken) {
+      return this.http.request<T>(method, url, {
+        body,
+        headers: this.buildCsrfHeaders(csrfToken),
+        withCredentials: true,
+      });
+    }
+
+    return this.ensureCsrfCookie().pipe(
+      switchMap(() =>
+        this.http.request<T>(method, url, {
+          body,
+          headers: this.buildCsrfHeaders(this.getCsrfToken()),
+          withCredentials: true,
+        })
+      )
+    );
+  }
+
+  private ensureCsrfCookie(): Observable<void> {
+    return this.http
+      .get<{ detail: string }>(this.csrfUrl, { withCredentials: true })
+      .pipe(map(() => void 0));
+  }
+
+  private getCsrfToken(): string | null {
+    const cookie = this.document.cookie
+      .split(';')
+      .map((value) => value.trim())
+      .find((value) => value.startsWith(`${AuthService.csrfCookieName}=`));
+
+    if (!cookie) {
+      return null;
+    }
+
+    const token = cookie.slice(AuthService.csrfCookieName.length + 1);
+    return token ? decodeURIComponent(token) : null;
+  }
+
   private buildAuthHeaders(token: string): HttpHeaders {
     return new HttpHeaders({
       Authorization: `Bearer ${token}`,
     });
   }
 
+  private buildCsrfHeaders(token: string | null): HttpHeaders | undefined {
+    if (!token) {
+      return undefined;
+    }
+
+    return new HttpHeaders({ 'X-CSRFToken': token });
+  }
+
   private buildUrl(path: string): string {
     const baseUrl = environment.apiBaseUrl.replace(/\/+$/, '');
     const normalizedPath = path.replace(/^\/*/, '').replace(/\/+$/, '');
     return `${baseUrl}/${normalizedPath}/`;
+  }
+
+  private extractAccessToken(response: { access?: string | null }): string {
+    const token = response.access;
+    if (!token) {
+      throw new Error('Access token missing from authentication response.');
+    }
+
+    return token;
+  }
+
+  private handleRefreshFailure(error: unknown): Observable<null> {
+    if (this.isUnauthorized(error)) {
+      this.clearSession();
+      return of(null);
+    }
+
+    return throwError(() => error);
+  }
+
+  private isUnauthorized(error: unknown): boolean {
+    return error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403);
   }
 
   private toMemberProfileFromAuthResponse(response: AuthTokenResponse): MemberProfile {
