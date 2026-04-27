@@ -451,8 +451,11 @@ export class BranchSelectPage implements OnInit {
   }
 
   selectBranch(branch: PublicBranch): void {
-    this.selectedBranchService.setBranch(branch);
-    this.router.navigate(['/donate']);
+    if (!this.selectedBranchService.setBranch(branch)) {
+      void this.router.navigate(['/branches']);
+      return;
+    }
+    void this.router.navigate(['/donate']);
   }
 
   goBack(): void {

@@ -10,4 +10,6 @@ export interface PublicBranch {
   level: string;
   district?: BranchLocation | null;
   area?: BranchLocation | null;
+  donations_enabled: boolean;
+  is_active: boolean;
 }

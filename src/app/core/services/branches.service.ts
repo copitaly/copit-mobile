@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, map, tap } from 'rxjs';
 import { ApiService, QueryParams } from './api.service';
 import { PublicBranch } from '../models/branch.model';
 import { PaginatedResponse } from '../models/pagination.model';
@@ -28,6 +28,17 @@ export class BranchesService {
     };
 
     return this.api.get<PaginatedResponse<PublicBranch>>(this.endpoint, merged).pipe(
+      map(response => ({
+        ...response,
+        results: response.results.map(branch => ({
+          ...branch,
+          branch_code: branch.branch_code ?? '',
+          donations_enabled: branch.donations_enabled ?? true,
+          is_active: branch.is_active ?? true,
+          district: branch.district ?? null,
+          area: branch.area ?? null,
+        })),
+      })),
       tap(response => {
         console.log(`[BranchesService] endpoint ${this.endpoint} returned ${response.results.length} branches`);
       })

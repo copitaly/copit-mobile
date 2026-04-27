@@ -60,11 +60,14 @@ import { SelectedBranchService } from '../../core/services/selected-branch.servi
             </div>
 
             <div *ngIf="!loading && !errorMessage && savedChurches.length > 0" class="saved-stack">
-              <button
-                type="button"
+              <div
                 class="saved-card saved-card--interactive"
                 *ngFor="let saved of savedChurches"
-                (click)="openSavedChurch(saved)"
+                (click)="selectSavedChurch(saved)"
+                (keydown.enter)="selectSavedChurch(saved)"
+                (keydown.space)="selectSavedChurch(saved, $event)"
+                tabindex="0"
+                role="button"
               >
                 <div class="saved-card__top">
                   <div class="saved-copy">
@@ -86,12 +89,15 @@ import { SelectedBranchService } from '../../core/services/selected-branch.servi
                     <strong>{{ formatDate(saved.created_at) }}</strong>
                   </div>
                 </div>
-              </button>
 
-              <ion-button expand="block" class="choose-church-button choose-church-button--footer" (click)="goToBranches()">
-                <ion-icon name="gift-outline" slot="start" aria-hidden="true"></ion-icon>
-                <span>Choose church</span>
-              </ion-button>
+                <button
+                  type="button"
+                  class="saved-action"
+                  (click)="selectSavedChurch(saved, $event)"
+                >
+                  Give to this church
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -194,11 +200,34 @@ import { SelectedBranchService } from '../../core/services/selected-branch.servi
         text-align: left;
         transition: transform 120ms ease-out, box-shadow 120ms ease-out;
         will-change: transform;
+        cursor: pointer;
       }
 
       .saved-card--interactive:active {
         transform: scale(0.985);
         box-shadow: 0 10px 24px rgba(6, 21, 74, 0.12);
+      }
+
+      .saved-card--interactive:focus-visible {
+        outline: 3px solid rgba(11, 29, 115, 0.18);
+        outline-offset: 3px;
+      }
+
+      .saved-action {
+        margin-top: 0.95rem;
+        width: 100%;
+        min-height: 48px;
+        border: 0;
+        border-radius: 999px;
+        background: #f5b628;
+        color: #0b1d73;
+        font-size: 0.95rem;
+        font-weight: 700;
+        box-shadow: 0 10px 22px rgba(245, 182, 40, 0.24);
+      }
+
+      .saved-action:active {
+        background: #d79d1f;
       }
 
       .saved-card__top {
@@ -218,16 +247,17 @@ import { SelectedBranchService } from '../../core/services/selected-branch.servi
 
       .saved-copy h2 {
         color: #03173f;
-        font-size: 1.05rem;
+        font-size: 1.08rem;
         font-weight: 700;
-        line-height: 1.25;
+        line-height: 1.2;
+        letter-spacing: -0.01em;
       }
 
       .saved-copy p {
         margin-top: 0.32rem;
-        color: rgba(3, 23, 63, 0.62);
-        font-size: 0.88rem;
-        line-height: 1.35;
+        color: rgba(3, 23, 63, 0.58);
+        font-size: 0.87rem;
+        line-height: 1.4;
       }
 
       .saved-status {
@@ -330,10 +360,6 @@ import { SelectedBranchService } from '../../core/services/selected-branch.servi
         --color: #0b1d73;
         min-height: 52px;
         font-weight: 700;
-      }
-
-      .choose-church-button--footer {
-        margin-top: 0.55rem;
       }
 
       .skeleton {
@@ -459,9 +485,21 @@ export class SavedChurchesPage implements OnInit {
     }).format(date);
   }
 
-  openSavedChurch(saved: SavedChurch): void {
-    this.selectedBranchService.setBranch(this.toPublicBranch(saved));
-    void this.router.navigate(['/donate']);
+  selectSavedChurch(saved: SavedChurch, event?: Event): void {
+    event?.stopPropagation();
+    const branch = this.toPublicBranch(saved);
+
+    try {
+      const didSetBranch = this.selectedBranchService.setBranch(branch);
+      if (!didSetBranch || this.selectedBranchService.getBranch()?.id !== branch.id) {
+        void this.router.navigate(['/branches']);
+        return;
+      }
+
+      void this.router.navigate(['/donate']);
+    } catch {
+      void this.router.navigate(['/branches']);
+    }
   }
 
   goToBranches(): void {
@@ -493,6 +531,8 @@ export class SavedChurchesPage implements OnInit {
       level: 'local',
       district: saved.church.district ?? null,
       area: saved.church.area ?? null,
+      donations_enabled: saved.church.donations_enabled,
+      is_active: saved.church.is_active,
     };
   }
 }
