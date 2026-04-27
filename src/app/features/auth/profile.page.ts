@@ -546,7 +546,7 @@ export class ProfilePage implements OnInit, OnDestroy {
       title: 'Saved Churches',
       subtitle: 'Quick access to your churches',
       icon: 'bookmark-outline',
-      soon: true,
+      route: '/saved-churches',
     },
     {
       title: 'Annual Giving Statement',

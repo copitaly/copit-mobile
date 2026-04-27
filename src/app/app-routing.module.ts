@@ -36,6 +36,10 @@ const routes: Routes = [
     loadComponent: () => import('./features/branches/branch-select.page').then(m => m.BranchSelectPage)
   },
   {
+    path: 'saved-churches',
+    loadComponent: () => import('./features/branches/saved-churches.page').then(m => m.SavedChurchesPage)
+  },
+  {
     path: 'donate/success',
     loadComponent: () => import('./features/donations/success.page').then(m => m.DonateSuccessPage)
   },

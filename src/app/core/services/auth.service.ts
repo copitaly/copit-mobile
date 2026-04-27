@@ -12,6 +12,7 @@ import {
   MemberRecentDonation,
   MemberRegisterRequest,
   PaginatedResponse,
+  SavedChurch,
 } from '../models/user.model';
 
 @Injectable({ providedIn: 'root' })
@@ -143,6 +144,33 @@ export class AuthService {
     );
   }
 
+  getSavedChurches(): Observable<SavedChurch[]> {
+    const token = this.getStoredAccessToken();
+    if (!token) {
+      return this.refreshAccessToken().pipe(
+        switchMap((refreshedToken) => this.fetchSavedChurches(refreshedToken)),
+        catchError((error) =>
+          this.handleRefreshFailure(error).pipe(switchMap(() => throwError(() => error)))
+        )
+      );
+    }
+
+    return this.fetchSavedChurches(token).pipe(
+      catchError((error) => {
+        if (!this.isUnauthorized(error)) {
+          return throwError(() => error);
+        }
+
+        return this.refreshAccessToken().pipe(
+          switchMap((refreshedToken) => this.fetchSavedChurches(refreshedToken)),
+          catchError((refreshError) =>
+            this.handleRefreshFailure(refreshError).pipe(switchMap(() => throwError(() => refreshError)))
+          )
+        );
+      })
+    );
+  }
+
   logout(): void {
     this.sendCookieBackedAuthRequest<void>(this.logoutUrl, 'POST', {})
       .pipe(catchError(() => EMPTY))
@@ -219,6 +247,13 @@ export class AuthService {
   ): Observable<PaginatedResponse<MemberRecentDonation>> {
     const url = nextPageUrl || this.buildUrl('members/me/donations');
     return this.http.get<PaginatedResponse<MemberRecentDonation>>(url, {
+      headers: this.buildAuthHeaders(token),
+      withCredentials: true,
+    });
+  }
+
+  private fetchSavedChurches(token: string): Observable<SavedChurch[]> {
+    return this.http.get<SavedChurch[]>(this.buildUrl('members/me/saved-churches'), {
       headers: this.buildAuthHeaders(token),
       withCredentials: true,
     });

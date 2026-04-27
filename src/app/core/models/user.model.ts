@@ -41,6 +41,28 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
+export interface SavedChurchBranchSummary {
+  id: number;
+  name: string;
+  branch_code: string;
+  district?: {
+    id: number;
+    name: string;
+  } | null;
+  area?: {
+    id: number;
+    name: string;
+  } | null;
+  donations_enabled: boolean;
+  is_active: boolean;
+}
+
+export interface SavedChurch {
+  id: number;
+  church: SavedChurchBranchSummary;
+  created_at: string;
+}
+
 export interface MemberProfile extends AuthUser {
   date_joined: string;
   donation_summary: MemberDonationSummary;
