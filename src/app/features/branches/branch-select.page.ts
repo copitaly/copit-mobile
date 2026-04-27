@@ -109,6 +109,48 @@ import { SavedChurch } from '../../core/models/user.model';
                 </ion-list>
               </ng-container>
               <ng-template #groupedList>
+                <div *ngIf="savedBranches.length > 0" class="district-section">
+                  <div class="district-header">Saved Churches</div>
+                  <ion-list lines="none">
+                    <ion-item
+                      button
+                      [detail]="false"
+                      lines="none"
+                      *ngFor="let branch of savedBranches"
+                      (click)="selectBranch(branch)"
+                      class="branch-card"
+                    >
+                      <ion-icon name="location" slot="start" aria-hidden="true"></ion-icon>
+
+                      <ion-label>
+                        <div class="label-top">
+                          <h2>{{ branch.name }}</h2>
+                          <p class="hierarchy" *ngIf="getHierarchy(branch) as hierarchy">{{ hierarchy }}</p>
+                          <p class="code" *ngIf="branch.branch_code">{{ branch.branch_code }}</p>
+                        </div>
+                      </ion-label>
+
+                      <ion-button
+                        fill="clear"
+                        slot="end"
+                        class="save-button"
+                        [class.save-button--saved]="isSaved(branch.id)"
+                        [class.save-button--animating-save]="heartAnimationState(branch.id) === 'save'"
+                        [class.save-button--animating-unsave]="heartAnimationState(branch.id) === 'unsave'"
+                        [disabled]="isSaving(branch.id)"
+                        [attr.aria-label]="isSaved(branch.id) ? 'Remove saved church' : 'Save church'"
+                        (click)="toggleSavedChurch(branch, $event)"
+                      >
+                        <ion-icon [name]="isSaved(branch.id) ? 'heart' : 'heart-outline'" aria-hidden="true"></ion-icon>
+                      </ion-button>
+
+                      <span class="branch-card__chevron" aria-hidden="true">
+                        <ion-icon name="chevron-forward"></ion-icon>
+                      </span>
+                    </ion-item>
+                  </ion-list>
+                </div>
+
                 <div *ngFor="let section of groupedBranches" class="district-section">
                   <div class="district-header">{{ section.district || 'Other districts' }}</div>
                   <ion-list lines="none">
@@ -471,6 +513,7 @@ export class BranchSelectPage implements OnInit {
   loading = false;
   error: string | null = null;
   branches: PublicBranch[] = [];
+  private isAuthenticated = false;
   private savedChurchIdsByBranchId = new Map<number, number>();
   private savingBranchIds = new Set<number>();
   private heartAnimationByBranchId = new Map<number, 'save' | 'unsave'>();
@@ -504,6 +547,7 @@ export class BranchSelectPage implements OnInit {
       .subscribe({
         next: ({ branches, savedChurches }) => {
           this.branches = branches.results;
+          this.isAuthenticated = this.authService.isAuthenticatedSnapshot;
           this.savedChurchIdsByBranchId = new Map(
             savedChurches.map(savedChurch => [savedChurch.church.id, savedChurch.id])
           );
@@ -536,12 +580,12 @@ export class BranchSelectPage implements OnInit {
   }
 
   get filteredBranches(): PublicBranch[] {
-    return this.branches;
+    return this.sortBranchesBySavedState(this.branches);
   }
 
   get groupedBranches(): { district: string | null; branches: PublicBranch[] }[] {
     const groups = new Map<string | null, PublicBranch[]>();
-    this.branches.forEach(branch => {
+    this.unsavedBranches.forEach(branch => {
       const key = branch.district?.name?.trim() || 'Other districts';
       if (!groups.has(key)) {
         groups.set(key, []);
@@ -549,6 +593,22 @@ export class BranchSelectPage implements OnInit {
       groups.get(key)!.push(branch);
     });
     return Array.from(groups.entries()).map(([district, branches]) => ({ district, branches }));
+  }
+
+  get savedBranches(): PublicBranch[] {
+    if (!this.isAuthenticated) {
+      return [];
+    }
+
+    return this.branches.filter(branch => this.isSaved(branch.id));
+  }
+
+  get unsavedBranches(): PublicBranch[] {
+    if (!this.isAuthenticated) {
+      return this.branches;
+    }
+
+    return this.branches.filter(branch => !this.isSaved(branch.id));
   }
 
   selectBranch(branch: PublicBranch): void {
@@ -620,6 +680,18 @@ export class BranchSelectPage implements OnInit {
         this.savingBranchIds.delete(branch.id);
         await this.presentToast('Could not update saved church', 'information-circle');
       },
+    });
+  }
+
+  private sortBranchesBySavedState(branches: PublicBranch[]): PublicBranch[] {
+    if (!this.isAuthenticated) {
+      return branches;
+    }
+
+    return [...branches].sort((left, right) => {
+      const leftSaved = this.isSaved(left.id) ? 0 : 1;
+      const rightSaved = this.isSaved(right.id) ? 0 : 1;
+      return leftSaved - rightSaved;
     });
   }
 
