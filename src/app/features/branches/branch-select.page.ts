@@ -92,11 +92,12 @@ import { SavedChurch } from '../../core/models/user.model';
                       fill="clear"
                       slot="end"
                       class="save-button"
+                      [class.save-button--saved]="isSaved(branch.id)"
                       [disabled]="isSaving(branch.id)"
                       [attr.aria-label]="isSaved(branch.id) ? 'Remove saved church' : 'Save church'"
                       (click)="toggleSavedChurch(branch, $event)"
                     >
-                      <ion-icon [name]="isSaved(branch.id) ? 'bookmark' : 'bookmark-outline'" aria-hidden="true"></ion-icon>
+                      <ion-icon [name]="isSaved(branch.id) ? 'heart' : 'heart-outline'" aria-hidden="true"></ion-icon>
                     </ion-button>
 
                     <span class="branch-card__chevron" aria-hidden="true">
@@ -131,11 +132,12 @@ import { SavedChurch } from '../../core/models/user.model';
                         fill="clear"
                         slot="end"
                         class="save-button"
+                        [class.save-button--saved]="isSaved(branch.id)"
                         [disabled]="isSaving(branch.id)"
                         [attr.aria-label]="isSaved(branch.id) ? 'Remove saved church' : 'Save church'"
                         (click)="toggleSavedChurch(branch, $event)"
                       >
-                        <ion-icon [name]="isSaved(branch.id) ? 'bookmark' : 'bookmark-outline'" aria-hidden="true"></ion-icon>
+                        <ion-icon [name]="isSaved(branch.id) ? 'heart' : 'heart-outline'" aria-hidden="true"></ion-icon>
                       </ion-button>
 
                       <span class="branch-card__chevron" aria-hidden="true">
@@ -323,11 +325,15 @@ import { SavedChurch } from '../../core/models/user.model';
       }
 
       .save-button {
-        --color: rgba(3, 23, 63, 0.7);
+        --color: rgba(3, 23, 63, 0.48);
         --padding-start: 0.15rem;
         --padding-end: 0.15rem;
         margin-right: 0.2rem;
         align-self: flex-start;
+      }
+
+      .save-button--saved {
+        --color: #d7a31a;
       }
 
       .save-button ion-icon {
@@ -531,12 +537,12 @@ export class BranchSelectPage implements OnInit {
       this.authService.unsaveChurch(existingSavedChurchId).subscribe({
         next: async () => {
           this.savingBranchIds.delete(branch.id);
-          await this.presentToast('Removed from saved');
+          await this.presentToast('Removed from saved churches', 'checkmark-circle');
         },
         error: async () => {
           this.savedChurchIdsByBranchId.set(branch.id, existingSavedChurchId);
           this.savingBranchIds.delete(branch.id);
-          await this.presentToast('Unable to update saved churches');
+          await this.presentToast('Could not update saved church', 'information-circle');
         },
       });
       return;
@@ -548,12 +554,12 @@ export class BranchSelectPage implements OnInit {
       next: async (savedChurch) => {
         this.savedChurchIdsByBranchId.set(branch.id, savedChurch.id);
         this.savingBranchIds.delete(branch.id);
-        await this.presentToast('Church saved');
+        await this.presentToast('Church saved', 'heart');
       },
       error: async () => {
         this.savedChurchIdsByBranchId.delete(branch.id);
         this.savingBranchIds.delete(branch.id);
-        await this.presentToast('Unable to update saved churches');
+        await this.presentToast('Could not update saved church', 'information-circle');
       },
     });
   }
@@ -562,11 +568,13 @@ export class BranchSelectPage implements OnInit {
     this.router.navigate(['/home']);
   }
 
-  private async presentToast(message: string): Promise<void> {
+  private async presentToast(message: string, icon: string): Promise<void> {
     const toast = await this.toastController.create({
       message,
-      duration: 1600,
+      icon,
+      duration: 2400,
       position: 'bottom',
+      cssClass: 'branch-save-toast',
     });
     await toast.present();
   }

@@ -141,3 +141,28 @@ body {
   overflow: auto;
   padding-bottom: 2rem;
 }
+
+ion-toast.branch-save-toast {
+  --background: #fffaf0;
+  --color: #0b1d73;
+  --border-radius: 18px;
+  --box-shadow: 0 14px 32px rgba(6, 21, 74, 0.16);
+  --width: calc(100% - 2rem);
+  --max-width: 360px;
+}
+
+ion-toast.branch-save-toast::part(container) {
+  border: 1px solid rgba(215, 163, 26, 0.16);
+  backdrop-filter: blur(8px);
+}
+
+ion-toast.branch-save-toast::part(message) {
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: #0b1d73;
+}
+
+ion-toast.branch-save-toast::part(icon) {
+  color: #d7a31a;
+  font-size: 1rem;
+}
