@@ -72,6 +72,10 @@ export class HomePage implements OnInit, OnDestroy {
     void this.router.navigate(['/branches']);
   }
 
+  goToBranches(): void {
+    void this.router.navigate(['/branches']);
+  }
+
   goToAccount(isAuthenticated: boolean | null): void {
     void this.router.navigate([isAuthenticated ? '/profile' : '/login']);
   }
