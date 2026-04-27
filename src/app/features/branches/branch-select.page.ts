@@ -547,7 +547,7 @@ export class BranchSelectPage implements OnInit {
       .subscribe({
         next: ({ branches, savedChurches }) => {
           this.branches = branches.results;
-          this.isAuthenticated = this.authService.isAuthenticatedSnapshot;
+          this.isAuthenticated = this.authService.isAuthenticatedSnapshot || savedChurches.length > 0;
           this.savedChurchIdsByBranchId = new Map(
             savedChurches.map(savedChurch => [savedChurch.church.id, savedChurch.id])
           );
