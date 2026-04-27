@@ -171,6 +171,60 @@ export class AuthService {
     );
   }
 
+  saveChurch(churchId: number): Observable<SavedChurch> {
+    const token = this.getStoredAccessToken();
+    if (!token) {
+      return this.refreshAccessToken().pipe(
+        switchMap((refreshedToken) => this.persistSavedChurch(refreshedToken, churchId)),
+        catchError((error) =>
+          this.handleRefreshFailure(error).pipe(switchMap(() => throwError(() => error)))
+        )
+      );
+    }
+
+    return this.persistSavedChurch(token, churchId).pipe(
+      catchError((error) => {
+        if (!this.isUnauthorized(error)) {
+          return throwError(() => error);
+        }
+
+        return this.refreshAccessToken().pipe(
+          switchMap((refreshedToken) => this.persistSavedChurch(refreshedToken, churchId)),
+          catchError((refreshError) =>
+            this.handleRefreshFailure(refreshError).pipe(switchMap(() => throwError(() => refreshError)))
+          )
+        );
+      })
+    );
+  }
+
+  unsaveChurch(savedChurchId: number): Observable<void> {
+    const token = this.getStoredAccessToken();
+    if (!token) {
+      return this.refreshAccessToken().pipe(
+        switchMap((refreshedToken) => this.removeSavedChurch(refreshedToken, savedChurchId)),
+        catchError((error) =>
+          this.handleRefreshFailure(error).pipe(switchMap(() => throwError(() => error)))
+        )
+      );
+    }
+
+    return this.removeSavedChurch(token, savedChurchId).pipe(
+      catchError((error) => {
+        if (!this.isUnauthorized(error)) {
+          return throwError(() => error);
+        }
+
+        return this.refreshAccessToken().pipe(
+          switchMap((refreshedToken) => this.removeSavedChurch(refreshedToken, savedChurchId)),
+          catchError((refreshError) =>
+            this.handleRefreshFailure(refreshError).pipe(switchMap(() => throwError(() => refreshError)))
+          )
+        );
+      })
+    );
+  }
+
   logout(): void {
     this.sendCookieBackedAuthRequest<void>(this.logoutUrl, 'POST', {})
       .pipe(catchError(() => EMPTY))
@@ -254,6 +308,24 @@ export class AuthService {
 
   private fetchSavedChurches(token: string): Observable<SavedChurch[]> {
     return this.http.get<SavedChurch[]>(this.buildUrl('members/me/saved-churches'), {
+      headers: this.buildAuthHeaders(token),
+      withCredentials: true,
+    });
+  }
+
+  private persistSavedChurch(token: string, churchId: number): Observable<SavedChurch> {
+    return this.http.post<SavedChurch>(
+      this.buildUrl('members/me/saved-churches'),
+      { church_id: churchId },
+      {
+        headers: this.buildAuthHeaders(token),
+        withCredentials: true,
+      }
+    );
+  }
+
+  private removeSavedChurch(token: string, savedChurchId: number): Observable<void> {
+    return this.http.delete<void>(this.buildUrl(`members/me/saved-churches/${savedChurchId}`), {
       headers: this.buildAuthHeaders(token),
       withCredentials: true,
     });

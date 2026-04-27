@@ -1,11 +1,15 @@
 ﻿import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule, ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { AuthService } from '../../core/services/auth.service';
 import { BranchesService } from '../../core/services/branches.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { PublicBranch } from '../../core/models/branch.model';
+import { SavedChurch } from '../../core/models/user.model';
 
 @Component({
   standalone: true,
@@ -84,6 +88,17 @@ import { PublicBranch } from '../../core/models/branch.model';
                       </div>
                     </ion-label>
 
+                    <ion-button
+                      fill="clear"
+                      slot="end"
+                      class="save-button"
+                      [disabled]="isSaving(branch.id)"
+                      [attr.aria-label]="isSaved(branch.id) ? 'Remove saved church' : 'Save church'"
+                      (click)="toggleSavedChurch(branch, $event)"
+                    >
+                      <ion-icon [name]="isSaved(branch.id) ? 'bookmark' : 'bookmark-outline'" aria-hidden="true"></ion-icon>
+                    </ion-button>
+
                     <span class="branch-card__chevron" aria-hidden="true">
                       <ion-icon name="chevron-forward"></ion-icon>
                     </span>
@@ -111,6 +126,17 @@ import { PublicBranch } from '../../core/models/branch.model';
                           <p class="code" *ngIf="branch.branch_code">{{ branch.branch_code }}</p>
                         </div>
                       </ion-label>
+
+                      <ion-button
+                        fill="clear"
+                        slot="end"
+                        class="save-button"
+                        [disabled]="isSaving(branch.id)"
+                        [attr.aria-label]="isSaved(branch.id) ? 'Remove saved church' : 'Save church'"
+                        (click)="toggleSavedChurch(branch, $event)"
+                      >
+                        <ion-icon [name]="isSaved(branch.id) ? 'bookmark' : 'bookmark-outline'" aria-hidden="true"></ion-icon>
+                      </ion-button>
 
                       <span class="branch-card__chevron" aria-hidden="true">
                         <ion-icon name="chevron-forward"></ion-icon>
@@ -296,6 +322,18 @@ import { PublicBranch } from '../../core/models/branch.model';
         flex: 1;
       }
 
+      .save-button {
+        --color: rgba(3, 23, 63, 0.7);
+        --padding-start: 0.15rem;
+        --padding-end: 0.15rem;
+        margin-right: 0.2rem;
+        align-self: flex-start;
+      }
+
+      .save-button ion-icon {
+        font-size: 1.15rem;
+      }
+
       ion-icon[slot='start'] {
         color: #0b1d73;
         font-size: 24px;
@@ -382,11 +420,15 @@ export class BranchSelectPage implements OnInit {
   loading = false;
   error: string | null = null;
   branches: PublicBranch[] = [];
+  private savedChurchIdsByBranchId = new Map<number, number>();
+  private savingBranchIds = new Set<number>();
 
   constructor(
     private readonly branchesService: BranchesService,
+    private readonly authService: AuthService,
     private readonly selectedBranchService: SelectedBranchService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly toastController: ToastController
   ) {}
 
   ngOnInit(): void {
@@ -398,14 +440,21 @@ export class BranchSelectPage implements OnInit {
     this.error = null;
     this.branches = [];
 
-    this.branchesService
-      .getBranches({
+    forkJoin({
+      branches: this.branchesService.getBranches({
         search: search ?? this.searchTerm,
         page_size: 50,
-      })
+      }),
+      savedChurches: this.authService.getSavedChurches().pipe(
+        catchError(() => of([] as SavedChurch[]))
+      ),
+    })
       .subscribe({
-        next: response => {
-          this.branches = response.results;
+        next: ({ branches, savedChurches }) => {
+          this.branches = branches.results;
+          this.savedChurchIdsByBranchId = new Map(
+            savedChurches.map(savedChurch => [savedChurch.church.id, savedChurch.id])
+          );
           this.loading = false;
         },
         error: () => {
@@ -458,7 +507,67 @@ export class BranchSelectPage implements OnInit {
     void this.router.navigate(['/donate']);
   }
 
+  isSaved(branchId: number): boolean {
+    return this.savedChurchIdsByBranchId.has(branchId);
+  }
+
+  isSaving(branchId: number): boolean {
+    return this.savingBranchIds.has(branchId);
+  }
+
+  toggleSavedChurch(branch: PublicBranch, event: Event): void {
+    event.stopPropagation();
+
+    if (this.savingBranchIds.has(branch.id)) {
+      return;
+    }
+
+    const existingSavedChurchId = this.savedChurchIdsByBranchId.get(branch.id);
+    const wasSaved = existingSavedChurchId !== undefined;
+    this.savingBranchIds.add(branch.id);
+
+    if (wasSaved) {
+      this.savedChurchIdsByBranchId.delete(branch.id);
+      this.authService.unsaveChurch(existingSavedChurchId).subscribe({
+        next: async () => {
+          this.savingBranchIds.delete(branch.id);
+          await this.presentToast('Removed from saved');
+        },
+        error: async () => {
+          this.savedChurchIdsByBranchId.set(branch.id, existingSavedChurchId);
+          this.savingBranchIds.delete(branch.id);
+          await this.presentToast('Unable to update saved churches');
+        },
+      });
+      return;
+    }
+
+    const optimisticSavedChurchId = -branch.id;
+    this.savedChurchIdsByBranchId.set(branch.id, optimisticSavedChurchId);
+    this.authService.saveChurch(branch.id).subscribe({
+      next: async (savedChurch) => {
+        this.savedChurchIdsByBranchId.set(branch.id, savedChurch.id);
+        this.savingBranchIds.delete(branch.id);
+        await this.presentToast('Church saved');
+      },
+      error: async () => {
+        this.savedChurchIdsByBranchId.delete(branch.id);
+        this.savingBranchIds.delete(branch.id);
+        await this.presentToast('Unable to update saved churches');
+      },
+    });
+  }
+
   goBack(): void {
     this.router.navigate(['/home']);
+  }
+
+  private async presentToast(message: string): Promise<void> {
+    const toast = await this.toastController.create({
+      message,
+      duration: 1600,
+      position: 'bottom',
+    });
+    await toast.present();
   }
 }
