@@ -144,9 +144,9 @@ body {
 
 ion-toast.branch-save-toast {
   --background: #fffaf0;
-  --color: #0b1d73;
+  --color: #082356;
   --border-radius: 18px;
-  --box-shadow: 0 14px 32px rgba(6, 21, 74, 0.16);
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   --width: calc(100% - 2rem);
   --max-width: 360px;
 }
@@ -159,7 +159,7 @@ ion-toast.branch-save-toast::part(container) {
 ion-toast.branch-save-toast::part(message) {
   font-size: 0.94rem;
   font-weight: 600;
-  color: #0b1d73;
+  color: #082356;
 }
 
 ion-toast.branch-save-toast::part(icon) {

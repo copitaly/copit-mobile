@@ -93,6 +93,8 @@ import { SavedChurch } from '../../core/models/user.model';
                       slot="end"
                       class="save-button"
                       [class.save-button--saved]="isSaved(branch.id)"
+                      [class.save-button--animating-save]="heartAnimationState(branch.id) === 'save'"
+                      [class.save-button--animating-unsave]="heartAnimationState(branch.id) === 'unsave'"
                       [disabled]="isSaving(branch.id)"
                       [attr.aria-label]="isSaved(branch.id) ? 'Remove saved church' : 'Save church'"
                       (click)="toggleSavedChurch(branch, $event)"
@@ -133,6 +135,8 @@ import { SavedChurch } from '../../core/models/user.model';
                         slot="end"
                         class="save-button"
                         [class.save-button--saved]="isSaved(branch.id)"
+                        [class.save-button--animating-save]="heartAnimationState(branch.id) === 'save'"
+                        [class.save-button--animating-unsave]="heartAnimationState(branch.id) === 'unsave'"
                         [disabled]="isSaving(branch.id)"
                         [attr.aria-label]="isSaved(branch.id) ? 'Remove saved church' : 'Save church'"
                         (click)="toggleSavedChurch(branch, $event)"
@@ -244,6 +248,33 @@ import { SavedChurch } from '../../core/models/user.model';
         }
       }
 
+      @keyframes branch-heart-pop {
+        0% {
+          transform: scale(1);
+        }
+        55% {
+          transform: scale(1.1);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      @keyframes branch-heart-fade {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(0.94);
+          opacity: 0.72;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
       ion-list {
         margin-top: 0.15rem;
         display: flex;
@@ -326,10 +357,15 @@ import { SavedChurch } from '../../core/models/user.model';
 
       .save-button {
         --color: rgba(3, 23, 63, 0.48);
-        --padding-start: 0.15rem;
-        --padding-end: 0.15rem;
-        margin-right: 0.2rem;
-        align-self: flex-start;
+        --padding-start: 0;
+        --padding-end: 0;
+        min-width: 40px;
+        min-height: 40px;
+        width: 40px;
+        height: 40px;
+        margin-right: 0.25rem;
+        align-self: center;
+        justify-content: center;
       }
 
       .save-button--saved {
@@ -337,7 +373,16 @@ import { SavedChurch } from '../../core/models/user.model';
       }
 
       .save-button ion-icon {
-        font-size: 1.15rem;
+        font-size: 1.1rem;
+        transition: transform 180ms ease-out, opacity 150ms ease-out;
+      }
+
+      .save-button--animating-save ion-icon {
+        animation: branch-heart-pop 180ms ease-out;
+      }
+
+      .save-button--animating-unsave ion-icon {
+        animation: branch-heart-fade 160ms ease-out;
       }
 
       ion-icon[slot='start'] {
@@ -428,6 +473,7 @@ export class BranchSelectPage implements OnInit {
   branches: PublicBranch[] = [];
   private savedChurchIdsByBranchId = new Map<number, number>();
   private savingBranchIds = new Set<number>();
+  private heartAnimationByBranchId = new Map<number, 'save' | 'unsave'>();
 
   constructor(
     private readonly branchesService: BranchesService,
@@ -521,8 +567,17 @@ export class BranchSelectPage implements OnInit {
     return this.savingBranchIds.has(branchId);
   }
 
+  heartAnimationState(branchId: number): 'save' | 'unsave' | null {
+    return this.heartAnimationByBranchId.get(branchId) ?? null;
+  }
+
   toggleSavedChurch(branch: PublicBranch, event: Event): void {
     event.stopPropagation();
+
+    if (!this.authService.isAuthenticatedSnapshot) {
+      void this.handleUnauthenticatedSaveAttempt();
+      return;
+    }
 
     if (this.savingBranchIds.has(branch.id)) {
       return;
@@ -534,13 +589,15 @@ export class BranchSelectPage implements OnInit {
 
     if (wasSaved) {
       this.savedChurchIdsByBranchId.delete(branch.id);
+      this.animateHeart(branch.id, 'unsave');
       this.authService.unsaveChurch(existingSavedChurchId).subscribe({
         next: async () => {
           this.savingBranchIds.delete(branch.id);
-          await this.presentToast('Removed from saved churches', 'checkmark-circle');
+          await this.presentToast('Removed from saved', 'checkmark-circle');
         },
         error: async () => {
           this.savedChurchIdsByBranchId.set(branch.id, existingSavedChurchId);
+          this.animateHeart(branch.id, 'save');
           this.savingBranchIds.delete(branch.id);
           await this.presentToast('Could not update saved church', 'information-circle');
         },
@@ -550,6 +607,7 @@ export class BranchSelectPage implements OnInit {
 
     const optimisticSavedChurchId = -branch.id;
     this.savedChurchIdsByBranchId.set(branch.id, optimisticSavedChurchId);
+    this.animateHeart(branch.id, 'save');
     this.authService.saveChurch(branch.id).subscribe({
       next: async (savedChurch) => {
         this.savedChurchIdsByBranchId.set(branch.id, savedChurch.id);
@@ -558,6 +616,7 @@ export class BranchSelectPage implements OnInit {
       },
       error: async () => {
         this.savedChurchIdsByBranchId.delete(branch.id);
+        this.animateHeart(branch.id, 'unsave');
         this.savingBranchIds.delete(branch.id);
         await this.presentToast('Could not update saved church', 'information-circle');
       },
@@ -577,5 +636,21 @@ export class BranchSelectPage implements OnInit {
       cssClass: 'branch-save-toast',
     });
     await toast.present();
+  }
+
+  private async handleUnauthenticatedSaveAttempt(): Promise<void> {
+    await this.presentToast('Sign in to save churches', 'heart-outline');
+    void this.router.navigate(['/login'], {
+      queryParams: { returnUrl: '/branches' },
+    });
+  }
+
+  private animateHeart(branchId: number, state: 'save' | 'unsave'): void {
+    this.heartAnimationByBranchId.set(branchId, state);
+    window.setTimeout(() => {
+      if (this.heartAnimationByBranchId.get(branchId) === state) {
+        this.heartAnimationByBranchId.delete(branchId);
+      }
+    }, 220);
   }
 }
