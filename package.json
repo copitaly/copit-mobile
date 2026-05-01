@@ -7,6 +7,10 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "android:build": "ionic build && npx cap sync android",
+    "android:open": "ionic build && npx cap sync android && npx cap open android",
+    "android:run": "ionic build && npx cap sync android && npx cap run android",
+    "android:live": "ionic cap run android -l --external",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint"

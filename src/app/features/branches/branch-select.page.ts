@@ -311,30 +311,6 @@ interface DistrictBrowseGroup {
         display: block;
       }
 
-      ion-page {
-        background: #0b1d73;
-      }
-
-      ion-content.branch-content {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        --background: #0b1d73;
-      }
-
-      ion-content.branch-content::part(scroll) {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-height: 100%;
-      }
-
-      .branch-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-      }
-
       .branch-hero {
         border-bottom-left-radius: 28px;
         border-bottom-right-radius: 28px;
@@ -442,43 +418,6 @@ interface DistrictBrowseGroup {
 
       .branch-search::part(search-icon) {
         opacity: 0.45;
-      }
-
-      .state-card {
-        padding: 1rem 1.2rem;
-        background: #ffffff;
-        border-radius: 18px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 0.65rem;
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
-      }
-
-      .state-card.empty-state {
-        flex-direction: column;
-        gap: 0.35rem;
-        padding: 1.2rem 1.25rem;
-      }
-
-      .empty-copy {
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-      }
-
-      .empty-copy h3 {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 600;
-        color: rgba(3, 23, 63, 0.9);
-      }
-
-      .empty-copy p {
-        margin: 0;
-        font-size: 0.9rem;
-        color: rgba(3, 23, 63, 0.65);
       }
 
       .branch-card {

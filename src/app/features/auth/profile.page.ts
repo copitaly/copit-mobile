@@ -150,52 +150,6 @@ type QuickAction = {
         display: block;
       }
 
-      ion-page {
-        background: #0b1d73;
-      }
-
-      ion-content.profile-content {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        --background: #0b1d73;
-      }
-
-      ion-content.profile-content::part(scroll) {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-height: 100%;
-      }
-
-      .profile-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .profile-hero {
-        width: 100%;
-        padding-bottom: 2.15rem;
-      }
-
-      .profile-surface {
-        margin-top: -0.08rem;
-        padding-top: 1.25rem;
-        border-radius: 24px 24px 0 0;
-        box-shadow: 0 -6px 22px rgba(2, 18, 54, 0.08);
-      }
-
-      .profile-surface__content {
-        width: 100%;
-        max-width: 420px;
-        margin: 0 auto;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-        padding-bottom: calc(1.2rem + env(safe-area-inset-bottom));
-      }
-
       .profile-stack {
         display: flex;
         flex-direction: column;
@@ -441,65 +395,6 @@ type QuickAction = {
         line-height: 1.45;
       }
 
-      .state-card {
-        padding: 1.25rem;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        gap: 0.8rem;
-      }
-
-      .loading-state {
-        padding: 1.5rem 1.25rem;
-      }
-
-      .loading-state ion-spinner {
-        color: #0b1d73;
-        transform: scale(1.05);
-      }
-
-      .state-copy {
-        display: flex;
-        flex-direction: column;
-        gap: 0.3rem;
-      }
-
-      .state-copy h2,
-      .state-copy p {
-        margin: 0;
-      }
-
-      .state-copy h2 {
-        color: #03173f;
-        font-size: 1.05rem;
-        font-weight: 700;
-      }
-
-      .state-copy p {
-        color: rgba(3, 23, 63, 0.65);
-        font-size: 0.92rem;
-        line-height: 1.45;
-      }
-
-      .state-button {
-        --background: #0b1d73;
-        --background-hover: #0b1d73;
-        --background-activated: #09175c;
-        --border-radius: 16px;
-        --box-shadow: 0 12px 22px rgba(11, 29, 115, 0.2);
-        font-weight: 600;
-      }
-
-      @media (max-height: 760px) {
-        .profile-hero {
-          padding-bottom: 1.85rem;
-        }
-
-        .profile-surface {
-          padding-top: 1.1rem;
-        }
-      }
     `,
   ],
 })
