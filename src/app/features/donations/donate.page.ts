@@ -1,6 +1,6 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -11,6 +11,26 @@ import { DonationFlowStateService } from '../../core/services/donation-flow-stat
 import { PublicBranch } from '../../core/models/branch.model';
 import { DonationCheckoutRequest } from '../../core/models/donation.model';
 import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/stripe-payment.service';
+
+const AMOUNT_PATTERN = /^\d+(\.\d{0,2})?$/;
+
+function amountValidator(control: AbstractControl): ValidationErrors | null {
+  const rawValue = String(control.value ?? '').trim();
+  if (!rawValue) {
+    return { required: true };
+  }
+
+  if (!AMOUNT_PATTERN.test(rawValue)) {
+    return { decimalPlaces: true };
+  }
+
+  const numericValue = Number(rawValue);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return { greaterThanZero: true };
+  }
+
+  return null;
+}
 
 @Component({
   standalone: true,
@@ -70,14 +90,19 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
                 <ion-item class="custom-amount" fill="solid">
                   <span class="amount-prefix" aria-hidden="true">&euro;</span>
                   <ion-input
-                    type="number"
+                    type="text"
                     [value]="customAmountInputValue"
                     placeholder="Enter amount (EUR)"
                     inputmode="decimal"
-                    pattern="[0-9]*"
+                    autocomplete="off"
+                    enterkeyhint="done"
                     (ionInput)="handleCustomAmountInput($event)"
+                    (ionBlur)="handleCustomAmountBlur()"
                   ></ion-input>
                 </ion-item>
+                <ion-text color="danger" *ngIf="amountValidationMessage" class="form-error amount-error">
+                  {{ amountValidationMessage }}
+                </ion-text>
 
                 <ion-item class="custom-email" fill="solid">
                   <ion-input type="email" placeholder="Email (optional)" formControlName="donor_email"></ion-input>
@@ -313,6 +338,10 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
         color: #dc2626;
       }
 
+      .amount-error {
+        margin-top: -0.45rem;
+      }
+
       .empty-state {
         text-align: center;
         margin-top: 2rem;
@@ -334,7 +363,7 @@ export class DonatePage implements OnDestroy {
 
   form = this.fb.group({
     category: this.fb.control<string>(this.categories[0].value, Validators.required),
-    amount: this.fb.control<number | null>(null, [Validators.required, Validators.min(1)]),
+    amount: this.fb.control<string>('', [amountValidator]),
     donor_email: this.fb.control<string>('', Validators.email),
   });
 
@@ -493,20 +522,39 @@ export class DonatePage implements OnDestroy {
   }
 
   handleCustomAmountInput(event: CustomEvent): void {
-    const inputValue = event.detail?.value ?? '';
+    const inputValue = String(event.detail?.value ?? '');
     this.customAmountInputValue = inputValue;
-    const numeric = Number(inputValue);
+    this.form.get('amount')?.setValue(inputValue, { emitEvent: false });
+    this.form.get('amount')?.markAsDirty();
+    this.form.get('amount')?.updateValueAndValidity({ emitEvent: false });
+  }
 
-    if (!Number.isNaN(numeric) && numeric > 0) {
-      this.form.get('amount')?.setValue(numeric);
-    } else {
-      this.form.get('amount')?.setValue(null);
+  handleCustomAmountBlur(): void {
+    const amountControl = this.form.get('amount');
+    if (!amountControl) {
+      return;
     }
+
+    amountControl.markAsTouched();
+
+    const rawValue = this.customAmountInputValue.trim();
+    if (!rawValue || amountControl.invalid) {
+      return;
+    }
+
+    const numericValue = Number(rawValue);
+    if (!Number.isFinite(numericValue)) {
+      return;
+    }
+
+    const normalizedValue = numericValue.toFixed(2);
+    this.customAmountInputValue = normalizedValue;
+    amountControl.setValue(normalizedValue, { emitEvent: false });
+    amountControl.updateValueAndValidity({ emitEvent: false });
   }
 
   get ctaEnabled(): boolean {
-    const amount = Number(this.form.get('amount')?.value ?? 0);
-    return amount > 0 && this.form.valid;
+    return this.form.valid;
   }
 
   get ctaLabel(): string {
@@ -514,12 +562,34 @@ export class DonatePage implements OnDestroy {
       return 'Processing...';
     }
 
-    const amount = Number(this.form.get('amount')?.value ?? 0);
-    if (amount <= 0) {
+    const amountControl = this.form.get('amount');
+    if (!amountControl || amountControl.invalid) {
       return 'Enter an amount to continue';
     }
 
-    return `Give EUR ${amount.toFixed(2)} securely`;
+    const amount = Number(amountControl.value);
+    return `Give €${amount.toFixed(2)} securely`;
+  }
+
+  get amountValidationMessage(): string | null {
+    const amountControl = this.form.get('amount');
+    if (!amountControl || (!amountControl.touched && !amountControl.dirty)) {
+      return null;
+    }
+
+    if (amountControl.hasError('required')) {
+      return 'Enter an amount to continue';
+    }
+
+    if (amountControl.hasError('greaterThanZero')) {
+      return 'Amount must be greater than €0';
+    }
+
+    if (amountControl.hasError('decimalPlaces')) {
+      return 'Use up to 2 decimal places';
+    }
+
+    return null;
   }
 
   getHierarchy(branch: PublicBranch): string {
