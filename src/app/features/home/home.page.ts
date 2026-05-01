@@ -25,6 +25,7 @@ export class HomePage implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
   private savedChurches: SavedChurch[] = [];
   private defaultBranch: PublicBranch | null = null;
+  private personalizationRequestId = 0;
 
   constructor(
     private readonly authService: AuthService,
@@ -39,14 +40,16 @@ export class HomePage implements OnInit, OnDestroy {
       .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
       .subscribe((isAuthenticated) => {
         if (!isAuthenticated) {
-          this.savedChurches = [];
-          this.defaultBranch = null;
-          this.applyGuestCta();
+          this.resetGuestState();
           return;
         }
 
         this.loadPersonalization();
       });
+  }
+
+  ionViewWillEnter(): void {
+    this.refreshForCurrentAuthState();
   }
 
   ngOnDestroy(): void {
@@ -82,6 +85,12 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   private loadPersonalization(): void {
+    if (!this.authService.isAuthenticatedSnapshot) {
+      this.resetGuestState();
+      return;
+    }
+
+    const requestId = ++this.personalizationRequestId;
     const snapshotRecentDonations = this.authService.currentUserSnapshot?.recent_donations ?? [];
     const recentDonations$ = snapshotRecentDonations.length > 0
       ? of(snapshotRecentDonations)
@@ -94,6 +103,10 @@ export class HomePage implements OnInit, OnDestroy {
       recentDonationSource: recentDonations$,
     }).subscribe({
       next: ({ savedChurches, recentDonationSource }) => {
+        if (!this.isRequestCurrent(requestId) || !this.authService.isAuthenticatedSnapshot) {
+          return;
+        }
+
         this.savedChurches = savedChurches;
         const recentDonations = Array.isArray(recentDonationSource)
           ? recentDonationSource
@@ -102,16 +115,38 @@ export class HomePage implements OnInit, OnDestroy {
         this.applyAuthenticatedCta(savedChurches, this.defaultBranch);
       },
       error: () => {
-        this.savedChurches = [];
-        this.defaultBranch = null;
-        this.applyGuestCta();
+        if (!this.isRequestCurrent(requestId)) {
+          return;
+        }
+
+        this.resetGuestState();
       },
     });
+  }
+
+  private refreshForCurrentAuthState(): void {
+    if (!this.authService.isAuthenticatedSnapshot) {
+      this.resetGuestState();
+      return;
+    }
+
+    this.loadPersonalization();
+  }
+
+  private resetGuestState(): void {
+    this.personalizationRequestId++;
+    this.savedChurches = [];
+    this.defaultBranch = null;
+    this.applyGuestCta();
   }
 
   private applyGuestCta(): void {
     this.ctaLabel = 'Give Now';
     this.helperText = '';
+  }
+
+  private isRequestCurrent(requestId: number): boolean {
+    return requestId === this.personalizationRequestId;
   }
 
   private applyAuthenticatedCta(savedChurches: SavedChurch[], defaultBranch: PublicBranch | null): void {
