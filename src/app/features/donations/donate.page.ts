@@ -36,67 +36,56 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
         <div class="surface donate-surface">
           <div class="surface__content">
             <ng-container *ngIf="branch; else missingBranch">
-            <div class="branch-card" (click)="goToBranches()" tabindex="0" role="button">
-              <div class="branch-icon">
-                <ion-icon name="location"></ion-icon>
-              </div>
-              <div class="branch-info">
-                <div class="branch-title-row">
-                  <h2>{{ branch.name }}</h2>
-                  <span class="change-link" (click)="goToBranches(); $event.stopPropagation()">Change</span>
+              <div class="branch-card" (click)="goToBranches()" tabindex="0" role="button">
+                <div class="branch-icon">
+                  <ion-icon name="location"></ion-icon>
                 </div>
-                <p *ngIf="branch.district || branch.area">{{ getHierarchy(branch) }}</p>
-              </div>
-              <div class="branch-code" *ngIf="branch.branch_code">
-                {{ branch.branch_code }}
-              </div>
-            </div>
-
-            <form [formGroup]="form" (ngSubmit)="startNativePayment()" class="donate-form">
-              <div class="section-label">CATEGORY</div>
-              <div class="grid category-grid">
-                <button
-                  *ngFor="let option of categories"
-                  type="button"
-                  class="chip"
-                  [class.selected]="isCategory(option.value)"
-                  (click)="setCategory(option.value)"
-                >
-                  {{ option.label }}
-                </button>
+                <div class="branch-info">
+                  <div class="branch-title-row">
+                    <h2>{{ branch.name }}</h2>
+                    <span class="change-link" (click)="goToBranches(); $event.stopPropagation()">Change</span>
+                  </div>
+                  <p *ngIf="branch.district || branch.area">{{ getHierarchy(branch) }}</p>
+                </div>
+                <div class="branch-code" *ngIf="branch.branch_code">
+                  {{ branch.branch_code }}
+                </div>
               </div>
 
-              <div class="section-label">AMOUNT (EUR)</div>
-              <div class="grid amount-grid">
-                <button
-                  *ngFor="let option of amountOptions"
-                  type="button"
-                  class="chip"
-                  [class.selected]="isAmount(option)"
-                  (click)="setAmount(option)"
-                >
-                  €{{ option }}
-                </button>
-              </div>
+              <form [formGroup]="form" (ngSubmit)="startNativePayment()" class="donate-form">
+                <div class="section-label">CATEGORY</div>
+                <div class="grid category-grid">
+                  <button
+                    *ngFor="let option of categories"
+                    type="button"
+                    class="chip"
+                    [class.selected]="isCategory(option.value)"
+                    (click)="setCategory(option.value)"
+                  >
+                    {{ option.label }}
+                  </button>
+                </div>
 
-              <ion-item class="custom-amount" fill="solid">
-                <ion-input
-                  type="number"
-                  [value]="customAmountInputValue"
-                  placeholder="Enter custom amount"
-                  inputmode="decimal"
-                  pattern="[0-9]*"
-                  (ionInput)="handleCustomAmountInput($event)"
-                ></ion-input>
+                <div class="section-label">AMOUNT (EUR)</div>
+                <ion-item class="custom-amount" fill="solid">
+                  <span class="amount-prefix" aria-hidden="true">&euro;</span>
+                  <ion-input
+                    type="number"
+                    [value]="customAmountInputValue"
+                    placeholder="Enter amount (EUR)"
+                    inputmode="decimal"
+                    pattern="[0-9]*"
+                    (ionInput)="handleCustomAmountInput($event)"
+                  ></ion-input>
                 </ion-item>
 
-              <ion-item class="custom-email" fill="solid">
-                <ion-input type="email" placeholder="Email (optional)" formControlName="donor_email"></ion-input>
-              </ion-item>
+                <ion-item class="custom-email" fill="solid">
+                  <ion-input type="email" placeholder="Email (optional)" formControlName="donor_email"></ion-input>
+                </ion-item>
 
-              <ion-text color="danger" *ngIf="errorMessage" class="form-error">
-                {{ errorMessage }}
-              </ion-text>
+                <ion-text color="danger" *ngIf="errorMessage" class="form-error">
+                  {{ errorMessage }}
+                </ion-text>
 
                 <ion-button
                   type="submit"
@@ -108,18 +97,18 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
                   <span>{{ ctaLabel }}</span>
                   <ion-spinner *ngIf="nativeLoading" name="crescent" slot="start"></ion-spinner>
                 </ion-button>
-              <p class="trust-text">Payments processed securely via Stripe</p>
-              <ion-text color="danger" *ngIf="nativeError" class="form-error">
-                {{ nativeError }}
-              </ion-text>
-            </form>
+                <p class="trust-text">Payments processed securely via Stripe</p>
+                <ion-text color="danger" *ngIf="nativeError" class="form-error">
+                  {{ nativeError }}
+                </ion-text>
+              </form>
             </ng-container>
             <ng-template #missingBranch>
-            <div class="empty-state">
-              <p>Please choose a branch before continuing.</p>
-              <ion-button expand="block" (click)="goToBranches()">Choose a branch</ion-button>
-            </div>
-          </ng-template>
+              <div class="empty-state">
+                <p>Please choose a branch before continuing.</p>
+                <ion-button expand="block" (click)="goToBranches()">Choose a branch</ion-button>
+              </div>
+            </ng-template>
           </div>
         </div>
       </ion-content>
@@ -210,7 +199,7 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
       .donate-form {
         display: flex;
         flex-direction: column;
-        gap: 0.8rem;
+        gap: 0.95rem;
       }
 
       .section-label {
@@ -252,6 +241,22 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
       }
 
+      .custom-amount {
+        --min-height: 62px;
+        padding-inline: 0.15rem;
+      }
+
+      .amount-prefix {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.15rem;
+        margin-left: 0.15rem;
+        color: #111b45;
+        font-size: 1.05rem;
+        font-weight: 700;
+      }
+
       ion-input {
         font-size: 1rem;
         font-weight: 600;
@@ -259,7 +264,7 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
       }
 
       .custom-amount input {
-        text-align: center;
+        text-align: left;
         font-weight: 600;
         -moz-appearance: textfield;
       }
@@ -297,7 +302,7 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
       }
 
       .trust-text {
-        margin: 0.45rem 0 0;
+        margin: 0.2rem 0 0;
         text-align: center;
         color: #475467;
         font-size: 0.75rem;
@@ -326,18 +331,19 @@ export class DonatePage implements OnDestroy {
     { label: 'Thanksgiving', value: 'thanksgiving' },
     { label: 'Other', value: 'other' },
   ];
+
   form = this.fb.group({
     category: this.fb.control<string>(this.categories[0].value, Validators.required),
     amount: this.fb.control<number | null>(null, [Validators.required, Validators.min(1)]),
     donor_email: this.fb.control<string>('', Validators.email),
   });
+
   loading = false;
   errorMessage?: string;
   nativeLoading = false;
   nativeError?: string;
   branch: PublicBranch | null = null;
   customAmountInputValue = '';
-  selectedAmountPreset: number | null = null;
   private branchSub: Subscription;
   private pendingMobileDonationId?: number;
 
@@ -486,28 +492,16 @@ export class DonatePage implements OnDestroy {
     return this.form.get('category')?.value === option;
   }
 
-  readonly amountOptions = [10, 25, 50, 100, 200, 500];
-
-  setAmount(value: number): void {
-    this.form.get('amount')?.setValue(value);
-    this.selectedAmountPreset = value;
-    this.customAmountInputValue = '';
-  }
-
-  isAmount(value: number): boolean {
-    return Number(this.form.get('amount')?.value ?? 0) === value;
-  }
-
   handleCustomAmountInput(event: CustomEvent): void {
     const inputValue = event.detail?.value ?? '';
     this.customAmountInputValue = inputValue;
     const numeric = Number(inputValue);
+
     if (!Number.isNaN(numeric) && numeric > 0) {
       this.form.get('amount')?.setValue(numeric);
     } else {
       this.form.get('amount')?.setValue(null);
     }
-    this.selectedAmountPreset = null;
   }
 
   get ctaEnabled(): boolean {
@@ -517,18 +511,15 @@ export class DonatePage implements OnDestroy {
 
   get ctaLabel(): string {
     if (this.nativeLoading) {
-      return 'Processing…';
+      return 'Processing...';
     }
+
     const amount = Number(this.form.get('amount')?.value ?? 0);
     if (amount <= 0) {
-      return 'Choose an amount to continue';
+      return 'Enter an amount to continue';
     }
-    return `Give €${amount.toFixed(2)} securely`;
-  }
 
-  displayAmount(): string {
-    const amt = Number(this.form.get('amount')?.value ?? 0);
-    return amt ? `€${amt}` : 'Choose an amount';
+    return `Give EUR ${amount.toFixed(2)} securely`;
   }
 
   getHierarchy(branch: PublicBranch): string {
