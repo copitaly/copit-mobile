@@ -20,6 +20,7 @@ import { DonationsService } from '../../core/services/donations.service';
 import { AuthService } from '../../core/services/auth.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/stripe-payment.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 const EURO_SYMBOL = '\u20AC';
 const AMOUNT_PATTERN = /^\d+(\.\d{0,2})?$/;
@@ -44,22 +45,18 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, IonicModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, IonicModule, MobileHeaderComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-donate',
   template: `
     <ion-page>
       <div class="donate-hero app-header app-header--inner">
-        <div class="app-header__inner">
-          <button class="hero-back app-header__back" (click)="goBack()" type="button">
-            <ion-icon class="app-back-icon" name="chevron-back" aria-hidden="true"></ion-icon>
-            <span>Back</span>
-          </button>
-          <div class="app-header__copy">
-            <h1 class="app-header__title">Make a Donation</h1>
-            <p class="app-header__subtitle">Support your local church safely and securely.</p>
-          </div>
-        </div>
+        <app-mobile-header
+          title="Make a Donation"
+          subtitle="Support your local church safely and securely."
+          [centerCopy]="false"
+          fallbackRoute="/branches"
+        ></app-mobile-header>
       </div>
 
       <ion-content fullscreen class="donate-content">
@@ -552,12 +549,6 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
   goToBranches(): void {
     this.router.navigate(['/branches']);
-  }
-
-  goBack(): void {
-    this.router.navigate(['/branches']).catch(() => {
-      window.location.href = '/branches';
-    });
   }
 
   setCategory(option: string): void {

@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 
 import { AuthService } from '../../core/services/auth.service';
 import { MemberProfile } from '../../core/models/user.model';
+import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 type QuickAction = {
   title: string;
@@ -17,21 +18,14 @@ type QuickAction = {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-profile',
   template: `
     <ion-page>
       <ion-content fullscreen class="profile-content">
         <div class="profile-hero app-header app-header--inner">
-          <div class="app-header__inner">
-            <button class="profile-back app-header__back" type="button" aria-label="Back" (click)="goHome()">
-              <ion-icon class="app-back-icon" name="arrow-back" aria-hidden="true"></ion-icon>
-            </button>
-            <div class="app-header__copy profile-hero__copy">
-              <h1 class="app-header__title">My Profile</h1>
-            </div>
-          </div>
+          <app-mobile-header title="My Profile" fallbackRoute="/home"></app-mobile-header>
         </div>
 
         <div class="surface profile-surface">
@@ -183,26 +177,6 @@ type QuickAction = {
       .profile-hero {
         width: 100%;
         padding-bottom: 2.15rem;
-      }
-
-      .profile-back {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.14);
-        backdrop-filter: blur(6px);
-        justify-content: center;
-        padding: 0;
-        min-height: 40px;
-      }
-
-      .profile-back ion-icon {
-        font-size: 1.1rem;
-      }
-
-      .profile-hero__copy {
-        text-align: center;
-        align-items: center;
       }
 
       .profile-surface {

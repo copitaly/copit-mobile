@@ -7,24 +7,18 @@ import { PublicBranch } from '../../core/models/branch.model';
 import { SavedChurch } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-saved-churches',
   template: `
     <ion-page>
       <ion-content fullscreen class="saved-content">
         <div class="saved-hero app-header app-header--inner">
-          <div class="app-header__inner">
-            <button class="saved-back app-header__back" type="button" aria-label="Back" (click)="goBack()">
-              <ion-icon class="app-back-icon" name="arrow-back" aria-hidden="true"></ion-icon>
-            </button>
-            <div class="app-header__copy saved-hero__copy">
-              <h1 class="app-header__title">Saved Churches</h1>
-            </div>
-          </div>
+          <app-mobile-header title="Saved Churches" fallbackRoute="/profile"></app-mobile-header>
         </div>
 
         <div class="surface saved-surface">
@@ -137,26 +131,6 @@ import { SelectedBranchService } from '../../core/services/selected-branch.servi
       .saved-hero {
         width: 100%;
         padding-bottom: 2rem;
-      }
-
-      .saved-back {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.14);
-        backdrop-filter: blur(6px);
-        justify-content: center;
-        padding: 0;
-        min-height: 40px;
-      }
-
-      .saved-back ion-icon {
-        font-size: 1.1rem;
-      }
-
-      .saved-hero__copy {
-        text-align: center;
-        align-items: center;
       }
 
       .saved-surface {
@@ -504,10 +478,6 @@ export class SavedChurchesPage implements OnInit {
 
   goToBranches(): void {
     void this.router.navigate(['/branches']);
-  }
-
-  goBack(): void {
-    void this.router.navigate(['/profile']);
   }
 
   private fetchSavedChurches(): void {

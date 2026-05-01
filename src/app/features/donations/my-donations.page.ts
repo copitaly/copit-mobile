@@ -5,24 +5,18 @@ import { IonicModule } from '@ionic/angular';
 
 import { AuthService } from '../../core/services/auth.service';
 import { MemberRecentDonation } from '../../core/models/user.model';
+import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-my-donations',
   template: `
     <ion-page>
       <ion-content fullscreen class="donations-content">
         <div class="donations-hero app-header app-header--inner">
-          <div class="app-header__inner">
-            <button class="donations-back app-header__back" type="button" aria-label="Back" (click)="goBack()">
-              <ion-icon class="app-back-icon" name="arrow-back" aria-hidden="true"></ion-icon>
-            </button>
-            <div class="app-header__copy donations-hero__copy">
-              <h1 class="app-header__title">My Donations</h1>
-            </div>
-          </div>
+          <app-mobile-header title="My Donations" fallbackRoute="/profile"></app-mobile-header>
         </div>
 
         <div class="surface donations-surface">
@@ -139,26 +133,6 @@ import { MemberRecentDonation } from '../../core/models/user.model';
       .donations-hero {
         width: 100%;
         padding-bottom: 2rem;
-      }
-
-      .donations-back {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.14);
-        backdrop-filter: blur(6px);
-        justify-content: center;
-        padding: 0;
-        min-height: 40px;
-      }
-
-      .donations-back ion-icon {
-        font-size: 1.1rem;
-      }
-
-      .donations-hero__copy {
-        text-align: center;
-        align-items: center;
       }
 
       .donations-surface {
@@ -501,10 +475,6 @@ export class MyDonationsPage implements OnInit {
 
   goToDonationFlow(): void {
     void this.router.navigate(['/branches']);
-  }
-
-  goBack(): void {
-    void this.router.navigate(['/profile']);
   }
 
   private fetchDonations(): void {

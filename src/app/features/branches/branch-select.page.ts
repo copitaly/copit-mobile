@@ -10,6 +10,7 @@ import { SavedChurch } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
 import { BranchesService } from '../../core/services/branches.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 type BrowseLevel = 'districts' | 'areas' | 'churches';
 
@@ -30,23 +31,19 @@ interface DistrictBrowseGroup {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule],
+  imports: [CommonModule, FormsModule, IonicModule, MobileHeaderComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-branch-select',
   template: `
     <ion-page>
       <ion-content fullscreen class="branch-content">
         <div class="branch-hero app-header app-header--inner">
-          <div class="app-header__inner">
-            <button class="hero-back app-header__back" type="button" (click)="goBack()">
-              <ion-icon class="app-back-icon" name="chevron-back" aria-hidden="true"></ion-icon>
-              <span>Back</span>
-            </button>
-            <div class="app-header__copy">
-              <h1 class="app-header__title">Choose your church</h1>
-              <p class="app-header__subtitle">Your donation goes directly to the selected branch.</p>
-            </div>
-          </div>
+          <app-mobile-header
+            title="Choose your church"
+            subtitle="Your donation goes directly to the selected branch."
+            [centerCopy]="false"
+            fallbackRoute="/home"
+          ></app-mobile-header>
         </div>
 
         <div class="surface branch-surface">
@@ -1000,10 +997,6 @@ export class BranchSelectPage implements OnInit {
         await this.presentToast('Could not update saved church', 'information-circle');
       },
     });
-  }
-
-  goBack(): void {
-    this.router.navigate(['/home']);
   }
 
   private ensureHierarchySelectionIsValid(): void {

@@ -6,25 +6,22 @@ import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
 import { AuthService } from '../../core/services/auth.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, IonicModule],
+  imports: [CommonModule, ReactiveFormsModule, IonicModule, MobileHeaderComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-register',
   template: `
     <ion-page>
       <ion-content fullscreen class="auth-content">
         <div class="auth-hero app-header app-header--inner">
-          <div class="app-header__inner">
-            <button class="auth-back app-header__back" type="button" aria-label="Back" (click)="goHome()">
-              <ion-icon class="app-back-icon" name="arrow-back" aria-hidden="true"></ion-icon>
-            </button>
-            <div class="app-header__copy auth-hero__copy">
-              <h1 class="app-header__title">Create account</h1>
-              <p class="app-header__subtitle">Start giving with your profile</p>
-            </div>
-          </div>
+          <app-mobile-header
+            title="Create account"
+            subtitle="Start giving with your profile"
+            fallbackRoute="/home"
+          ></app-mobile-header>
         </div>
 
         <div class="surface auth-surface">
@@ -199,26 +196,6 @@ import { AuthService } from '../../core/services/auth.service';
       .auth-hero {
         width: 100%;
         padding-bottom: 1.75rem;
-      }
-
-      .auth-back {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.14);
-        backdrop-filter: blur(6px);
-        justify-content: center;
-        padding: 0;
-        min-height: 40px;
-      }
-
-      .auth-back ion-icon {
-        font-size: 1.1rem;
-      }
-
-      .auth-hero__copy {
-        text-align: center;
-        align-items: center;
       }
 
       .auth-surface {
@@ -492,10 +469,6 @@ export class RegisterPage implements OnDestroy {
 
   goToLogin(): void {
     void this.router.navigate(['/login']);
-  }
-
-  goHome(): void {
-    void this.router.navigate(['/home']);
   }
 
   private getRegisterPayload() {
