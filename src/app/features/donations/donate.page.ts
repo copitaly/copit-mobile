@@ -10,12 +10,14 @@ import {
 import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonInput, IonicModule } from '@ionic/angular';
-import { Subscription } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
+import { filter, take, takeUntil } from 'rxjs/operators';
 import { finalize } from 'rxjs/operators';
 import { PublicBranch } from '../../core/models/branch.model';
 import { DonationCheckoutRequest } from '../../core/models/donation.model';
 import { DonationFlowStateService } from '../../core/services/donation-flow-state.service';
 import { DonationsService } from '../../core/services/donations.service';
+import { AuthService } from '../../core/services/auth.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/stripe-payment.service';
 
@@ -114,7 +116,12 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                 </ion-text>
 
                 <ion-item class="custom-email" fill="solid">
-                  <ion-input type="email" placeholder="Email (optional)" formControlName="donor_email"></ion-input>
+                  <ion-input
+                    type="email"
+                    placeholder="Email (optional)"
+                    formControlName="donor_email"
+                    (ionInput)="handleEmailInput($event)"
+                  ></ion-input>
                 </ion-item>
 
                 <ion-text color="danger" *ngIf="errorMessage" class="form-error">
@@ -414,11 +421,16 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   private pendingMobileDonationId?: number;
   private hasAutoFocusedAmount = false;
   private focusTimeoutId?: ReturnType<typeof setTimeout>;
+  private hasPrefilledEmail = false;
+  private emailWasAuthPrefilled = false;
+  private lastAuthPrefilledEmail = '';
+  private readonly destroy$ = new Subject<void>();
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly donationsService: DonationsService,
     private readonly donationFlowState: DonationFlowStateService,
+    private readonly authService: AuthService,
     private readonly selectedBranchService: SelectedBranchService,
     private readonly router: Router,
     private readonly stripePaymentService: StripePaymentService
@@ -433,9 +445,27 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
       this.tryAutoFocusAmount();
     });
+
+    this.authService.isAuthenticated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((isAuthenticated) => {
+        if (!isAuthenticated) {
+          this.clearAuthPrefilledDonorEmail();
+          return;
+        }
+
+        this.prefillDonorEmailOnce();
+      });
+
+    this.prefillDonorEmailOnce();
   }
 
   ngAfterViewInit(): void {
+    this.tryAutoFocusAmount();
+  }
+
+  ionViewWillEnter(): void {
+    this.prefillDonorEmailOnce();
     this.tryAutoFocusAmount();
   }
 
@@ -500,6 +530,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       clearTimeout(this.focusTimeoutId);
     }
 
+    this.destroy$.next();
+    this.destroy$.complete();
     this.branchSub.unsubscribe();
   }
 
@@ -566,6 +598,17 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     this.customAmountInputValue = normalizedValue;
     amountControl.setValue(normalizedValue, { emitEvent: false });
     amountControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  handleEmailInput(event: CustomEvent): void {
+    if (!this.emailWasAuthPrefilled) {
+      return;
+    }
+
+    const inputValue = String(event.detail?.value ?? '').trim();
+    if (inputValue !== this.lastAuthPrefilledEmail) {
+      this.emailWasAuthPrefilled = false;
+    }
   }
 
   get ctaEnabled(): boolean {
@@ -662,6 +705,108 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     }
 
     return true;
+  }
+
+  private prefillDonorEmailOnce(): void {
+    if (this.hasPrefilledEmail) {
+      return;
+    }
+
+    if (!this.authService.isAuthenticatedSnapshot) {
+      this.clearAuthPrefilledDonorEmail();
+      this.hasPrefilledEmail = true;
+      return;
+    }
+
+    if (!this.canPrefillDonorEmail()) {
+      this.hasPrefilledEmail = true;
+      return;
+    }
+
+    const snapshotEmail = this.authService.currentUserSnapshot?.email?.trim();
+    if (snapshotEmail) {
+      this.applyPrefilledDonorEmail(snapshotEmail);
+      return;
+    }
+
+    this.authService.currentUser$
+      .pipe(
+        filter((user): user is NonNullable<typeof user> => !!user),
+        take(1),
+        takeUntil(this.destroy$)
+      )
+      .subscribe((user) => {
+        const email = user.email?.trim();
+        if (email) {
+          this.applyPrefilledDonorEmail(email);
+          return;
+        }
+
+        if (!this.canPrefillDonorEmail()) {
+          this.hasPrefilledEmail = true;
+        }
+      });
+
+    if (this.authService.currentUserSnapshot || !this.authService.isAuthenticatedSnapshot) {
+      if (!this.authService.isAuthenticatedSnapshot) {
+        this.hasPrefilledEmail = true;
+      }
+      return;
+    }
+
+    this.authService.getCurrentUser().subscribe({
+      next: (user) => {
+        if (!this.canPrefillDonorEmail()) {
+          this.hasPrefilledEmail = true;
+          return;
+        }
+
+        const userEmail = user?.email?.trim();
+        if (userEmail) {
+          this.applyPrefilledDonorEmail(userEmail);
+          return;
+        }
+
+        this.hasPrefilledEmail = true;
+      },
+      error: () => {
+        this.hasPrefilledEmail = true;
+      },
+    });
+  }
+
+  private canPrefillDonorEmail(): boolean {
+    const emailControl = this.form.get('donor_email');
+    return !!emailControl && !emailControl.dirty && !String(emailControl.value ?? '').trim();
+  }
+
+  private applyPrefilledDonorEmail(email: string): void {
+    if (!this.canPrefillDonorEmail()) {
+      this.hasPrefilledEmail = true;
+      return;
+    }
+
+    const emailControl = this.form.get('donor_email');
+    emailControl?.setValue(email, { emitEvent: false });
+    emailControl?.markAsPristine();
+    emailControl?.markAsUntouched();
+    this.lastAuthPrefilledEmail = email.trim();
+    this.emailWasAuthPrefilled = true;
+    this.hasPrefilledEmail = true;
+  }
+
+  private clearAuthPrefilledDonorEmail(): void {
+    if (!this.emailWasAuthPrefilled) {
+      return;
+    }
+
+    const emailControl = this.form.get('donor_email');
+    emailControl?.setValue('', { emitEvent: false });
+    emailControl?.markAsPristine();
+    emailControl?.markAsUntouched();
+    this.emailWasAuthPrefilled = false;
+    this.lastAuthPrefilledEmail = '';
+    this.hasPrefilledEmail = false;
   }
 
   private tryAutoFocusAmount(): void {
