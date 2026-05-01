@@ -1,17 +1,25 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { IonicModule } from '@ionic/angular';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormsModule,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
+import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
+import { IonInput, IonicModule } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 import { finalize } from 'rxjs/operators';
-import { SelectedBranchService } from '../../core/services/selected-branch.service';
-import { DonationsService } from '../../core/services/donations.service';
-import { DonationFlowStateService } from '../../core/services/donation-flow-state.service';
 import { PublicBranch } from '../../core/models/branch.model';
 import { DonationCheckoutRequest } from '../../core/models/donation.model';
+import { DonationFlowStateService } from '../../core/services/donation-flow-state.service';
+import { DonationsService } from '../../core/services/donations.service';
+import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/stripe-payment.service';
 
+const EURO_SYMBOL = '\u20AC';
 const AMOUNT_PATTERN = /^\d+(\.\d{0,2})?$/;
 
 function amountValidator(control: AbstractControl): ValidationErrors | null {
@@ -87,9 +95,10 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                 </div>
 
                 <div class="section-label">AMOUNT (EUR)</div>
-                <ion-item class="custom-amount" fill="solid">
+                <ion-item class="custom-amount" [class.is-valid]="isAmountValid" fill="solid">
                   <span class="amount-prefix" aria-hidden="true">&euro;</span>
                   <ion-input
+                    #amountInput
                     type="text"
                     [value]="customAmountInputValue"
                     placeholder="Enter amount (EUR)"
@@ -116,6 +125,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                   type="submit"
                   expand="block"
                   class="cta"
+                  [class.cta-enabled]="ctaEnabled"
                   [disabled]="!ctaEnabled || nativeLoading"
                 >
                   <ion-icon name="lock-closed" slot="start"></ion-icon>
@@ -128,6 +138,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                 </ion-text>
               </form>
             </ng-container>
+
             <ng-template #missingBranch>
               <div class="empty-state">
                 <p>Please choose a branch before continuing.</p>
@@ -269,6 +280,18 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
       .custom-amount {
         --min-height: 62px;
         padding-inline: 0.15rem;
+        border: 1px solid transparent;
+        transition:
+          box-shadow 160ms ease-out,
+          border-color 160ms ease-out,
+          transform 160ms ease-out;
+      }
+
+      .custom-amount.is-valid {
+        border-color: rgba(11, 29, 115, 0.18);
+        box-shadow:
+          0 10px 20px rgba(0, 0, 0, 0.05),
+          0 0 0 3px rgba(11, 29, 115, 0.08);
       }
 
       .amount-prefix {
@@ -307,10 +330,21 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
         border-radius: 999px;
         height: 52px;
         box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        opacity: 0.82;
+        transform: translateY(1px);
+        transition:
+          opacity 160ms ease-out,
+          transform 160ms ease-out,
+          box-shadow 160ms ease-out;
       }
 
       .cta:disabled {
         --color: rgba(1, 27, 45, 0.7);
+      }
+
+      .cta.cta-enabled {
+        opacity: 1;
+        transform: translateY(0);
       }
 
       .cta.native {
@@ -352,7 +386,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
     `,
   ],
 })
-export class DonatePage implements OnDestroy {
+export class DonatePage implements AfterViewInit, OnDestroy {
   readonly categories = [
     { label: 'Tithe', value: 'tithe' },
     { label: 'Offering', value: 'offering' },
@@ -373,8 +407,13 @@ export class DonatePage implements OnDestroy {
   nativeError?: string;
   branch: PublicBranch | null = null;
   customAmountInputValue = '';
+
+  @ViewChild('amountInput') private amountInput?: IonInput;
+
   private branchSub: Subscription;
   private pendingMobileDonationId?: number;
+  private hasAutoFocusedAmount = false;
+  private focusTimeoutId?: ReturnType<typeof setTimeout>;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -386,7 +425,18 @@ export class DonatePage implements OnDestroy {
   ) {
     this.branchSub = this.selectedBranchService.selectedBranch$.subscribe(branch => {
       this.branch = branch;
+
+      if (!branch) {
+        this.hasAutoFocusedAmount = false;
+        return;
+      }
+
+      this.tryAutoFocusAmount();
     });
+  }
+
+  ngAfterViewInit(): void {
+    this.tryAutoFocusAmount();
   }
 
   submit(): void {
@@ -446,6 +496,10 @@ export class DonatePage implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.focusTimeoutId) {
+      clearTimeout(this.focusTimeoutId);
+    }
+
     this.branchSub.unsubscribe();
   }
 
@@ -462,45 +516,6 @@ export class DonatePage implements OnDestroy {
     } else {
       this.nativeError = result.errorMessage ?? 'Payment failed. Please try again.';
     }
-  }
-
-  private logPaymentOutcome(status: PaymentSheetOutcome, donationId?: number): void {
-    console.log('[DonatePage] native PaymentSheet outcome', { status, donationId });
-  }
-
-  private readyForPayment(): boolean {
-    if (!this.branch) {
-      this.errorMessage = 'Please pick a branch first.';
-      return false;
-    }
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      this.errorMessage = 'Please fill the required fields.';
-      return false;
-    }
-    return true;
-  }
-
-  private buildPayload(): DonationCheckoutRequest {
-    const formValue = this.form.value;
-    return {
-      church_id: this.branch!.id,
-      category: formValue.category || undefined,
-      amount: Number(formValue.amount),
-      donor_email: formValue.donor_email || undefined,
-    };
-  }
-
-  private persistSummary(payload: DonationCheckoutRequest, transactionReference: string): void {
-    this.donationFlowState.setSummary({
-      branchName: this.branch?.name,
-      branchId: this.branch?.id,
-      category: payload.category || undefined,
-      amount: payload.amount,
-      donorEmail: payload.donor_email,
-      transactionReference,
-      timestamp: Date.now(),
-    });
   }
 
   goToBranches(): void {
@@ -568,7 +583,7 @@ export class DonatePage implements OnDestroy {
     }
 
     const amount = Number(amountControl.value);
-    return `Give €${amount.toFixed(2)} securely`;
+    return `Give ${EURO_SYMBOL}${amount.toFixed(2)}`;
   }
 
   get amountValidationMessage(): string | null {
@@ -582,7 +597,7 @@ export class DonatePage implements OnDestroy {
     }
 
     if (amountControl.hasError('greaterThanZero')) {
-      return 'Amount must be greater than €0';
+      return `Amount must be greater than ${EURO_SYMBOL}0`;
     }
 
     if (amountControl.hasError('decimalPlaces')) {
@@ -590,6 +605,11 @@ export class DonatePage implements OnDestroy {
     }
 
     return null;
+  }
+
+  get isAmountValid(): boolean {
+    const amountControl = this.form.get('amount');
+    return !!amountControl && amountControl.valid && !!this.customAmountInputValue.trim();
   }
 
   getHierarchy(branch: PublicBranch): string {
@@ -601,5 +621,65 @@ export class DonatePage implements OnDestroy {
       parts.push(`${branch.area.name} Area`);
     }
     return parts.join(' • ');
+  }
+
+  private buildPayload(): DonationCheckoutRequest {
+    const formValue = this.form.value;
+    return {
+      church_id: this.branch!.id,
+      category: formValue.category || undefined,
+      amount: Number(formValue.amount),
+      donor_email: formValue.donor_email || undefined,
+    };
+  }
+
+  private logPaymentOutcome(status: PaymentSheetOutcome, donationId?: number): void {
+    console.log('[DonatePage] native PaymentSheet outcome', { status, donationId });
+  }
+
+  private persistSummary(payload: DonationCheckoutRequest, transactionReference: string): void {
+    this.donationFlowState.setSummary({
+      branchName: this.branch?.name,
+      branchId: this.branch?.id,
+      category: payload.category || undefined,
+      amount: payload.amount,
+      donorEmail: payload.donor_email,
+      transactionReference,
+      timestamp: Date.now(),
+    });
+  }
+
+  private readyForPayment(): boolean {
+    if (!this.branch) {
+      this.errorMessage = 'Please pick a branch first.';
+      return false;
+    }
+
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.errorMessage = 'Please fill the required fields.';
+      return false;
+    }
+
+    return true;
+  }
+
+  private tryAutoFocusAmount(): void {
+    if (this.hasAutoFocusedAmount || !this.branch || !this.amountInput || this.loading || this.nativeLoading) {
+      return;
+    }
+
+    if (this.focusTimeoutId) {
+      clearTimeout(this.focusTimeoutId);
+    }
+
+    this.focusTimeoutId = setTimeout(() => {
+      if (this.hasAutoFocusedAmount || !this.branch || !this.amountInput || this.loading || this.nativeLoading) {
+        return;
+      }
+
+      this.amountInput.setFocus().catch(() => undefined);
+      this.hasAutoFocusedAmount = true;
+    }, 120);
   }
 }
