@@ -86,18 +86,38 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
 
               <form [formGroup]="form" (ngSubmit)="submitDonation()" class="donate-form">
                 <div class="section-label">FREQUENCY</div>
-                <ion-segment
-                  class="frequency-segment"
-                  [value]="frequency"
-                  (ionChange)="handleFrequencyChange($event)"
-                >
-                  <ion-segment-button value="one_time">
-                    <ion-label>One-time</ion-label>
-                  </ion-segment-button>
-                  <ion-segment-button value="monthly">
-                    <ion-label>Monthly</ion-label>
-                  </ion-segment-button>
-                </ion-segment>
+                <div class="frequency-cards" role="radiogroup" aria-label="Donation frequency">
+                  <button
+                    type="button"
+                    class="frequency-card"
+                    [class.selected]="frequency === 'one_time'"
+                    [attr.aria-checked]="frequency === 'one_time'"
+                    aria-label="One-time donation"
+                    role="radio"
+                    (click)="setFrequency('one_time')"
+                  >
+                    <span class="frequency-copy">
+                      <span class="frequency-title">One-time</span>
+                      <span class="frequency-subtitle">Pay once</span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="frequency-card"
+                    [class.selected]="frequency === 'monthly'"
+                    [attr.aria-checked]="frequency === 'monthly'"
+                    aria-label="Monthly donation"
+                    role="radio"
+                    (click)="setFrequency('monthly')"
+                  >
+                    <span class="frequency-icon" aria-hidden="true">🔁</span>
+                    <span class="frequency-copy">
+                      <span class="frequency-title">Monthly</span>
+                      <span class="frequency-subtitle">Charged every month. Cancel anytime.</span>
+                    </span>
+                  </button>
+                </div>
 
                 <div class="section-label">CATEGORY</div>
                 <div class="grid category-grid">
@@ -143,6 +163,10 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                 <ion-text color="danger" *ngIf="errorMessage" class="form-error">
                   {{ errorMessage }}
                 </ion-text>
+
+                <p class="recurring-confirmation" *ngIf="showRecurringConfirmation">
+                  You will give {{ formattedValidAmount }} every month.
+                </p>
 
                 <ion-button
                   type="submit"
@@ -274,20 +298,58 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
         gap: 0.45rem;
       }
 
-      .frequency-segment {
-        --background: #eef2ff;
-        border-radius: 16px;
-        padding: 0.2rem;
+      .frequency-cards {
+        display: grid;
+        gap: 0.75rem;
       }
 
-      .frequency-segment ion-segment-button {
-        --border-radius: 12px;
-        --color: #0b1d73;
-        --color-checked: #ffffff;
-        --background-checked: #0b1d73;
-        min-height: 44px;
+      .frequency-card {
+        width: 100%;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 1rem;
+        border-radius: 18px;
+        border: 1px solid #d7dce5;
+        background: #f3f4f6;
+        color: #0b1d73;
+        text-align: left;
+        cursor: pointer;
+        transition:
+          border-color 160ms ease-out,
+          background-color 160ms ease-out,
+          box-shadow 160ms ease-out,
+          transform 160ms ease-out;
+      }
+
+      .frequency-card.selected {
+        border-color: #0b1d73;
+        background: #eef2ff;
+        box-shadow: 0 10px 24px rgba(11, 29, 115, 0.12);
+        transform: translateY(-1px);
+      }
+
+      .frequency-icon {
+        font-size: 1.2rem;
+        line-height: 1.2;
+      }
+
+      .frequency-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+      }
+
+      .frequency-title {
+        font-size: 1rem;
         font-weight: 700;
-        text-transform: none;
+        color: #0b1d73;
+      }
+
+      .frequency-subtitle {
+        font-size: 0.84rem;
+        line-height: 1.35;
+        color: #475467;
       }
 
       .chip {
@@ -413,6 +475,17 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
 
       .amount-error {
         margin-top: -0.45rem;
+      }
+
+      .recurring-confirmation {
+        margin: -0.1rem 0 0.1rem;
+        padding: 0.75rem 0.9rem;
+        border-radius: 14px;
+        background: rgba(11, 29, 115, 0.08);
+        color: #0b1d73;
+        font-size: 0.92rem;
+        font-weight: 600;
+        line-height: 1.35;
       }
 
       .empty-state {
@@ -685,8 +758,21 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
     const amount = Number(amountControl.value);
     return this.frequency === 'monthly'
-      ? `Give monthly ${EURO_SYMBOL}${amount.toFixed(2)}`
+      ? `Give ${EURO_SYMBOL}${amount.toFixed(2)} monthly`
       : `Give ${EURO_SYMBOL}${amount.toFixed(2)}`;
+  }
+
+  get showRecurringConfirmation(): boolean {
+    return this.frequency === 'monthly' && this.isAmountValid;
+  }
+
+  get formattedValidAmount(): string {
+    const amountControl = this.form.get('amount');
+    const amount = Number(amountControl?.value);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return `${EURO_SYMBOL}0.00`;
+    }
+    return `${EURO_SYMBOL}${amount.toFixed(2)}`;
   }
 
   get amountValidationMessage(): string | null {
