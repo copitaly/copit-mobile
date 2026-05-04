@@ -8,6 +8,8 @@ export interface DonationCheckoutSummary {
   currency?: string;
   donorEmail?: string;
   transactionReference?: string;
+  interval?: 'one_time' | 'monthly';
+  recurringDonationId?: number;
   branchId?: number;
   timestamp?: number;
 }

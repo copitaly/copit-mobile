@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   AbstractControl,
   FormBuilder,
@@ -14,7 +15,11 @@ import { Subject, Subscription } from 'rxjs';
 import { filter, take, takeUntil } from 'rxjs/operators';
 import { finalize } from 'rxjs/operators';
 import { PublicBranch } from '../../core/models/branch.model';
-import { DonationCheckoutRequest } from '../../core/models/donation.model';
+import {
+  DonationCheckoutRequest,
+  DonationFrequency,
+  RecurringDonationCreateRequest,
+} from '../../core/models/donation.model';
 import { DonationFlowStateService } from '../../core/services/donation-flow-state.service';
 import { DonationsService } from '../../core/services/donations.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -79,7 +84,21 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                 </div>
               </div>
 
-              <form [formGroup]="form" (ngSubmit)="startNativePayment()" class="donate-form">
+              <form [formGroup]="form" (ngSubmit)="submitDonation()" class="donate-form">
+                <div class="section-label">FREQUENCY</div>
+                <ion-segment
+                  class="frequency-segment"
+                  [value]="frequency"
+                  (ionChange)="handleFrequencyChange($event)"
+                >
+                  <ion-segment-button value="one_time">
+                    <ion-label>One-time</ion-label>
+                  </ion-segment-button>
+                  <ion-segment-button value="monthly">
+                    <ion-label>Monthly</ion-label>
+                  </ion-segment-button>
+                </ion-segment>
+
                 <div class="section-label">CATEGORY</div>
                 <div class="grid category-grid">
                   <button
@@ -255,6 +274,22 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
         gap: 0.45rem;
       }
 
+      .frequency-segment {
+        --background: #eef2ff;
+        border-radius: 16px;
+        padding: 0.2rem;
+      }
+
+      .frequency-segment ion-segment-button {
+        --border-radius: 12px;
+        --color: #0b1d73;
+        --color-checked: #ffffff;
+        --background-checked: #0b1d73;
+        min-height: 44px;
+        font-weight: 700;
+        text-transform: none;
+      }
+
       .chip {
         border: 1px solid #d1d5db;
         border-radius: 14px;
@@ -411,11 +446,14 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   nativeError?: string;
   branch: PublicBranch | null = null;
   customAmountInputValue = '';
+  frequency: DonationFrequency = 'one_time';
 
   @ViewChild('amountInput') private amountInput?: IonInput;
 
   private branchSub: Subscription;
   private pendingMobileDonationId?: number;
+  private pendingRecurringDonationId?: number;
+  private pendingFrequency?: DonationFrequency;
   private hasAutoFocusedAmount = false;
   private focusTimeoutId?: ReturnType<typeof setTimeout>;
   private hasPrefilledEmail = false;
@@ -481,7 +519,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: response => {
-          this.persistSummary(payload, response.transaction_reference);
+          this.persistOneTimeSummary(payload, response.transaction_reference);
           window.location.href = response.checkout_url;
         },
         error: () => {
@@ -491,6 +529,11 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   startNativePayment(): void {
+    if (this.frequency === 'monthly') {
+      this.startRecurringPayment();
+      return;
+    }
+
     if (!this.readyForPayment()) {
       return;
     }
@@ -499,6 +542,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     this.nativeLoading = true;
     this.nativeError = undefined;
     this.errorMessage = undefined;
+    this.pendingFrequency = 'one_time';
 
     this.donationsService
       .createMobileCheckout(payload)
@@ -510,16 +554,22 @@ export class DonatePage implements AfterViewInit, OnDestroy {
             transactionReference: response.transaction_reference,
             clientSecretPreview: response.client_secret.slice(0, 8) + '...',
           });
-          this.persistSummary(payload, response.transaction_reference);
+          this.persistOneTimeSummary(payload, response.transaction_reference);
           this.pendingMobileDonationId = response.donation_id;
+          this.pendingRecurringDonationId = undefined;
           this.stripePaymentService.presentPaymentSheet(response.client_secret).then(result =>
             this.handlePaymentSheetOutcome(result)
           );
         },
         error: () => {
+          this.pendingFrequency = undefined;
           this.nativeError = 'Unable to start native payment. Please try again.';
         },
       });
+  }
+
+  submitDonation(): void {
+    this.startNativePayment();
   }
 
   ngOnDestroy(): void {
@@ -535,14 +585,23 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   handlePaymentSheetOutcome(result: { status: PaymentSheetOutcome; errorMessage?: string }): void {
     console.log('[DonatePage] PaymentSheet raw result', result);
     if (result.status === 'completed') {
-      this.logPaymentOutcome('completed', this.pendingMobileDonationId);
+      this.logPaymentOutcome('completed', this.pendingMobileDonationId, this.pendingRecurringDonationId);
       this.router.navigate(['/donate/success'], {
-        queryParams: { donation_id: this.pendingMobileDonationId },
+        queryParams:
+          this.pendingFrequency === 'monthly'
+            ? { recurring_donation_id: this.pendingRecurringDonationId }
+            : { donation_id: this.pendingMobileDonationId },
       });
       this.pendingMobileDonationId = undefined;
+      this.pendingRecurringDonationId = undefined;
+      this.pendingFrequency = undefined;
     } else if (result.status === 'canceled') {
+      this.pendingMobileDonationId = undefined;
+      this.pendingRecurringDonationId = undefined;
+      this.pendingFrequency = undefined;
       this.router.navigate(['/donate/cancel']);
     } else {
+      this.pendingFrequency = undefined;
       this.nativeError = result.errorMessage ?? 'Payment failed. Please try again.';
     }
   }
@@ -553,6 +612,14 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
   setCategory(option: string): void {
     this.form.get('category')?.setValue(option);
+  }
+
+  setFrequency(frequency: string): void {
+    this.frequency = frequency === 'monthly' ? 'monthly' : 'one_time';
+  }
+
+  handleFrequencyChange(event: CustomEvent): void {
+    this.setFrequency(String(event.detail?.value ?? 'one_time'));
   }
 
   isCategory(option: string): boolean {
@@ -608,7 +675,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
   get ctaLabel(): string {
     if (this.nativeLoading) {
-      return 'Processing...';
+      return this.frequency === 'monthly' ? 'Starting monthly gift...' : 'Processing...';
     }
 
     const amountControl = this.form.get('amount');
@@ -617,7 +684,9 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     }
 
     const amount = Number(amountControl.value);
-    return `Give ${EURO_SYMBOL}${amount.toFixed(2)}`;
+    return this.frequency === 'monthly'
+      ? `Give monthly ${EURO_SYMBOL}${amount.toFixed(2)}`
+      : `Give ${EURO_SYMBOL}${amount.toFixed(2)}`;
   }
 
   get amountValidationMessage(): string | null {
@@ -667,18 +736,46 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     };
   }
 
-  private logPaymentOutcome(status: PaymentSheetOutcome, donationId?: number): void {
-    console.log('[DonatePage] native PaymentSheet outcome', { status, donationId });
+  private buildRecurringPayload(): RecurringDonationCreateRequest {
+    const formValue = this.form.value;
+    return {
+      church_id: this.branch!.id,
+      category: formValue.category || undefined,
+      amount: Number(formValue.amount),
+      interval: 'monthly',
+    };
   }
 
-  private persistSummary(payload: DonationCheckoutRequest, transactionReference: string): void {
+  private logPaymentOutcome(
+    status: PaymentSheetOutcome,
+    donationId?: number,
+    recurringDonationId?: number
+  ): void {
+    console.log('[DonatePage] native PaymentSheet outcome', { status, donationId, recurringDonationId });
+  }
+
+  private persistOneTimeSummary(payload: DonationCheckoutRequest, transactionReference: string): void {
     this.donationFlowState.setSummary({
       branchName: this.branch?.name,
       branchId: this.branch?.id,
       category: payload.category || undefined,
       amount: payload.amount,
       donorEmail: payload.donor_email,
+      interval: 'one_time',
       transactionReference,
+      timestamp: Date.now(),
+    });
+  }
+
+  private persistRecurringSummary(payload: RecurringDonationCreateRequest, recurringDonationId: number): void {
+    this.donationFlowState.setSummary({
+      branchName: this.branch?.name,
+      branchId: this.branch?.id,
+      category: payload.category || undefined,
+      amount: payload.amount,
+      currency: 'eur',
+      interval: payload.interval,
+      recurringDonationId,
       timestamp: Date.now(),
     });
   }
@@ -696,6 +793,65 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     }
 
     return true;
+  }
+
+  private startRecurringPayment(): void {
+    if (!this.readyForPayment()) {
+      return;
+    }
+
+    const payload = this.buildRecurringPayload();
+    this.nativeLoading = true;
+    this.nativeError = undefined;
+    this.errorMessage = undefined;
+    this.pendingFrequency = 'monthly';
+
+    this.donationsService
+      .createRecurringCheckout(payload)
+      .pipe(finalize(() => (this.nativeLoading = false)))
+      .subscribe({
+        next: response => {
+          this.pendingMobileDonationId = undefined;
+          this.pendingRecurringDonationId = response.recurring_donation_id;
+          this.persistRecurringSummary(payload, response.recurring_donation_id);
+          this.stripePaymentService.presentPaymentSheet(response.client_secret).then(result =>
+            this.handlePaymentSheetOutcome(result)
+          );
+        },
+        error: error => {
+          this.pendingRecurringDonationId = undefined;
+          this.pendingFrequency = undefined;
+          this.nativeError = this.resolveRecurringErrorMessage(error);
+        },
+      });
+  }
+
+  private resolveRecurringErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      if (error.status === 401 || error.status === 403) {
+        return 'Please sign in to set up a monthly donation.';
+      }
+
+      const detail = this.extractDetailMessage(error.error);
+      if (detail) {
+        return detail;
+      }
+    }
+
+    return 'Unable to start monthly giving. Please try again.';
+  }
+
+  private extractDetailMessage(errorBody: unknown): string | null {
+    if (!errorBody || typeof errorBody !== 'object') {
+      return null;
+    }
+
+    const detail = (errorBody as { detail?: unknown }).detail;
+    if (typeof detail === 'string' && detail.trim()) {
+      return detail;
+    }
+
+    return null;
   }
 
   private prefillDonorEmailOnce(): void {

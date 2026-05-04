@@ -53,6 +53,10 @@ export class AuthService {
     return this.isAuthenticatedSubject.value;
   }
 
+  get accessTokenSnapshot(): string | null {
+    return this.getStoredAccessToken();
+  }
+
   setCurrentUser(user: MemberProfile | null): void {
     if (user) {
       this.currentUserSubject.next(user);

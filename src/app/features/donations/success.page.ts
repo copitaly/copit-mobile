@@ -59,6 +59,8 @@ interface VerifyMobilePaymentResponse {
             <p class="summary-value" *ngIf="summary.branchName">{{ summary.branchName }}</p>
             <p class="summary-label" *ngIf="summary.category">Category</p>
             <p class="summary-value" *ngIf="summary.category">{{ summary.category }}</p>
+            <p class="summary-label" *ngIf="summary.interval">Frequency</p>
+            <p class="summary-value" *ngIf="summary.interval">{{ formatInterval(summary.interval) }}</p>
             <p class="summary-label" *ngIf="summary.amount !== undefined">Amount</p>
             <p class="summary-value" *ngIf="summary.amount !== undefined">{{ formatAmount(summary.amount) }}</p>
             <p class="summary-label" *ngIf="summary.transactionReference">Reference</p>
@@ -252,9 +254,14 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
   ngOnInit(): void {
     const sessionId = this.route.snapshot.queryParamMap.get('session_id');
     const donationIdParam = this.route.snapshot.queryParamMap.get('donation_id');
+    const recurringDonationIdParam = this.route.snapshot.queryParamMap.get('recurring_donation_id');
     this.log.log('[DonateSuccessPage] params', { sessionId, donationId: donationIdParam ?? '<none>' });
     if (sessionId) {
       this.verifyHosted(sessionId);
+      return;
+    }
+    if (recurringDonationIdParam) {
+      this.applyStoredSummary(recurringDonationIdParam);
       return;
     }
     if (donationIdParam) {
@@ -321,9 +328,19 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
       });
   }
 
-  private applyStoredSummary(): void {
+  private applyStoredSummary(recurringDonationIdParam?: string): void {
     const stored = this.donationFlowState.getStoredSummary();
     if (stored) {
+      if (
+        recurringDonationIdParam &&
+        stored.recurringDonationId &&
+        String(stored.recurringDonationId) !== recurringDonationIdParam
+      ) {
+        this.log.warn('[DonateSuccessPage] recurring summary id mismatch', {
+          expected: recurringDonationIdParam,
+          storedRecurringDonationId: stored.recurringDonationId,
+        });
+      }
       this.summary = stored;
       this.donationFlowState.clear();
       this.log.log('[DonateSuccessPage] sessionStorage fallback used', stored);
@@ -366,6 +383,10 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
 
   formatAmount(amount: number): string {
     return `€${amount.toFixed(2)}`;
+  }
+
+  formatInterval(interval: string): string {
+    return interval === 'monthly' ? 'Monthly' : 'One-time';
   }
 
   private startVerification(sessionId: string): void {
