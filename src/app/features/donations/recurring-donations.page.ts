@@ -84,6 +84,10 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                   </div>
                 </div>
 
+                <p class="status-helper" *ngIf="statusHelperText(donation.status) as helperText">
+                  {{ helperText }}
+                </p>
+
                 <ion-button
                   *ngIf="canCancel(donation)"
                   expand="block"
@@ -227,15 +231,19 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         color: #217447;
       }
 
-      .recurring-status--incomplete,
       .recurring-status--past_due {
         background: rgba(245, 182, 40, 0.16);
         color: #9a6d06;
       }
 
+      .recurring-status--incomplete {
+        background: rgba(66, 94, 166, 0.12);
+        color: #425ea6;
+      }
+
       .recurring-status--cancelled {
-        background: rgba(220, 53, 69, 0.12);
-        color: #b02f3b;
+        background: rgba(107, 114, 128, 0.14);
+        color: #5b6473;
       }
 
       .recurring-meta {
@@ -265,6 +273,16 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         font-weight: 600;
         text-align: right;
         overflow-wrap: anywhere;
+      }
+
+      .status-helper {
+        margin: 0.8rem 0 0;
+        padding: 0.75rem 0.9rem;
+        border-radius: 14px;
+        background: #f5f7fb;
+        color: #475467;
+        font-size: 0.88rem;
+        line-height: 1.45;
       }
 
       .cancel-button,
@@ -474,7 +492,7 @@ export class RecurringDonationsPage implements OnInit {
   }
 
   canCancel(donation: RecurringDonationItem): boolean {
-    return donation.status !== 'cancelled';
+    return (donation.status || '').toLowerCase() === 'active';
   }
 
   formatStatus(status: string): string {
@@ -482,13 +500,24 @@ export class RecurringDonationsPage implements OnInit {
       case 'active':
         return 'Active';
       case 'past_due':
-        return 'Past due';
+        return 'Payment issue';
       case 'cancelled':
         return 'Cancelled';
       case 'incomplete':
-        return 'Incomplete';
+        return 'Pending setup';
       default:
         return status ? status.replace(/_/g, ' ') : 'Unknown';
+    }
+  }
+
+  statusHelperText(status: string): string | null {
+    switch ((status || '').toLowerCase()) {
+      case 'past_due':
+        return 'Payment issue. We’ll retry automatically.';
+      case 'incomplete':
+        return 'Your monthly donation is still being set up.';
+      default:
+        return null;
     }
   }
 
