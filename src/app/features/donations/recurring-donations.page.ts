@@ -82,6 +82,10 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                     <span>Last payment</span>
                     <strong>{{ formatDate(donation.last_payment_date) }}</strong>
                   </div>
+                  <div class="meta-row" *ngIf="isCancelled(donation)">
+                    <span>Ended on</span>
+                    <strong>{{ formatCancelledDate(donation) }}</strong>
+                  </div>
                 </div>
 
                 <p class="status-helper" *ngIf="statusHelperText(donation.status) as helperText">
@@ -472,10 +476,12 @@ export class RecurringDonationsPage implements OnInit {
   async confirmCancel(donation: RecurringDonationItem): Promise<void> {
     const alert = await this.alertController.create({
       header: 'Cancel monthly donation?',
-      message: 'Your future monthly donations will stop. Previous donations are not affected.',
+      message: `You will stop giving ${this.formatAmountWithCurrency(donation)} every month to ${
+        donation.church?.name || 'this church'
+      }. You can restart anytime.`,
       buttons: [
         {
-          text: 'Keep donation',
+          text: 'Keep giving',
           role: 'cancel',
         },
         {
@@ -493,6 +499,10 @@ export class RecurringDonationsPage implements OnInit {
 
   canCancel(donation: RecurringDonationItem): boolean {
     return (donation.status || '').toLowerCase() === 'active';
+  }
+
+  isCancelled(donation: RecurringDonationItem): boolean {
+    return (donation.status || '').toLowerCase() === 'cancelled';
   }
 
   formatStatus(status: string): string {
@@ -555,6 +565,14 @@ export class RecurringDonationsPage implements OnInit {
     }).format(date);
   }
 
+  formatCancelledDate(donation: RecurringDonationItem): string {
+    return this.formatDate(donation.cancelled_at || new Date().toISOString());
+  }
+
+  formatAmountWithCurrency(donation: RecurringDonationItem): string {
+    return `${this.formatCurrencySymbol(donation.currency)}${Number(donation.amount).toFixed(2)}`;
+  }
+
   statusClass(status: string): string {
     return `recurring-status--${(status || 'incomplete').toLowerCase()}`;
   }
@@ -608,5 +626,18 @@ export class RecurringDonationsPage implements OnInit {
         await toast.present();
       },
     });
+  }
+
+  private formatCurrencySymbol(currency?: string | null): string {
+    switch ((currency || '').toLowerCase()) {
+      case 'eur':
+        return '€';
+      case 'usd':
+        return '$';
+      case 'gbp':
+        return '£';
+      default:
+        return currency ? `${currency.toUpperCase()} ` : '';
+    }
   }
 }
