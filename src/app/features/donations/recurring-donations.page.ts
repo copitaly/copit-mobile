@@ -74,9 +74,9 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                     <span>Interval</span>
                     <strong>{{ formatInterval(donation.interval) }}</strong>
                   </div>
-                  <div class="meta-row">
-                    <span>Next payment</span>
-                    <strong>{{ donation.next_payment_date ? formatDate(donation.next_payment_date) : 'Not scheduled' }}</strong>
+                  <div class="meta-row" *ngIf="nextChargeText(donation) as nextCharge">
+                    <span>Next charge</span>
+                    <strong>{{ nextCharge }}</strong>
                   </div>
                   <div class="meta-row" *ngIf="donation.last_payment_date">
                     <span>Last payment</span>
@@ -563,6 +563,27 @@ export class RecurringDonationsPage implements OnInit {
       month: 'short',
       year: 'numeric',
     }).format(date);
+  }
+
+  nextChargeText(donation: RecurringDonationItem): string | null {
+    const status = (donation.status || '').toLowerCase();
+    if (status === 'cancelled') {
+      return null;
+    }
+
+    if (donation.next_payment_date) {
+      return this.formatDate(donation.next_payment_date);
+    }
+
+    if (status === 'active') {
+      return 'Scheduled soon';
+    }
+
+    if (status === 'incomplete') {
+      return 'After setup completes';
+    }
+
+    return 'Scheduled soon';
   }
 
   formatCancelledDate(donation: RecurringDonationItem): string {
