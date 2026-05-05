@@ -23,6 +23,10 @@ const routes: Routes = [
     loadComponent: () => import('./features/auth/profile.page').then(m => m.ProfilePage)
   },
   {
+    path: 'profile/recurring-donations',
+    loadComponent: () => import('./features/donations/recurring-donations.page').then(m => m.RecurringDonationsPage)
+  },
+  {
     path: 'my-donations',
     loadComponent: () => import('./features/donations/my-donations.page').then(m => m.MyDonationsPage)
   },

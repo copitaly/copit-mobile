@@ -50,6 +50,25 @@ export interface RecurringDonationCreateResponse {
   stripe_price_id?: string | null;
 }
 
+export interface RecurringDonationItem {
+  id: number;
+  church: {
+    id: number;
+    name: string;
+  } | null;
+  category: string;
+  amount: string;
+  currency: string;
+  interval: string;
+  status: string;
+  start_date?: string | null;
+  next_payment_date?: string | null;
+  last_payment_date?: string | null;
+  cancelled_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface DonationMobileVerificationResponse {
   verified: boolean;
   donation_id: number;

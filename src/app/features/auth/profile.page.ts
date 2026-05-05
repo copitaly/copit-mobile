@@ -427,7 +427,7 @@ export class ProfilePage implements OnInit, OnDestroy {
       title: 'Recurring Donations',
       subtitle: 'Manage scheduled gifts',
       icon: 'repeat-outline',
-      soon: true,
+      route: '/profile/recurring-donations',
     },
   ];
 

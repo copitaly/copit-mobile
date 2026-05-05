@@ -9,11 +9,13 @@ import {
   DonationCheckoutVerificationResponse,
   RecurringDonationCreateRequest,
   RecurringDonationCreateResponse,
+  RecurringDonationItem,
   DonationMobileCheckoutResponse,
   DonationMobileVerificationResponse,
 } from '../models/donation.model';
 import { AuthService } from './auth.service';
 import { environment } from '../../../environments/environment';
+import { PaginatedResponse } from '../models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class DonationsService {
@@ -47,35 +49,24 @@ export class DonationsService {
   createRecurringCheckout(
     payload: RecurringDonationCreateRequest
   ): Observable<RecurringDonationCreateResponse> {
-    const token = this.authService.accessTokenSnapshot;
-    if (token) {
-      return this.postRecurringCheckout(token, payload).pipe(
-        catchError((error) => {
-          if (!this.isUnauthorized(error)) {
-            return throwError(() => error);
-          }
+    return this.withAuth((token) => this.postRecurringCheckout(token, payload));
+  }
 
-          return this.authService.getCurrentUser().pipe(
-            switchMap(() => {
-              const refreshedToken = this.authService.accessTokenSnapshot;
-              if (!refreshedToken) {
-                return throwError(() => error);
-              }
-              return this.postRecurringCheckout(refreshedToken, payload);
-            })
-          );
-        })
-      );
-    }
+  getRecurringDonations(
+    nextPageUrl?: string | null
+  ): Observable<PaginatedResponse<RecurringDonationItem>> {
+    return this.withAuth((token) => this.fetchRecurringDonations(token, nextPageUrl));
+  }
 
-    return this.authService.getCurrentUser().pipe(
-      switchMap(() => {
-        const refreshedToken = this.authService.accessTokenSnapshot;
-        if (!refreshedToken) {
-          return throwError(() => new Error('Authentication required for recurring donations.'));
+  cancelRecurringDonation(recurringDonationId: number): Observable<RecurringDonationItem> {
+    return this.withAuth((token) =>
+      this.http.post<RecurringDonationItem>(
+        this.buildUrl(`donations/recurring/${recurringDonationId}/cancel/`),
+        {},
+        {
+          headers: this.buildAuthHeaders(token),
         }
-        return this.postRecurringCheckout(refreshedToken, payload);
-      })
+      )
     );
   }
 
@@ -93,17 +84,64 @@ export class DonationsService {
       this.buildUrl('donations/recurring/create/'),
       payload,
       {
-        headers: new HttpHeaders({
-          Authorization: `Bearer ${token}`,
-        }),
+        headers: this.buildAuthHeaders(token),
       }
     );
+  }
+
+  private fetchRecurringDonations(
+    token: string,
+    nextPageUrl?: string | null
+  ): Observable<PaginatedResponse<RecurringDonationItem>> {
+    const url = nextPageUrl || this.buildUrl('donations/recurring/');
+    return this.http.get<PaginatedResponse<RecurringDonationItem>>(url, {
+      headers: this.buildAuthHeaders(token),
+    });
   }
 
   private buildUrl(path: string): string {
     const baseUrl = environment.apiBaseUrl.replace(/\/+$/, '');
     const normalizedPath = path.replace(/^\/*/, '').replace(/\/+$/, '');
     return `${baseUrl}/${normalizedPath}/`;
+  }
+
+  private buildAuthHeaders(token: string): HttpHeaders {
+    return new HttpHeaders({
+      Authorization: `Bearer ${token}`,
+    });
+  }
+
+  private withAuth<T>(requestFactory: (token: string) => Observable<T>): Observable<T> {
+    const token = this.authService.accessTokenSnapshot;
+    if (token) {
+      return requestFactory(token).pipe(
+        catchError((error) => {
+          if (!this.isUnauthorized(error)) {
+            return throwError(() => error);
+          }
+
+          return this.authService.getCurrentUser().pipe(
+            switchMap(() => {
+              const refreshedToken = this.authService.accessTokenSnapshot;
+              if (!refreshedToken) {
+                return throwError(() => error);
+              }
+              return requestFactory(refreshedToken);
+            })
+          );
+        })
+      );
+    }
+
+    return this.authService.getCurrentUser().pipe(
+      switchMap(() => {
+        const refreshedToken = this.authService.accessTokenSnapshot;
+        if (!refreshedToken) {
+          return throwError(() => new Error('Authentication required.'));
+        }
+        return requestFactory(refreshedToken);
+      })
+    );
   }
 
   private isUnauthorized(error: unknown): boolean {
