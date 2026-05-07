@@ -32,7 +32,7 @@ export class MobileHeaderComponent {
   @Input() subtitle = '';
   @Input() showBack = true;
   @Input() backAriaLabel = 'Go back';
-  @Input() centerCopy = true;
+  @Input() centerCopy = false;
   @Input() fallbackRoute = '/home';
 
   constructor(

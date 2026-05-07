@@ -41,6 +41,17 @@
   --splash-blue: #002857;
   --ion-background-color: #F5F6FA;
   --ion-text-color: #1A2B4B;
+  --app-safe-area-top: env(safe-area-inset-top, 0px);
+  --app-safe-area-right: env(safe-area-inset-right, 0px);
+  --app-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --app-safe-area-left: env(safe-area-inset-left, 0px);
+}
+
+html,
+body,
+ion-app,
+app-root {
+  min-height: 100%;
 }
 
 body {
@@ -51,8 +62,12 @@ body {
 
 .app-header {
   background: linear-gradient(180deg, #081b61, #0b1d73 80%);
-  --header-extra-top: 1.4rem;
-  padding: calc(var(--header-extra-top) + env(safe-area-inset-top, 0px)) 1.25rem 1.1rem;
+  --header-extra-top: 1.2rem;
+  padding:
+    calc(var(--app-safe-area-top) + var(--header-extra-top))
+    calc(var(--app-safe-area-right) + 1.25rem)
+    1.35rem
+    calc(var(--app-safe-area-left) + 1.25rem);
   color: #ffffff;
   display: flex;
   flex-direction: column;
@@ -63,7 +78,7 @@ body {
 }
 
 .app-header--inner {
-  --header-extra-top: 0.6rem;
+  --header-extra-top: 0.8rem;
 }
 
 .app-header__back {
@@ -73,13 +88,13 @@ body {
   cursor: pointer;
   margin: 0;
   padding: 0;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  min-height: 40px;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.11);
   backdrop-filter: blur(6px);
   justify-content: center;
   position: relative;
@@ -95,24 +110,29 @@ body {
 
 .app-header__inner {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  align-items: center;
+  gap: 1.05rem;
+  min-width: 0;
 }
 
 .app-header__inner--mobile-header {
-  position: relative;
-  min-height: 40px;
+  min-height: 58px;
 }
 
 .app-header__copy {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+  max-width: min(100%, 28rem);
+  text-align: left;
+  align-items: flex-start;
 }
 
 .app-header__copy--centered {
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .app-header__title {
@@ -120,6 +140,10 @@ body {
   font-size: 1.8rem;
   font-weight: 600;
   line-height: 1.2;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .app-header__subtitle {
@@ -128,6 +152,8 @@ body {
   line-height: 1.4;
   opacity: 0.85;
   color: rgba(255, 255, 255, 0.85);
+  width: 100%;
+  text-wrap: pretty;
 }
 
 .surface {

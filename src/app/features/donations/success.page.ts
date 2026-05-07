@@ -104,7 +104,11 @@ interface VerifyMobilePaymentResponse {
       }
 
       .success-hero {
-        padding: 1.9rem 1.5rem 1rem;
+        padding:
+          calc(var(--app-safe-area-top) + 1.15rem)
+          calc(var(--app-safe-area-right) + 1.5rem)
+          1rem
+          calc(var(--app-safe-area-left) + 1.5rem);
         background: linear-gradient(180deg, #071f63, #0b1d73 90%);
         display: flex;
         flex-direction: column;
