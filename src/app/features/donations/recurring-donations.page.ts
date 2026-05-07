@@ -8,6 +8,8 @@ import { DonationsService } from '../../core/services/donations.service';
 import { AuthService } from '../../core/services/auth.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
+type RecurringFilter = 'active_pending' | 'cancelled' | 'all';
+
 @Component({
   standalone: true,
   imports: [CommonModule, IonicModule, MobileHeaderComponent],
@@ -22,6 +24,33 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
         <div class="surface recurring-surface">
           <div class="surface__content recurring-surface__content">
+            <div class="filter-group" *ngIf="!loading && !errorMessage">
+              <button
+                type="button"
+                class="filter-chip"
+                [class.selected]="selectedFilter === 'active_pending'"
+                (click)="setFilter('active_pending')"
+              >
+                Active & pending
+              </button>
+              <button
+                type="button"
+                class="filter-chip"
+                [class.selected]="selectedFilter === 'cancelled'"
+                (click)="setFilter('cancelled')"
+              >
+                Cancelled
+              </button>
+              <button
+                type="button"
+                class="filter-chip"
+                [class.selected]="selectedFilter === 'all'"
+                (click)="setFilter('all')"
+              >
+                All
+              </button>
+            </div>
+
             <div *ngIf="loading" class="skeleton-stack" aria-live="polite">
               <div class="recurring-card skeleton" *ngFor="let item of skeletonItems">
                 <div class="skeleton-row skeleton-row--top">
@@ -44,10 +73,15 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
             <div *ngIf="!loading && !errorMessage && recurringDonations.length === 0" class="state-card empty-state">
               <div class="state-copy">
-                <h2>No recurring donations yet</h2>
-                <p>Start a monthly gift to support your local church.</p>
+                <h2>{{ emptyStateTitle }}</h2>
+                <p>{{ emptyStateMessage }}</p>
               </div>
-              <ion-button expand="block" class="give-now-button" (click)="goToDonationFlow()">
+              <ion-button
+                *ngIf="showGiveNowButton"
+                expand="block"
+                class="give-now-button"
+                (click)="goToDonationFlow()"
+              >
                 <ion-icon name="gift-outline" slot="start" aria-hidden="true"></ion-icon>
                 <span>Give now</span>
               </ion-button>
@@ -179,6 +213,29 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         display: flex;
         flex-direction: column;
         gap: 0.95rem;
+      }
+
+      .filter-group {
+        display: flex;
+        gap: 0.55rem;
+        flex-wrap: wrap;
+      }
+
+      .filter-chip {
+        border: 1px solid rgba(11, 29, 115, 0.12);
+        border-radius: 999px;
+        padding: 0.55rem 0.9rem;
+        background: #f8fafc;
+        color: #0b1d73;
+        font-size: 0.86rem;
+        font-weight: 700;
+      }
+
+      .filter-chip.selected {
+        background: #0b1d73;
+        border-color: #0b1d73;
+        color: #ffffff;
+        box-shadow: 0 10px 22px rgba(11, 29, 115, 0.18);
       }
 
       .recurring-card,
@@ -418,6 +475,7 @@ export class RecurringDonationsPage implements OnInit {
   loadingMore = false;
   errorMessage = '';
   nextPageUrl: string | null = null;
+  selectedFilter: RecurringFilter = 'active_pending';
   readonly skeletonItems = [1, 2, 3];
   readonly cancellingIds = new Set<number>();
 
@@ -430,6 +488,15 @@ export class RecurringDonationsPage implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.loadRecurringDonations();
+  }
+
+  setFilter(filter: RecurringFilter): void {
+    if (this.selectedFilter === filter) {
+      return;
+    }
+
+    this.selectedFilter = filter;
     this.loadRecurringDonations();
   }
 
@@ -460,15 +527,74 @@ export class RecurringDonationsPage implements OnInit {
     }
 
     this.loadingMore = true;
-    this.donationsService.getRecurringDonations(this.nextPageUrl).subscribe({
+    this.fetchRecurringPage(this.nextPageUrl, true);
+  }
+
+  get emptyStateTitle(): string {
+    switch (this.selectedFilter) {
+      case 'active_pending':
+        return 'No active monthly donations';
+      case 'cancelled':
+        return 'No cancelled monthly donations';
+      default:
+        return 'No recurring donations yet';
+    }
+  }
+
+  get emptyStateMessage(): string {
+    switch (this.selectedFilter) {
+      case 'active_pending':
+        return 'Your active and pending monthly gifts will appear here.';
+      case 'cancelled':
+        return 'Cancelled monthly donations will appear here.';
+      default:
+        return 'Start a monthly gift to support your local church.';
+    }
+  }
+
+  get showGiveNowButton(): boolean {
+    return this.selectedFilter !== 'cancelled';
+  }
+
+  private fetchRecurringDonations(): void {
+    this.fetchRecurringPage(null, false);
+  }
+
+  private fetchRecurringPage(nextPageUrl?: string | null, append = false): void {
+    this.donationsService.getRecurringDonations(nextPageUrl, this.apiFilter).subscribe({
       next: (response) => {
-        this.recurringDonations = [...this.recurringDonations, ...response.results];
+        const visibleResults = response.results.filter((item) => this.matchesSelectedFilter(item));
+        this.recurringDonations = append
+          ? [...this.recurringDonations, ...visibleResults]
+          : visibleResults;
         this.nextPageUrl = response.next;
-        this.loadingMore = false;
+
+        if (append) {
+          if (visibleResults.length === 0 && response.next) {
+            this.fetchRecurringPage(response.next, true);
+            return;
+          }
+
+          this.loadingMore = false;
+          return;
+        }
+
+        if (visibleResults.length === 0 && response.next) {
+          this.fetchRecurringPage(response.next, false);
+          return;
+        }
+
+        this.loading = false;
       },
       error: () => {
-        this.loadingMore = false;
-        this.errorMessage = 'Unable to load more recurring donations right now. Please try again.';
+        if (append) {
+          this.loadingMore = false;
+          this.errorMessage = 'Unable to load more recurring donations right now. Please try again.';
+          return;
+        }
+
+        this.loading = false;
+        this.errorMessage = 'Please check your connection and try again.';
       },
     });
   }
@@ -605,20 +731,6 @@ export class RecurringDonationsPage implements OnInit {
     void this.router.navigate(['/branches']);
   }
 
-  private fetchRecurringDonations(): void {
-    this.donationsService.getRecurringDonations().subscribe({
-      next: (response) => {
-        this.recurringDonations = response.results;
-        this.nextPageUrl = response.next;
-        this.loading = false;
-      },
-      error: () => {
-        this.loading = false;
-        this.errorMessage = 'Please check your connection and try again.';
-      },
-    });
-  }
-
   private async cancelDonation(donation: RecurringDonationItem): Promise<void> {
     if (this.cancellingIds.has(donation.id)) {
       return;
@@ -662,6 +774,27 @@ export class RecurringDonationsPage implements OnInit {
         return '£';
       default:
         return currency ? `${currency.toUpperCase()} ` : '';
+    }
+  }
+
+  private get apiFilter(): { status?: string } | undefined {
+    if (this.selectedFilter === 'cancelled') {
+      return { status: 'cancelled' };
+    }
+
+    return undefined;
+  }
+
+  private matchesSelectedFilter(donation: RecurringDonationItem): boolean {
+    const status = (donation.status || '').toLowerCase();
+
+    switch (this.selectedFilter) {
+      case 'active_pending':
+        return status === 'active' || status === 'incomplete' || status === 'past_due';
+      case 'cancelled':
+        return status === 'cancelled';
+      default:
+        return true;
     }
   }
 }

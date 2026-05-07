@@ -53,9 +53,10 @@ export class DonationsService {
   }
 
   getRecurringDonations(
-    nextPageUrl?: string | null
+    nextPageUrl?: string | null,
+    filters?: { status?: string }
   ): Observable<PaginatedResponse<RecurringDonationItem>> {
-    return this.withAuth((token) => this.fetchRecurringDonations(token, nextPageUrl));
+    return this.withAuth((token) => this.fetchRecurringDonations(token, nextPageUrl, filters));
   }
 
   cancelRecurringDonation(recurringDonationId: number): Observable<RecurringDonationItem> {
@@ -91,11 +92,18 @@ export class DonationsService {
 
   private fetchRecurringDonations(
     token: string,
-    nextPageUrl?: string | null
+    nextPageUrl?: string | null,
+    filters?: { status?: string }
   ): Observable<PaginatedResponse<RecurringDonationItem>> {
     const url = nextPageUrl || this.buildUrl('donations/recurring/');
+    const params =
+      !nextPageUrl && filters?.status
+        ? { status: filters.status }
+        : undefined;
+
     return this.http.get<PaginatedResponse<RecurringDonationItem>>(url, {
       headers: this.buildAuthHeaders(token),
+      params,
     });
   }
 
