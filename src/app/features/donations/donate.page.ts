@@ -623,7 +623,11 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     });
   }
 
-  private persistRecurringSummary(payload: RecurringDonationCreateRequest, recurringDonationId: number): void {
+  private persistRecurringSummary(
+    payload: RecurringDonationCreateRequest,
+    recurringDonationId: number,
+    subscriptionId?: string
+  ): void {
     this.donationFlowState.setSummary({
       branchName: this.branch?.name,
       branchId: this.branch?.id,
@@ -632,6 +636,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       currency: 'eur',
       interval: payload.interval,
       recurringDonationId,
+      subscriptionId,
       timestamp: Date.now(),
     });
   }
@@ -676,9 +681,17 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       .pipe(finalize(() => (this.nativeLoading = false)))
       .subscribe({
         next: response => {
+          console.log('[DonatePage] recurring checkout response', response);
           this.pendingMobileDonationId = undefined;
           this.pendingRecurringDonationId = response.recurring_donation_id;
-          this.persistRecurringSummary(payload, response.recurring_donation_id);
+          this.persistRecurringSummary(payload, response.recurring_donation_id, response.subscription_id);
+          if (!response.client_secret?.trim()) {
+            this.pendingRecurringDonationId = undefined;
+            this.pendingFrequency = undefined;
+            this.nativeError = 'Unable to start monthly payment. Please try again.';
+            void this.showMonthlyClientSecretErrorToast();
+            return;
+          }
           this.stripePaymentService.presentPaymentSheet(response.client_secret).then(result =>
             this.handlePaymentSheetOutcome(result)
           );
@@ -833,6 +846,17 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       duration: 2200,
       position: 'bottom',
       color: 'dark',
+    });
+
+    await toast.present();
+  }
+
+  private async showMonthlyClientSecretErrorToast(): Promise<void> {
+    const toast = await this.toastController.create({
+      message: 'Unable to start monthly payment. Please try again.',
+      duration: 2400,
+      position: 'bottom',
+      color: 'danger',
     });
 
     await toast.present();

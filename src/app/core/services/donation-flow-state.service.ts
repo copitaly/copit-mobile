@@ -10,6 +10,7 @@ export interface DonationCheckoutSummary {
   transactionReference?: string;
   interval?: 'one_time' | 'monthly';
   recurringDonationId?: number;
+  subscriptionId?: string;
   branchId?: number;
   timestamp?: number;
 }
