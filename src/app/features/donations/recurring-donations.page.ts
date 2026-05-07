@@ -474,18 +474,21 @@ export class RecurringDonationsPage implements OnInit {
   }
 
   async confirmCancel(donation: RecurringDonationItem): Promise<void> {
+    const isIncomplete = (donation.status || '').toLowerCase() === 'incomplete';
     const alert = await this.alertController.create({
-      header: 'Cancel monthly donation?',
-      message: `You will stop giving ${this.formatAmountWithCurrency(donation)} every month to ${
-        donation.church?.name || 'this church'
-      }. You can restart anytime.`,
+      header: isIncomplete ? 'Cancel monthly setup?' : 'Cancel monthly donation?',
+      message: isIncomplete
+        ? 'This monthly donation setup will be cancelled before it starts.'
+        : `You will stop giving ${this.formatAmountWithCurrency(donation)} every month to ${
+            donation.church?.name || 'this church'
+          }. You can restart anytime.`,
       buttons: [
         {
-          text: 'Keep giving',
+          text: isIncomplete ? 'Keep setup' : 'Keep giving',
           role: 'cancel',
         },
         {
-          text: 'Cancel donation',
+          text: isIncomplete ? 'Cancel setup' : 'Cancel donation',
           role: 'destructive',
           handler: () => {
             void this.cancelDonation(donation);
@@ -498,7 +501,7 @@ export class RecurringDonationsPage implements OnInit {
   }
 
   canCancel(donation: RecurringDonationItem): boolean {
-    return (donation.status || '').toLowerCase() === 'active';
+    return (donation.status || '').toLowerCase() !== 'cancelled';
   }
 
   isCancelled(donation: RecurringDonationItem): boolean {
