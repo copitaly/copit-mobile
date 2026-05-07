@@ -412,22 +412,16 @@ export class ProfilePage implements OnInit, OnDestroy {
       route: '/my-donations',
     },
     {
-      title: 'Saved Churches',
-      subtitle: 'Quick access to your churches',
-      icon: 'bookmark-outline',
-      route: '/saved-churches',
-    },
-    {
-      title: 'Annual Giving Statement',
-      subtitle: 'Download yearly summary',
-      icon: 'document-text-outline',
-      soon: true,
-    },
-    {
       title: 'Recurring Donations',
       subtitle: 'Manage scheduled gifts',
       icon: 'repeat-outline',
       route: '/profile/recurring-donations',
+    },
+    {
+      title: 'Saved Churches',
+      subtitle: 'Quick access to your churches',
+      icon: 'bookmark-outline',
+      route: '/saved-churches',
     },
   ];
 
