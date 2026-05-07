@@ -31,7 +31,11 @@ export class DonationsService {
   createCheckout(
     payload: DonationCheckoutRequest
   ): Observable<DonationCheckoutResponse> {
-    return this.api.post<DonationCheckoutResponse>(this.endpoint, payload);
+    return this.withOptionalAuth((token) =>
+      this.http.post<DonationCheckoutResponse>(this.buildUrl(this.endpoint), payload, {
+        headers: token ? this.buildAuthHeaders(token) : undefined,
+      })
+    );
   }
 
   verifyCheckoutSession(sessionId: string): Observable<DonationCheckoutVerificationResponse> {
@@ -43,12 +47,23 @@ export class DonationsService {
   createMobileCheckout(
     payload: DonationCheckoutRequest
   ): Observable<DonationMobileCheckoutResponse> {
-    return this.api.post<DonationMobileCheckoutResponse>('donations/mobile/checkout/', payload);
+    return this.withOptionalAuth((token) =>
+      this.http.post<DonationMobileCheckoutResponse>(this.buildUrl('donations/mobile/checkout/'), payload, {
+        headers: token ? this.buildAuthHeaders(token) : undefined,
+      })
+    );
   }
 
   createRecurringCheckout(
     payload: RecurringDonationCreateRequest
   ): Observable<RecurringDonationCreateResponse> {
+    if (!environment.production) {
+      console.log('[DonationsService] recurring create requested', {
+        endpoint: 'donations/recurring/create/',
+        isLoggedIn: this.authService.isAuthenticatedSnapshot,
+        hasAccessToken: !!this.authService.accessTokenSnapshot,
+      });
+    }
     return this.withAuth((token) => this.postRecurringCheckout(token, payload));
   }
 
@@ -81,6 +96,12 @@ export class DonationsService {
     token: string,
     payload: RecurringDonationCreateRequest
   ): Observable<RecurringDonationCreateResponse> {
+    if (!environment.production) {
+      console.log('[DonationsService] recurring create request headers', {
+        endpoint: 'donations/recurring/create/',
+        tokenAttached: !!token,
+      });
+    }
     return this.http.post<RecurringDonationCreateResponse>(
       this.buildUrl('donations/recurring/create/'),
       payload,
@@ -128,11 +149,19 @@ export class DonationsService {
             return throwError(() => error);
           }
 
+          if (!environment.production) {
+            console.log('[DonationsService] auth request unauthorized, attempting refresh');
+          }
           return this.authService.getCurrentUser().pipe(
             switchMap(() => {
               const refreshedToken = this.authService.accessTokenSnapshot;
               if (!refreshedToken) {
                 return throwError(() => error);
+              }
+              if (!environment.production) {
+                console.log('[DonationsService] auth refresh succeeded, retrying request once', {
+                  hasAccessToken: !!refreshedToken,
+                });
               }
               return requestFactory(refreshedToken);
             })
@@ -141,13 +170,40 @@ export class DonationsService {
       );
     }
 
+    if (!environment.production) {
+      console.log('[DonationsService] no access token available, attempting auth refresh before request');
+    }
     return this.authService.getCurrentUser().pipe(
       switchMap(() => {
         const refreshedToken = this.authService.accessTokenSnapshot;
         if (!refreshedToken) {
           return throwError(() => new Error('Authentication required.'));
         }
+        if (!environment.production) {
+          console.log('[DonationsService] auth refresh provided token, sending request', {
+            hasAccessToken: !!refreshedToken,
+          });
+        }
         return requestFactory(refreshedToken);
+      })
+    );
+  }
+
+  private withOptionalAuth<T>(requestFactory: (token: string | null) => Observable<T>): Observable<T> {
+    const token = this.authService.accessTokenSnapshot;
+    if (!token) {
+      return requestFactory(null);
+    }
+
+    return requestFactory(token).pipe(
+      catchError((error) => {
+        if (!this.isUnauthorized(error)) {
+          return throwError(() => error);
+        }
+
+        return this.authService.getCurrentUser().pipe(
+          switchMap(() => requestFactory(this.authService.accessTokenSnapshot))
+        );
       })
     );
   }

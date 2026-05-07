@@ -326,6 +326,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       return;
     }
 
+    this.logCheckoutSubmit('donations/checkout/');
     const payload = this.buildPayload();
     this.loading = true;
     this.errorMessage = undefined;
@@ -355,6 +356,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       return;
     }
 
+    this.logCheckoutSubmit('donations/mobile/checkout/');
     const payload = this.buildPayload();
     this.nativeLoading = true;
     this.nativeError = undefined;
@@ -670,6 +672,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       return;
     }
 
+    this.logCheckoutSubmit('donations/recurring/create/');
     const payload = this.buildRecurringPayload();
     this.nativeLoading = true;
     this.nativeError = undefined;
@@ -898,6 +901,19 @@ export class DonatePage implements AfterViewInit, OnDestroy {
         role: this.resolvedUserRole,
         memberLoaded: this.memberProfileLoaded,
         canUseRecurring: this.canUseRecurring,
+      });
+    }
+  }
+
+  private logCheckoutSubmit(endpoint: string): void {
+    if (!environment.production) {
+      console.log('[DonatePage] checkout submit', {
+        isLoggedIn: this.authService.isAuthenticatedSnapshot,
+        hasAccessToken: !!this.authService.accessTokenSnapshot,
+        tokenAttached:
+          endpoint === 'donations/recurring/create/' ? !!this.authService.accessTokenSnapshot : undefined,
+        endpoint,
+        frequency: this.frequency,
       });
     }
   }
