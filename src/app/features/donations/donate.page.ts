@@ -97,6 +97,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                     role="radio"
                     (click)="setFrequency('one_time')"
                   >
+                    <span class="frequency-leading" aria-hidden="true"></span>
                     <span class="frequency-copy">
                       <span class="frequency-title">One-time</span>
                       <span class="frequency-subtitle">Pay once</span>
@@ -114,8 +115,10 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                     (click)="handleMonthlySelection()"
                   >
                     <span class="frequency-icon" aria-hidden="true">🔁</span>
-                    <span class="frequency-icon-indicator" aria-hidden="true">
+                    <span class="frequency-leading" aria-hidden="true">
+                      <span class="frequency-icon-indicator">
                       <ion-icon *ngIf="!canUseRecurring" name="lock-closed"></ion-icon>
+                      </span>
                     </span>
                     <span class="frequency-copy">
                       <span class="frequency-title">Monthly</span>
@@ -323,6 +326,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
         align-items: flex-start;
         gap: 0.75rem;
         padding: 1rem;
+        min-height: 88px;
         border-radius: 18px;
         border: 1px solid #d7dce5;
         background: #f3f4f6;
@@ -345,9 +349,19 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
 
       .frequency-card.disabled { opacity: .76; }
 
+      .frequency-leading {
+        width: 1.2rem;
+        min-width: 1.2rem;
+        display: inline-flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 0.05rem;
+      }
+
       .frequency-icon {
         font-size: 0;
         line-height: 0;
+        display: none;
       }
 
       .frequency-icon-indicator { font-size: 1.2rem; display: inline-flex; min-width: 1.2rem; }
@@ -356,6 +370,8 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
         display: flex;
         flex-direction: column;
         gap: 0.2rem;
+        flex: 1;
+        align-items: flex-start;
       }
 
       .frequency-title {
