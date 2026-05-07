@@ -10,7 +10,7 @@ import {
 } from '@angular/forms';
 import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { IonInput, IonicModule } from '@ionic/angular';
+import { IonInput, IonicModule, ToastController } from '@ionic/angular';
 import { Subject, Subscription } from 'rxjs';
 import { filter, take, takeUntil } from 'rxjs/operators';
 import { finalize } from 'rxjs/operators';
@@ -26,6 +26,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/stripe-payment.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
+import { environment } from 'src/environments/environment';
 
 const EURO_SYMBOL = '\u20AC';
 const AMOUNT_PATTERN = /^\d+(\.\d{0,2})?$/;
@@ -106,18 +107,31 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                     type="button"
                     class="frequency-card"
                     [class.selected]="frequency === 'monthly'"
+                    [class.disabled]="!canUseRecurring"
                     [attr.aria-checked]="frequency === 'monthly'"
                     aria-label="Monthly donation"
                     role="radio"
-                    (click)="setFrequency('monthly')"
+                    (click)="handleMonthlySelection()"
                   >
                     <span class="frequency-icon" aria-hidden="true">🔁</span>
+                    <span class="frequency-icon-indicator" aria-hidden="true">
+                      <ion-icon *ngIf="!canUseRecurring" name="lock-closed"></ion-icon>
+                    </span>
                     <span class="frequency-copy">
                       <span class="frequency-title">Monthly</span>
-                      <span class="frequency-subtitle">Charged every month. Cancel anytime.</span>
+                      <span class="frequency-subtitle">
+                        {{
+                          canUseRecurring
+                            ? 'Charged today, then monthly. Cancel anytime.'
+                            : 'Sign in to set up monthly giving.'
+                        }}
+                      </span>
                     </span>
                   </button>
                 </div>
+                <p *ngIf="showRecurringDebug" class="recurring-debug">
+                  role={{ recurringDebugRole }}, memberLoaded={{ memberProfileLoaded }}, canUseRecurring={{ canUseRecurring }}
+                </p>
 
                 <div class="section-label">CATEGORY</div>
                 <div class="grid category-grid">
@@ -329,10 +343,14 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
         transform: translateY(-1px);
       }
 
+      .frequency-card.disabled { opacity: .76; }
+
       .frequency-icon {
-        font-size: 1.2rem;
-        line-height: 1.2;
+        font-size: 0;
+        line-height: 0;
       }
+
+      .frequency-icon-indicator { font-size: 1.2rem; display: inline-flex; min-width: 1.2rem; }
 
       .frequency-copy {
         display: flex;
@@ -488,6 +506,12 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
         line-height: 1.35;
       }
 
+      .recurring-debug {
+        margin: -0.25rem 0 0.1rem;
+        color: #475467;
+        font-size: 0.75rem;
+      }
+
       .empty-state {
         text-align: center;
         margin-top: 2rem;
@@ -532,6 +556,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   private hasPrefilledEmail = false;
   private emailWasAuthPrefilled = false;
   private lastAuthPrefilledEmail = '';
+  memberProfileLoaded = !!this.authService.currentUserSnapshot;
+  private resolvedUserRole: string | null = this.normalizeRole(this.authService.currentUserSnapshot?.role);
   private readonly destroy$ = new Subject<void>();
 
   constructor(
@@ -541,7 +567,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     private readonly authService: AuthService,
     private readonly selectedBranchService: SelectedBranchService,
     private readonly router: Router,
-    private readonly stripePaymentService: StripePaymentService
+    private readonly stripePaymentService: StripePaymentService,
+    private readonly toastController: ToastController
   ) {
     this.branchSub = this.selectedBranchService.selectedBranch$.subscribe(branch => {
       this.branch = branch;
@@ -557,14 +584,31 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     this.authService.isAuthenticated$
       .pipe(takeUntil(this.destroy$))
       .subscribe((isAuthenticated) => {
+        this.logRecurringState('auth-state', this.authService.currentUserSnapshot);
         if (!isAuthenticated) {
+          this.memberProfileLoaded = false;
+          this.resolvedUserRole = null;
+          this.ensureRecurringFrequencyAllowed();
           this.clearAuthPrefilledDonorEmail();
           return;
         }
 
+        this.ensureMemberProfileResolved();
+        this.ensureRecurringFrequencyAllowed();
         this.prefillDonorEmailOnce();
       });
 
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((user) => {
+        this.memberProfileLoaded = !!user;
+        this.resolvedUserRole = this.normalizeRole(user?.role);
+        this.logRecurringState('current-user', user);
+        this.ensureRecurringFrequencyAllowed();
+      });
+
+    this.ensureMemberProfileResolved();
+    this.logRecurringState('init', this.authService.currentUserSnapshot);
     this.prefillDonorEmailOnce();
   }
 
@@ -573,6 +617,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   ionViewWillEnter(): void {
+    this.ensureMemberProfileResolved();
     this.prefillDonorEmailOnce();
     this.tryAutoFocusAmount();
   }
@@ -691,6 +736,16 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     this.frequency = frequency === 'monthly' ? 'monthly' : 'one_time';
   }
 
+  handleMonthlySelection(): void {
+    if (!this.canUseRecurring) {
+      this.setFrequency('one_time');
+      void this.showMonthlyAccessToast();
+      return;
+    }
+
+    this.setFrequency('monthly');
+  }
+
   handleFrequencyChange(event: CustomEvent): void {
     this.setFrequency(String(event.detail?.value ?? 'one_time'));
   }
@@ -764,6 +819,22 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
   get showRecurringConfirmation(): boolean {
     return this.frequency === 'monthly' && this.isAmountValid;
+  }
+
+  get canUseRecurring(): boolean {
+    return this.authService.isAuthenticatedSnapshot && (this.resolvedUserRole === 'member' || this.memberProfileLoaded);
+  }
+
+  get canSelectMonthly(): boolean {
+    return this.canUseRecurring;
+  }
+
+  get showRecurringDebug(): boolean {
+    return !environment.production;
+  }
+
+  get recurringDebugRole(): string {
+    return this.resolvedUserRole || 'none';
   }
 
   get formattedValidAmount(): string {
@@ -882,6 +953,15 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   private startRecurringPayment(): void {
+    if (!this.canUseRecurring) {
+      this.pendingRecurringDonationId = undefined;
+      this.pendingFrequency = undefined;
+      this.frequency = 'one_time';
+      this.nativeError = 'Please sign in to set up monthly giving.';
+      void this.showMonthlyAccessToast();
+      return;
+    }
+
     if (!this.readyForPayment()) {
       return;
     }
@@ -1040,6 +1120,63 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     this.emailWasAuthPrefilled = false;
     this.lastAuthPrefilledEmail = '';
     this.hasPrefilledEmail = false;
+  }
+
+  private ensureRecurringFrequencyAllowed(): void {
+    if (this.frequency === 'monthly' && !this.canUseRecurring) {
+      this.frequency = 'one_time';
+    }
+  }
+
+  private async showMonthlyAccessToast(): Promise<void> {
+    const toast = await this.toastController.create({
+      message: 'Please sign in to set up monthly giving.',
+      duration: 2200,
+      position: 'bottom',
+      color: 'dark',
+    });
+
+    await toast.present();
+  }
+
+  private normalizeRole(role: string | null | undefined): string | null {
+    return typeof role === 'string' && role.trim() ? role.trim().toLowerCase() : null;
+  }
+
+  private ensureMemberProfileResolved(): void {
+    if (!this.authService.isAuthenticatedSnapshot) {
+      return;
+    }
+
+    if (this.memberProfileLoaded && this.resolvedUserRole) {
+      return;
+    }
+
+    this.authService.getCurrentUser().pipe(take(1), takeUntil(this.destroy$)).subscribe({
+      next: (user) => {
+        this.memberProfileLoaded = !!user;
+        this.resolvedUserRole = this.normalizeRole(user?.role);
+        this.logRecurringState('member-refresh', user);
+        this.ensureRecurringFrequencyAllowed();
+      },
+      error: () => {
+        this.logRecurringState('member-refresh-error', this.authService.currentUserSnapshot);
+      },
+    });
+  }
+
+  private logRecurringState(source: string, memberProfile: unknown): void {
+    if (!environment.production) {
+      console.log('[DonatePage] recurring auth state', {
+        source,
+        authUserObject: this.authService.currentUserSnapshot,
+        memberProfileObject: memberProfile,
+        isAuthenticated: this.authService.isAuthenticatedSnapshot,
+        role: this.resolvedUserRole,
+        memberLoaded: this.memberProfileLoaded,
+        canUseRecurring: this.canUseRecurring,
+      });
+    }
   }
 
   private tryAutoFocusAmount(): void {
