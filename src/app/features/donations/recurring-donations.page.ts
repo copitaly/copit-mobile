@@ -24,6 +24,12 @@ type RecurringFilter = 'active_pending' | 'cancelled' | 'all';
 
         <div class="surface recurring-surface">
           <div class="surface__content recurring-surface__content">
+            <div *ngIf="!loading && !errorMessage" class="summary-card">
+              <p class="summary-card__eyebrow">Monthly support</p>
+              <h2>{{ monthlySupportTotal }}</h2>
+              <p class="summary-card__meta">{{ monthlySupportCountLabel }}</p>
+            </div>
+
             <div class="filter-group" *ngIf="!loading && !errorMessage">
               <button
                 type="button"
@@ -213,6 +219,41 @@ type RecurringFilter = 'active_pending' | 'cancelled' | 'all';
         display: flex;
         flex-direction: column;
         gap: 0.95rem;
+      }
+
+      .summary-card {
+        background: linear-gradient(135deg, #0b1d73 0%, #17349a 100%);
+        border-radius: 22px;
+        padding: 1rem 1.05rem;
+        color: #ffffff;
+        box-shadow: 0 16px 34px rgba(11, 29, 115, 0.2);
+      }
+
+      .summary-card__eyebrow,
+      .summary-card__meta,
+      .summary-card h2 {
+        margin: 0;
+      }
+
+      .summary-card__eyebrow {
+        color: rgba(255, 255, 255, 0.76);
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .summary-card h2 {
+        margin-top: 0.35rem;
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+
+      .summary-card__meta {
+        margin-top: 0.25rem;
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 0.9rem;
       }
 
       .filter-group {
@@ -556,6 +597,16 @@ export class RecurringDonationsPage implements OnInit {
     return this.selectedFilter !== 'cancelled';
   }
 
+  get monthlySupportTotal(): string {
+    const total = this.summaryMonthlyDonations.reduce((sum, donation) => sum + Number(donation.amount || 0), 0);
+    return `${this.formatCurrencySymbol('eur')}${total.toFixed(2)}/month`;
+  }
+
+  get monthlySupportCountLabel(): string {
+    const count = this.summaryMonthlyDonations.length;
+    return count > 0 ? `${count} active monthly donation${count === 1 ? '' : 's'}` : 'No active monthly donations';
+  }
+
   private fetchRecurringDonations(): void {
     this.fetchRecurringPage(null, false);
   }
@@ -796,5 +847,13 @@ export class RecurringDonationsPage implements OnInit {
       default:
         return true;
     }
+  }
+
+  private get summaryMonthlyDonations(): RecurringDonationItem[] {
+    return this.recurringDonations.filter((donation) => {
+      const status = (donation.status || '').toLowerCase();
+      const interval = (donation.interval || '').toLowerCase();
+      return interval === 'monthly' && (status === 'active' || status === 'incomplete' || status === 'past_due');
+    });
   }
 }
