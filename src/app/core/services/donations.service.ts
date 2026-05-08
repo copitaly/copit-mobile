@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { catchError, switchMap, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import {
   DonationCheckoutRequest,
@@ -67,6 +67,22 @@ export class DonationsService {
     return this.withAuth((token) => this.postRecurringCheckout(token, payload));
   }
 
+  createRecurringDonation(
+    payload: RecurringDonationCreateRequest
+  ): Observable<RecurringDonationCreateResponse> {
+    console.log('[recurring service] method entered');
+    if (!environment.production) {
+      console.log('[DonationsService] createRecurringDonation called', {
+        endpoint: 'donations/recurring/create/',
+        amount: payload.amount,
+        category: payload.category,
+        churchId: payload.church_id,
+        interval: payload.interval,
+      });
+    }
+    return this.createRecurringCheckout(payload);
+  }
+
   getRecurringDonations(
     nextPageUrl?: string | null,
     filters?: { status?: string }
@@ -96,19 +112,35 @@ export class DonationsService {
     token: string,
     payload: RecurringDonationCreateRequest
   ): Observable<RecurringDonationCreateResponse> {
+    const url = this.buildUrl('donations/recurring/create/');
+    const tokenAttached = !!token;
     if (!environment.production) {
       console.log('[DonationsService] recurring create request headers', {
         endpoint: 'donations/recurring/create/',
-        tokenAttached: !!token,
+        tokenAttached,
       });
+      console.log('[recurring service] url=' + url);
+      console.log('[recurring service] payload=' + this.safeJsonStringify(payload));
+      console.log('[recurring service] tokenAttached=' + tokenAttached);
     }
-    return this.http.post<RecurringDonationCreateResponse>(
-      this.buildUrl('donations/recurring/create/'),
-      payload,
-      {
+    return this.http
+      .post<RecurringDonationCreateResponse>(url, payload, {
         headers: this.buildAuthHeaders(token),
-      }
-    );
+      })
+      .pipe(
+        tap((response) => {
+          console.log('[recurring service] response', response);
+        }),
+        catchError((error) => {
+          const httpError = error as HttpErrorResponse;
+          console.error('[recurring service] error status=' + httpError?.status);
+          console.error('[recurring service] error statusText=' + httpError?.statusText);
+          console.error('[recurring service] error url=' + httpError?.url);
+          console.error('[recurring service] error message=' + httpError?.message);
+          console.error('[recurring service] error body=' + this.safeJsonStringify(httpError?.error));
+          return throwError(() => error);
+        })
+      );
   }
 
   private fetchRecurringDonations(
@@ -210,5 +242,21 @@ export class DonationsService {
 
   private isUnauthorized(error: unknown): boolean {
     return error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403);
+  }
+
+  private safeJsonStringify(value: unknown): string {
+    if (value == null) {
+      return '';
+    }
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '[unserializable]';
+    }
   }
 }

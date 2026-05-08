@@ -11,7 +11,7 @@ import {
 import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonInput, IonicModule, ToastController } from '@ionic/angular';
-import { Subject, Subscription } from 'rxjs';
+import { Subject, Subscription, firstValueFrom } from 'rxjs';
 import { filter, take, takeUntil } from 'rxjs/operators';
 import { finalize } from 'rxjs/operators';
 import { PublicBranch } from '../../core/models/branch.model';
@@ -242,7 +242,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   nativeError?: string;
   branch: PublicBranch | null = null;
   customAmountInputValue = '';
-  frequency: DonationFrequency = 'one_time';
+  private selectedFrequencyState: DonationFrequency = 'one_time';
 
   @ViewChild('amountInput') private amountInput?: IonInput;
 
@@ -347,8 +347,12 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   startNativePayment(): void {
-    if (this.frequency === 'monthly') {
-      this.startRecurringPayment();
+    this.logSubmitState('startNativePayment');
+    if (this.isMonthlySelected) {
+      if (!environment.production) {
+        console.log('[DonatePage] monthly branch selected, starting recurring payment');
+      }
+      void this.startRecurringPayment();
       return;
     }
 
@@ -376,9 +380,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
           this.persistOneTimeSummary(payload, response.transaction_reference);
           this.pendingMobileDonationId = response.donation_id;
           this.pendingRecurringDonationId = undefined;
-          this.stripePaymentService.presentPaymentSheet(response.client_secret).then(result =>
-            this.handlePaymentSheetOutcome(result)
-          );
+          void this.presentPaymentSheet(response.client_secret);
         },
         error: () => {
           this.pendingFrequency = undefined;
@@ -388,6 +390,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   submitDonation(): void {
+    this.logSubmitState('submitDonation');
     this.startNativePayment();
   }
 
@@ -434,10 +437,25 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   setFrequency(frequency: string): void {
-    this.frequency = frequency === 'monthly' ? 'monthly' : 'one_time';
+    this.selectedFrequencyState = frequency === 'monthly' ? 'monthly' : 'one_time';
+    if (!environment.production) {
+      console.log('[DonatePage] frequency updated', {
+        frequency: this.frequency,
+        selectedFrequency: this.selectedFrequency,
+        isMonthly: this.isMonthlySelected,
+      });
+    }
   }
 
   handleMonthlySelection(): void {
+    if (!environment.production) {
+      console.log('[DonatePage] monthly card tapped', {
+        canUseRecurring: this.canUseRecurring,
+        isLoggedIn: this.authService.isAuthenticatedSnapshot,
+        hasAccessToken: !!this.authService.accessTokenSnapshot,
+        role: this.resolvedUserRole,
+      });
+    }
     if (!this.canUseRecurring) {
       this.setFrequency('one_time');
       void this.showMonthlyAccessToast();
@@ -502,9 +520,21 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     return this.form.valid;
   }
 
+  get frequency(): DonationFrequency {
+    return this.selectedFrequencyState;
+  }
+
+  get selectedFrequency(): DonationFrequency {
+    return this.selectedFrequencyState;
+  }
+
+  get isMonthlySelected(): boolean {
+    return this.selectedFrequency === 'monthly';
+  }
+
   get ctaLabel(): string {
     if (this.nativeLoading) {
-      return this.frequency === 'monthly' ? 'Starting monthly gift...' : 'Processing...';
+      return this.isMonthlySelected ? 'Starting monthly gift...' : 'Processing...';
     }
 
     const amountControl = this.form.get('amount');
@@ -513,13 +543,13 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     }
 
     const amount = Number(amountControl.value);
-    return this.frequency === 'monthly'
+    return this.isMonthlySelected
       ? `Give ${EURO_SYMBOL}${amount.toFixed(2)} monthly`
       : `Give ${EURO_SYMBOL}${amount.toFixed(2)}`;
   }
 
   get showRecurringConfirmation(): boolean {
-    return this.frequency === 'monthly' && this.isAmountValid;
+    return this.isMonthlySelected && this.isAmountValid;
   }
 
   get canUseRecurring(): boolean {
@@ -658,11 +688,13 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     return true;
   }
 
-  private startRecurringPayment(): void {
+  private async startRecurringPayment(): Promise<void> {
+    console.log('[monthly] submit started');
+    this.logSubmitState('startRecurringPayment');
     if (!this.canUseRecurring) {
       this.pendingRecurringDonationId = undefined;
       this.pendingFrequency = undefined;
-      this.frequency = 'one_time';
+      this.selectedFrequencyState = 'one_time';
       this.nativeError = 'Please sign in to set up monthly giving.';
       void this.showMonthlyAccessToast();
       return;
@@ -678,51 +710,64 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     this.nativeError = undefined;
     this.errorMessage = undefined;
     this.pendingFrequency = 'monthly';
+    console.log('[monthly] calling recurring create');
+    try {
+      console.log('[monthly] before await createRecurringDonation');
+      const recurringCreate$ = this.donationsService.createRecurringDonation(payload);
+      const response = await firstValueFrom(recurringCreate$);
+      console.log('[monthly] after await createRecurringDonation', response);
+      console.log('[monthly] recurring create returned');
+      console.log('[monthly] response', response);
+      console.log('[monthly] client_secret exists', !!response?.client_secret);
+      console.log('[DonatePage] recurring checkout response', response);
+      this.pendingMobileDonationId = undefined;
+      this.pendingRecurringDonationId = response.recurring_donation_id;
+      this.persistRecurringSummary(payload, response.recurring_donation_id, response.subscription_id);
+      if (!response.client_secret?.trim()) {
+        this.pendingRecurringDonationId = undefined;
+        this.pendingFrequency = undefined;
+        this.nativeError = 'Unable to start monthly payment. Please try again.';
+        void this.showMonthlyClientSecretErrorToast();
+        return;
+      }
+      console.log('[monthly] presenting PaymentSheet');
+      await this.presentPaymentSheet(response.client_secret, true);
+    } catch (error) {
+      this.logRecurringHttpError(error);
+      this.pendingRecurringDonationId = undefined;
+      this.pendingFrequency = undefined;
+      this.nativeError = this.resolveRecurringErrorMessage(error);
+      void this.showRecurringCreateErrorToast(this.nativeError);
+    } finally {
+      this.nativeLoading = false;
+      console.log('[monthly] submit finally');
+    }
+  }
 
-    this.donationsService
-      .createRecurringCheckout(payload)
-      .pipe(finalize(() => (this.nativeLoading = false)))
-      .subscribe({
-        next: response => {
-          console.log('[DonatePage] recurring checkout response', response);
-          this.pendingMobileDonationId = undefined;
-          this.pendingRecurringDonationId = response.recurring_donation_id;
-          this.persistRecurringSummary(payload, response.recurring_donation_id, response.subscription_id);
-          if (!response.client_secret?.trim()) {
-            this.pendingRecurringDonationId = undefined;
-            this.pendingFrequency = undefined;
-            this.nativeError = 'Unable to start monthly payment. Please try again.';
-            void this.showMonthlyClientSecretErrorToast();
-            return;
-          }
-          this.stripePaymentService.presentPaymentSheet(response.client_secret).then(result =>
-            this.handlePaymentSheetOutcome(result)
-          );
-        },
-        error: error => {
-          this.pendingRecurringDonationId = undefined;
-          this.pendingFrequency = undefined;
-          this.nativeError = this.resolveRecurringErrorMessage(error);
-        },
-      });
+  private async presentPaymentSheet(clientSecret: string, isMonthly = false): Promise<void> {
+    const result = await this.stripePaymentService.presentPaymentSheet(clientSecret);
+    if (isMonthly) {
+      console.log('[monthly] PaymentSheet result', result);
+    }
+    this.handlePaymentSheetOutcome(result);
   }
 
   private resolveRecurringErrorMessage(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
-      if (error.status === 401 || error.status === 403) {
-        return 'Please sign in to set up a monthly donation.';
+      const extractedError = this.extractApiErrorMessage(error.error);
+      if (extractedError) {
+        return extractedError;
       }
 
-      const detail = this.extractDetailMessage(error.error);
-      if (detail) {
-        return detail;
+      if (error.status === 401 || error.status === 403) {
+        return 'Please sign in to set up a monthly donation.';
       }
     }
 
     return 'Unable to start monthly giving. Please try again.';
   }
 
-  private extractDetailMessage(errorBody: unknown): string | null {
+  private extractApiErrorMessage(errorBody: unknown): string | null {
     if (!errorBody || typeof errorBody !== 'object') {
       return null;
     }
@@ -732,7 +777,48 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       return detail;
     }
 
+    for (const value of Object.values(errorBody as Record<string, unknown>)) {
+      if (typeof value === 'string' && value.trim()) {
+        return value;
+      }
+      if (Array.isArray(value)) {
+        const firstString = value.find((item) => typeof item === 'string' && item.trim()) as string | undefined;
+        if (firstString) {
+          return firstString;
+        }
+      }
+    }
+
     return null;
+  }
+
+  private logRecurringHttpError(error: unknown): void {
+    if (error instanceof HttpErrorResponse) {
+      console.error('[monthly] recurring error status=' + error?.status);
+      console.error('[monthly] recurring error statusText=' + error?.statusText);
+      console.error('[monthly] recurring error url=' + error?.url);
+      console.error('[monthly] recurring error message=' + error?.message);
+      console.error('[monthly] recurring error body=' + this.safeJsonStringify(error?.error));
+      return;
+    }
+
+    console.error('[monthly] createRecurringDonation error', error);
+  }
+
+  private safeJsonStringify(value: unknown): string {
+    if (value == null) {
+      return '';
+    }
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '[unserializable]';
+    }
   }
 
   private prefillDonorEmailOnce(): void {
@@ -838,8 +924,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   private ensureRecurringFrequencyAllowed(): void {
-    if (this.frequency === 'monthly' && !this.canUseRecurring) {
-      this.frequency = 'one_time';
+    if (this.isMonthlySelected && !this.canUseRecurring) {
+      this.selectedFrequencyState = 'one_time';
     }
   }
 
@@ -858,6 +944,17 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     const toast = await this.toastController.create({
       message: 'Unable to start monthly payment. Please try again.',
       duration: 2400,
+      position: 'bottom',
+      color: 'danger',
+    });
+
+    await toast.present();
+  }
+
+  private async showRecurringCreateErrorToast(message: string): Promise<void> {
+    const toast = await this.toastController.create({
+      message,
+      duration: 2600,
       position: 'bottom',
       color: 'danger',
     });
@@ -908,12 +1005,35 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   private logCheckoutSubmit(endpoint: string): void {
     if (!environment.production) {
       console.log('[DonatePage] checkout submit', {
+        frequency: this.frequency,
+        selectedFrequency: this.selectedFrequency,
+        isMonthly: this.isMonthlySelected,
+        canUseRecurring: this.canUseRecurring,
+        amount: this.form.get('amount')?.value,
+        selectedChurchId: this.branch?.id ?? null,
+        category: this.form.get('category')?.value,
+        isSubmitting: this.loading || this.nativeLoading,
         isLoggedIn: this.authService.isAuthenticatedSnapshot,
         hasAccessToken: !!this.authService.accessTokenSnapshot,
         tokenAttached:
           endpoint === 'donations/recurring/create/' ? !!this.authService.accessTokenSnapshot : undefined,
         endpoint,
+      });
+    }
+  }
+
+  private logSubmitState(source: string): void {
+    if (!environment.production) {
+      console.log('[DonatePage] submit state', {
+        source,
         frequency: this.frequency,
+        selectedFrequency: this.selectedFrequency,
+        isMonthly: this.isMonthlySelected,
+        canUseRecurring: this.canUseRecurring,
+        amount: this.form.get('amount')?.value,
+        selectedChurchId: this.branch?.id ?? null,
+        category: this.form.get('category')?.value,
+        isSubmitting: this.loading || this.nativeLoading,
       });
     }
   }
