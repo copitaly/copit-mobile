@@ -450,12 +450,12 @@ export class RecurringDonationsPage implements OnInit {
     this.cancellingIds.add(donation.id);
     this.donationsService.cancelRecurringDonation(donation.id).subscribe({
       next: async (updatedDonation) => {
-        this.recurringDonations = this.recurringDonations.map((item) =>
-          item.id === updatedDonation.id ? updatedDonation : item
+        this.recurringDonations = this.applyCurrentFilter(
+          this.recurringDonations.map((item) => (item.id === updatedDonation.id ? updatedDonation : item))
         );
         this.cancellingIds.delete(donation.id);
         const toast = await this.toastController.create({
-          message: 'Recurring donation cancelled successfully.',
+          message: 'Monthly donation cancelled',
           duration: 2500,
           color: 'success',
           position: 'bottom',
@@ -507,6 +507,10 @@ export class RecurringDonationsPage implements OnInit {
       default:
         return true;
     }
+  }
+
+  private applyCurrentFilter(donations: RecurringDonationItem[]): RecurringDonationItem[] {
+    return donations.filter((donation) => this.matchesSelectedFilter(donation));
   }
 
   private get summaryMonthlyDonations(): RecurringDonationItem[] {
