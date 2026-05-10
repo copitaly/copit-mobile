@@ -1,5 +1,17 @@
-import { NgModule } from '@angular/core';
-import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
+import { inject, NgModule } from '@angular/core';
+import { CanMatchFn, PreloadAllModules, Router, RouterModule, Routes } from '@angular/router';
+import { AuthService } from './core/services/auth.service';
+
+const redirectAuthenticatedAwayFromAuthPages: CanMatchFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (authService.isAuthenticatedSnapshot || !!authService.accessTokenSnapshot) {
+    return router.parseUrl('/profile');
+  }
+
+  return true;
+};
 
 const routes: Routes = [
   {
@@ -12,10 +24,12 @@ const routes: Routes = [
   },
   {
     path: 'login',
+    canMatch: [redirectAuthenticatedAwayFromAuthPages],
     loadComponent: () => import('./features/auth/login.page').then(m => m.LoginPage)
   },
   {
     path: 'register',
+    canMatch: [redirectAuthenticatedAwayFromAuthPages],
     loadComponent: () => import('./features/auth/register.page').then(m => m.RegisterPage)
   },
   {

@@ -230,11 +230,10 @@ export class AuthService {
   }
 
   logout(): void {
+    this.clearSession();
     this.sendCookieBackedAuthRequest<void>(this.logoutUrl, 'POST', {})
       .pipe(catchError(() => EMPTY))
-      .subscribe({
-        complete: () => this.clearSession(),
-      });
+      .subscribe();
   }
 
   private setAuthenticatedProfile(profile: MemberProfile): void {

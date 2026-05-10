@@ -402,7 +402,11 @@ export class RegisterPage implements OnDestroy {
     private readonly authService: AuthService,
     private readonly formBuilder: FormBuilder,
     private readonly router: Router
-  ) {}
+  ) {
+    if (this.authService.isAuthenticatedSnapshot || !!this.authService.accessTokenSnapshot) {
+      void this.router.navigateByUrl('/profile', { replaceUrl: true });
+    }
+  }
 
   get canSubmit(): boolean {
     return this.form.valid && !this.loading;
@@ -442,7 +446,7 @@ export class RegisterPage implements OnDestroy {
     this.clearErrorMessage();
     this.authService.register(this.getRegisterPayload()).subscribe({
       next: () => {
-        void this.router.navigate(['/profile']);
+        void this.router.navigateByUrl('/profile', { replaceUrl: true });
       },
       error: (error: unknown) => {
         this.setErrorMessage(this.getRegisterErrorMessage(error));

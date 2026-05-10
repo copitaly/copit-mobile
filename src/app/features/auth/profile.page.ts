@@ -496,7 +496,7 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   logout(): void {
     this.authService.logout();
-    void this.router.navigate(['/home']);
+    void this.router.navigateByUrl('/login', { replaceUrl: true });
   }
 
   goToDonationFlow(): void {

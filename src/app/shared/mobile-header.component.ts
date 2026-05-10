@@ -2,6 +2,7 @@ import { CommonModule, Location } from '@angular/common';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, Input } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
+import { AuthService } from '../core/services/auth.service';
 
 @Component({
   standalone: true,
@@ -37,15 +38,21 @@ export class MobileHeaderComponent {
 
   constructor(
     private readonly location: Location,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly authService: AuthService
   ) {}
 
   goBack(): void {
+    if (this.authService.isAuthenticatedSnapshot && this.router.url === '/profile') {
+      void this.router.navigateByUrl(this.fallbackRoute, { replaceUrl: true });
+      return;
+    }
+
     if (typeof window !== 'undefined' && window.history.length > 1) {
       this.location.back();
       return;
     }
 
-    void this.router.navigate([this.fallbackRoute]);
+    void this.router.navigateByUrl(this.fallbackRoute, { replaceUrl: true });
   }
 }

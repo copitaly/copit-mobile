@@ -308,7 +308,11 @@ export class LoginPage implements OnDestroy {
     private readonly authService: AuthService,
     private readonly formBuilder: FormBuilder,
     private readonly router: Router
-  ) {}
+  ) {
+    if (this.authService.isAuthenticatedSnapshot || !!this.authService.accessTokenSnapshot) {
+      void this.router.navigateByUrl('/profile', { replaceUrl: true });
+    }
+  }
 
   get canSubmit(): boolean {
     const { identifier, password } = this.form.getRawValue();
@@ -329,7 +333,7 @@ export class LoginPage implements OnDestroy {
     this.clearErrorMessage();
     this.authService.login(this.form.getRawValue()).subscribe({
       next: () => {
-        void this.router.navigate(['/profile']);
+        void this.router.navigateByUrl('/profile', { replaceUrl: true });
       },
       error: (error: unknown) => {
         const isCredentialError = this.isCredentialError(error);
