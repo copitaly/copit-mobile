@@ -8,7 +8,7 @@ import { DonationsService } from '../../core/services/donations.service';
 import { AuthService } from '../../core/services/auth.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
-type RecurringFilter = 'active_pending' | 'cancelled' | 'all';
+type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
 
 @Component({
   standalone: true,
@@ -34,10 +34,18 @@ type RecurringFilter = 'active_pending' | 'cancelled' | 'all';
               <button
                 type="button"
                 class="filter-chip"
-                [class.selected]="selectedFilter === 'active_pending'"
-                (click)="setFilter('active_pending')"
+                [class.selected]="selectedFilter === 'active'"
+                (click)="setFilter('active')"
               >
-                Active & pending
+                Active
+              </button>
+              <button
+                type="button"
+                class="filter-chip"
+                [class.selected]="selectedFilter === 'pending'"
+                (click)="setFilter('pending')"
+              >
+                Pending
               </button>
               <button
                 type="button"
@@ -176,7 +184,7 @@ export class RecurringDonationsPage implements OnInit {
   loadingMore = false;
   errorMessage = '';
   nextPageUrl: string | null = null;
-  selectedFilter: RecurringFilter = 'active_pending';
+  selectedFilter: RecurringFilter = 'active';
   readonly skeletonItems = [1, 2, 3];
   readonly cancellingIds = new Set<number>();
 
@@ -233,8 +241,10 @@ export class RecurringDonationsPage implements OnInit {
 
   get emptyStateTitle(): string {
     switch (this.selectedFilter) {
-      case 'active_pending':
+      case 'active':
         return 'No active monthly donations';
+      case 'pending':
+        return 'No pending monthly donations';
       case 'cancelled':
         return 'No cancelled monthly donations';
       default:
@@ -244,8 +254,10 @@ export class RecurringDonationsPage implements OnInit {
 
   get emptyStateMessage(): string {
     switch (this.selectedFilter) {
-      case 'active_pending':
-        return 'Your active and pending monthly gifts will appear here.';
+      case 'active':
+        return 'Your active monthly gifts will appear here.';
+      case 'pending':
+        return 'Pending monthly donations will appear here.';
       case 'cancelled':
         return 'Cancelled monthly donations will appear here.';
       default:
@@ -500,8 +512,10 @@ export class RecurringDonationsPage implements OnInit {
     const status = (donation.status || '').toLowerCase();
 
     switch (this.selectedFilter) {
-      case 'active_pending':
-        return status === 'active' || status === 'incomplete' || status === 'past_due';
+      case 'active':
+        return status === 'active';
+      case 'pending':
+        return status === 'incomplete' || status === 'past_due';
       case 'cancelled':
         return status === 'cancelled';
       default:
@@ -517,7 +531,7 @@ export class RecurringDonationsPage implements OnInit {
     return this.recurringDonations.filter((donation) => {
       const status = (donation.status || '').toLowerCase();
       const interval = (donation.interval || '').toLowerCase();
-      return interval === 'monthly' && (status === 'active' || status === 'incomplete' || status === 'past_due');
+      return interval === 'monthly' && status === 'active';
     });
   }
 }
