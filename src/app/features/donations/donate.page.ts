@@ -86,6 +86,38 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
               </div>
 
               <form [formGroup]="form" (ngSubmit)="submitDonation()" class="donate-form">
+                <div class="section-label">CATEGORY</div>
+                <div class="grid category-grid">
+                  <button
+                    *ngFor="let option of categories"
+                    type="button"
+                    class="chip"
+                    [class.selected]="isCategory(option.value)"
+                    (click)="setCategory(option.value)"
+                  >
+                    {{ option.label }}
+                  </button>
+                </div>
+
+                <div class="section-label">AMOUNT (EUR)</div>
+                <ion-item class="custom-amount" [class.is-valid]="isAmountValid" fill="solid">
+                  <span class="amount-prefix" aria-hidden="true">&euro;</span>
+                  <ion-input
+                    #amountInput
+                    type="text"
+                    [value]="customAmountInputValue"
+                    placeholder="Enter amount (EUR)"
+                    inputmode="decimal"
+                    autocomplete="off"
+                    enterkeyhint="done"
+                    (ionInput)="handleCustomAmountInput($event)"
+                    (ionBlur)="handleCustomAmountBlur()"
+                  ></ion-input>
+                </ion-item>
+                <ion-text color="danger" *ngIf="amountValidationMessage" class="form-error amount-error">
+                  {{ amountValidationMessage }}
+                </ion-text>
+
                 <div class="section-label">FREQUENCY</div>
                 <div class="frequency-cards" role="radiogroup" aria-label="Donation frequency">
                   <button
@@ -134,38 +166,6 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                 <p *ngIf="showRecurringDebug" class="recurring-debug">
                   role={{ recurringDebugRole }}, memberLoaded={{ memberProfileLoaded }}, canUseRecurring={{ canUseRecurring }}
                 </p>
-
-                <div class="section-label">CATEGORY</div>
-                <div class="grid category-grid">
-                  <button
-                    *ngFor="let option of categories"
-                    type="button"
-                    class="chip"
-                    [class.selected]="isCategory(option.value)"
-                    (click)="setCategory(option.value)"
-                  >
-                    {{ option.label }}
-                  </button>
-                </div>
-
-                <div class="section-label">AMOUNT (EUR)</div>
-                <ion-item class="custom-amount" [class.is-valid]="isAmountValid" fill="solid">
-                  <span class="amount-prefix" aria-hidden="true">&euro;</span>
-                  <ion-input
-                    #amountInput
-                    type="text"
-                    [value]="customAmountInputValue"
-                    placeholder="Enter amount (EUR)"
-                    inputmode="decimal"
-                    autocomplete="off"
-                    enterkeyhint="done"
-                    (ionInput)="handleCustomAmountInput($event)"
-                    (ionBlur)="handleCustomAmountBlur()"
-                  ></ion-input>
-                </ion-item>
-                <ion-text color="danger" *ngIf="amountValidationMessage" class="form-error amount-error">
-                  {{ amountValidationMessage }}
-                </ion-text>
 
                 <ion-item class="custom-email" fill="solid">
                   <ion-input
