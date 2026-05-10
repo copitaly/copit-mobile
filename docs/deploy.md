@@ -12,7 +12,7 @@ android:run → deploys directly to device ✅
 android:live → live reload (not needed for you)
 Before running
 
-Make sure:
+Make sure:e
 
 USB debugging is ON
 Device is connected
@@ -26,4 +26,3 @@ If multiple devices/emulators
 You can specify:
 
 npx cap run android --target=<device-id>
-
