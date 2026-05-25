@@ -117,6 +117,31 @@ type QuickAction = {
                 </div>
               </section>
 
+              <section class="profile-section">
+                <h3 class="profile-section__title">Account</h3>
+
+                <div class="action-card">
+                  <button
+                    type="button"
+                    class="action-row action-row--last"
+                    (click)="goToAccountSettings()"
+                  >
+                    <span class="action-icon" aria-hidden="true">
+                      <ion-icon name="settings-outline"></ion-icon>
+                    </span>
+
+                    <span class="action-copy">
+                      <strong>Account Settings</strong>
+                      <small>Manage your account and privacy</small>
+                    </span>
+
+                    <span class="action-meta">
+                      <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
+                    </span>
+                  </button>
+                </div>
+              </section>
+
               <ion-button expand="block" class="give-now-button" (click)="goToDonationFlow()">
                 <ion-icon name="gift-outline" slot="start" aria-hidden="true"></ion-icon>
                 <span>Give now</span>
@@ -501,6 +526,10 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   goToDonationFlow(): void {
     void this.router.navigate(['/branches']);
+  }
+
+  goToAccountSettings(): void {
+    void this.router.navigate(['/profile/account-settings']);
   }
 
   goHome(): void {

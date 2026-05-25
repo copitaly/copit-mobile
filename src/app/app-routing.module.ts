@@ -37,6 +37,14 @@ const routes: Routes = [
     loadComponent: () => import('./features/auth/profile.page').then(m => m.ProfilePage)
   },
   {
+    path: 'profile/account-settings',
+    loadComponent: () => import('./features/auth/account-settings.page').then(m => m.AccountSettingsPage)
+  },
+  {
+    path: 'profile/account-settings/delete-account',
+    loadComponent: () => import('./features/auth/delete-account.page').then(m => m.DeleteAccountPage)
+  },
+  {
     path: 'profile/recurring-donations',
     loadComponent: () => import('./features/donations/recurring-donations.page').then(m => m.RecurringDonationsPage)
   },

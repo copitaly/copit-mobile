@@ -29,6 +29,7 @@ export class AuthService {
   private readonly refreshUrl = this.buildUrl('auth/token/refresh');
   private readonly logoutUrl = this.buildUrl('auth/logout');
   private readonly csrfUrl = this.buildUrl('auth/csrf');
+  private readonly accountDeleteUrl = this.buildUrl('account/me');
 
   readonly currentUser$ = this.currentUserSubject.asObservable();
   readonly isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
@@ -236,6 +237,37 @@ export class AuthService {
       .subscribe();
   }
 
+  deleteAccount(): Observable<void> {
+    const token = this.getStoredAccessToken();
+    if (!token) {
+      return this.refreshAccessToken().pipe(
+        switchMap((refreshedToken) => this.performAccountDelete(refreshedToken)),
+        catchError((error) =>
+          this.handleRefreshFailure(error).pipe(switchMap(() => throwError(() => error)))
+        )
+      );
+    }
+
+    return this.performAccountDelete(token).pipe(
+      catchError((error) => {
+        if (!this.isUnauthorized(error)) {
+          return throwError(() => error);
+        }
+
+        return this.refreshAccessToken().pipe(
+          switchMap((refreshedToken) => this.performAccountDelete(refreshedToken)),
+          catchError((refreshError) =>
+            this.handleRefreshFailure(refreshError).pipe(switchMap(() => throwError(() => refreshError)))
+          )
+        );
+      })
+    );
+  }
+
+  clearLocalAuthState(): void {
+    this.clearSession();
+  }
+
   private setAuthenticatedProfile(profile: MemberProfile): void {
     this.setCurrentUser(profile);
     this.isAuthenticatedSubject.next(true);
@@ -311,6 +343,13 @@ export class AuthService {
 
   private fetchSavedChurches(token: string): Observable<SavedChurch[]> {
     return this.http.get<SavedChurch[]>(this.buildUrl('members/me/saved-churches'), {
+      headers: this.buildAuthHeaders(token),
+      withCredentials: true,
+    });
+  }
+
+  private performAccountDelete(token: string): Observable<void> {
+    return this.http.delete<void>(this.accountDeleteUrl, {
       headers: this.buildAuthHeaders(token),
       withCredentials: true,
     });
