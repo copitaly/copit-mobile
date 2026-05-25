@@ -1,5 +1,6 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
@@ -221,23 +222,59 @@ export class AccountSettingsPage implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    console.log('[account-settings] init');
+    const wasAuthenticated =
+      this.authService.isAuthenticatedSnapshot || !!this.authService.accessTokenSnapshot;
+
     this.authService.getCurrentUser().subscribe({
       next: (profile) => {
-        if (!profile || profile.role !== 'member') {
-          void this.router.navigateByUrl('/login', { replaceUrl: true });
+        const memberProfileLoaded = !!profile?.id;
+        const allowed = memberProfileLoaded;
+
+        console.log('[account-settings] page result', {
+          memberProfileLoaded,
+          memberProfileId: profile?.id ?? null,
+          role: profile?.role ?? null,
+          allowed,
+          redirectReason: null,
+        });
+
+        if (!allowed) {
+          const redirectReason = wasAuthenticated ? 'missing-member-profile' : 'unauthenticated';
+          console.log('[account-settings] redirect reason=' + redirectReason);
+          void this.router.navigateByUrl(wasAuthenticated ? '/profile' : '/login', { replaceUrl: true });
           return;
         }
 
         this.profile = profile;
         this.loading = false;
       },
-      error: () => {
-        void this.router.navigateByUrl('/login', { replaceUrl: true });
+      error: (error: unknown) => {
+        const httpError = error as HttpErrorResponse;
+        const redirectReason =
+          httpError?.status === 401
+            ? 'unauthenticated'
+            : httpError?.status === 403 || httpError?.status === 404
+              ? 'member-profile-denied'
+              : 'profile-load-error';
+
+        console.log('[account-settings] page result', {
+          memberProfileLoaded: false,
+          memberProfileId: null,
+          role: null,
+          allowed: false,
+          redirectReason,
+        });
+        console.log('[account-settings] redirect reason=' + redirectReason);
+        void this.router.navigateByUrl(
+          redirectReason === 'unauthenticated' ? '/login' : '/profile',
+          { replaceUrl: true }
+        );
       },
     });
   }
 
   goToDeleteAccount(): void {
-    void this.router.navigate(['/profile/account-settings/delete-account']);
+    void this.router.navigateByUrl('/profile/account-settings/delete-account');
   }
 }

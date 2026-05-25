@@ -529,7 +529,7 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
   goToAccountSettings(): void {
-    void this.router.navigate(['/profile/account-settings']);
+    void this.router.navigateByUrl('/profile/account-settings');
   }
 
   goHome(): void {
