@@ -122,14 +122,19 @@ const routes: Routes = [
     loadComponent: () => import('./features/auth/register.page').then(m => m.RegisterPage)
   },
   {
-    path: 'profile/account-settings',
+    path: 'profile/account-settings/edit-profile',
     canMatch: [allowAuthenticatedMembersIntoAccountSettings],
-    loadComponent: () => import('./features/auth/account-settings.page').then(m => m.AccountSettingsPage)
+    loadComponent: () => import('./features/auth/edit-profile.page').then(m => m.EditProfilePage)
   },
   {
     path: 'profile/account-settings/delete-account',
     canMatch: [allowAuthenticatedMembersIntoAccountSettings],
     loadComponent: () => import('./features/auth/delete-account.page').then(m => m.DeleteAccountPage)
+  },
+  {
+    path: 'profile/account-settings',
+    canMatch: [allowAuthenticatedMembersIntoAccountSettings],
+    loadComponent: () => import('./features/auth/account-settings.page').then(m => m.AccountSettingsPage)
   },
   {
     path: 'profile/recurring-donations',

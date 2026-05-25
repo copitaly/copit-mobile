@@ -36,6 +36,20 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
             <div *ngIf="!loading && profile" class="settings-stack">
               <section class="settings-card">
+                <p class="settings-card__eyebrow">Profile</p>
+                <button type="button" class="settings-row" (click)="goToEditProfile()">
+                  <span class="settings-row__icon" aria-hidden="true">
+                    <ion-icon name="create-outline"></ion-icon>
+                  </span>
+                  <span class="settings-row__copy">
+                    <strong>Edit profile</strong>
+                    <small>Change your name, phone number, and language</small>
+                  </span>
+                  <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
+                </button>
+              </section>
+
+              <section class="settings-card">
                 <p class="settings-card__eyebrow">Privacy</p>
                 <h2>Delete account</h2>
                 <p>
@@ -132,35 +146,49 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         line-height: 1.55;
       }
 
+      .settings-row,
       .danger-row {
         width: 100%;
         margin-top: 1rem;
         padding: 0.95rem 1rem;
-        border: 1px solid rgba(223, 63, 77, 0.16);
-        border-radius: 18px;
-        background: rgba(255, 244, 245, 0.95);
-        color: #9b2430;
         display: flex;
         align-items: center;
         gap: 0.8rem;
         text-align: left;
+        border-radius: 18px;
+        appearance: none;
+        -webkit-appearance: none;
+        box-sizing: border-box;
       }
 
+      .settings-row {
+        border: 1px solid rgba(66, 94, 166, 0.12);
+        background: rgba(239, 243, 255, 0.96);
+        color: #082356;
+      }
+
+      .settings-row__icon,
       .danger-row__icon {
         width: 42px;
         height: 42px;
         border-radius: 14px;
-        background: rgba(223, 63, 77, 0.12);
         display: inline-flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
       }
 
+      .settings-row__icon {
+        background: rgba(66, 94, 166, 0.12);
+        color: #425ea6;
+      }
+
+      .settings-row__icon ion-icon,
       .danger-row__icon ion-icon {
         font-size: 1.1rem;
       }
 
+      .settings-row__copy,
       .danger-row__copy {
         min-width: 0;
         flex: 1;
@@ -169,9 +197,22 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         gap: 0.14rem;
       }
 
+      .settings-row__copy strong,
       .danger-row__copy strong {
         font-size: 0.98rem;
         font-weight: 700;
+      }
+
+      .settings-row__copy small {
+        color: rgba(8, 35, 86, 0.72);
+        font-size: 0.84rem;
+        line-height: 1.4;
+      }
+
+      .danger-row {
+        border: 1px solid rgba(223, 63, 77, 0.16);
+        background: rgba(255, 244, 245, 0.95);
+        color: #9b2430;
       }
 
       .danger-row__copy small {
@@ -276,5 +317,9 @@ export class AccountSettingsPage implements OnInit {
 
   goToDeleteAccount(): void {
     void this.router.navigateByUrl('/profile/account-settings/delete-account');
+  }
+
+  goToEditProfile(): void {
+    void this.router.navigateByUrl('/profile/account-settings/edit-profile');
   }
 }

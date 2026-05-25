@@ -9,6 +9,7 @@ import {
   AuthTokenResponse,
   MemberLoginRequest,
   MemberProfile,
+  MemberProfileUpdateRequest,
   MemberRecentDonation,
   MemberRegisterRequest,
   PaginatedResponse,
@@ -264,6 +265,33 @@ export class AuthService {
     );
   }
 
+  updateMemberProfile(payload: MemberProfileUpdateRequest): Observable<MemberProfile> {
+    const token = this.getStoredAccessToken();
+    if (!token) {
+      return this.refreshAccessToken().pipe(
+        switchMap((refreshedToken) => this.performMemberProfileUpdate(refreshedToken, payload)),
+        catchError((error) =>
+          this.handleRefreshFailure(error).pipe(switchMap(() => throwError(() => error)))
+        )
+      );
+    }
+
+    return this.performMemberProfileUpdate(token, payload).pipe(
+      catchError((error) => {
+        if (!this.isUnauthorized(error)) {
+          return throwError(() => error);
+        }
+
+        return this.refreshAccessToken().pipe(
+          switchMap((refreshedToken) => this.performMemberProfileUpdate(refreshedToken, payload)),
+          catchError((refreshError) =>
+            this.handleRefreshFailure(refreshError).pipe(switchMap(() => throwError(() => refreshError)))
+          )
+        );
+      })
+    );
+  }
+
   clearLocalAuthState(): void {
     this.clearSession();
   }
@@ -346,6 +374,18 @@ export class AuthService {
       headers: this.buildAuthHeaders(token),
       withCredentials: true,
     });
+  }
+
+  private performMemberProfileUpdate(
+    token: string,
+    payload: MemberProfileUpdateRequest
+  ): Observable<MemberProfile> {
+    return this.http.patch<MemberProfile>(this.buildUrl('members/me'), payload, {
+      headers: this.buildAuthHeaders(token),
+      withCredentials: true,
+    }).pipe(
+      tap((profile) => this.setAuthenticatedProfile(profile))
+    );
   }
 
   private performAccountDelete(token: string): Observable<void> {

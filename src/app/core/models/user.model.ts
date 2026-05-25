@@ -83,6 +83,13 @@ export interface MemberRegisterRequest {
   confirm_password: string;
 }
 
+export interface MemberProfileUpdateRequest {
+  first_name?: string;
+  last_name?: string;
+  phone_number?: string;
+  preferred_language?: string | null;
+}
+
 export interface AuthTokenResponse {
   access: string;
   user: AuthUser;
