@@ -267,18 +267,49 @@ export class DeleteAccountPage implements OnInit {
   }
 
   ngOnInit(): void {
+    console.log('[delete-account] init');
+    const wasAuthenticated =
+      this.authService.isAuthenticatedSnapshot || !!this.authService.accessTokenSnapshot;
+
     this.authService.getCurrentUser().subscribe({
       next: (profile) => {
-        if (!profile || profile.role !== 'member') {
-          void this.router.navigateByUrl('/login', { replaceUrl: true });
+        const memberProfileLoaded = !!profile?.id;
+        console.log('[delete-account] memberProfileLoaded', {
+          memberProfileLoaded,
+          memberProfileId: profile?.id ?? null,
+          role: profile?.role ?? null,
+          allowed: memberProfileLoaded,
+        });
+
+        if (!memberProfileLoaded) {
+          const redirectReason = wasAuthenticated ? 'missing-member-profile' : 'unauthenticated';
+          console.log('[delete-account] redirect reason=' + redirectReason);
+          void this.router.navigateByUrl(wasAuthenticated ? '/profile' : '/login', { replaceUrl: true });
           return;
         }
 
         this.profile = profile;
         this.loading = false;
       },
-      error: () => {
-        void this.router.navigateByUrl('/login', { replaceUrl: true });
+      error: (error: unknown) => {
+        const httpError = error as HttpErrorResponse;
+        const redirectReason =
+          httpError?.status === 401
+            ? 'unauthenticated'
+            : httpError?.status === 403 || httpError?.status === 404
+              ? 'member-profile-denied'
+              : 'profile-load-error';
+        console.log('[delete-account] memberProfileLoaded', {
+          memberProfileLoaded: false,
+          memberProfileId: null,
+          role: null,
+          allowed: false,
+        });
+        console.log('[delete-account] redirect reason=' + redirectReason);
+        void this.router.navigateByUrl(
+          redirectReason === 'unauthenticated' ? '/login' : '/profile',
+          { replaceUrl: true }
+        );
       },
     });
   }
@@ -288,6 +319,7 @@ export class DeleteAccountPage implements OnInit {
       return;
     }
 
+    console.log('[delete-account] delete clicked');
     this.submitting = true;
     this.errorMessage = '';
 
@@ -300,8 +332,10 @@ export class DeleteAccountPage implements OnInit {
         try {
           const toast = await this.toastController.create({
             message: 'Account deleted successfully.',
+            icon: 'checkmark-circle-outline',
             duration: 2400,
             position: 'bottom',
+            cssClass: 'branch-save-toast',
           });
           await toast.present();
         } catch {
