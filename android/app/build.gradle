@@ -1,8 +1,50 @@
 apply plugin: 'com.android.application'
 
+def resolveConfigValue = { String propertyName ->
+    def gradleValue = project.findProperty(propertyName)
+    if (gradleValue != null && gradleValue.toString().trim()) {
+        return gradleValue.toString().trim()
+    }
+
+    def envValue = System.getenv(propertyName)
+    if (envValue != null && envValue.toString().trim()) {
+        return envValue.toString().trim()
+    }
+
+    return null
+}
+
+def uploadStoreFile = resolveConfigValue('PENIEL_UPLOAD_STORE_FILE')
+def uploadStorePassword = resolveConfigValue('PENIEL_UPLOAD_STORE_PASSWORD')
+def uploadKeyAlias = resolveConfigValue('PENIEL_UPLOAD_KEY_ALIAS')
+def uploadKeyPassword = resolveConfigValue('PENIEL_UPLOAD_KEY_PASSWORD')
+
+def hasReleaseSigning = [
+    uploadStoreFile,
+    uploadStorePassword,
+    uploadKeyAlias,
+    uploadKeyPassword,
+].every { value -> value != null && value.toString().trim() }
+
+if (!hasReleaseSigning) {
+    logger.warn('Release signing config not found. bundleRelease/assembleRelease will remain unsigned until PENIEL_UPLOAD_* values are provided.')
+}
+
 android {
     namespace = "com.peniel.platform"
     compileSdk = rootProject.ext.compileSdkVersion
+
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(uploadStoreFile)
+                storePassword uploadStorePassword
+                keyAlias uploadKeyAlias
+                keyPassword uploadKeyPassword
+            }
+        }
+    }
+
     defaultConfig {
         applicationId "com.peniel.platform"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -18,6 +60,9 @@ android {
     }
     buildTypes {
         release {
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
