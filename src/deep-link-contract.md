@@ -47,3 +47,31 @@ Notes:
 - `package_name` must stay `com.peniel.platform`.
 - Replace `REPLACE_WITH_RELEASE_SIGNING_SHA256_FINGERPRINT` with the real SHA-256 fingerprint for the certificate that signs the distributed app.
 - For Play deployment, use the production donor redirect host and the SHA-256 fingerprint from the certificate that Android users will receive through Play App Signing.
+
+### Getting the SHA-256 fingerprint locally
+
+Windows PowerShell example:
+
+```powershell
+keytool -list -v `
+  -keystore C:\Users\USER\keystores\peniel-upload.jks `
+  -alias upload
+```
+
+Copy the `SHA256:` value from the command output and paste it into:
+
+```text
+copit-web/public/.well-known/assetlinks.json
+```
+
+Replace:
+
+```text
+REPLACE_WITH_RELEASE_SIGNING_SHA256_FINGERPRINT
+```
+
+with the actual fingerprint.
+
+For production App Links distributed through Google Play:
+- verify whether Android should trust the **Play Console App signing certificate** fingerprint rather than the local upload keystore fingerprint
+- if Play App Signing is enabled, use the App signing certificate fingerprint shown in Play Console for the final production `assetlinks.json`
