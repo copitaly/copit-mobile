@@ -9,6 +9,8 @@ export class DeepLinkService implements OnDestroy {
   private readonly routeHandlers = new Map<string, (params: URLSearchParams) => void>([
     ['/donate/success', params => this.handleSuccessRoute(params)],
     ['/donate/cancel', () => this.navigate('/donate/cancel')],
+    ['/donor-redirect/donate/success', params => this.handleSuccessRoute(params)],
+    ['/donor-redirect/donate/cancel', () => this.navigate('/donate/cancel')],
   ]);
 
   constructor(private readonly router: Router, private readonly zone: NgZone) {
@@ -57,8 +59,9 @@ export class DeepLinkService implements OnDestroy {
   private parseUrl(rawUrl: string): { pathname: string; searchParams: URLSearchParams } | null {
     try {
       const parsed = new URL(rawUrl);
+      const normalizedPathname = this.normalizePathname(parsed);
       return {
-        pathname: parsed.pathname,
+        pathname: normalizedPathname,
         searchParams: parsed.searchParams,
       };
     } catch (error) {
@@ -71,6 +74,15 @@ export class DeepLinkService implements OnDestroy {
     const sessionId = params.get('session_id');
     console.log('[DeepLinkService] parsed session_id', sessionId ?? '<missing>');
     this.navigate('/donate/success', sessionId ? { session_id: sessionId } : undefined);
+  }
+
+  private normalizePathname(parsed: URL): string {
+    if (parsed.protocol === 'copit:') {
+      const host = parsed.host ? `/${parsed.host}` : '';
+      return `${host}${parsed.pathname}` || '/';
+    }
+
+    return parsed.pathname;
   }
 
   private navigate(path: string, queryParams?: Record<string, string>): void {
