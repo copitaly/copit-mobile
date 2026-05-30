@@ -1,0 +1,22 @@
+:host {
+  display: block;
+}
+
+.build-safety-label {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
+  right: calc(env(safe-area-inset-right, 0px) + 0.75rem);
+  z-index: 10000;
+  pointer-events: none;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(120, 82, 0, 0.88);
+  color: #fff7d1;
+  border: 1px solid rgba(255, 232, 165, 0.38);
+  box-shadow: 0 8px 20px rgba(26, 18, 0, 0.18);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  backdrop-filter: blur(6px);
+}
