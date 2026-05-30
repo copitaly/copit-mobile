@@ -1,28 +1,99 @@
-npm run android:run
+# Android Release Build
 
-👉 This is the one that:
+Use this flow to generate the Play Store upload bundle locally for `copit-mobile`.
 
-builds the app
-syncs it
-installs it on your connected Android device
-launches it
-Quick summary
-android:open → opens Android Studio (manual run)
-android:run → deploys directly to device ✅
-android:live → live reload (not needed for you)
-Before running
+## 1. Install JDK 21
 
-Make sure:e
+The Android build is configured for Java 21. Install a JDK 21 distribution and confirm it is available:
 
-USB debugging is ON
-Device is connected
-Run:
-adb devices
+```powershell
+java -version
+```
 
-👉 you should see your device listed
+You should see a Java 21 runtime in the output.
 
-If multiple devices/emulators
+## 2. Set `JAVA_HOME`
 
-You can specify:
+Point `JAVA_HOME` at the JDK 21 installation directory and add its `bin` folder to `Path`.
 
-npx cap run android --target=<device-id>
+PowerShell example for the current session:
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-21"
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
+```
+
+Verify:
+
+```powershell
+java -version
+```
+
+## 3. Create the upload keystore
+
+Create the Play upload keystore outside the repository:
+
+```powershell
+keytool -genkeypair `
+  -v `
+  -keystore C:\Users\USER\keystores\peniel-upload.jks `
+  -alias upload `
+  -keyalg RSA `
+  -keysize 2048 `
+  -validity 10000
+```
+
+Notes:
+- Keep `peniel-upload.jks` outside `copit-mobile/`.
+- Do not commit the keystore or its passwords to the repository.
+
+## 4. Add signing values to the user Gradle properties file
+
+Add the signing values to your user-level Gradle properties file:
+
+```text
+%USERPROFILE%\.gradle\gradle.properties
+```
+
+Example contents:
+
+```properties
+PENIEL_UPLOAD_STORE_FILE=C:\\Users\\USER\\keystores\\peniel-upload.jks
+PENIEL_UPLOAD_STORE_PASSWORD=your-keystore-password
+PENIEL_UPLOAD_KEY_ALIAS=upload
+PENIEL_UPLOAD_KEY_PASSWORD=your-key-password
+```
+
+These values are read by the Android release signing config at build time. Keep them in the user profile or CI secrets, not in the repo.
+
+## 5. Generate the release bundle
+
+From the project root:
+
+```powershell
+npm install
+npm run android:bundle
+```
+
+This script:
+- builds the production web app
+- syncs Capacitor Android
+- runs Gradle `bundleRelease`
+
+## 6. Locate the `.aab`
+
+After a successful build, the Play upload bundle is here:
+
+```text
+android\app\build\outputs\bundle\release\app-release.aab
+```
+
+## Optional manual Gradle run
+
+If you want to run Gradle yourself after the Capacitor build/sync step:
+
+```powershell
+npm run android:build
+cd android
+.\gradlew.bat bundleRelease
+```
