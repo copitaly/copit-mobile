@@ -2,6 +2,35 @@
 
 Use this flow to generate the Play Store upload bundle locally for `copit-mobile`.
 
+## Quick Windows Checklist
+
+1. Install JDK 21.
+2. Set `JAVA_HOME`.
+3. Verify Java is available:
+
+```powershell
+java -version
+```
+
+4. Create or locate `peniel-upload.jks` outside the repository.
+5. Add `PENIEL_UPLOAD_*` values to:
+
+```text
+%USERPROFILE%\.gradle\gradle.properties
+```
+
+6. Run:
+
+```powershell
+npm run android:bundle
+```
+
+7. Confirm this file exists:
+
+```text
+android\app\build\outputs\bundle\release\app-release.aab
+```
+
 ## 1. Install JDK 21
 
 The Android build is configured for Java 21. Install a JDK 21 distribution and confirm it is available:
@@ -116,6 +145,20 @@ After a successful build, the Play upload bundle is here:
 
 ```text
 android\app\build\outputs\bundle\release\app-release.aab
+```
+
+## Troubleshooting
+
+If Gradle fails with:
+
+```text
+ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
+```
+
+then Java is not available to the Android build yet. Set `JAVA_HOME`, add `%JAVA_HOME%\bin` to `Path`, open a new terminal, and verify:
+
+```powershell
+java -version
 ```
 
 ## Optional manual Gradle run
