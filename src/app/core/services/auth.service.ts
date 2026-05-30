@@ -1,7 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
-import { BehaviorSubject, EMPTY, Observable, of, throwError } from 'rxjs';
+import { BehaviorSubject, EMPTY, Observable, firstValueFrom, from, of, throwError } from 'rxjs';
 import { catchError, finalize, map, switchMap, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
@@ -15,22 +15,21 @@ import {
   PaginatedResponse,
   SavedChurch,
 } from '../models/user.model';
+import { AuthStorageService } from './auth-storage.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  // TODO: Replace localStorage token persistence with a platform-secure storage solution
-  // (for example Capacitor Preferences plus OS-backed secure storage) before production release.
-  private static readonly accessTokenStorageKey = 'copit.member.access_token';
-  private static readonly currentUserStorageKey = 'copit.member.current_user';
   private static readonly csrfCookieName = 'csrftoken';
 
-  private readonly currentUserSubject = new BehaviorSubject<MemberProfile | null>(this.getStoredCurrentUser());
-  private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasStoredToken());
+  private readonly currentUserSubject = new BehaviorSubject<MemberProfile | null>(null);
+  private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   private readonly authLoadingSubject = new BehaviorSubject<boolean>(false);
   private readonly refreshUrl = this.buildUrl('auth/token/refresh');
   private readonly logoutUrl = this.buildUrl('auth/logout');
   private readonly csrfUrl = this.buildUrl('auth/csrf');
   private readonly accountDeleteUrl = this.buildUrl('account/me');
+  private readonly initializationPromise: Promise<void>;
+  private accessToken: string | null = null;
 
   readonly currentUser$ = this.currentUserSubject.asObservable();
   readonly isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
@@ -38,13 +37,10 @@ export class AuthService {
 
   constructor(
     private readonly http: HttpClient,
+    private readonly authStorage: AuthStorageService,
     @Inject(DOCUMENT) private readonly document: Document
   ) {
-    if (this.hasStoredToken() || this.currentUserSnapshot) {
-      this.getCurrentUser().subscribe({
-        error: () => undefined,
-      });
-    }
+    this.initializationPromise = this.restoreAuthState();
   }
 
   get currentUserSnapshot(): MemberProfile | null {
@@ -56,178 +52,86 @@ export class AuthService {
   }
 
   get accessTokenSnapshot(): string | null {
-    return this.getStoredAccessToken();
+    return this.accessToken;
+  }
+
+  initialize(): Promise<void> {
+    return this.initializationPromise;
   }
 
   setCurrentUser(user: MemberProfile | null): void {
     if (user) {
       this.currentUserSubject.next(user);
       this.isAuthenticatedSubject.next(true);
-      this.storeCurrentUser(user);
+      void this.authStorage.setCurrentUser(user);
       return;
     }
 
     this.currentUserSubject.next(null);
-    localStorage.removeItem(AuthService.currentUserStorageKey);
+    void this.authStorage.removeCurrentUser();
   }
 
   login(payload: MemberLoginRequest): Observable<MemberProfile> {
-    this.authLoadingSubject.next(true);
-    return this.http
-      .post<AuthTokenResponse>(this.buildUrl('auth/member-token'), payload, {
-        withCredentials: true,
+    return from(this.initializationPromise).pipe(
+      switchMap(() => {
+        this.authLoadingSubject.next(true);
+        return this.http
+          .post<AuthTokenResponse>(this.buildUrl('auth/member-token'), payload, {
+            withCredentials: true,
+          })
+          .pipe(
+            map((response) => this.extractAccessToken(response)),
+            tap((token) => this.storeAccessToken(token)),
+            switchMap((token) => this.fetchCurrentUser(token)),
+            finalize(() => this.authLoadingSubject.next(false))
+          );
       })
-      .pipe(
-        map((response) => this.extractAccessToken(response)),
-        tap((token) => this.storeAccessToken(token)),
-        switchMap((token) => this.fetchCurrentUser(token)),
-        finalize(() => this.authLoadingSubject.next(false))
-      );
+    );
   }
 
   register(payload: MemberRegisterRequest): Observable<MemberProfile> {
-    this.authLoadingSubject.next(true);
-    return this.http
-      .post<AuthTokenResponse>(this.buildUrl('auth/register'), payload, {
-        withCredentials: true,
+    return from(this.initializationPromise).pipe(
+      switchMap(() => {
+        this.authLoadingSubject.next(true);
+        return this.http
+          .post<AuthTokenResponse>(this.buildUrl('auth/register'), payload, {
+            withCredentials: true,
+          })
+          .pipe(
+            tap((response) => this.storeAccessToken(this.extractAccessToken(response))),
+            map((response) => this.toMemberProfileFromAuthResponse(response)),
+            tap((profile) => this.setAuthenticatedProfile(profile)),
+            finalize(() => this.authLoadingSubject.next(false))
+          );
       })
-      .pipe(
-        tap((response) => this.storeAccessToken(this.extractAccessToken(response))),
-        map((response) => this.toMemberProfileFromAuthResponse(response)),
-        tap((profile) => this.setAuthenticatedProfile(profile)),
-        finalize(() => this.authLoadingSubject.next(false))
-      );
+    );
   }
 
   getCurrentUser(): Observable<MemberProfile | null> {
-    const token = this.getStoredAccessToken();
-    if (!token) {
-      return this.refreshAccessToken().pipe(
-        switchMap((refreshedToken) => this.fetchCurrentUser(refreshedToken)),
-        catchError((error) => this.handleRefreshFailure(error))
-      );
-    }
-
-    return this.fetchCurrentUser(token)
-      .pipe(
-        catchError((error) => {
-          if (!this.isUnauthorized(error)) {
-            return throwError(() => error);
-          }
-
-          return this.refreshAccessToken().pipe(
-            switchMap((refreshedToken) => this.fetchCurrentUser(refreshedToken)),
-            catchError((refreshError) => this.handleRefreshFailure(refreshError))
-          );
-        })
-      );
+    return from(this.initializationPromise).pipe(switchMap(() => this.getCurrentUserInternal()));
   }
 
   getMemberDonations(nextPageUrl?: string | null): Observable<PaginatedResponse<MemberRecentDonation>> {
-    const token = this.getStoredAccessToken();
-    if (!token) {
-      return this.refreshAccessToken().pipe(
-        switchMap((refreshedToken) => this.fetchMemberDonations(refreshedToken, nextPageUrl)),
-        catchError((error) => this.handleRefreshFailure(error).pipe(
-          switchMap(() => throwError(() => error))
-        ))
-      );
-    }
-
-    return this.fetchMemberDonations(token, nextPageUrl).pipe(
-      catchError((error) => {
-        if (!this.isUnauthorized(error)) {
-          return throwError(() => error);
-        }
-
-        return this.refreshAccessToken().pipe(
-          switchMap((refreshedToken) => this.fetchMemberDonations(refreshedToken, nextPageUrl)),
-          catchError((refreshError) =>
-            this.handleRefreshFailure(refreshError).pipe(switchMap(() => throwError(() => refreshError)))
-          )
-        );
-      })
+    return from(this.initializationPromise).pipe(
+      switchMap(() => this.withToken((token) => this.fetchMemberDonations(token, nextPageUrl)))
     );
   }
 
   getSavedChurches(): Observable<SavedChurch[]> {
-    const token = this.getStoredAccessToken();
-    if (!token) {
-      return this.refreshAccessToken().pipe(
-        switchMap((refreshedToken) => this.fetchSavedChurches(refreshedToken)),
-        catchError((error) =>
-          this.handleRefreshFailure(error).pipe(switchMap(() => throwError(() => error)))
-        )
-      );
-    }
-
-    return this.fetchSavedChurches(token).pipe(
-      catchError((error) => {
-        if (!this.isUnauthorized(error)) {
-          return throwError(() => error);
-        }
-
-        return this.refreshAccessToken().pipe(
-          switchMap((refreshedToken) => this.fetchSavedChurches(refreshedToken)),
-          catchError((refreshError) =>
-            this.handleRefreshFailure(refreshError).pipe(switchMap(() => throwError(() => refreshError)))
-          )
-        );
-      })
+    return from(this.initializationPromise).pipe(
+      switchMap(() => this.withToken((token) => this.fetchSavedChurches(token)))
     );
   }
 
   saveChurch(churchId: number): Observable<SavedChurch> {
-    const token = this.getStoredAccessToken();
-    if (!token) {
-      return this.refreshAccessToken().pipe(
-        switchMap((refreshedToken) => this.persistSavedChurch(refreshedToken, churchId)),
-        catchError((error) =>
-          this.handleRefreshFailure(error).pipe(switchMap(() => throwError(() => error)))
-        )
-      );
-    }
-
-    return this.persistSavedChurch(token, churchId).pipe(
-      catchError((error) => {
-        if (!this.isUnauthorized(error)) {
-          return throwError(() => error);
-        }
-
-        return this.refreshAccessToken().pipe(
-          switchMap((refreshedToken) => this.persistSavedChurch(refreshedToken, churchId)),
-          catchError((refreshError) =>
-            this.handleRefreshFailure(refreshError).pipe(switchMap(() => throwError(() => refreshError)))
-          )
-        );
-      })
+    return from(this.initializationPromise).pipe(
+      switchMap(() => this.withToken((token) => this.persistSavedChurch(token, churchId)))
     );
   }
 
   unsaveChurch(savedChurchId: number): Observable<void> {
-    const token = this.getStoredAccessToken();
-    if (!token) {
-      return this.refreshAccessToken().pipe(
-        switchMap((refreshedToken) => this.removeSavedChurch(refreshedToken, savedChurchId)),
-        catchError((error) =>
-          this.handleRefreshFailure(error).pipe(switchMap(() => throwError(() => error)))
-        )
-      );
-    }
-
-    return this.removeSavedChurch(token, savedChurchId).pipe(
-      catchError((error) => {
-        if (!this.isUnauthorized(error)) {
-          return throwError(() => error);
-        }
-
-        return this.refreshAccessToken().pipe(
-          switchMap((refreshedToken) => this.removeSavedChurch(refreshedToken, savedChurchId)),
-          catchError((refreshError) =>
-            this.handleRefreshFailure(refreshError).pipe(switchMap(() => throwError(() => refreshError)))
-          )
-        );
-      })
+    return from(this.initializationPromise).pipe(
+      switchMap(() => this.withToken((token) => this.removeSavedChurch(token, savedChurchId)))
     );
   }
 
@@ -239,56 +143,14 @@ export class AuthService {
   }
 
   deleteAccount(): Observable<void> {
-    const token = this.getStoredAccessToken();
-    if (!token) {
-      return this.refreshAccessToken().pipe(
-        switchMap((refreshedToken) => this.performAccountDelete(refreshedToken)),
-        catchError((error) =>
-          this.handleRefreshFailure(error).pipe(switchMap(() => throwError(() => error)))
-        )
-      );
-    }
-
-    return this.performAccountDelete(token).pipe(
-      catchError((error) => {
-        if (!this.isUnauthorized(error)) {
-          return throwError(() => error);
-        }
-
-        return this.refreshAccessToken().pipe(
-          switchMap((refreshedToken) => this.performAccountDelete(refreshedToken)),
-          catchError((refreshError) =>
-            this.handleRefreshFailure(refreshError).pipe(switchMap(() => throwError(() => refreshError)))
-          )
-        );
-      })
+    return from(this.initializationPromise).pipe(
+      switchMap(() => this.withToken((token) => this.performAccountDelete(token)))
     );
   }
 
   updateMemberProfile(payload: MemberProfileUpdateRequest): Observable<MemberProfile> {
-    const token = this.getStoredAccessToken();
-    if (!token) {
-      return this.refreshAccessToken().pipe(
-        switchMap((refreshedToken) => this.performMemberProfileUpdate(refreshedToken, payload)),
-        catchError((error) =>
-          this.handleRefreshFailure(error).pipe(switchMap(() => throwError(() => error)))
-        )
-      );
-    }
-
-    return this.performMemberProfileUpdate(token, payload).pipe(
-      catchError((error) => {
-        if (!this.isUnauthorized(error)) {
-          return throwError(() => error);
-        }
-
-        return this.refreshAccessToken().pipe(
-          switchMap((refreshedToken) => this.performMemberProfileUpdate(refreshedToken, payload)),
-          catchError((refreshError) =>
-            this.handleRefreshFailure(refreshError).pipe(switchMap(() => throwError(() => refreshError)))
-          )
-        );
-      })
+    return from(this.initializationPromise).pipe(
+      switchMap(() => this.withToken((token) => this.performMemberProfileUpdate(token, payload)))
     );
   }
 
@@ -303,49 +165,92 @@ export class AuthService {
 
   private clearSession(): void {
     this.setCurrentUser(null);
+    this.accessToken = null;
     this.isAuthenticatedSubject.next(false);
-    localStorage.removeItem(AuthService.accessTokenStorageKey);
+    void this.authStorage.removeAccessToken();
   }
 
   private storeAccessToken(token: string): void {
-    localStorage.setItem(AuthService.accessTokenStorageKey, token);
+    this.accessToken = token;
     this.isAuthenticatedSubject.next(true);
-  }
-
-  private getStoredAccessToken(): string | null {
-    return localStorage.getItem(AuthService.accessTokenStorageKey);
-  }
-
-  private storeCurrentUser(profile: MemberProfile): void {
-    localStorage.setItem(AuthService.currentUserStorageKey, JSON.stringify(profile));
-  }
-
-  private getStoredCurrentUser(): MemberProfile | null {
-    if (typeof localStorage === 'undefined') {
-      return null;
-    }
-
-    const storedProfile = localStorage.getItem(AuthService.currentUserStorageKey);
-    if (!storedProfile) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(storedProfile) as MemberProfile;
-    } catch {
-      localStorage.removeItem(AuthService.currentUserStorageKey);
-      return null;
-    }
-  }
-
-  private hasStoredToken(): boolean {
-    return typeof localStorage !== 'undefined' && !!localStorage.getItem(AuthService.accessTokenStorageKey);
+    void this.authStorage.setAccessToken(token);
   }
 
   private refreshAccessToken(): Observable<string> {
     return this.sendCookieBackedAuthRequest<{ access: string }>(this.refreshUrl, 'POST', {}).pipe(
       map((response) => this.extractAccessToken(response)),
       tap((token) => this.storeAccessToken(token))
+    );
+  }
+
+  private async restoreAuthState(): Promise<void> {
+    const [token, profile] = await Promise.all([
+      this.authStorage.getAccessToken(),
+      this.authStorage.getCurrentUser(),
+    ]);
+
+    this.accessToken = token;
+    this.currentUserSubject.next(profile);
+    this.isAuthenticatedSubject.next(!!token);
+
+    if (!token && !profile) {
+      return;
+    }
+
+    try {
+      await firstValueFrom(this.getCurrentUserInternal());
+    } catch {
+      // Preserve the existing startup behavior of failing closed when session recovery is invalid.
+    }
+  }
+
+  private getCurrentUserInternal(): Observable<MemberProfile | null> {
+    const token = this.accessToken;
+    if (!token) {
+      return this.refreshAccessToken().pipe(
+        switchMap((refreshedToken) => this.fetchCurrentUser(refreshedToken)),
+        catchError((error) => this.handleRefreshFailure(error))
+      );
+    }
+
+    return this.fetchCurrentUser(token).pipe(
+      catchError((error) => {
+        if (!this.isUnauthorized(error)) {
+          return throwError(() => error);
+        }
+
+        return this.refreshAccessToken().pipe(
+          switchMap((refreshedToken) => this.fetchCurrentUser(refreshedToken)),
+          catchError((refreshError) => this.handleRefreshFailure(refreshError))
+        );
+      })
+    );
+  }
+
+  private withToken<T>(requestFactory: (token: string) => Observable<T>): Observable<T> {
+    const token = this.accessToken;
+    if (!token) {
+      return this.refreshAccessToken().pipe(
+        switchMap((refreshedToken) => requestFactory(refreshedToken)),
+        catchError((error) =>
+          this.handleRefreshFailure(error).pipe(switchMap(() => throwError(() => error)))
+        )
+      );
+    }
+
+    return requestFactory(token).pipe(
+      catchError((error) => {
+        if (!this.isUnauthorized(error)) {
+          return throwError(() => error);
+        }
+
+        return this.refreshAccessToken().pipe(
+          switchMap((refreshedToken) => requestFactory(refreshedToken)),
+          catchError((refreshError) =>
+            this.handleRefreshFailure(refreshError).pipe(switchMap(() => throwError(() => refreshError)))
+          )
+        );
+      })
     );
   }
 
