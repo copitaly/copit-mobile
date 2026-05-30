@@ -22,8 +22,9 @@ export class DonationFlowStateService {
   private readonly storageKey = 'donorCheckoutSummary';
 
   setSummary(summary: DonationCheckoutSummary): void {
-    this.subject.next(summary);
-    this.persist(summary);
+    const sanitizedSummary = this.sanitizeForPersistence(summary);
+    this.subject.next(sanitizedSummary);
+    this.persist(sanitizedSummary);
   }
 
   clear(): void {
@@ -43,6 +44,12 @@ export class DonationFlowStateService {
     }
   }
 
+  consumeStoredSummary(): DonationCheckoutSummary | null {
+    const summary = this.getStoredSummary();
+    this.clear();
+    return summary;
+  }
+
   private persist(summary: DonationCheckoutSummary): void {
     try {
       sessionStorage.setItem(this.storageKey, JSON.stringify(summary));
@@ -57,5 +64,15 @@ export class DonationFlowStateService {
     } catch {
       // ignore
     }
+  }
+
+  private sanitizeForPersistence(summary: DonationCheckoutSummary): DonationCheckoutSummary {
+    return {
+      branchName: summary.branchName,
+      category: summary.category,
+      amount: summary.amount,
+      interval: summary.interval,
+      recurringDonationId: summary.recurringDonationId,
+    };
   }
 }

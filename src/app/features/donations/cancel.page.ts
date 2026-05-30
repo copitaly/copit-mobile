@@ -21,7 +21,7 @@ export class DonateCancelPage implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.summary = this.donationFlowState.getStoredSummary();
+    this.summary = this.donationFlowState.consumeStoredSummary();
   }
 
   goToBranches(): void {

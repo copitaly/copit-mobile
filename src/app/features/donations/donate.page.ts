@@ -645,13 +645,9 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   private persistOneTimeSummary(payload: DonationCheckoutRequest, transactionReference: string): void {
     this.donationFlowState.setSummary({
       branchName: this.branch?.name,
-      branchId: this.branch?.id,
       category: payload.category || undefined,
       amount: payload.amount,
-      donorEmail: payload.donor_email,
       interval: 'one_time',
-      transactionReference,
-      timestamp: Date.now(),
     });
   }
 
@@ -662,14 +658,10 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   ): void {
     this.donationFlowState.setSummary({
       branchName: this.branch?.name,
-      branchId: this.branch?.id,
       category: payload.category || undefined,
       amount: payload.amount,
-      currency: 'eur',
       interval: payload.interval,
       recurringDonationId,
-      subscriptionId,
-      timestamp: Date.now(),
     });
   }
 

@@ -333,7 +333,7 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
   }
 
   private applyStoredSummary(recurringDonationIdParam?: string): void {
-    const stored = this.donationFlowState.getStoredSummary();
+    const stored = this.donationFlowState.consumeStoredSummary();
     if (stored) {
       if (
         recurringDonationIdParam &&
@@ -346,7 +346,6 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
         });
       }
       this.summary = stored;
-      this.donationFlowState.clear();
       this.log.log('[DonateSuccessPage] sessionStorage fallback used', stored);
       return;
     }
@@ -359,8 +358,6 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
       branchName: response.church?.name ?? undefined,
       category: response.category ?? undefined,
       amount,
-      currency: response.currency,
-      donorEmail: response.donor_email ?? undefined,
       transactionReference: response.transaction_reference ?? undefined,
     };
   }
@@ -371,8 +368,6 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
       branchName: response.church?.name ?? undefined,
       category: response.category ?? undefined,
       amount,
-      currency: response.currency,
-      donorEmail: undefined,
       transactionReference: response.transaction_reference ?? undefined,
     };
   }
