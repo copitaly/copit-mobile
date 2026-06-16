@@ -361,8 +361,8 @@ ion-content.recurring-content::part(scroll) {
 .donate-surface {
   background: transparent;
   box-shadow: none;
-  padding: 0 1rem 1.35rem;
-  margin-top: -1.05rem;
+  padding: 1.5rem 1rem 0;
+  margin-top: 0;
   min-height: auto;
 }
 
@@ -643,8 +643,8 @@ ion-content.recurring-content::part(scroll) {
   display: flex;
   align-items: center;
   gap: 0.9rem;
-  padding: 0.2rem 0 0.82rem;
-  margin-bottom: 0.82rem;
+  padding: 0.2rem 0 0.95rem;
+  margin-bottom: 1.5rem;
   cursor: pointer;
   border-bottom: 1px solid rgba(3, 23, 63, 0.08);
 }
@@ -706,14 +706,14 @@ ion-content.recurring-content::part(scroll) {
 .donate-form {
   display: flex;
   flex-direction: column;
-  gap: 0.58rem;
+  gap: 0;
   padding-bottom: calc(env(safe-area-inset-bottom) + 24px);
 }
 
 .frequency-section {
   display: flex;
   flex-direction: column;
-  gap: 0.32rem;
+  gap: 0.5rem;
 }
 
 .section-label {
@@ -721,7 +721,28 @@ ion-content.recurring-content::part(scroll) {
   font-weight: 600;
   letter-spacing: 0.25em;
   color: #475467;
-  margin-top: 0.04rem;
+  margin: 0;
+}
+
+.donate-form > .grid.category-grid {
+  margin-top: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.donate-form > .custom-amount {
+  margin-top: 0.5rem;
+}
+
+.donate-form > .frequency-section {
+  margin-top: 1.25rem;
+}
+
+.frequency-section .monthly-callout {
+  margin-top: 0.5rem;
+}
+
+.donate-form > .custom-email {
+  margin-top: 1rem;
 }
 
 .grid {
@@ -985,8 +1006,15 @@ ion-content.recurring-content::part(scroll) {
 }
 
 .cta-shell {
-  margin-top: 0.3rem;
+  margin-top: 1.25rem;
   padding-bottom: calc(env(safe-area-inset-bottom) + 24px);
+}
+
+.trust-text {
+  margin: 0.75rem 0 0;
+  text-align: center;
+  color: #475467;
+  font-size: 0.75rem;
 }
 
 .cta ion-icon {
