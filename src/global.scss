@@ -177,7 +177,7 @@ body {
   flex-direction: column;
   gap: 0.9rem;
   overflow: auto;
-  padding-bottom: 2rem;
+  padding-bottom: calc(2rem + var(--keyboard-offset, 0px));
 }
 
 ion-content.profile-content,
@@ -333,6 +333,14 @@ ion-content.recurring-content::part(scroll) {
   min-height: 100%;
 }
 
+ion-content.donate-content::part(scroll) {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 180px);
+}
+
+ion-content.recurring-content::part(scroll) {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--keyboard-offset, 0px));
+}
+
 .donate-content,
 .recurring-content {
   flex: 1;
@@ -343,6 +351,11 @@ ion-content.recurring-content::part(scroll) {
 .donate-hero,
 .recurring-hero {
   width: 100%;
+}
+
+.donate-surface .surface__content {
+  overflow: visible;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 180px);
 }
 
 .donate-hero {
@@ -672,6 +685,7 @@ ion-content.recurring-content::part(scroll) {
   display: flex;
   flex-direction: column;
   gap: 0.95rem;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 180px);
 }
 
 .section-label {
@@ -689,19 +703,19 @@ ion-content.recurring-content::part(scroll) {
 
 .frequency-cards {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .frequency-card {
   width: 100%;
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem;
-  min-height: 88px;
-  border-radius: 18px;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.8rem 0.9rem;
+  min-height: 64px;
+  border-radius: 16px;
   border: 1px solid #d7dce5;
-  background: #f3f4f6;
+  background: #f8fafc;
   color: #0b1d73;
   text-align: left;
   cursor: pointer;
@@ -715,46 +729,80 @@ ion-content.recurring-content::part(scroll) {
 .frequency-card.selected {
   border-color: #0b1d73;
   background: #eef2ff;
-  box-shadow: 0 10px 24px rgba(11, 29, 115, 0.12);
-  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(11, 29, 115, 0.1);
 }
 
 .frequency-card.disabled {
-  opacity: 0.76;
+  opacity: 0.78;
 }
 
 .frequency-leading {
-  width: 1.2rem;
-  min-width: 1.2rem;
+  width: 1.1rem;
+  min-width: 1.1rem;
   display: inline-flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding-top: 0.05rem;
 }
 
-.frequency-icon-indicator {
-  font-size: 1.2rem;
+.frequency-radio-indicator {
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 50%;
+  border: 1.5px solid rgba(11, 29, 115, 0.32);
+  background: #ffffff;
   display: inline-flex;
+  box-sizing: border-box;
+  transition:
+    border-color 160ms ease-out,
+    box-shadow 160ms ease-out,
+    background-color 160ms ease-out;
+}
+
+.frequency-card.selected .frequency-radio-indicator {
+  border-color: #0b1d73;
+  background: #0b1d73;
+  box-shadow: inset 0 0 0 3px #eef2ff;
 }
 
 .frequency-copy {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.1rem;
   flex: 1;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .frequency-title {
-  font-size: 1rem;
+  font-size: 0.96rem;
   font-weight: 700;
   color: #0b1d73;
 }
 
 .frequency-subtitle {
-  font-size: 0.84rem;
-  line-height: 1.35;
+  font-size: 0.78rem;
+  line-height: 1.28;
   color: #475467;
+}
+
+.frequency-trailing-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(11, 29, 115, 0.62);
+  font-size: 0.95rem;
+}
+
+.monthly-signin-link {
+  align-self: flex-start;
+  margin-top: -0.15rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #425ea6;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
 .chip {

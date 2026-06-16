@@ -10,7 +10,7 @@ import {
 } from '@angular/forms';
 import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { IonInput, IonicModule, ToastController } from '@ionic/angular';
+import { AlertController, IonContent, IonInput, IonicModule, ToastController } from '@ionic/angular';
 import { Subject, Subscription, firstValueFrom } from 'rxjs';
 import { filter, take, takeUntil } from 'rxjs/operators';
 import { finalize } from 'rxjs/operators';
@@ -65,7 +65,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
         ></app-mobile-header>
       </div>
 
-      <ion-content fullscreen class="donate-content">
+      <ion-content fullscreen class="donate-content" scrollY="true">
         <div class="surface donate-surface">
           <div class="surface__content">
             <ng-container *ngIf="branch; else missingBranch">
@@ -129,7 +129,9 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                     role="radio"
                     (click)="setFrequency('one_time')"
                   >
-                    <span class="frequency-leading" aria-hidden="true"></span>
+                    <span class="frequency-leading" aria-hidden="true">
+                      <span class="frequency-radio-indicator"></span>
+                    </span>
                     <span class="frequency-copy">
                       <span class="frequency-title">One-time</span>
                       <span class="frequency-subtitle">Pay once</span>
@@ -137,6 +139,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                   </button>
 
                   <button
+                    *ngIf="showMonthlyOption"
                     type="button"
                     class="frequency-card"
                     [class.selected]="frequency === 'monthly'"
@@ -147,9 +150,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                     (click)="handleMonthlySelection()"
                   >
                     <span class="frequency-leading" aria-hidden="true">
-                      <span class="frequency-icon-indicator">
-                      <ion-icon *ngIf="!canUseRecurring" name="lock-closed"></ion-icon>
-                      </span>
+                      <span class="frequency-radio-indicator"></span>
                     </span>
                     <span class="frequency-copy">
                       <span class="frequency-title">Monthly</span>
@@ -157,22 +158,35 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                         {{
                           canUseRecurring
                             ? 'Charged today, then monthly. Cancel anytime.'
-                            : 'Sign in to set up monthly giving.'
+                            : monthlyUnavailableMessage
                         }}
                       </span>
                     </span>
+                    <span *ngIf="!canUseRecurring" class="frequency-trailing-icon" aria-hidden="true">
+                      <ion-icon name="lock-closed"></ion-icon>
+                    </span>
                   </button>
                 </div>
+                <button
+                  *ngIf="showGuestMonthlyPrompt"
+                  type="button"
+                  class="monthly-signin-link"
+                  (click)="showMonthlyGivingPrompt()"
+                >
+                  Want to give monthly? Sign in
+                </button>
                 <p *ngIf="showRecurringDebug" class="recurring-debug">
                   role={{ recurringDebugRole }}, memberLoaded={{ memberProfileLoaded }}, canUseRecurring={{ canUseRecurring }}
                 </p>
 
                 <ion-item class="custom-email" fill="solid">
                   <ion-input
+                    #emailInput
                     type="email"
                     placeholder="Email (optional)"
                     formControlName="donor_email"
                     (ionInput)="handleEmailInput($event)"
+                    (ionFocus)="handleEmailFocus()"
                   ></ion-input>
                 </ion-item>
 
@@ -244,7 +258,9 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   customAmountInputValue = '';
   private selectedFrequencyState: DonationFrequency = 'one_time';
 
+  @ViewChild(IonContent) private content?: IonContent;
   @ViewChild('amountInput') private amountInput?: IonInput;
+  @ViewChild('emailInput') private emailInput?: IonInput;
 
   private branchSub: Subscription;
   private pendingMobileDonationId?: number;
@@ -267,7 +283,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     private readonly selectedBranchService: SelectedBranchService,
     private readonly router: Router,
     private readonly stripePaymentService: StripePaymentService,
-    private readonly toastController: ToastController
+    private readonly toastController: ToastController,
+    private readonly alertController: AlertController
   ) {
     this.branchSub = this.selectedBranchService.selectedBranch$.subscribe(branch => {
       this.branch = branch;
@@ -458,7 +475,12 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     }
     if (!this.canUseRecurring) {
       this.setFrequency('one_time');
-      void this.showMonthlyAccessToast();
+      if (this.authService.isAuthenticatedSnapshot) {
+        void this.showMonthlyAccessToast();
+        return;
+      }
+
+      void this.showMonthlyGivingPrompt();
       return;
     }
 
@@ -516,6 +538,12 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     }
   }
 
+  handleEmailFocus(): void {
+    setTimeout(() => {
+      void this.content?.scrollToBottom(250);
+    }, 120);
+  }
+
   get ctaEnabled(): boolean {
     return this.form.valid;
   }
@@ -553,11 +581,23 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   get canUseRecurring(): boolean {
-    return this.authService.isAuthenticatedSnapshot && (this.resolvedUserRole === 'member' || this.memberProfileLoaded);
+    return this.authService.isAuthenticatedSnapshot && this.resolvedUserRole === 'member';
   }
 
   get canSelectMonthly(): boolean {
     return this.canUseRecurring;
+  }
+
+  get showMonthlyOption(): boolean {
+    return this.authService.isAuthenticatedSnapshot;
+  }
+
+  get showGuestMonthlyPrompt(): boolean {
+    return !this.authService.isAuthenticatedSnapshot;
+  }
+
+  get monthlyUnavailableMessage(): string {
+    return 'Monthly giving is available for member accounts.';
   }
 
   get showRecurringDebug(): boolean {
@@ -687,7 +727,9 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       this.pendingRecurringDonationId = undefined;
       this.pendingFrequency = undefined;
       this.selectedFrequencyState = 'one_time';
-      this.nativeError = 'Please sign in to set up monthly giving.';
+      this.nativeError = this.authService.isAuthenticatedSnapshot
+        ? 'Monthly giving is available for member accounts.'
+        : 'Sign in to give monthly.';
       void this.showMonthlyAccessToast();
       return;
     }
@@ -752,7 +794,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       }
 
       if (error.status === 401 || error.status === 403) {
-        return 'Please sign in to set up a monthly donation.';
+        return 'Sign in to give monthly.';
       }
     }
 
@@ -923,13 +965,42 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
   private async showMonthlyAccessToast(): Promise<void> {
     const toast = await this.toastController.create({
-      message: 'Please sign in to set up monthly giving.',
+      message: this.authService.isAuthenticatedSnapshot
+        ? 'Monthly giving is available for member accounts.'
+        : 'Sign in to give monthly.',
       duration: 2200,
       position: 'bottom',
       color: 'dark',
     });
 
     await toast.present();
+  }
+
+  async showMonthlyGivingPrompt(): Promise<void> {
+    const alert = await this.alertController.create({
+      header: 'Monthly giving',
+      message: 'Monthly giving requires a free account so you can manage and cancel your recurring donations.',
+      buttons: [
+        {
+          text: 'Sign in',
+          handler: () => {
+            void this.router.navigate(['/login']);
+          },
+        },
+        {
+          text: 'Create account',
+          handler: () => {
+            void this.router.navigate(['/register']);
+          },
+        },
+        {
+          text: 'Cancel',
+          role: 'cancel',
+        },
+      ],
+    });
+
+    await alert.present();
   }
 
   private async showMonthlyClientSecretErrorToast(): Promise<void> {
