@@ -210,7 +210,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                 <ion-text color="danger" *ngIf="nativeError" class="form-error">
                   {{ nativeError }}
                 </ion-text>
-                <div class="sticky-cta-shell">
+                <div class="cta-shell">
                   <ion-button
                     type="submit"
                     expand="block"
