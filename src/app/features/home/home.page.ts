@@ -9,10 +9,14 @@ import { PublicBranch } from '../../core/models/branch.model';
 import { MemberRecentDonation, SavedChurch } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
+import {
+  BuildSafetyLabelComponent,
+  shouldShowBuildSafetyLabel,
+} from '../../shared/components/build-safety-label.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonicModule, BuildSafetyLabelComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-home',
   templateUrl: './home.page.html',
@@ -20,6 +24,7 @@ import { SelectedBranchService } from '../../core/services/selected-branch.servi
 })
 export class HomePage implements OnInit, OnDestroy {
   readonly isAuthenticated$: Observable<boolean>;
+  readonly showBuildSafetyLabel = shouldShowBuildSafetyLabel();
   ctaLabel = 'Give Now';
   helperText = '';
   private readonly destroy$ = new Subject<void>();

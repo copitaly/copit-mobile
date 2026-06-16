@@ -87,5 +87,9 @@
         <ion-icon name="chevron-forward" class="card-chevron" aria-hidden="true"></ion-icon>
       </article>
     </section>
+
+    <div *ngIf="showBuildSafetyLabel" class="build-safety-label-row">
+      <app-build-safety-label></app-build-safety-label>
+    </div>
   </ion-content>
 </ion-page>
