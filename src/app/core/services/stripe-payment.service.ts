@@ -4,6 +4,9 @@ import { environment } from '../../../environments/environment';
 
 export type PaymentSheetOutcome = 'completed' | 'canceled' | 'failed';
 
+const DEFAULT_BILLING_COUNTRY = 'IT';
+const DEFAULT_CURRENCY_CODE = 'EUR';
+
 @Injectable({ providedIn: 'root' })
 export class StripePaymentService {
   private initialized = false;
@@ -20,6 +23,13 @@ export class StripePaymentService {
       await Stripe.createPaymentSheet({
         paymentIntentClientSecret: clientSecret,
         merchantDisplayName: environment.stripeMerchantDisplayName,
+        defaultBillingDetails: {
+          address: {
+            country: DEFAULT_BILLING_COUNTRY,
+          },
+        },
+        countryCode: DEFAULT_BILLING_COUNTRY,
+        currencyCode: DEFAULT_CURRENCY_CODE,
       });
       console.log('[StripePaymentService] createPaymentSheet succeeded');
       console.log('[StripePaymentService] PaymentSheet created');
