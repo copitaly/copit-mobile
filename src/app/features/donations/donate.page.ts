@@ -69,6 +69,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
         <div class="surface donate-surface">
           <div class="surface__content">
             <ng-container *ngIf="branch; else missingBranch">
+              <div class="donate-form-card">
               <div class="branch-card" (click)="goToBranches()" tabindex="0" role="button">
                 <div class="branch-icon">
                   <ion-icon name="location"></ion-icon>
@@ -225,6 +226,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                   <p class="trust-text">Payments processed securely via Stripe</p>
                 </div>
               </form>
+              </div>
             </ng-container>
 
             <ng-template #missingBranch>
