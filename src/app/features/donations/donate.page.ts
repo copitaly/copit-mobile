@@ -118,63 +118,71 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                   {{ amountValidationMessage }}
                 </ion-text>
 
-                <div class="section-label">FREQUENCY</div>
-                <div class="frequency-cards" role="radiogroup" aria-label="Donation frequency">
-                  <button
-                    type="button"
-                    class="frequency-card"
-                    [class.selected]="frequency === 'one_time'"
-                    [attr.aria-checked]="frequency === 'one_time'"
-                    aria-label="One-time donation"
-                    role="radio"
-                    (click)="setFrequency('one_time')"
-                  >
-                    <span class="frequency-leading" aria-hidden="true">
-                      <span class="frequency-radio-indicator"></span>
-                    </span>
-                    <span class="frequency-copy">
-                      <span class="frequency-title">One-time</span>
-                      <span class="frequency-subtitle">Pay once</span>
-                    </span>
-                  </button>
-
-                  <button
-                    *ngIf="showMonthlyOption"
-                    type="button"
-                    class="frequency-card"
-                    [class.selected]="frequency === 'monthly'"
-                    [class.disabled]="!canUseRecurring"
-                    [attr.aria-checked]="frequency === 'monthly'"
-                    aria-label="Monthly donation"
-                    role="radio"
-                    (click)="handleMonthlySelection()"
-                  >
-                    <span class="frequency-leading" aria-hidden="true">
-                      <span class="frequency-radio-indicator"></span>
-                    </span>
-                    <span class="frequency-copy">
-                      <span class="frequency-title">Monthly</span>
-                      <span class="frequency-subtitle">
-                        {{
-                          canUseRecurring
-                            ? 'Charged today, then monthly. Cancel anytime.'
-                            : monthlyUnavailableMessage
-                        }}
+                <div class="frequency-section">
+                  <div class="section-label">FREQUENCY</div>
+                  <div class="frequency-cards" role="radiogroup" aria-label="Donation frequency">
+                    <button
+                      type="button"
+                      class="frequency-card"
+                      [class.selected]="frequency === 'one_time'"
+                      [attr.aria-checked]="frequency === 'one_time'"
+                      aria-label="One-time donation"
+                      role="radio"
+                      (click)="setFrequency('one_time')"
+                    >
+                      <span class="frequency-leading" aria-hidden="true">
+                        <span class="frequency-radio-indicator"></span>
                       </span>
-                    </span>
-                    <span *ngIf="!canUseRecurring" class="frequency-trailing-icon" aria-hidden="true">
+                      <span class="frequency-copy">
+                        <span class="frequency-title">One-time</span>
+                        <span class="frequency-subtitle">Pay once</span>
+                      </span>
+                    </button>
+
+                    <button
+                      *ngIf="showMonthlyOption"
+                      type="button"
+                      class="frequency-card"
+                      [class.selected]="frequency === 'monthly'"
+                      [class.disabled]="!canUseRecurring"
+                      [attr.aria-checked]="frequency === 'monthly'"
+                      aria-label="Monthly donation"
+                      role="radio"
+                      (click)="handleMonthlySelection()"
+                    >
+                      <span class="frequency-leading" aria-hidden="true">
+                        <span class="frequency-radio-indicator"></span>
+                      </span>
+                      <span class="frequency-copy">
+                        <span class="frequency-title">Monthly</span>
+                        <span class="frequency-subtitle">
+                          {{
+                            canUseRecurring
+                              ? 'Charged today, then monthly. Cancel anytime.'
+                              : monthlyUnavailableMessage
+                          }}
+                        </span>
+                      </span>
+                      <span *ngIf="!canUseRecurring" class="frequency-trailing-icon" aria-hidden="true">
+                        <ion-icon name="lock-closed"></ion-icon>
+                      </span>
+                    </button>
+                  </div>
+                  <button
+                    *ngIf="showGuestMonthlyPrompt"
+                    type="button"
+                    class="monthly-callout"
+                    (click)="showMonthlyGivingPrompt()"
+                  >
+                    <span class="monthly-callout__icon" aria-hidden="true">
                       <ion-icon name="lock-closed"></ion-icon>
+                    </span>
+                    <span class="monthly-callout__copy">
+                      <span class="monthly-callout__title">Monthly giving is available for members.</span>
+                      <span class="monthly-callout__link">Sign in →</span>
                     </span>
                   </button>
                 </div>
-                <button
-                  *ngIf="showGuestMonthlyPrompt"
-                  type="button"
-                  class="monthly-signin-link"
-                  (click)="showMonthlyGivingPrompt()"
-                >
-                  Want to give monthly? Sign in
-                </button>
                 <p *ngIf="showRecurringDebug" class="recurring-debug">
                   role={{ recurringDebugRole }}, memberLoaded={{ memberProfileLoaded }}, canUseRecurring={{ canUseRecurring }}
                 </p>
@@ -198,21 +206,24 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                   You will give {{ formattedValidAmount }} every month.
                 </p>
 
-                <ion-button
-                  type="submit"
-                  expand="block"
-                  class="cta"
-                  [class.cta-enabled]="ctaEnabled"
-                  [disabled]="!ctaEnabled || nativeLoading"
-                >
-                  <ion-icon name="lock-closed" slot="start"></ion-icon>
-                  <span>{{ ctaLabel }}</span>
-                  <ion-spinner *ngIf="nativeLoading" name="crescent" slot="start"></ion-spinner>
-                </ion-button>
-                <p class="trust-text">Payments processed securely via Stripe</p>
                 <ion-text color="danger" *ngIf="nativeError" class="form-error">
                   {{ nativeError }}
                 </ion-text>
+                <div class="sticky-cta-shell">
+                  <ion-button
+                    type="submit"
+                    expand="block"
+                    class="cta"
+                    [class.cta-enabled]="ctaEnabled"
+                    [class.cta-monthly]="isMonthlySelected"
+                    [disabled]="!ctaEnabled || nativeLoading"
+                  >
+                    <ion-icon name="lock-closed" slot="start"></ion-icon>
+                    <span class="cta-label">{{ ctaLabel }}</span>
+                    <ion-spinner *ngIf="nativeLoading" name="crescent" slot="start"></ion-spinner>
+                  </ion-button>
+                  <p class="trust-text">Payments processed securely via Stripe</p>
+                </div>
               </form>
             </ng-container>
 
