@@ -11,6 +11,7 @@ if (environment.sentryEnabled && environment.sentryDsn?.trim()) {
     {
       dsn: environment.sentryDsn,
       environment: environment.production ? 'production' : 'development',
+      release: environment.appVersion,
       sendDefaultPii: false,
       beforeBreadcrumb(breadcrumb) {
         return {

@@ -25,6 +25,7 @@ import { DonationsService } from '../../core/services/donations.service';
 import { AuthService } from '../../core/services/auth.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/stripe-payment.service';
+import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { environment } from 'src/environments/environment';
 
@@ -297,7 +298,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     private readonly router: Router,
     private readonly stripePaymentService: StripePaymentService,
     private readonly toastController: ToastController,
-    private readonly alertController: AlertController
+    private readonly alertController: AlertController,
+    private readonly sentryTelemetry: SentryTelemetryService
   ) {
     this.branchSub = this.selectedBranchService.selectedBranch$.subscribe(branch => {
       this.branch = branch;
@@ -306,6 +308,11 @@ export class DonatePage implements AfterViewInit, OnDestroy {
         this.hasAutoFocusedAmount = false;
         return;
       }
+
+      this.sentryTelemetry.addFeatureBreadcrumb('donations', 'Donation branch selected', {
+        branch_id: branch.id,
+        branch_name: branch.name,
+      });
 
       this.tryAutoFocusAmount();
     });
@@ -346,6 +353,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   ionViewWillEnter(): void {
+    this.sentryTelemetry.addFeatureBreadcrumb('donations', 'Donation screen opened');
     this.ensureMemberProfileResolved();
     this.prefillDonorEmailOnce();
     this.tryAutoFocusAmount();
@@ -792,7 +800,10 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   private async presentPaymentSheet(clientSecret: string, isMonthly = false): Promise<void> {
-    const result = await this.stripePaymentService.presentPaymentSheet(clientSecret);
+    const result = await this.stripePaymentService.presentPaymentSheet(
+      clientSecret,
+      isMonthly ? 'recurring' : 'one_time'
+    );
     if (isMonthly) {
       console.log('[monthly] PaymentSheet result', result);
     }

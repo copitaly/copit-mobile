@@ -9,6 +9,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { MemberProfile } from '../../core/models/user.model';
 import { DonationFlowStateService } from '../../core/services/donation-flow-state.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
+import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
@@ -259,7 +260,8 @@ export class DeleteAccountPage implements OnInit {
     private readonly selectedBranchService: SelectedBranchService,
     private readonly router: Router,
     private readonly navController: NavController,
-    private readonly toastController: ToastController
+    private readonly toastController: ToastController,
+    private readonly sentryTelemetry: SentryTelemetryService
   ) {}
 
   get canDelete(): boolean {
@@ -319,12 +321,14 @@ export class DeleteAccountPage implements OnInit {
       return;
     }
 
+    this.sentryTelemetry.addFeatureBreadcrumb('profile', 'Delete account started');
     console.log('[delete-account] delete clicked');
     this.submitting = true;
     this.errorMessage = '';
 
     this.authService.deleteAccount().subscribe({
       next: async () => {
+        this.sentryTelemetry.addFeatureBreadcrumb('profile', 'Delete account succeeded');
         this.authService.clearLocalAuthState();
         this.donationFlowState.clear();
         this.selectedBranchService.clearBranch();
@@ -346,6 +350,9 @@ export class DeleteAccountPage implements OnInit {
       },
       error: async (error: unknown) => {
         const httpError = error as HttpErrorResponse;
+        this.sentryTelemetry.captureFeatureError('profile', 'Delete account failed', error, {
+          status: httpError?.status ?? null,
+        });
         this.errorMessage =
           httpError?.status === 502
             ? 'We could not cancel your recurring donations. Please try again.'

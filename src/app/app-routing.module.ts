@@ -2,12 +2,17 @@ import { inject, NgModule } from '@angular/core';
 import { CanMatchFn, PreloadAllModules, Router, RouterModule, Routes } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 import { AuthService } from './core/services/auth.service';
+import { SentryTelemetryService } from './core/services/sentry-telemetry.service';
 
 const redirectAuthenticatedAwayFromAuthPages: CanMatchFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
+  const sentryTelemetry = inject(SentryTelemetryService);
 
   if (authService.isAuthenticatedSnapshot || !!authService.accessTokenSnapshot) {
+    sentryTelemetry.addFeatureBreadcrumb('auth', 'Route guard redirected authenticated user', {
+      route: '/profile',
+    });
     return router.parseUrl('/profile');
   }
 
@@ -17,12 +22,17 @@ const redirectAuthenticatedAwayFromAuthPages: CanMatchFn = () => {
 const allowAuthenticatedMembersIntoAccountSettings: CanMatchFn = (route) => {
   const authService = inject(AuthService);
   const router = inject(Router);
+  const sentryTelemetry = inject(SentryTelemetryService);
 
   const user = authService.currentUserSnapshot;
   const isAuthenticated = authService.isAuthenticatedSnapshot || !!authService.accessTokenSnapshot;
   const routePath = `/${route.path ?? 'profile/account-settings'}`;
 
   if (!isAuthenticated) {
+    sentryTelemetry.addFeatureBreadcrumb('profile', 'Route guard denied account settings access', {
+      route: routePath,
+      reason: 'unauthenticated',
+    }, 'warning');
     console.log('[account-settings] denied reason=unauthenticated');
     console.log('[account-settings] guard result', {
       route: routePath,
@@ -40,6 +50,10 @@ const allowAuthenticatedMembersIntoAccountSettings: CanMatchFn = (route) => {
     const allowed = user.role === 'member';
     const deniedReason = allowed ? null : 'non-member-role';
     if (deniedReason) {
+      sentryTelemetry.addFeatureBreadcrumb('profile', 'Route guard denied account settings access', {
+        route: routePath,
+        reason: deniedReason,
+      }, 'warning');
       console.log('[account-settings] denied reason=' + deniedReason);
     }
     console.log('[account-settings] guard result', {
@@ -60,6 +74,9 @@ const allowAuthenticatedMembersIntoAccountSettings: CanMatchFn = (route) => {
     map((resolvedProfile) => {
       const allowed = !!resolvedProfile?.id;
       if (allowed) {
+        sentryTelemetry.addFeatureBreadcrumb('profile', 'Route guard allowed account settings access', {
+          route: routePath,
+        });
         console.log('[account-settings] allowed after profile load');
         console.log('[account-settings] guard result', {
           route: routePath,
@@ -74,6 +91,10 @@ const allowAuthenticatedMembersIntoAccountSettings: CanMatchFn = (route) => {
       }
 
       const deniedReason = !resolvedProfile ? 'missing-profile' : 'non-member-profile';
+      sentryTelemetry.addFeatureBreadcrumb('profile', 'Route guard denied account settings access', {
+        route: routePath,
+        reason: deniedReason,
+      }, 'warning');
       console.log('[account-settings] denied reason=' + deniedReason);
       console.log('[account-settings] guard result', {
         route: routePath,
@@ -87,6 +108,10 @@ const allowAuthenticatedMembersIntoAccountSettings: CanMatchFn = (route) => {
       return router.parseUrl(!resolvedProfile ? '/login' : '/profile');
     }),
     catchError(() => {
+      sentryTelemetry.addFeatureBreadcrumb('profile', 'Route guard redirected account settings access', {
+        route: routePath,
+        reason: 'profile-load-error',
+      }, 'error');
       console.log('[account-settings] denied reason=profile-load-error');
       console.log('[account-settings] guard result', {
         route: routePath,

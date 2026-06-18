@@ -10,7 +10,7 @@ import { AuthService } from './auth.service';
 import { environment } from '../../../environments/environment';
 import { sanitizeSentryValue, toApiPath } from '../utils/sentry-sanitizer';
 
-type FeatureArea = 'saved_churches' | 'donations' | 'profile' | 'auth' | 'churches' | 'home' | 'app';
+export type FeatureArea = 'saved_churches' | 'donations' | 'profile' | 'auth' | 'churches' | 'home' | 'app';
 
 @Injectable({ providedIn: 'root' })
 export class SentryTelemetryService implements OnDestroy {
@@ -23,7 +23,7 @@ export class SentryTelemetryService implements OnDestroy {
   ) {}
 
   initialize(): void {
-    if (this.initialized || !environment.sentryEnabled || !environment.sentryDsn?.trim()) {
+    if (this.initialized || !this.isEnabled()) {
       return;
     }
 
@@ -43,7 +43,7 @@ export class SentryTelemetryService implements OnDestroy {
     data?: Record<string, unknown>,
     level: 'info' | 'warning' | 'error' = 'info'
   ): void {
-    if (!environment.sentryEnabled || !environment.sentryDsn?.trim()) {
+    if (!this.isEnabled()) {
       return;
     }
 
@@ -66,7 +66,7 @@ export class SentryTelemetryService implements OnDestroy {
     featureArea?: string,
     level: 'info' | 'warning' | 'error' = 'info'
   ): void {
-    if (!environment.sentryEnabled || !environment.sentryDsn?.trim()) {
+    if (!this.isEnabled()) {
       return;
     }
 
@@ -85,7 +85,7 @@ export class SentryTelemetryService implements OnDestroy {
   }
 
   captureHttpFailure(error: HttpErrorResponse, method: string, url: string, featureArea?: string): void {
-    if (!environment.sentryEnabled || !environment.sentryDsn?.trim()) {
+    if (!this.isEnabled()) {
       return;
     }
 
@@ -114,16 +114,42 @@ export class SentryTelemetryService implements OnDestroy {
     });
   }
 
+  captureFeatureError(
+    featureArea: FeatureArea,
+    message: string,
+    error: unknown,
+    data?: Record<string, unknown>,
+    level: 'warning' | 'error' = 'error'
+  ): void {
+    if (!this.isEnabled()) {
+      return;
+    }
+
+    this.addFeatureBreadcrumb(featureArea, message, data, level);
+
+    Sentry.withScope((scope) => {
+      scope.setLevel(level);
+      scope.setTag('feature_area', featureArea);
+      if (data) {
+        scope.setContext('feature', sanitizeSentryValue(data) as Record<string, unknown>);
+      }
+
+      Sentry.captureException(error instanceof Error ? error : new Error(message));
+    });
+  }
+
   getCurrentFeatureArea(): FeatureArea {
     return this.featureAreaFromUrl(this.router.url);
   }
 
   private setStaticContext(): void {
     Sentry.setTag('platform', Capacitor.getPlatform());
+    Sentry.setTag('release', environment.appVersion);
     Sentry.setContext('app', {
       native: Capacitor.isNativePlatform(),
       platform: Capacitor.getPlatform(),
       production: environment.production,
+      version: environment.appVersion,
     });
   }
 
@@ -187,6 +213,7 @@ export class SentryTelemetryService implements OnDestroy {
 
     Sentry.setUser({
       id: String(user.id),
+      email: user.email ?? undefined,
     });
     Sentry.setTag('member_role', user.role ?? 'unknown');
     Sentry.setContext('member', {
@@ -197,6 +224,10 @@ export class SentryTelemetryService implements OnDestroy {
       assigned_branch_count: user.assigned_branches?.length ?? 0,
       language: user.language ?? null,
     });
+  }
+
+  private isEnabled(): boolean {
+    return environment.sentryEnabled && !!environment.sentryDsn?.trim();
   }
 
   private featureAreaFromUrl(url: string): FeatureArea {

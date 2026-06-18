@@ -7,6 +7,7 @@ import { IonicModule, ToastController } from '@ionic/angular';
 
 import { AuthService } from '../../core/services/auth.service';
 import { MemberProfile } from '../../core/models/user.model';
+import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
@@ -275,7 +276,8 @@ export class EditProfilePage implements OnInit {
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
     private readonly router: Router,
-    private readonly toastController: ToastController
+    private readonly toastController: ToastController,
+    private readonly sentryTelemetry: SentryTelemetryService
   ) {}
 
   get canSubmit(): boolean {
@@ -365,6 +367,9 @@ export class EditProfilePage implements OnInit {
         this.saving = false;
         const httpError = error as HttpErrorResponse;
         const body = httpError?.error as Record<string, unknown> | undefined;
+        this.sentryTelemetry.captureFeatureError('profile', 'Edit profile save failed', error, {
+          status: httpError?.status ?? null,
+        });
         this.errorMessage =
           this.extractFirstFieldError(body)
           || (typeof body?.['detail'] === 'string' ? body['detail'] : '')

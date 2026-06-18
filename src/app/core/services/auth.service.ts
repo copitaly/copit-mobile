@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
-import { Inject, Injectable } from '@angular/core';
+import { Inject, Injectable, Injector } from '@angular/core';
 import { BehaviorSubject, EMPTY, Observable, firstValueFrom, from, of, throwError } from 'rxjs';
 import { catchError, finalize, map, switchMap, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
@@ -16,6 +16,7 @@ import {
   SavedChurch,
 } from '../models/user.model';
 import { AuthStorageService } from './auth-storage.service';
+import { SentryTelemetryService } from './sentry-telemetry.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -38,7 +39,8 @@ export class AuthService {
   constructor(
     private readonly http: HttpClient,
     private readonly authStorage: AuthStorageService,
-    @Inject(DOCUMENT) private readonly document: Document
+    @Inject(DOCUMENT) private readonly document: Document,
+    private readonly injector: Injector
   ) {
     this.initializationPromise = this.restoreAuthState();
   }
@@ -72,6 +74,7 @@ export class AuthService {
   }
 
   login(payload: MemberLoginRequest): Observable<MemberProfile> {
+    this.sentryTelemetry.addFeatureBreadcrumb('auth', 'Login started');
     return from(this.initializationPromise).pipe(
       switchMap(() => {
         this.authLoadingSubject.next(true);
@@ -83,6 +86,17 @@ export class AuthService {
             map((response) => this.extractAccessToken(response)),
             tap((token) => this.storeAccessToken(token)),
             switchMap((token) => this.fetchCurrentUser(token)),
+            tap((profile) => {
+              this.sentryTelemetry.addFeatureBreadcrumb('auth', 'Login succeeded', {
+                member_id: profile.id,
+              });
+            }),
+            catchError((error) => {
+              this.sentryTelemetry.captureFeatureError('auth', 'Login failed', error, {
+                status: this.getHttpStatus(error),
+              });
+              return throwError(() => error);
+            }),
             finalize(() => this.authLoadingSubject.next(false))
           );
       })
@@ -90,6 +104,7 @@ export class AuthService {
   }
 
   register(payload: MemberRegisterRequest): Observable<MemberProfile> {
+    this.sentryTelemetry.addFeatureBreadcrumb('auth', 'Register started');
     return from(this.initializationPromise).pipe(
       switchMap(() => {
         this.authLoadingSubject.next(true);
@@ -101,6 +116,17 @@ export class AuthService {
             tap((response) => this.storeAccessToken(this.extractAccessToken(response))),
             map((response) => this.toMemberProfileFromAuthResponse(response)),
             tap((profile) => this.setAuthenticatedProfile(profile)),
+            tap((profile) => {
+              this.sentryTelemetry.addFeatureBreadcrumb('auth', 'Register succeeded', {
+                member_id: profile.id,
+              });
+            }),
+            catchError((error) => {
+              this.sentryTelemetry.captureFeatureError('auth', 'Register failed', error, {
+                status: this.getHttpStatus(error),
+              });
+              return throwError(() => error);
+            }),
             finalize(() => this.authLoadingSubject.next(false))
           );
       })
@@ -118,24 +144,32 @@ export class AuthService {
   }
 
   getSavedChurches(): Observable<SavedChurch[]> {
+    this.sentryTelemetry.addFeatureBreadcrumb('saved_churches', 'Saved churches load started');
     return from(this.initializationPromise).pipe(
       switchMap(() => this.withToken((token) => this.fetchSavedChurches(token)))
     );
   }
 
   saveChurch(churchId: number): Observable<SavedChurch> {
+    this.sentryTelemetry.addFeatureBreadcrumb('saved_churches', 'Saved church create started', {
+      church_id: churchId,
+    });
     return from(this.initializationPromise).pipe(
       switchMap(() => this.withToken((token) => this.persistSavedChurch(token, churchId)))
     );
   }
 
   unsaveChurch(savedChurchId: number): Observable<void> {
+    this.sentryTelemetry.addFeatureBreadcrumb('saved_churches', 'Saved church remove started', {
+      saved_church_id: savedChurchId,
+    });
     return from(this.initializationPromise).pipe(
       switchMap(() => this.withToken((token) => this.removeSavedChurch(token, savedChurchId)))
     );
   }
 
   logout(): void {
+    this.sentryTelemetry.addFeatureBreadcrumb('auth', 'Logout');
     this.clearSession();
     this.sendCookieBackedAuthRequest<void>(this.logoutUrl, 'POST', {})
       .pipe(catchError(() => EMPTY))
@@ -143,6 +177,7 @@ export class AuthService {
   }
 
   deleteAccount(): Observable<void> {
+    this.sentryTelemetry.addFeatureBreadcrumb('profile', 'Delete account request started');
     return from(this.initializationPromise).pipe(
       switchMap(() => this.withToken((token) => this.performAccountDelete(token)))
     );
@@ -179,7 +214,13 @@ export class AuthService {
   private refreshAccessToken(): Observable<string> {
     return this.sendCookieBackedAuthRequest<{ access: string }>(this.refreshUrl, 'POST', {}).pipe(
       map((response) => this.extractAccessToken(response)),
-      tap((token) => this.storeAccessToken(token))
+      tap((token) => this.storeAccessToken(token)),
+      catchError((error) => {
+        this.sentryTelemetry.captureFeatureError('auth', 'Token refresh failed', error, {
+          status: this.getHttpStatus(error),
+        });
+        return throwError(() => error);
+      })
     );
   }
 
@@ -275,10 +316,24 @@ export class AuthService {
   }
 
   private fetchSavedChurches(token: string): Observable<SavedChurch[]> {
-    return this.http.get<SavedChurch[]>(this.buildUrl('members/me/saved-churches'), {
-      headers: this.buildAuthHeaders(token),
-      withCredentials: true,
-    });
+    return this.http
+      .get<SavedChurch[]>(this.buildUrl('members/me/saved-churches'), {
+        headers: this.buildAuthHeaders(token),
+        withCredentials: true,
+      })
+      .pipe(
+        tap((savedChurches) => {
+          this.sentryTelemetry.addFeatureBreadcrumb('saved_churches', 'Saved churches load succeeded', {
+            count: savedChurches.length,
+          });
+        }),
+        catchError((error) => {
+          this.sentryTelemetry.captureFeatureError('saved_churches', 'Saved churches load failed', error, {
+            status: this.getHttpStatus(error),
+          });
+          return throwError(() => error);
+        })
+      );
   }
 
   private performMemberProfileUpdate(
@@ -301,21 +356,52 @@ export class AuthService {
   }
 
   private persistSavedChurch(token: string, churchId: number): Observable<SavedChurch> {
-    return this.http.post<SavedChurch>(
-      this.buildUrl('members/me/saved-churches'),
-      { church_id: churchId },
-      {
-        headers: this.buildAuthHeaders(token),
-        withCredentials: true,
-      }
-    );
+    return this.http
+      .post<SavedChurch>(
+        this.buildUrl('members/me/saved-churches'),
+        { church_id: churchId },
+        {
+          headers: this.buildAuthHeaders(token),
+          withCredentials: true,
+        }
+      )
+      .pipe(
+        tap((savedChurch) => {
+          this.sentryTelemetry.addFeatureBreadcrumb('saved_churches', 'Saved church create succeeded', {
+            church_id: savedChurch.church.id,
+            saved_church_id: savedChurch.id,
+          });
+        }),
+        catchError((error) => {
+          this.sentryTelemetry.captureFeatureError('saved_churches', 'Saved church create failed', error, {
+            church_id: churchId,
+            status: this.getHttpStatus(error),
+          });
+          return throwError(() => error);
+        })
+      );
   }
 
   private removeSavedChurch(token: string, savedChurchId: number): Observable<void> {
-    return this.http.delete<void>(this.buildUrl(`members/me/saved-churches/${savedChurchId}`), {
-      headers: this.buildAuthHeaders(token),
-      withCredentials: true,
-    });
+    return this.http
+      .delete<void>(this.buildUrl(`members/me/saved-churches/${savedChurchId}`), {
+        headers: this.buildAuthHeaders(token),
+        withCredentials: true,
+      })
+      .pipe(
+        tap(() => {
+          this.sentryTelemetry.addFeatureBreadcrumb('saved_churches', 'Saved church remove succeeded', {
+            saved_church_id: savedChurchId,
+          });
+        }),
+        catchError((error) => {
+          this.sentryTelemetry.captureFeatureError('saved_churches', 'Saved church remove failed', error, {
+            saved_church_id: savedChurchId,
+            status: this.getHttpStatus(error),
+          });
+          return throwError(() => error);
+        })
+      );
   }
 
   private sendCookieBackedAuthRequest<T>(
@@ -419,5 +505,13 @@ export class AuthService {
       },
       recent_donations: [],
     };
+  }
+
+  private get sentryTelemetry(): SentryTelemetryService {
+    return this.injector.get(SentryTelemetryService);
+  }
+
+  private getHttpStatus(error: unknown): number | null {
+    return error instanceof HttpErrorResponse ? error.status : null;
   }
 }

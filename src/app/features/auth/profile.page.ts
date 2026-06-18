@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 
 import { AuthService } from '../../core/services/auth.service';
 import { MemberProfile } from '../../core/models/user.model';
+import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 type QuickAction = {
@@ -450,7 +451,11 @@ export class ProfilePage implements OnInit, OnDestroy {
     },
   ];
 
-  constructor(private readonly authService: AuthService, private readonly router: Router) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly router: Router,
+    private readonly sentryTelemetry: SentryTelemetryService
+  ) {}
 
   get initials(): string {
     const first = this.profile?.first_name?.trim()?.charAt(0) ?? '';
@@ -506,6 +511,9 @@ export class ProfilePage implements OnInit, OnDestroy {
       error: () => {
         this.loading = false;
         this.errorMessage = 'Please check your connection and try again.';
+        this.sentryTelemetry.addFeatureBreadcrumb('profile', 'Profile load failed', {
+          route: '/profile',
+        }, 'error');
       },
     });
   }

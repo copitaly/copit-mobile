@@ -6,6 +6,7 @@ import { AlertController, IonicModule, ToastController } from '@ionic/angular';
 import { RecurringDonationItem } from '../../core/models/donation.model';
 import { DonationsService } from '../../core/services/donations.service';
 import { AuthService } from '../../core/services/auth.service';
+import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
@@ -193,7 +194,8 @@ export class RecurringDonationsPage implements OnInit {
     private readonly donationsService: DonationsService,
     private readonly router: Router,
     private readonly alertController: AlertController,
-    private readonly toastController: ToastController
+    private readonly toastController: ToastController,
+    private readonly sentryTelemetry: SentryTelemetryService
   ) {}
 
   ngOnInit(): void {
@@ -210,6 +212,9 @@ export class RecurringDonationsPage implements OnInit {
   }
 
   loadRecurringDonations(): void {
+    this.sentryTelemetry.addFeatureBreadcrumb('donations', 'Recurring donations list load started', {
+      filter: this.selectedFilter,
+    });
     this.loading = true;
     this.errorMessage = '';
     this.recurringDonations = [];
@@ -225,6 +230,9 @@ export class RecurringDonationsPage implements OnInit {
         this.fetchRecurringDonations();
       },
       error: () => {
+        this.sentryTelemetry.addFeatureBreadcrumb('donations', 'Recurring donations list load failed', {
+          filter: this.selectedFilter,
+        }, 'error');
         void this.router.navigate(['/login']);
       },
     });
@@ -459,6 +467,9 @@ export class RecurringDonationsPage implements OnInit {
       return;
     }
 
+    this.sentryTelemetry.addFeatureBreadcrumb('donations', 'Recurring donation cancel started', {
+      recurring_donation_id: donation.id,
+    });
     this.cancellingIds.add(donation.id);
     this.donationsService.cancelRecurringDonation(donation.id).subscribe({
       next: async (updatedDonation) => {

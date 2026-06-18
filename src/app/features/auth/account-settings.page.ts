@@ -6,6 +6,7 @@ import { IonicModule } from '@ionic/angular';
 
 import { AuthService } from '../../core/services/auth.service';
 import { MemberProfile } from '../../core/models/user.model';
+import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
@@ -259,7 +260,8 @@ export class AccountSettingsPage implements OnInit {
 
   constructor(
     private readonly authService: AuthService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly sentryTelemetry: SentryTelemetryService
   ) {}
 
   ngOnInit(): void {
@@ -282,6 +284,9 @@ export class AccountSettingsPage implements OnInit {
 
         if (!allowed) {
           const redirectReason = wasAuthenticated ? 'missing-member-profile' : 'unauthenticated';
+          this.sentryTelemetry.addFeatureBreadcrumb('profile', 'Account settings page redirected', {
+            reason: redirectReason,
+          }, 'warning');
           console.log('[account-settings] redirect reason=' + redirectReason);
           void this.router.navigateByUrl(wasAuthenticated ? '/profile' : '/login', { replaceUrl: true });
           return;
@@ -298,6 +303,10 @@ export class AccountSettingsPage implements OnInit {
             : httpError?.status === 403 || httpError?.status === 404
               ? 'member-profile-denied'
               : 'profile-load-error';
+        this.sentryTelemetry.addFeatureBreadcrumb('profile', 'Account settings page redirected', {
+          reason: redirectReason,
+          status: httpError?.status ?? null,
+        }, redirectReason === 'profile-load-error' ? 'error' : 'warning');
 
         console.log('[account-settings] page result', {
           memberProfileLoaded: false,

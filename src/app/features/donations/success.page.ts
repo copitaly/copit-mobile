@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, tap } from 'rxjs';
 import { DonationFlowStateService, DonationCheckoutSummary } from '../../core/services/donation-flow-state.service';
 import { ApiService } from '../../core/services/api.service';
+import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 
 interface VerifyCheckoutSessionResponse {
   verified: boolean;
@@ -252,7 +253,8 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
     private readonly api: ApiService,
     private readonly donationFlowState: DonationFlowStateService,
     private readonly router: Router,
-    private readonly route: ActivatedRoute
+    private readonly route: ActivatedRoute,
+    private readonly sentryTelemetry: SentryTelemetryService
   ) {}
 
   ngOnInit(): void {
@@ -302,6 +304,9 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
         },
         error: error => {
           this.log.error('[DonateSuccessPage] hosted verification error', error);
+          this.sentryTelemetry.captureFeatureError('donations', 'Donation success verification failed', error, {
+            flow: 'hosted',
+          });
           this.applyStoredSummary();
         },
       });
@@ -327,6 +332,10 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
         },
         error: error => {
           this.log.error('[DonateSuccessPage] mobile verification error', error);
+          this.sentryTelemetry.captureFeatureError('donations', 'Donation success verification failed', error, {
+            flow: 'mobile',
+            donation_id: donationId,
+          });
           this.applyStoredSummary();
         },
       });

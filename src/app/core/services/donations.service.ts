@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Injector } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, switchMap, tap } from 'rxjs/operators';
@@ -16,6 +16,7 @@ import {
 import { AuthService } from './auth.service';
 import { environment } from '../../../environments/environment';
 import { PaginatedResponse } from '../models/user.model';
+import { SentryTelemetryService } from './sentry-telemetry.service';
 
 @Injectable({ providedIn: 'root' })
 export class DonationsService {
@@ -25,15 +26,31 @@ export class DonationsService {
   constructor(
     private readonly api: ApiService,
     private readonly http: HttpClient,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly injector: Injector
   ) {}
 
   createCheckout(
     payload: DonationCheckoutRequest
   ): Observable<DonationCheckoutResponse> {
+    this.sentryTelemetry.addFeatureBreadcrumb('donations', 'One-time checkout started', {
+      church_id: payload.church_id,
+      category: payload.category ?? null,
+      amount: payload.amount,
+    });
     return this.withOptionalAuth((token) =>
       this.http.post<DonationCheckoutResponse>(this.buildUrl(this.endpoint), payload, {
         headers: token ? this.buildAuthHeaders(token) : undefined,
+      })
+    ).pipe(
+      tap(() => {
+        this.sentryTelemetry.addFeatureBreadcrumb('donations', 'One-time checkout succeeded');
+      }),
+      catchError((error) => {
+        this.sentryTelemetry.captureFeatureError('donations', 'One-time checkout failed', error, {
+          status: this.getHttpStatus(error),
+        });
+        return throwError(() => error);
       })
     );
   }
@@ -47,9 +64,26 @@ export class DonationsService {
   createMobileCheckout(
     payload: DonationCheckoutRequest
   ): Observable<DonationMobileCheckoutResponse> {
+    this.sentryTelemetry.addFeatureBreadcrumb('donations', 'One-time checkout started', {
+      church_id: payload.church_id,
+      category: payload.category ?? null,
+      amount: payload.amount,
+    });
     return this.withOptionalAuth((token) =>
       this.http.post<DonationMobileCheckoutResponse>(this.buildUrl('donations/mobile/checkout/'), payload, {
         headers: token ? this.buildAuthHeaders(token) : undefined,
+      })
+    ).pipe(
+      tap((response) => {
+        this.sentryTelemetry.addFeatureBreadcrumb('donations', 'One-time checkout succeeded', {
+          donation_id: response.donation_id,
+        });
+      }),
+      catchError((error) => {
+        this.sentryTelemetry.captureFeatureError('donations', 'One-time checkout failed', error, {
+          status: this.getHttpStatus(error),
+        });
+        return throwError(() => error);
       })
     );
   }
@@ -57,6 +91,12 @@ export class DonationsService {
   createRecurringCheckout(
     payload: RecurringDonationCreateRequest
   ): Observable<RecurringDonationCreateResponse> {
+    this.sentryTelemetry.addFeatureBreadcrumb('donations', 'Recurring checkout started', {
+      church_id: payload.church_id,
+      category: payload.category ?? null,
+      amount: payload.amount,
+      interval: payload.interval,
+    });
     if (!environment.production) {
       console.log('[DonationsService] recurring create requested', {
         endpoint: 'donations/recurring/create/',
@@ -99,6 +139,19 @@ export class DonationsService {
           headers: this.buildAuthHeaders(token),
         }
       )
+    ).pipe(
+      tap((updatedDonation) => {
+        this.sentryTelemetry.addFeatureBreadcrumb('donations', 'Recurring donation cancel succeeded', {
+          recurring_donation_id: updatedDonation.id,
+        });
+      }),
+      catchError((error) => {
+        this.sentryTelemetry.captureFeatureError('donations', 'Recurring donation cancel failed', error, {
+          recurring_donation_id: recurringDonationId,
+          status: this.getHttpStatus(error),
+        });
+        return throwError(() => error);
+      })
     );
   }
 
@@ -130,6 +183,9 @@ export class DonationsService {
       .pipe(
         tap((response) => {
           console.log('[recurring service] response', response);
+          this.sentryTelemetry.addFeatureBreadcrumb('donations', 'Recurring checkout succeeded', {
+            recurring_donation_id: response.recurring_donation_id,
+          });
         }),
         catchError((error) => {
           const httpError = error as HttpErrorResponse;
@@ -138,6 +194,9 @@ export class DonationsService {
           console.error('[recurring service] error url=' + httpError?.url);
           console.error('[recurring service] error message=' + httpError?.message);
           console.error('[recurring service] error body=' + this.safeJsonStringify(httpError?.error));
+          this.sentryTelemetry.captureFeatureError('donations', 'Recurring checkout failed', error, {
+            status: this.getHttpStatus(error),
+          });
           return throwError(() => error);
         })
       );
@@ -157,7 +216,20 @@ export class DonationsService {
     return this.http.get<PaginatedResponse<RecurringDonationItem>>(url, {
       headers: this.buildAuthHeaders(token),
       params,
-    });
+    }).pipe(
+      tap((response) => {
+        this.sentryTelemetry.addFeatureBreadcrumb('donations', 'Recurring donations list load succeeded', {
+          count: response.results.length,
+          has_next_page: !!response.next,
+        });
+      }),
+      catchError((error) => {
+        this.sentryTelemetry.captureFeatureError('donations', 'Recurring donations list load failed', error, {
+          status: this.getHttpStatus(error),
+        });
+        return throwError(() => error);
+      })
+    );
   }
 
   private buildUrl(path: string): string {
@@ -258,5 +330,13 @@ export class DonationsService {
     } catch {
       return '[unserializable]';
     }
+  }
+
+  private get sentryTelemetry(): SentryTelemetryService {
+    return this.injector.get(SentryTelemetryService);
+  }
+
+  private getHttpStatus(error: unknown): number | null {
+    return error instanceof HttpErrorResponse ? error.status : null;
   }
 }
