@@ -1,12 +1,14 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { IonicModule } from '@ionic/angular';
 
 import { PublicBranch } from '../../core/models/branch.model';
 import { SavedChurch } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
+import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
@@ -408,7 +410,8 @@ export class SavedChurchesPage implements OnInit {
   constructor(
     private readonly authService: AuthService,
     private readonly selectedBranchService: SelectedBranchService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly sentryTelemetry: SentryTelemetryService
   ) {}
 
   ngOnInit(): void {
@@ -419,17 +422,36 @@ export class SavedChurchesPage implements OnInit {
     this.loading = true;
     this.errorMessage = '';
     this.savedChurches = [];
+    this.sentryTelemetry.addFeatureBreadcrumb('saved_churches', 'Saved churches load started', {
+      route: '/saved-churches',
+    });
 
     this.authService.getCurrentUser().subscribe({
       next: (profile) => {
         if (!profile) {
+          this.sentryTelemetry.addFeatureBreadcrumb(
+            'saved_churches',
+            'Saved churches load redirected to login',
+            { reason: 'missing_profile' },
+            'warning'
+          );
           void this.router.navigate(['/login']);
           return;
         }
 
         this.fetchSavedChurches();
       },
-      error: () => {
+      error: (error: unknown) => {
+        const httpError = error instanceof HttpErrorResponse ? error : null;
+        this.sentryTelemetry.addFeatureBreadcrumb(
+          'saved_churches',
+          'Saved churches profile lookup failed',
+          {
+            status: httpError?.status ?? null,
+            error: httpError?.error ?? null,
+          },
+          'error'
+        );
         void this.router.navigate(['/login']);
       },
     });
@@ -485,10 +507,24 @@ export class SavedChurchesPage implements OnInit {
       next: (savedChurches) => {
         this.savedChurches = savedChurches;
         this.loading = false;
+        this.sentryTelemetry.addFeatureBreadcrumb('saved_churches', 'Saved churches API response received', {
+          status: 200,
+          count: savedChurches.length,
+        });
       },
-      error: () => {
+      error: (error: unknown) => {
         this.loading = false;
         this.errorMessage = 'Please check your connection and try again.';
+        const httpError = error instanceof HttpErrorResponse ? error : null;
+        this.sentryTelemetry.addFeatureBreadcrumb(
+          'saved_churches',
+          'Saved churches API request failed',
+          {
+            status: httpError?.status ?? null,
+            error: httpError?.error ?? null,
+          },
+          'error'
+        );
       },
     });
   }

@@ -36,6 +36,8 @@
     "@capacitor/keyboard": "8.0.2",
     "@capacitor/status-bar": "8.0.2",
     "@ionic/angular": "^8.0.0",
+    "@sentry/angular": "^10.52.0",
+    "@sentry/capacitor": "^4.1.0",
     "capacitor-secure-storage-plugin": "^0.13.0",
     "ionicons": "^7.0.0",
     "rxjs": "~7.8.0",

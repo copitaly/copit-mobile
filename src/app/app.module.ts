@@ -1,16 +1,24 @@
-import { APP_INITIALIZER, NgModule } from '@angular/core';
+import { APP_INITIALIZER, ErrorHandler, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { RouteReuseStrategy } from '@angular/router';
-import { HttpClientModule } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
+import { createErrorHandler } from '@sentry/angular';
 
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
 
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
 import { AuthService } from './core/services/auth.service';
+import { environment } from '../environments/environment';
+import { SentryHttpInterceptor } from './core/interceptors/sentry-http.interceptor';
+import { SentryTelemetryService } from './core/services/sentry-telemetry.service';
 
 function initializeAuth(authService: AuthService): () => Promise<void> {
   return () => authService.initialize();
+}
+
+function initializeSentryTelemetry(sentryTelemetry: SentryTelemetryService): () => void {
+  return () => sentryTelemetry.initialize();
 }
 
 @NgModule({
@@ -19,9 +27,26 @@ function initializeAuth(authService: AuthService): () => Promise<void> {
   providers: [
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     {
+      provide: ErrorHandler,
+      useValue: createErrorHandler({
+        logErrors: !environment.production,
+      }),
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: SentryHttpInterceptor,
+      multi: true,
+    },
+    {
       provide: APP_INITIALIZER,
       useFactory: initializeAuth,
       deps: [AuthService],
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeSentryTelemetry,
+      deps: [SentryTelemetryService],
       multi: true,
     },
   ],
