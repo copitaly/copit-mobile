@@ -77,8 +77,8 @@ export interface MemberLoginRequest {
 export interface MemberRegisterRequest {
   first_name: string;
   last_name: string;
-  phone_number: string;
-  email?: string | null;
+  phone_number?: string | null;
+  email: string;
   password: string;
   confirm_password: string;
 }

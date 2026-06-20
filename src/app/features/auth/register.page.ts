@@ -8,6 +8,15 @@ import { IonicModule } from '@ionic/angular';
 import { AuthService } from '../../core/services/auth.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
+function optionalPhoneValidator(control: AbstractControl): ValidationErrors | null {
+  const value = `${control.value ?? ''}`.trim();
+  if (!value) {
+    return null;
+  }
+
+  return /^\+?[0-9()\-\s]{7,20}$/.test(value) ? null : { invalidPhone: true };
+}
+
 @Component({
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, IonicModule, MobileHeaderComponent],
@@ -59,22 +68,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                 </div>
 
                 <div class="field-group">
-                  <label class="auth-label" for="register-phone">Phone number *</label>
-                  <ion-item fill="solid" class="auth-field">
-                    <ion-input
-                      id="register-phone"
-                      formControlName="phone_number"
-                      placeholder="+39 333 123 4567"
-                      autocomplete="tel"
-                      inputmode="tel"
-                      (ionInput)="clearErrorMessage()"
-                    ></ion-input>
-                  </ion-item>
-                  <p class="field-error" *ngIf="showControlError('phone_number')">Enter your phone number.</p>
-                </div>
-
-                <div class="field-group">
-                  <label class="auth-label" for="register-email">Email (optional)</label>
+                  <label class="auth-label" for="register-email">Email *</label>
                   <ion-item fill="solid" class="auth-field">
                     <ion-input
                       id="register-email"
@@ -86,7 +80,22 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                       (ionInput)="clearErrorMessage()"
                     ></ion-input>
                   </ion-item>
-                  <p class="field-error" *ngIf="showEmailError">Enter a valid email address.</p>
+                  <p class="field-error" *ngIf="showEmailError">{{ emailErrorMessage }}</p>
+                </div>
+
+                <div class="field-group">
+                  <label class="auth-label" for="register-phone">Phone number (optional)</label>
+                  <ion-item fill="solid" class="auth-field">
+                    <ion-input
+                      id="register-phone"
+                      formControlName="phone_number"
+                      placeholder="+39 333 123 4567"
+                      autocomplete="tel"
+                      inputmode="tel"
+                      (ionInput)="clearErrorMessage()"
+                    ></ion-input>
+                  </ion-item>
+                  <p class="field-error" *ngIf="showPhoneError">{{ phoneErrorMessage }}</p>
                 </div>
 
                 <div class="field-group">
@@ -384,8 +393,8 @@ export class RegisterPage implements OnDestroy {
     {
       first_name: ['', Validators.required],
       last_name: ['', Validators.required],
-      phone_number: ['', Validators.required],
-      email: ['', Validators.email],
+      email: ['', [Validators.required, Validators.email]],
+      phone_number: ['', [optionalPhoneValidator]],
       password: ['', Validators.required],
       confirm_password: ['', Validators.required],
     },
@@ -414,7 +423,25 @@ export class RegisterPage implements OnDestroy {
 
   get showEmailError(): boolean {
     const control = this.form.controls.email;
-    return control.touched && !!control.value.trim() && control.hasError('email');
+    return control.touched && (control.hasError('required') || (!!control.value.trim() && control.hasError('email')));
+  }
+
+  get emailErrorMessage(): string {
+    const control = this.form.controls.email;
+    if (control.hasError('required')) {
+      return 'Enter your email address.';
+    }
+
+    return 'Enter a valid email address.';
+  }
+
+  get showPhoneError(): boolean {
+    const control = this.form.controls.phone_number;
+    return control.touched && control.hasError('invalidPhone');
+  }
+
+  get phoneErrorMessage(): string {
+    return 'Enter a valid phone number.';
   }
 
   get showConfirmRequiredError(): boolean {
@@ -431,7 +458,7 @@ export class RegisterPage implements OnDestroy {
     this.clearErrorDismissTimer();
   }
 
-  showControlError(controlName: 'first_name' | 'last_name' | 'phone_number' | 'password'): boolean {
+  showControlError(controlName: 'first_name' | 'last_name' | 'password'): boolean {
     const control = this.form.controls[controlName];
     return control.touched && control.hasError('required');
   }
@@ -477,9 +504,14 @@ export class RegisterPage implements OnDestroy {
 
   private getRegisterPayload() {
     const value = this.form.getRawValue();
+    const trimmedPhoneNumber = value.phone_number.trim();
     return {
-      ...value,
-      email: value.email.trim() || null,
+      first_name: value.first_name.trim(),
+      last_name: value.last_name.trim(),
+      email: value.email.trim(),
+      password: value.password,
+      confirm_password: value.confirm_password,
+      ...(trimmedPhoneNumber ? { phone_number: trimmedPhoneNumber } : {}),
     };
   }
 
