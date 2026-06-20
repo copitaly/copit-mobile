@@ -10,8 +10,8 @@ if (environment.sentryEnabled && environment.sentryDsn?.trim()) {
   Sentry.init(
     {
       dsn: environment.sentryDsn,
-      environment: environment.production ? 'production' : 'development',
-      release: environment.appVersion,
+      environment: environment.sentryEnvironment,
+      release: environment.sentryRelease,
       sendDefaultPii: false,
       beforeBreadcrumb(breadcrumb) {
         return {
