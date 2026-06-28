@@ -1,4 +1,7 @@
 import { appVersion, sentryRelease } from './app-version';
+import type { FirebaseOptions } from 'firebase/app';
+
+const firebaseConfig: FirebaseOptions | null = null;
 
 export const environment = {
   production: true,
@@ -11,4 +14,6 @@ export const environment = {
   sentryDsn: 'https://1c980c083b10f18d66a13cca5349ad92@o4511588679483392.ingest.de.sentry.io/4511588682694736',
   sentryEnvironment: 'production',
   sentryRelease,
+  analyticsEnabled: false,
+  firebaseConfig: firebaseConfig as FirebaseOptions | null,
 };

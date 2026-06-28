@@ -9,6 +9,7 @@ import { SavedChurch } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
+import { AnalyticsService } from '../../core/services/analytics.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
@@ -411,7 +412,8 @@ export class SavedChurchesPage implements OnInit {
     private readonly authService: AuthService,
     private readonly selectedBranchService: SelectedBranchService,
     private readonly router: Router,
-    private readonly sentryTelemetry: SentryTelemetryService
+    private readonly sentryTelemetry: SentryTelemetryService,
+    private readonly analyticsService: AnalyticsService
   ) {}
 
   ngOnInit(): void {
@@ -491,7 +493,12 @@ export class SavedChurchesPage implements OnInit {
         void this.router.navigate(['/branches']);
         return;
       }
-
+      void this.analyticsService.trackBranchSelected({
+        church_id: branch.id,
+        district_id: branch.district?.id ?? undefined,
+        area_id: branch.area?.id ?? undefined,
+        user_type: this.analyticsService.getUserType(),
+      });
       void this.router.navigate(['/donate']);
     } catch {
       void this.router.navigate(['/branches']);

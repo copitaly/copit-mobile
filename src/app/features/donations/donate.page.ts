@@ -26,6 +26,8 @@ import { AuthService } from '../../core/services/auth.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/stripe-payment.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
+import { AnalyticsService } from '../../core/services/analytics.service';
+import { DonationAnalyticsContextService } from '../../core/services/donation-analytics-context.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { environment } from 'src/environments/environment';
 
@@ -288,6 +290,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   memberProfileLoaded = !!this.authService.currentUserSnapshot;
   private resolvedUserRole: string | null = this.normalizeRole(this.authService.currentUserSnapshot?.role);
   private readonly destroy$ = new Subject<void>();
+  private lastTrackedDonationFormChurchId: number | null = null;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -299,7 +302,9 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     private readonly stripePaymentService: StripePaymentService,
     private readonly toastController: ToastController,
     private readonly alertController: AlertController,
-    private readonly sentryTelemetry: SentryTelemetryService
+    private readonly sentryTelemetry: SentryTelemetryService,
+    private readonly analyticsService: AnalyticsService,
+    private readonly donationAnalyticsContext: DonationAnalyticsContextService
   ) {
     this.branchSub = this.selectedBranchService.selectedBranch$.subscribe(branch => {
       this.branch = branch;
@@ -314,6 +319,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
         branch_name: branch.name,
       });
 
+      this.trackDonationFormViewedIfNeeded();
       this.tryAutoFocusAmount();
     });
 
@@ -356,6 +362,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     this.sentryTelemetry.addFeatureBreadcrumb('donations', 'Donation screen opened');
     this.ensureMemberProfileResolved();
     this.prefillDonorEmailOnce();
+    this.trackDonationFormViewedIfNeeded();
     this.tryAutoFocusAmount();
   }
 
@@ -404,6 +411,9 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     this.nativeError = undefined;
     this.errorMessage = undefined;
     this.pendingFrequency = 'one_time';
+    const analyticsContext = this.buildAnalyticsContext('one_time');
+    this.donationAnalyticsContext.setContext(analyticsContext);
+    void this.analyticsService.trackDonationCheckoutStarted(analyticsContext);
 
     this.donationsService
       .createMobileCheckout(payload)
@@ -421,6 +431,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
           void this.presentPaymentSheet(response.client_secret);
         },
         error: () => {
+          void this.analyticsService.trackDonationPaymentFailed(analyticsContext, 'checkout_create');
+          this.donationAnalyticsContext.clearContext();
           this.pendingFrequency = undefined;
           this.nativeError = 'Unable to start native payment. Please try again.';
         },
@@ -461,6 +473,11 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       this.pendingFrequency = undefined;
       this.router.navigate(['/donate/cancel']);
     } else {
+      const analyticsContext = this.donationAnalyticsContext.peekContext();
+      if (analyticsContext) {
+        void this.analyticsService.trackDonationPaymentFailed(analyticsContext, 'payment_sheet');
+      }
+      this.donationAnalyticsContext.clearContext();
       this.pendingFrequency = undefined;
       this.nativeError = result.errorMessage ?? 'Payment failed. Please try again.';
     }
@@ -765,6 +782,9 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     this.nativeError = undefined;
     this.errorMessage = undefined;
     this.pendingFrequency = 'monthly';
+    const analyticsContext = this.buildAnalyticsContext('monthly');
+    this.donationAnalyticsContext.setContext(analyticsContext);
+    void this.analyticsService.trackDonationCheckoutStarted(analyticsContext);
     console.log('[monthly] calling recurring create');
     try {
       console.log('[monthly] before await createRecurringDonation');
@@ -789,6 +809,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       await this.presentPaymentSheet(response.client_secret, true);
     } catch (error) {
       this.logRecurringHttpError(error);
+      void this.analyticsService.trackDonationPaymentFailed(analyticsContext, 'checkout_create');
+      this.donationAnalyticsContext.clearContext();
       this.pendingRecurringDonationId = undefined;
       this.pendingFrequency = undefined;
       this.nativeError = this.resolveRecurringErrorMessage(error);
@@ -1142,5 +1164,28 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       this.amountInput.setFocus().catch(() => undefined);
       this.hasAutoFocusedAmount = true;
     }, 120);
+  }
+
+  private buildAnalyticsContext(frequency: 'one_time' | 'monthly') {
+    const amount = Number(this.form.get('amount')?.value);
+    return {
+      church_id: this.branch?.id,
+      district_id: this.branch?.district?.id ?? undefined,
+      area_id: this.branch?.area?.id ?? undefined,
+      category: this.form.get('category')?.value || undefined,
+      amount_bucket: this.analyticsService.getAmountBucket(amount),
+      frequency,
+      user_type: this.analyticsService.getUserType(),
+    };
+  }
+
+  private trackDonationFormViewedIfNeeded(): void {
+    const churchId = this.branch?.id;
+    if (!churchId || this.lastTrackedDonationFormChurchId === churchId) {
+      return;
+    }
+
+    this.lastTrackedDonationFormChurchId = churchId;
+    void this.analyticsService.trackDonationFormViewed(churchId);
   }
 }

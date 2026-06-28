@@ -9,6 +9,7 @@ import { PublicBranch } from '../../core/models/branch.model';
 import { MemberRecentDonation, SavedChurch } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
+import { AnalyticsService } from '../../core/services/analytics.service';
 import {
   BuildSafetyLabelComponent,
   shouldShowBuildSafetyLabel,
@@ -35,7 +36,8 @@ export class HomePage implements OnInit, OnDestroy {
   constructor(
     private readonly authService: AuthService,
     private readonly selectedBranchService: SelectedBranchService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly analyticsService: AnalyticsService
   ) {
     this.isAuthenticated$ = this.authService.isAuthenticated$;
   }
@@ -64,20 +66,28 @@ export class HomePage implements OnInit, OnDestroy {
 
   handlePrimaryCta(): void {
     if (this.defaultBranch) {
+      void this.analyticsService.trackGiveNowTapped('saved_church');
       if (!this.selectedBranchService.setBranch(this.defaultBranch)) {
         void this.router.navigate(['/branches']);
         return;
       }
-
+      void this.analyticsService.trackBranchSelected({
+        church_id: this.defaultBranch.id,
+        district_id: this.defaultBranch.district?.id ?? undefined,
+        area_id: this.defaultBranch.area?.id ?? undefined,
+        user_type: this.analyticsService.getUserType(),
+      });
       void this.router.navigate(['/donate']);
       return;
     }
 
     if (this.savedChurches.length > 1) {
+      void this.analyticsService.trackGiveNowTapped('saved_churchs_list');
       void this.router.navigate(['/saved-churches']);
       return;
     }
 
+    void this.analyticsService.trackGiveNowTapped('default');
     void this.router.navigate(['/branches']);
   }
 

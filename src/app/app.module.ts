@@ -12,6 +12,7 @@ import { AuthService } from './core/services/auth.service';
 import { environment } from '../environments/environment';
 import { SentryHttpInterceptor } from './core/interceptors/sentry-http.interceptor';
 import { SentryTelemetryService } from './core/services/sentry-telemetry.service';
+import { AnalyticsService } from './core/services/analytics.service';
 
 function initializeAuth(authService: AuthService): () => Promise<void> {
   return () => authService.initialize();
@@ -19,6 +20,10 @@ function initializeAuth(authService: AuthService): () => Promise<void> {
 
 function initializeSentryTelemetry(sentryTelemetry: SentryTelemetryService): () => void {
   return () => sentryTelemetry.initialize();
+}
+
+function initializeAnalytics(analyticsService: AnalyticsService): () => Promise<void> {
+  return () => analyticsService.initialize();
 }
 
 @NgModule({
@@ -47,6 +52,12 @@ function initializeSentryTelemetry(sentryTelemetry: SentryTelemetryService): () 
       provide: APP_INITIALIZER,
       useFactory: initializeSentryTelemetry,
       deps: [SentryTelemetryService],
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeAnalytics,
+      deps: [AnalyticsService],
       multi: true,
     },
   ],

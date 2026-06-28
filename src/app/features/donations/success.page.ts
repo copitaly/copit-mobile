@@ -6,6 +6,11 @@ import { Subscription, tap } from 'rxjs';
 import { DonationFlowStateService, DonationCheckoutSummary } from '../../core/services/donation-flow-state.service';
 import { ApiService } from '../../core/services/api.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
+import { AnalyticsService } from '../../core/services/analytics.service';
+import {
+  DonationAnalyticsContext,
+  DonationAnalyticsContextService,
+} from '../../core/services/donation-analytics-context.service';
 
 interface VerifyCheckoutSessionResponse {
   verified: boolean;
@@ -254,7 +259,9 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
     private readonly donationFlowState: DonationFlowStateService,
     private readonly router: Router,
     private readonly route: ActivatedRoute,
-    private readonly sentryTelemetry: SentryTelemetryService
+    private readonly sentryTelemetry: SentryTelemetryService,
+    private readonly analyticsService: AnalyticsService,
+    private readonly donationAnalyticsContext: DonationAnalyticsContextService
   ) {}
 
   ngOnInit(): void {
@@ -267,7 +274,7 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
       return;
     }
     if (recurringDonationIdParam) {
-      this.applyStoredSummary(recurringDonationIdParam);
+      this.applyStoredSummary('session_storage', recurringDonationIdParam);
       return;
     }
     if (donationIdParam) {
@@ -295,10 +302,15 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
         next: response => {
           if (response.verified) {
             this.summary = this.mapVerificationResponse(response);
+            void this.analyticsService.trackDonationPaymentSuccess(
+              this.resolveSuccessAnalyticsContext(this.summary, response),
+              'backend'
+            );
+            this.donationAnalyticsContext.clearContext();
             this.donationFlowState.clear();
             this.log.log('[DonateSuccessPage] backend verified session', sessionId);
           } else {
-            this.applyStoredSummary();
+            this.applyStoredSummary('session_storage');
             this.log.warn('[DonateSuccessPage] verification returned verified=false (hosted)', sessionId);
           }
         },
@@ -307,7 +319,7 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
           this.sentryTelemetry.captureFeatureError('donations', 'Donation success verification failed', error, {
             flow: 'hosted',
           });
-          this.applyStoredSummary();
+          this.applyStoredSummary('session_storage');
         },
       });
   }
@@ -323,10 +335,15 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
         next: response => {
           if (response.verified) {
             this.summary = this.mapMobileResponse(response);
+            void this.analyticsService.trackDonationPaymentSuccess(
+              this.resolveSuccessAnalyticsContext(this.summary, response),
+              'backend'
+            );
+            this.donationAnalyticsContext.clearContext();
             this.donationFlowState.clear();
             this.log.log('[DonateSuccessPage] mobile verification succeeded', donationId);
           } else {
-            this.applyStoredSummary();
+            this.applyStoredSummary('session_storage');
             this.log.warn('[DonateSuccessPage] verification returned verified=false (mobile)', donationId);
           }
         },
@@ -336,12 +353,15 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
             flow: 'mobile',
             donation_id: donationId,
           });
-          this.applyStoredSummary();
+          this.applyStoredSummary('session_storage');
         },
       });
   }
 
-  private applyStoredSummary(recurringDonationIdParam?: string): void {
+  private applyStoredSummary(
+    verificationSource: 'session_storage' | 'generic' = 'session_storage',
+    recurringDonationIdParam?: string
+  ): void {
     const stored = this.donationFlowState.consumeStoredSummary();
     if (stored) {
       if (
@@ -355,9 +375,19 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
         });
       }
       this.summary = stored;
+      void this.analyticsService.trackDonationPaymentSuccess(
+        this.resolveSuccessAnalyticsContext(stored),
+        verificationSource
+      );
+      this.donationAnalyticsContext.clearContext();
       this.log.log('[DonateSuccessPage] sessionStorage fallback used', stored);
       return;
     }
+    void this.analyticsService.trackDonationPaymentSuccess(
+      this.resolveSuccessAnalyticsContext(null),
+      'generic'
+    );
+    this.donationAnalyticsContext.clearContext();
     this.log.warn('[DonateSuccessPage] no summary available, showing fallback copy');
   }
 
@@ -400,5 +430,28 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
   private startVerification(sessionId: string): void {
     this.isVerifying = true;
     this.log.log('[DonateSuccessPage] starting verification request', sessionId);
+  }
+
+  private resolveSuccessAnalyticsContext(
+    summary: DonationCheckoutSummary | null,
+    response?: VerifyCheckoutSessionResponse | VerifyMobilePaymentResponse
+  ): DonationAnalyticsContext {
+    const storedContext = this.donationAnalyticsContext.peekContext();
+    const responseChurchId = response?.church?.id;
+    const responseAmount = response?.amount ? Number(response.amount) : undefined;
+
+    return {
+      church_id: storedContext?.church_id ?? summary?.branchId ?? responseChurchId,
+      district_id: storedContext?.district_id,
+      area_id: storedContext?.area_id,
+      category: storedContext?.category ?? summary?.category ?? response?.category ?? undefined,
+      amount_bucket:
+        storedContext?.amount_bucket ??
+        this.analyticsService.getAmountBucket(summary?.amount ?? responseAmount),
+      frequency:
+        storedContext?.frequency ??
+        (summary?.interval === 'monthly' ? 'monthly' : summary?.interval === 'one_time' ? 'one_time' : undefined),
+      user_type: storedContext?.user_type ?? this.analyticsService.getUserType(),
+    };
   }
 }

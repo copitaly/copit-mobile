@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard, KeyboardResize } from '@capacitor/keyboard';
 import { DeepLinkService } from './core/services/deep-link.service';
+import { AnalyticsService } from './core/services/analytics.service';
 
 @Component({
   selector: 'app-root',
@@ -10,9 +11,13 @@ import { DeepLinkService } from './core/services/deep-link.service';
   standalone: false,
 })
 export class AppComponent {
-  constructor(private readonly deepLinkService: DeepLinkService) {
+  constructor(
+    private readonly deepLinkService: DeepLinkService,
+    private readonly analyticsService: AnalyticsService
+  ) {
     console.log('[AppComponent] rendered at', new Date().toISOString());
     void this.configureKeyboard();
+    void this.analyticsService.trackAppOpened();
   }
 
   private async configureKeyboard(): Promise<void> {
