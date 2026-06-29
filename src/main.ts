@@ -1,5 +1,5 @@
-import * as Sentry from '@sentry/capacitor';
-import { init as sentryAngularInit } from '@sentry/angular';
+import * as Sentry from '@sentry/angular';
+import { breadcrumbsIntegration, init as sentryAngularInit } from '@sentry/angular';
 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 
 import { AppModule } from './app/app.module';
@@ -7,12 +7,21 @@ import { environment } from './environments/environment';
 import { sanitizeSentryValue } from './app/core/utils/sentry-sanitizer';
 
 if (environment.sentryEnabled && environment.sentryDsn?.trim()) {
-  Sentry.init(
-    {
+  // Use Angular/browser Sentry only for now. The Capacitor SDK bootstrap breaks
+  // ion-item tap handling on Android WebView in the church selector flow.
+  sentryAngularInit({
       dsn: environment.sentryDsn,
       environment: environment.sentryEnvironment,
       release: environment.sentryRelease,
       sendDefaultPii: false,
+      integrations(defaultIntegrations) {
+        return [
+          ...defaultIntegrations.filter((integration) => integration.name !== 'Breadcrumbs'),
+          breadcrumbsIntegration({
+            dom: false,
+          }),
+        ];
+      },
       beforeBreadcrumb(breadcrumb) {
         return {
           ...breadcrumb,
@@ -36,9 +45,7 @@ if (environment.sentryEnabled && environment.sentryDsn?.trim()) {
 
         return sanitizedEvent;
       },
-    },
-    sentryAngularInit
-  );
+    });
 }
 
 platformBrowserDynamic().bootstrapModule(AppModule)
