@@ -4,6 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, switchMap, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import {
+  DonationCategory,
   DonationCheckoutRequest,
   DonationCheckoutResponse,
   DonationCheckoutVerificationResponse,
@@ -61,12 +62,17 @@ export class DonationsService {
     } as const);
   }
 
+  getPublicDonationCategories(branchId: number): Observable<DonationCategory[]> {
+    return this.api.get<DonationCategory[]>(`public/branches/${branchId}/donation-categories/`);
+  }
+
   createMobileCheckout(
     payload: DonationCheckoutRequest
   ): Observable<DonationMobileCheckoutResponse> {
     this.sentryTelemetry.addFeatureBreadcrumb('donations', 'One-time checkout started', {
       church_id: payload.church_id,
       category: payload.category ?? null,
+      category_id: payload.category_id ?? null,
       amount: payload.amount,
     });
     return this.withOptionalAuth((token) =>
@@ -94,6 +100,7 @@ export class DonationsService {
     this.sentryTelemetry.addFeatureBreadcrumb('donations', 'Recurring checkout started', {
       church_id: payload.church_id,
       category: payload.category ?? null,
+      category_id: payload.category_id ?? null,
       amount: payload.amount,
       interval: payload.interval,
     });
@@ -116,6 +123,7 @@ export class DonationsService {
         endpoint: 'donations/recurring/create/',
         amount: payload.amount,
         category: payload.category,
+        categoryId: payload.category_id,
         churchId: payload.church_id,
         interval: payload.interval,
       });

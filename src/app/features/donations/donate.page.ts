@@ -16,6 +16,7 @@ import { filter, take, takeUntil } from 'rxjs/operators';
 import { finalize } from 'rxjs/operators';
 import { PublicBranch } from '../../core/models/branch.model';
 import {
+  DonationCategory,
   DonationCheckoutRequest,
   DonationFrequency,
   RecurringDonationCreateRequest,
@@ -91,17 +92,39 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
 
               <form [formGroup]="form" (ngSubmit)="submitDonation()" class="donate-form">
                 <div class="section-label">CATEGORY</div>
-                <div class="grid category-grid">
+                <div *ngIf="categoriesLoading" class="grid category-grid category-grid--loading" aria-live="polite">
+                  <span *ngFor="let item of categorySkeletonItems" class="chip chip--skeleton"></span>
+                </div>
+                <div *ngIf="!categoriesLoading && categoriesLoadError" class="category-feedback" role="status">
+                  <p>{{ categoriesLoadError }}</p>
+                  <ion-button type="button" fill="outline" size="small" (click)="retryCategoryLoad()">
+                    Retry
+                  </ion-button>
+                </div>
+                <div
+                  *ngIf="!categoriesLoading && !categoriesLoadError && categories.length === 0"
+                  class="category-feedback"
+                  role="status"
+                >
+                  <p>No donation categories are available for this branch.</p>
+                </div>
+                <div
+                  *ngIf="!categoriesLoading && !categoriesLoadError && categories.length > 0"
+                  class="grid category-grid"
+                >
                   <button
                     *ngFor="let option of categories"
                     type="button"
                     class="chip"
-                    [class.selected]="isCategory(option.value)"
-                    (click)="setCategory(option.value)"
+                    [class.selected]="isCategory(option.id)"
+                    (click)="setCategory(option.id)"
                   >
-                    {{ option.label }}
+                    {{ option.name }}
                   </button>
                 </div>
+                <p *ngIf="categoryRecurringHelperMessage" class="frequency-helper">
+                  {{ categoryRecurringHelperMessage }}
+                </p>
 
                 <div class="section-label">AMOUNT (EUR)</div>
                 <ion-item class="custom-amount" [class.is-valid]="isAmountValid" fill="solid">
@@ -252,22 +275,20 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
   ],
 })
 export class DonatePage implements AfterViewInit, OnDestroy {
-  readonly categories = [
-    { label: 'Tithe', value: 'tithe' },
-    { label: 'Offering', value: 'offering' },
-    { label: 'Missions', value: 'missions' },
-    { label: 'Thanksgiving', value: 'thanksgiving' },
-    { label: 'Other', value: 'other' },
-  ];
+  readonly categorySkeletonItems = [1, 2, 3, 4, 5, 6];
+  categories: DonationCategory[] = [];
 
   form = this.fb.group({
-    category: this.fb.control<string>(this.categories[0].value, Validators.required),
+    categoryId: this.fb.control<number | null>(null, Validators.required),
     amount: this.fb.control<string>('', [amountValidator]),
     donor_email: this.fb.control<string>('', Validators.email),
   });
 
   loading = false;
   errorMessage?: string;
+  categoriesLoading = false;
+  categoriesLoadError?: string;
+  categoryRecurringHelperMessage?: string;
   nativeLoading = false;
   nativeError?: string;
   branch: PublicBranch | null = null;
@@ -311,6 +332,11 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
       if (!branch) {
         this.hasAutoFocusedAmount = false;
+        this.categories = [];
+        this.categoriesLoading = false;
+        this.categoriesLoadError = undefined;
+        this.categoryRecurringHelperMessage = undefined;
+        this.form.get('categoryId')?.setValue(null, { emitEvent: false });
         return;
       }
 
@@ -319,6 +345,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
         branch_name: branch.name,
       });
 
+      this.loadDonationCategories(branch.id);
       this.trackDonationFormViewedIfNeeded();
       this.tryAutoFocusAmount();
     });
@@ -362,6 +389,9 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     this.sentryTelemetry.addFeatureBreadcrumb('donations', 'Donation screen opened');
     this.ensureMemberProfileResolved();
     this.prefillDonorEmailOnce();
+    if (this.branch && !this.categoriesLoading && this.categories.length === 0 && !this.categoriesLoadError) {
+      this.loadDonationCategories(this.branch.id);
+    }
     this.trackDonationFormViewedIfNeeded();
     this.tryAutoFocusAmount();
   }
@@ -487,8 +517,11 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     this.router.navigate(['/branches']);
   }
 
-  setCategory(option: string): void {
-    this.form.get('category')?.setValue(option);
+  setCategory(optionId: number): void {
+    this.form.get('categoryId')?.setValue(optionId);
+    this.errorMessage = undefined;
+    this.nativeError = undefined;
+    this.ensureRecurringFrequencyAllowed(true);
   }
 
   setFrequency(frequency: string): void {
@@ -522,6 +555,12 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       return;
     }
 
+    if (!this.selectedCategoryAllowsRecurring) {
+      this.setFrequency('one_time');
+      this.categoryRecurringHelperMessage = 'Recurring giving is not available for this category.';
+      return;
+    }
+
     this.setFrequency('monthly');
   }
 
@@ -529,8 +568,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     this.setFrequency(String(event.detail?.value ?? 'one_time'));
   }
 
-  isCategory(option: string): boolean {
-    return this.form.get('category')?.value === option;
+  isCategory(optionId: number): boolean {
+    return this.form.get('categoryId')?.value === optionId;
   }
 
   handleCustomAmountInput(event: CustomEvent): void {
@@ -583,7 +622,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   get ctaEnabled(): boolean {
-    return this.form.valid;
+    return this.form.valid && !this.categoriesLoading && !this.categoriesLoadError && this.categories.length > 0;
   }
 
   get frequency(): DonationFrequency {
@@ -601,6 +640,22 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   get ctaLabel(): string {
     if (this.nativeLoading) {
       return this.isMonthlySelected ? 'Starting monthly gift...' : 'Processing...';
+    }
+
+    if (this.categoriesLoading) {
+      return 'Loading categories...';
+    }
+
+    if (this.categoriesLoadError) {
+      return 'Retry categories to continue';
+    }
+
+    if (!this.categories.length) {
+      return 'No categories available';
+    }
+
+    if (!this.selectedCategory) {
+      return 'Choose a category to continue';
     }
 
     const amountControl = this.form.get('amount');
@@ -627,11 +682,11 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   get showMonthlyOption(): boolean {
-    return this.authService.isAuthenticatedSnapshot;
+    return this.authService.isAuthenticatedSnapshot && this.selectedCategoryAllowsRecurring;
   }
 
   get showGuestMonthlyPrompt(): boolean {
-    return !this.authService.isAuthenticatedSnapshot;
+    return !this.authService.isAuthenticatedSnapshot && this.selectedCategoryAllowsRecurring;
   }
 
   get monthlyUnavailableMessage(): string {
@@ -696,7 +751,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     const formValue = this.form.value;
     return {
       church_id: this.branch!.id,
-      category: formValue.category || undefined,
+      category_id: formValue.categoryId ?? undefined,
       amount: Number(formValue.amount),
       donor_email: formValue.donor_email || undefined,
     };
@@ -706,7 +761,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     const formValue = this.form.value;
     return {
       church_id: this.branch!.id,
-      category: formValue.category || undefined,
+      category_id: formValue.categoryId ?? undefined,
       amount: Number(formValue.amount),
       interval: 'monthly',
     };
@@ -723,7 +778,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   private persistOneTimeSummary(payload: DonationCheckoutRequest, transactionReference: string): void {
     this.donationFlowState.setSummary({
       branchName: this.branch?.name,
-      category: payload.category || undefined,
+      category: this.selectedCategory?.name,
       amount: payload.amount,
       interval: 'one_time',
     });
@@ -736,7 +791,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   ): void {
     this.donationFlowState.setSummary({
       branchName: this.branch?.name,
-      category: payload.category || undefined,
+      category: this.selectedCategory?.name,
       amount: payload.amount,
       interval: payload.interval,
       recurringDonationId,
@@ -746,6 +801,26 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   private readyForPayment(): boolean {
     if (!this.branch) {
       this.errorMessage = 'Please pick a branch first.';
+      return false;
+    }
+
+    if (this.categoriesLoading) {
+      this.errorMessage = 'Donation categories are still loading.';
+      return false;
+    }
+
+    if (this.categoriesLoadError) {
+      this.errorMessage = 'Unable to load donation categories. Please retry.';
+      return false;
+    }
+
+    if (!this.categories.length) {
+      this.errorMessage = 'No donation categories are available for this branch.';
+      return false;
+    }
+
+    if (!this.selectedCategory) {
+      this.errorMessage = 'Please choose a donation category.';
       return false;
     }
 
@@ -769,6 +844,14 @@ export class DonatePage implements AfterViewInit, OnDestroy {
         ? 'Monthly giving is available for member accounts.'
         : 'Sign in to give monthly.';
       void this.showMonthlyAccessToast();
+      return;
+    }
+
+    if (!this.selectedCategoryAllowsRecurring) {
+      this.pendingRecurringDonationId = undefined;
+      this.pendingFrequency = undefined;
+      this.selectedFrequencyState = 'one_time';
+      this.categoryRecurringHelperMessage = 'Recurring giving is not available for this category.';
       return;
     }
 
@@ -1003,9 +1086,21 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     this.hasPrefilledEmail = false;
   }
 
-  private ensureRecurringFrequencyAllowed(): void {
+  private ensureRecurringFrequencyAllowed(showCategoryMessage = false): void {
+    if (this.selectedCategoryAllowsRecurring) {
+      this.categoryRecurringHelperMessage = undefined;
+    }
+
     if (this.isMonthlySelected && !this.canUseRecurring) {
       this.selectedFrequencyState = 'one_time';
+      return;
+    }
+
+    if (this.isMonthlySelected && !this.selectedCategoryAllowsRecurring) {
+      this.selectedFrequencyState = 'one_time';
+      if (showCategoryMessage) {
+        this.categoryRecurringHelperMessage = 'Recurring giving is not available for this category.';
+      }
     }
   }
 
@@ -1120,7 +1215,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
         canUseRecurring: this.canUseRecurring,
         amount: this.form.get('amount')?.value,
         selectedChurchId: this.branch?.id ?? null,
-        category: this.form.get('category')?.value,
+        categoryId: this.form.get('categoryId')?.value,
+        categorySlug: this.selectedCategory?.slug ?? null,
         isSubmitting: this.loading || this.nativeLoading,
         isLoggedIn: this.authService.isAuthenticatedSnapshot,
         hasAccessToken: !!this.authService.accessTokenSnapshot,
@@ -1141,7 +1237,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
         canUseRecurring: this.canUseRecurring,
         amount: this.form.get('amount')?.value,
         selectedChurchId: this.branch?.id ?? null,
-        category: this.form.get('category')?.value,
+        categoryId: this.form.get('categoryId')?.value,
+        categorySlug: this.selectedCategory?.slug ?? null,
         isSubmitting: this.loading || this.nativeLoading,
       });
     }
@@ -1172,11 +1269,70 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       church_id: this.branch?.id,
       district_id: this.branch?.district?.id ?? undefined,
       area_id: this.branch?.area?.id ?? undefined,
-      category: this.form.get('category')?.value || undefined,
+      category: this.selectedCategory?.slug ?? undefined,
       amount_bucket: this.analyticsService.getAmountBucket(amount),
       frequency,
       user_type: this.analyticsService.getUserType(),
     };
+  }
+
+  retryCategoryLoad(): void {
+    if (!this.branch) {
+      return;
+    }
+
+    this.loadDonationCategories(this.branch.id);
+  }
+
+  get selectedCategory(): DonationCategory | null {
+    const selectedCategoryId = this.form.get('categoryId')?.value;
+    if (!selectedCategoryId) {
+      return null;
+    }
+
+    return this.categories.find((category) => category.id === selectedCategoryId) ?? null;
+  }
+
+  get selectedCategoryAllowsRecurring(): boolean {
+    return !!this.selectedCategory?.allow_recurring;
+  }
+
+  private loadDonationCategories(branchId: number): void {
+    const previousCategoryId = this.form.get('categoryId')?.value ?? null;
+    this.categoriesLoading = true;
+    this.categoriesLoadError = undefined;
+    this.categoryRecurringHelperMessage = undefined;
+    this.errorMessage = undefined;
+    this.nativeError = undefined;
+    this.form.get('categoryId')?.setValue(null, { emitEvent: false });
+
+    this.donationsService
+      .getPublicDonationCategories(branchId)
+      .pipe(finalize(() => (this.categoriesLoading = false)))
+      .subscribe({
+        next: (categories) => {
+          if (this.branch?.id !== branchId) {
+            return;
+          }
+
+          this.categories = categories ?? [];
+          const resolvedCategoryId = this.categories.some((category) => category.id === previousCategoryId)
+            ? previousCategoryId
+            : (this.categories[0]?.id ?? null);
+          this.form.get('categoryId')?.setValue(resolvedCategoryId, { emitEvent: false });
+          this.ensureRecurringFrequencyAllowed(this.isMonthlySelected);
+        },
+        error: () => {
+          if (this.branch?.id !== branchId) {
+            return;
+          }
+
+          this.categories = [];
+          this.form.get('categoryId')?.setValue(null, { emitEvent: false });
+          this.categoriesLoadError = 'Unable to load donation categories right now.';
+          this.ensureRecurringFrequencyAllowed();
+        },
+      });
   }
 
   private trackDonationFormViewedIfNeeded(): void {

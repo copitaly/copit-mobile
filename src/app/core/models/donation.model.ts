@@ -6,11 +6,24 @@ export interface DonationCheckoutRequest {
   donor_email?: string;
 }
 
+export interface DonationCategory {
+  id: number;
+  name: string;
+  slug: string;
+  scope: 'global' | 'branch';
+  church: number | null;
+  description?: string;
+  is_active: boolean;
+  allow_recurring: boolean;
+  sort_order: number;
+}
+
 export type DonationFrequency = 'one_time' | 'monthly';
 
 export interface RecurringDonationCreateRequest {
   church_id: number;
   category?: string;
+  category_id?: number;
   amount: number;
   interval: 'monthly';
 }
