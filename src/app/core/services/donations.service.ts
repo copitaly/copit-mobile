@@ -37,6 +37,7 @@ export class DonationsService {
     this.sentryTelemetry.addFeatureBreadcrumb('donations', 'One-time checkout started', {
       church_id: payload.church_id,
       category: payload.category ?? null,
+      category_id: payload.category_id ?? null,
       amount: payload.amount,
     });
     return this.withOptionalAuth((token) =>

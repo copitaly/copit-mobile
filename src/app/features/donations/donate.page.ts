@@ -677,10 +677,6 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     return this.authService.isAuthenticatedSnapshot && this.resolvedUserRole === 'member';
   }
 
-  get canSelectMonthly(): boolean {
-    return this.canUseRecurring;
-  }
-
   get showMonthlyOption(): boolean {
     return this.authService.isAuthenticatedSnapshot && this.selectedCategoryAllowsRecurring;
   }
