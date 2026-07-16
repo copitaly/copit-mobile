@@ -12,6 +12,7 @@ import {
   RecurringDonationCreateResponse,
   RecurringDonationItem,
   DonationMobileCheckoutResponse,
+  DonationMobileVerificationRequest,
   DonationMobileVerificationResponse,
 } from '../models/donation.model';
 import { AuthService } from './auth.service';
@@ -118,7 +119,6 @@ export class DonationsService {
   createRecurringDonation(
     payload: RecurringDonationCreateRequest
   ): Observable<RecurringDonationCreateResponse> {
-    console.log('[recurring service] method entered');
     if (!environment.production) {
       console.log('[DonationsService] createRecurringDonation called', {
         endpoint: 'donations/recurring/create/',
@@ -164,9 +164,12 @@ export class DonationsService {
     );
   }
 
-  verifyMobilePayment(donationId: number): Observable<DonationMobileVerificationResponse> {
+  verifyMobilePayment(
+    payload: DonationMobileVerificationRequest
+  ): Observable<DonationMobileVerificationResponse> {
     return this.api.get<DonationMobileVerificationResponse>('donations/verify-mobile-payment/', {
-      donation_id: donationId,
+      donation_id: payload.donation_id,
+      transaction_reference: payload.transaction_reference,
     } as const);
   }
 
@@ -181,9 +184,6 @@ export class DonationsService {
         endpoint: 'donations/recurring/create/',
         tokenAttached,
       });
-      console.log('[recurring service] url=' + url);
-      console.log('[recurring service] payload=' + this.safeJsonStringify(payload));
-      console.log('[recurring service] tokenAttached=' + tokenAttached);
     }
     return this.http
       .post<RecurringDonationCreateResponse>(url, payload, {
@@ -191,18 +191,11 @@ export class DonationsService {
       })
       .pipe(
         tap((response) => {
-          console.log('[recurring service] response', response);
           this.sentryTelemetry.addFeatureBreadcrumb('donations', 'Recurring checkout succeeded', {
             recurring_donation_id: response.recurring_donation_id,
           });
         }),
         catchError((error) => {
-          const httpError = error as HttpErrorResponse;
-          console.error('[recurring service] error status=' + httpError?.status);
-          console.error('[recurring service] error statusText=' + httpError?.statusText);
-          console.error('[recurring service] error url=' + httpError?.url);
-          console.error('[recurring service] error message=' + httpError?.message);
-          console.error('[recurring service] error body=' + this.safeJsonStringify(httpError?.error));
           this.sentryTelemetry.captureFeatureError('donations', 'Recurring checkout failed', error, {
             status: this.getHttpStatus(error),
           });
@@ -258,7 +251,7 @@ export class DonationsService {
     if (token) {
       return requestFactory(token).pipe(
         catchError((error) => {
-          if (!this.isUnauthorized(error)) {
+          if (!this.isUnauthenticated(error)) {
             return throwError(() => error);
           }
 
@@ -310,7 +303,7 @@ export class DonationsService {
 
     return requestFactory(token).pipe(
       catchError((error) => {
-        if (!this.isUnauthorized(error)) {
+        if (!this.isUnauthenticated(error)) {
           return throwError(() => error);
         }
 
@@ -321,24 +314,8 @@ export class DonationsService {
     );
   }
 
-  private isUnauthorized(error: unknown): boolean {
-    return error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403);
-  }
-
-  private safeJsonStringify(value: unknown): string {
-    if (value == null) {
-      return '';
-    }
-
-    if (typeof value === 'string') {
-      return value;
-    }
-
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return '[unserializable]';
-    }
+  private isUnauthenticated(error: unknown): boolean {
+    return error instanceof HttpErrorResponse && error.status === 401;
   }
 
   private get sentryTelemetry(): SentryTelemetryService {

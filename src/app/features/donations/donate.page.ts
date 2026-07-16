@@ -302,6 +302,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   private branchSub: Subscription;
   private pendingMobileDonationId?: number;
   private pendingRecurringDonationId?: number;
+  private pendingTransactionReference?: string;
   private pendingFrequency?: DonationFrequency;
   private hasAutoFocusedAmount = false;
   private focusTimeoutId?: ReturnType<typeof setTimeout>;
@@ -415,8 +416,10 @@ export class DonatePage implements AfterViewInit, OnDestroy {
           this.persistOneTimeSummary(payload, response.transaction_reference);
           window.location.href = response.checkout_url;
         },
-        error: () => {
-          this.errorMessage = 'Unable to start checkout. Please try again.';
+        error: error => {
+          this.errorMessage =
+            this.extractApiErrorMessage(error instanceof HttpErrorResponse ? error.error : null) ??
+            'Unable to start checkout. Please try again.';
         },
       });
   }
@@ -450,21 +453,20 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       .pipe(finalize(() => (this.nativeLoading = false)))
       .subscribe({
         next: response => {
-          console.log('[DonatePage] mobile checkout response', {
-            donationId: response.donation_id,
-            transactionReference: response.transaction_reference,
-            clientSecretPreview: response.client_secret.slice(0, 8) + '...',
-          });
           this.persistOneTimeSummary(payload, response.transaction_reference);
           this.pendingMobileDonationId = response.donation_id;
           this.pendingRecurringDonationId = undefined;
+          this.pendingTransactionReference = response.transaction_reference;
           void this.presentPaymentSheet(response.client_secret);
         },
-        error: () => {
+        error: error => {
           void this.analyticsService.trackDonationPaymentFailed(analyticsContext, 'checkout_create');
           this.donationAnalyticsContext.clearContext();
           this.pendingFrequency = undefined;
-          this.nativeError = 'Unable to start native payment. Please try again.';
+          this.pendingTransactionReference = undefined;
+          this.nativeError =
+            this.extractApiErrorMessage(error instanceof HttpErrorResponse ? error.error : null) ??
+            'Unable to start native payment. Please try again.';
         },
       });
   }
@@ -485,21 +487,25 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   handlePaymentSheetOutcome(result: { status: PaymentSheetOutcome; errorMessage?: string }): void {
-    console.log('[DonatePage] PaymentSheet raw result', result);
     if (result.status === 'completed') {
       this.logPaymentOutcome('completed', this.pendingMobileDonationId, this.pendingRecurringDonationId);
       this.router.navigate(['/donate/success'], {
         queryParams:
           this.pendingFrequency === 'monthly'
             ? { recurring_donation_id: this.pendingRecurringDonationId }
-            : { donation_id: this.pendingMobileDonationId },
+            : {
+                donation_id: this.pendingMobileDonationId,
+                transaction_reference: this.pendingTransactionReference,
+              },
       });
       this.pendingMobileDonationId = undefined;
       this.pendingRecurringDonationId = undefined;
+      this.pendingTransactionReference = undefined;
       this.pendingFrequency = undefined;
     } else if (result.status === 'canceled') {
       this.pendingMobileDonationId = undefined;
       this.pendingRecurringDonationId = undefined;
+      this.pendingTransactionReference = undefined;
       this.pendingFrequency = undefined;
       this.router.navigate(['/donate/cancel']);
     } else {
@@ -508,6 +514,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
         void this.analyticsService.trackDonationPaymentFailed(analyticsContext, 'payment_sheet');
       }
       this.donationAnalyticsContext.clearContext();
+      this.pendingTransactionReference = undefined;
       this.pendingFrequency = undefined;
       this.nativeError = result.errorMessage ?? 'Payment failed. Please try again.';
     }
@@ -768,14 +775,20 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     donationId?: number,
     recurringDonationId?: number
   ): void {
-    console.log('[DonatePage] native PaymentSheet outcome', { status, donationId, recurringDonationId });
+    if (!environment.production) {
+      console.log('[DonatePage] native PaymentSheet outcome', { status, donationId, recurringDonationId });
+    }
   }
 
   private persistOneTimeSummary(payload: DonationCheckoutRequest, transactionReference: string): void {
     this.donationFlowState.setSummary({
       branchName: this.branch?.name,
+      branchId: this.branch?.id,
       category: this.selectedCategory?.name,
       amount: payload.amount,
+      currency: 'EUR',
+      donorEmail: payload.donor_email,
+      transactionReference,
       interval: 'one_time',
     });
   }
@@ -787,10 +800,13 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   ): void {
     this.donationFlowState.setSummary({
       branchName: this.branch?.name,
+      branchId: this.branch?.id,
       category: this.selectedCategory?.name,
       amount: payload.amount,
+      currency: 'EUR',
       interval: payload.interval,
       recurringDonationId,
+      subscriptionId,
     });
   }
 
@@ -830,7 +846,6 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   private async startRecurringPayment(): Promise<void> {
-    console.log('[monthly] submit started');
     this.logSubmitState('startRecurringPayment');
     if (!this.canUseRecurring) {
       this.pendingRecurringDonationId = undefined;
@@ -864,16 +879,9 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     const analyticsContext = this.buildAnalyticsContext('monthly');
     this.donationAnalyticsContext.setContext(analyticsContext);
     void this.analyticsService.trackDonationCheckoutStarted(analyticsContext);
-    console.log('[monthly] calling recurring create');
     try {
-      console.log('[monthly] before await createRecurringDonation');
       const recurringCreate$ = this.donationsService.createRecurringDonation(payload);
       const response = await firstValueFrom(recurringCreate$);
-      console.log('[monthly] after await createRecurringDonation', response);
-      console.log('[monthly] recurring create returned');
-      console.log('[monthly] response', response);
-      console.log('[monthly] client_secret exists', !!response?.client_secret);
-      console.log('[DonatePage] recurring checkout response', response);
       this.pendingMobileDonationId = undefined;
       this.pendingRecurringDonationId = response.recurring_donation_id;
       this.persistRecurringSummary(payload, response.recurring_donation_id, response.subscription_id);
@@ -884,7 +892,6 @@ export class DonatePage implements AfterViewInit, OnDestroy {
         void this.showMonthlyClientSecretErrorToast();
         return;
       }
-      console.log('[monthly] presenting PaymentSheet');
       await this.presentPaymentSheet(response.client_secret, true);
     } catch (error) {
       this.logRecurringHttpError(error);
@@ -896,7 +903,6 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       void this.showRecurringCreateErrorToast(this.nativeError);
     } finally {
       this.nativeLoading = false;
-      console.log('[monthly] submit finally');
     }
   }
 
@@ -905,9 +911,6 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       clientSecret,
       isMonthly ? 'recurring' : 'one_time'
     );
-    if (isMonthly) {
-      console.log('[monthly] PaymentSheet result', result);
-    }
     this.handlePaymentSheetOutcome(result);
   }
 
@@ -918,8 +921,12 @@ export class DonatePage implements AfterViewInit, OnDestroy {
         return extractedError;
       }
 
-      if (error.status === 401 || error.status === 403) {
+      if (error.status === 401) {
         return 'Sign in to give monthly.';
+      }
+
+      if (error.status === 403) {
+        return extractedError ?? 'You do not have permission to use monthly giving for this account.';
       }
     }
 
@@ -952,31 +959,17 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   private logRecurringHttpError(error: unknown): void {
-    if (error instanceof HttpErrorResponse) {
-      console.error('[monthly] recurring error status=' + error?.status);
-      console.error('[monthly] recurring error statusText=' + error?.statusText);
-      console.error('[monthly] recurring error url=' + error?.url);
-      console.error('[monthly] recurring error message=' + error?.message);
-      console.error('[monthly] recurring error body=' + this.safeJsonStringify(error?.error));
-      return;
-    }
+    if (!environment.production) {
+      if (error instanceof HttpErrorResponse) {
+        console.error('[DonatePage] recurring create failed', {
+          status: error.status,
+          statusText: error.statusText,
+          url: error.url,
+        });
+        return;
+      }
 
-    console.error('[monthly] createRecurringDonation error', error);
-  }
-
-  private safeJsonStringify(value: unknown): string {
-    if (value == null) {
-      return '';
-    }
-
-    if (typeof value === 'string') {
-      return value;
-    }
-
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return '[unserializable]';
+      console.error('[DonatePage] createRecurringDonation error', error);
     }
   }
 

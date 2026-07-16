@@ -72,8 +72,18 @@ export class DeepLinkService implements OnDestroy {
 
   private handleSuccessRoute(params: URLSearchParams): void {
     const sessionId = params.get('session_id');
-    console.log('[DeepLinkService] parsed session_id', sessionId ?? '<missing>');
-    this.navigate('/donate/success', sessionId ? { session_id: sessionId } : undefined);
+    const transactionReference = params.get('transaction_reference');
+    this.navigate(
+      '/donate/success',
+      sessionId
+        ? {
+            session_id: sessionId,
+            ...(transactionReference ? { transaction_reference: transactionReference } : {}),
+          }
+        : transactionReference
+          ? { transaction_reference: transactionReference }
+          : undefined
+    );
   }
 
   private normalizePathname(parsed: URL): string {

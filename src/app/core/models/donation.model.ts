@@ -95,3 +95,8 @@ export interface DonationMobileVerificationResponse {
   transaction_reference?: string;
   status?: string;
 }
+
+export interface DonationMobileVerificationRequest {
+  donation_id: number;
+  transaction_reference: string;
+}

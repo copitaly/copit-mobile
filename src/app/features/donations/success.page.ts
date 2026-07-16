@@ -250,7 +250,6 @@ interface VerifyMobilePaymentResponse {
 })
 export class DonateSuccessPage implements OnInit, OnDestroy {
   summary: DonationCheckoutSummary | null = null;
-  private readonly log = console;
   private isVerifying = false;
   private verifySub?: Subscription;
 
@@ -268,7 +267,6 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
     const sessionId = this.route.snapshot.queryParamMap.get('session_id');
     const donationIdParam = this.route.snapshot.queryParamMap.get('donation_id');
     const recurringDonationIdParam = this.route.snapshot.queryParamMap.get('recurring_donation_id');
-    this.log.log('[DonateSuccessPage] params', { sessionId, donationId: donationIdParam ?? '<none>' });
     if (sessionId) {
       this.verifyHosted(sessionId);
       return;
@@ -280,7 +278,11 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
     if (donationIdParam) {
       const donationId = Number(donationIdParam);
       if (!Number.isNaN(donationId)) {
-        this.verifyNative(donationId);
+        const transactionReference =
+          this.route.snapshot.queryParamMap.get('transaction_reference')?.trim() ||
+          this.donationFlowState.getStoredSummary()?.transactionReference?.trim() ||
+          null;
+        this.verifyNative(donationId, transactionReference);
         return;
       }
     }
@@ -292,7 +294,6 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
   }
 
   private verifyHosted(sessionId: string): void {
-    this.log.log('[DonateSuccessPage] verifying hosted session', sessionId);
     this.verifySub = this.api
       .get<VerifyCheckoutSessionResponse>('donations/verify-checkout-session/', {
         session_id: sessionId,
@@ -308,14 +309,11 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
             );
             this.donationAnalyticsContext.clearContext();
             this.donationFlowState.clear();
-            this.log.log('[DonateSuccessPage] backend verified session', sessionId);
           } else {
             this.applyStoredSummary('session_storage');
-            this.log.warn('[DonateSuccessPage] verification returned verified=false (hosted)', sessionId);
           }
         },
         error: error => {
-          this.log.error('[DonateSuccessPage] hosted verification error', error);
           this.sentryTelemetry.captureFeatureError('donations', 'Donation success verification failed', error, {
             flow: 'hosted',
           });
@@ -324,11 +322,16 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
       });
   }
 
-  private verifyNative(donationId: number): void {
-    this.log.log('[DonateSuccessPage] verifying native donation', donationId);
+  private verifyNative(donationId: number, transactionReference: string | null): void {
+    if (!transactionReference) {
+      this.applyStoredSummary('session_storage');
+      return;
+    }
+
     this.verifySub = this.api
       .get<VerifyMobilePaymentResponse>('donations/verify-mobile-payment/', {
         donation_id: donationId,
+        transaction_reference: transactionReference,
       })
       .pipe(tap(() => this.startVerification(`mobile:${donationId}`)))
       .subscribe({
@@ -341,14 +344,11 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
             );
             this.donationAnalyticsContext.clearContext();
             this.donationFlowState.clear();
-            this.log.log('[DonateSuccessPage] mobile verification succeeded', donationId);
           } else {
             this.applyStoredSummary('session_storage');
-            this.log.warn('[DonateSuccessPage] verification returned verified=false (mobile)', donationId);
           }
         },
         error: error => {
-          this.log.error('[DonateSuccessPage] mobile verification error', error);
           this.sentryTelemetry.captureFeatureError('donations', 'Donation success verification failed', error, {
             flow: 'mobile',
             donation_id: donationId,
@@ -369,10 +369,6 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
         stored.recurringDonationId &&
         String(stored.recurringDonationId) !== recurringDonationIdParam
       ) {
-        this.log.warn('[DonateSuccessPage] recurring summary id mismatch', {
-          expected: recurringDonationIdParam,
-          storedRecurringDonationId: stored.recurringDonationId,
-        });
       }
       this.summary = stored;
       void this.analyticsService.trackDonationPaymentSuccess(
@@ -380,7 +376,6 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
         verificationSource
       );
       this.donationAnalyticsContext.clearContext();
-      this.log.log('[DonateSuccessPage] sessionStorage fallback used', stored);
       return;
     }
     void this.analyticsService.trackDonationPaymentSuccess(
@@ -388,7 +383,6 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
       'generic'
     );
     this.donationAnalyticsContext.clearContext();
-    this.log.warn('[DonateSuccessPage] no summary available, showing fallback copy');
   }
 
   private mapVerificationResponse(response: VerifyCheckoutSessionResponse): DonationCheckoutSummary {
@@ -429,7 +423,6 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
 
   private startVerification(sessionId: string): void {
     this.isVerifying = true;
-    this.log.log('[DonateSuccessPage] starting verification request', sessionId);
   }
 
   private resolveSuccessAnalyticsContext(

@@ -19,12 +19,11 @@ export class StripePaymentService {
   ): Promise<{ status: PaymentSheetOutcome; errorMessage?: string }> {
     try {
       this.sentryTelemetry.addFeatureBreadcrumb('donations', 'PaymentSheet init started', { flow });
-      console.log('[StripePaymentService] presentPaymentSheet start', {
-        clientSecretPreview: clientSecret?.slice(0, 8) + (clientSecret?.length ? '...' : ''),
-      });
+      if (!environment.production) {
+        console.log('[StripePaymentService] presentPaymentSheet start', { flow });
+      }
       await this.init();
       this.sentryTelemetry.addFeatureBreadcrumb('donations', 'PaymentSheet init succeeded', { flow });
-      console.log('[StripePaymentService] createPaymentSheet start');
       await Stripe.createPaymentSheet({
         paymentIntentClientSecret: clientSecret,
         merchantDisplayName: environment.stripeMerchantDisplayName,
@@ -36,13 +35,11 @@ export class StripePaymentService {
         countryCode: DEFAULT_BILLING_COUNTRY,
         currencyCode: DEFAULT_CURRENCY_CODE,
       });
-      console.log('[StripePaymentService] createPaymentSheet succeeded');
-      console.log('[StripePaymentService] PaymentSheet created');
       this.sentryTelemetry.addFeatureBreadcrumb('donations', 'PaymentSheet opened', { flow });
-      console.log('[StripePaymentService] presentPaymentSheet begin');
       const { paymentResult } = await Stripe.presentPaymentSheet();
-      console.log('[StripePaymentService] presentPaymentSheet result', paymentResult);
-      console.log('[StripePaymentService] PaymentSheet result', paymentResult);
+      if (!environment.production) {
+        console.log('[StripePaymentService] PaymentSheet result', { flow, paymentResult });
+      }
       const status = this.mapResult(paymentResult);
       this.sentryTelemetry.addFeatureBreadcrumb(
         'donations',
@@ -58,8 +55,9 @@ export class StripePaymentService {
         errorMessage: paymentResult === PaymentSheetEventsEnum.Failed ? 'Payment failed. Please try again.' : undefined,
       };
     } catch (error) {
-      console.log('[StripePaymentService] PaymentSheet error'); 
-      console.dir(error, { depth: 3 });
+      if (!environment.production) {
+        console.error('[StripePaymentService] PaymentSheet error', error);
+      }
       this.sentryTelemetry.captureFeatureError('donations', 'PaymentSheet failed', error, { flow });
       return { status: 'failed', errorMessage: 'Payment sheet failed to open.' };
     }
@@ -69,12 +67,13 @@ export class StripePaymentService {
     if (this.initialized) {
       return;
     }
-    console.log('[StripePaymentService] initializing Stripe plugin');
     await Stripe.initialize({
       publishableKey: environment.stripePublishableKey,
     });
     this.initialized = true;
-    console.log('[StripePaymentService] Stripe initialized with publishable key');
+    if (!environment.production) {
+      console.log('[StripePaymentService] Stripe initialized');
+    }
   }
 
   private mapResult(result: PaymentSheetEventsEnum): PaymentSheetOutcome {

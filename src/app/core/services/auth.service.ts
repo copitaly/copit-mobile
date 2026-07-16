@@ -256,7 +256,7 @@ export class AuthService {
 
     return this.fetchCurrentUser(token).pipe(
       catchError((error) => {
-        if (!this.isUnauthorized(error)) {
+        if (!this.isUnauthenticated(error)) {
           return throwError(() => error);
         }
 
@@ -281,7 +281,7 @@ export class AuthService {
 
     return requestFactory(token).pipe(
       catchError((error) => {
-        if (!this.isUnauthorized(error)) {
+        if (!this.isUnauthenticated(error)) {
           return throwError(() => error);
         }
 
@@ -479,7 +479,7 @@ export class AuthService {
   }
 
   private handleRefreshFailure(error: unknown): Observable<null> {
-    if (this.isUnauthorized(error)) {
+    if (this.isUnauthenticated(error)) {
       this.clearSession();
       return of(null);
     }
@@ -489,6 +489,10 @@ export class AuthService {
 
   private isUnauthorized(error: unknown): boolean {
     return error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403);
+  }
+
+  private isUnauthenticated(error: unknown): boolean {
+    return error instanceof HttpErrorResponse && error.status === 401;
   }
 
   private toMemberProfileFromAuthResponse(response: AuthTokenResponse): MemberProfile {

@@ -69,10 +69,16 @@ export class DonationFlowStateService {
   private sanitizeForPersistence(summary: DonationCheckoutSummary): DonationCheckoutSummary {
     return {
       branchName: summary.branchName,
+      branchId: summary.branchId,
       category: summary.category,
       amount: summary.amount,
+      currency: summary.currency,
+      donorEmail: summary.donorEmail,
+      transactionReference: summary.transactionReference,
       interval: summary.interval,
       recurringDonationId: summary.recurringDonationId,
+      subscriptionId: summary.subscriptionId,
+      timestamp: summary.timestamp,
     };
   }
 }
