@@ -1,0 +1,23 @@
+{
+  "projects": {
+    "staging": "copit-staging",
+    "prod": "copit-5975e"
+  },
+  "targets": {
+    "copit-staging": {
+      "hosting": {
+        "donor": [
+          "copit-staging"
+        ]
+      }
+    },
+    "copit-5975e": {
+      "hosting": {
+        "donor": [
+          "copit-production-97631"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

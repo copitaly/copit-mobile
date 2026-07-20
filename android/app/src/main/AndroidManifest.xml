@@ -77,7 +77,7 @@
 
                 <data
                     android:scheme="https"
-                    android:host="copit-production.web.app"
+                    android:host="copit-production-97631.web.app"
                     android:pathPrefix="/reset-password/"
                 />
             </intent-filter>

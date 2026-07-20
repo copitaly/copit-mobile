@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.peniel.platform",
+      "sha256_cert_fingerprints": [
+        "EC:26:7C:E7:91:29:6F:E0:35:2A:EC:61:51:87:A2:03:B4:16:F9:C7:6E:C3:71:F7:62:BA:DA:DF:98:70:9C:AC"
+      ]
+    }
+  }
+]

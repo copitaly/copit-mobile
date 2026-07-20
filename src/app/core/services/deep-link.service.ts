@@ -6,6 +6,7 @@ import type { PluginListenerHandle } from '@capacitor/core';
 @Injectable({ providedIn: 'root' })
 export class DeepLinkService implements OnDestroy {
   private listener?: PluginListenerHandle;
+  private readonly resetPasswordPattern = /^\/reset-password\/[^/]+\/[^/]+\/?$/;
   private readonly routeHandlers = new Map<string, (params: URLSearchParams) => void>([
     ['/donate/success', params => this.handleSuccessRoute(params)],
     ['/donate/cancel', () => this.navigate('/donate/cancel')],
@@ -41,13 +42,16 @@ export class DeepLinkService implements OnDestroy {
   }
 
   private processUrl(rawUrl: string, source: string): void {
-    console.log('[DeepLinkService] incoming url', { rawUrl, source });
     const parsed = this.parseUrl(rawUrl);
     if (!parsed) {
-      console.warn('[DeepLinkService] unable to parse deep link', rawUrl);
+      console.warn('[DeepLinkService] unable to parse deep link', { source });
       return;
     }
-    console.log('[DeepLinkService] parsed route', parsed.pathname);
+    console.log('[DeepLinkService] incoming route', {
+      source,
+      origin: parsed.origin,
+      path: this.describePath(parsed.pathname),
+    });
     const handler = this.routeHandlers.get(parsed.pathname);
     if (handler) {
       handler(parsed.searchParams);
@@ -59,14 +63,19 @@ export class DeepLinkService implements OnDestroy {
       return;
     }
 
-    console.warn('[DeepLinkService] no handler for path', parsed.pathname);
+    console.warn('[DeepLinkService] no handler for path', {
+      source,
+      origin: parsed.origin,
+      path: this.describePath(parsed.pathname),
+    });
   }
 
-  private parseUrl(rawUrl: string): { pathname: string; searchParams: URLSearchParams } | null {
+  private parseUrl(rawUrl: string): { origin: string; pathname: string; searchParams: URLSearchParams } | null {
     try {
       const parsed = new URL(rawUrl);
       const normalizedPathname = this.normalizePathname(parsed);
       return {
+        origin: parsed.origin,
         pathname: normalizedPathname,
         searchParams: parsed.searchParams,
       };
@@ -102,19 +111,33 @@ export class DeepLinkService implements OnDestroy {
   }
 
   private isResetPasswordPath(pathname: string): boolean {
-    return /^\/reset-password\/[^/]+\/[^/]+\/?$/.test(pathname);
+    return this.resetPasswordPattern.test(pathname);
+  }
+
+  private describePath(pathname: string): string {
+    return this.isResetPasswordPath(pathname) ? '/reset-password/:uid/:token' : pathname;
   }
 
   private navigate(path: string, queryParams?: Record<string, string>): void {
-    console.log('[DeepLinkService] navigation attempt', { path, queryParams });
+    const navigationTarget = queryParams
+      ? this.router.createUrlTree([path], { queryParams }).toString()
+      : path;
+
+    console.log('[DeepLinkService] navigation attempt', {
+      path: this.describePath(path),
+      hasQueryParams: !!queryParams,
+    });
     this.zone.run(() => {
       this.router
-        .navigate([path], { queryParams })
+        .navigateByUrl(navigationTarget)
         .then(result => {
-          console.log('[DeepLinkService] navigation result', { path, result });
+          console.log('[DeepLinkService] navigation result', {
+            path: this.describePath(path),
+            result,
+          });
         })
         .catch(error => {
-          console.error('[DeepLinkService] navigation error', path, error);
+          console.error('[DeepLinkService] navigation error', this.describePath(path), error);
         });
     });
   }

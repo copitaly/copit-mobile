@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": [
+          "REPLACE_WITH_APPLE_TEAM_ID.com.peniel.platform"
+        ],
+        "components": [
+          {
+            "/": "/reset-password/*/*"
+          }
+        ]
+      }
+    ]
+  }
+}
