@@ -7,11 +7,16 @@ import { environment } from 'src/environments/environment';
 
 import {
   AuthTokenResponse,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
   MemberLoginRequest,
   MemberProfile,
   MemberProfileUpdateRequest,
   MemberRecentDonation,
   MemberRegisterRequest,
+  PasswordResetConfirmRequest,
+  PasswordResetConfirmResponse,
+  PasswordResetValidateResponse,
   PaginatedResponse,
   SavedChurch,
 } from '../models/user.model';
@@ -135,6 +140,37 @@ export class AuthService {
 
   getCurrentUser(): Observable<MemberProfile | null> {
     return from(this.initializationPromise).pipe(switchMap(() => this.getCurrentUserInternal()));
+  }
+
+  forgotPassword(payload: ForgotPasswordRequest): Observable<ForgotPasswordResponse> {
+    return from(this.initializationPromise).pipe(
+      switchMap(() =>
+        this.http.post<ForgotPasswordResponse>(this.buildUrl('auth/forgot-password'), payload)
+      )
+    );
+  }
+
+  validatePasswordResetToken(uid: string, token: string): Observable<PasswordResetValidateResponse> {
+    return from(this.initializationPromise).pipe(
+      switchMap(() =>
+        this.http.get<PasswordResetValidateResponse>(this.buildUrl(`auth/reset-password/${uid}/${token}/validate`))
+      )
+    );
+  }
+
+  confirmPasswordReset(
+    uid: string,
+    token: string,
+    payload: PasswordResetConfirmRequest
+  ): Observable<PasswordResetConfirmResponse> {
+    return from(this.initializationPromise).pipe(
+      switchMap(() =>
+        this.http.post<PasswordResetConfirmResponse>(
+          this.buildUrl(`auth/reset-password/${uid}/${token}/confirm`),
+          payload
+        )
+      )
+    );
   }
 
   getMemberDonations(nextPageUrl?: string | null): Observable<PaginatedResponse<MemberRecentDonation>> {

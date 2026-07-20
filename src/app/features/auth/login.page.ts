@@ -364,7 +364,7 @@ export class LoginPage implements OnDestroy {
   }
 
   onForgotPassword(): void {
-    console.info('[LoginPage] Forgot password route not implemented yet.');
+    void this.router.navigate(['/forgot-password']);
   }
 
   private isCredentialError(error: unknown): boolean {

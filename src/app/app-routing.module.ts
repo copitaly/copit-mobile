@@ -147,6 +147,15 @@ const routes: Routes = [
     loadComponent: () => import('./features/auth/register.page').then(m => m.RegisterPage)
   },
   {
+    path: 'forgot-password',
+    canMatch: [redirectAuthenticatedAwayFromAuthPages],
+    loadComponent: () => import('./features/auth/forgot-password.page').then(m => m.ForgotPasswordPage)
+  },
+  {
+    path: 'reset-password/:uid/:token',
+    loadComponent: () => import('./features/auth/reset-password.page').then(m => m.ResetPasswordPage)
+  },
+  {
     path: 'profile/account-settings/edit-profile',
     canMatch: [allowAuthenticatedMembersIntoAccountSettings],
     loadComponent: () => import('./features/auth/edit-profile.page').then(m => m.EditProfilePage)

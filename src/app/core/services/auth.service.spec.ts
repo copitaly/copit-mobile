@@ -142,4 +142,74 @@ describe('AuthService', () => {
     expect(service.accessTokenSnapshot).toBe('active-token');
     expect(service.currentUserSnapshot?.id).toBe(profile.id);
   }));
+
+  it('posts forgot-password requests to the existing auth endpoint', fakeAsync(() => {
+    let responseBody: unknown;
+
+    service.forgotPassword({ email: 'member@example.com' }).subscribe((response) => {
+      responseBody = response;
+    });
+
+    const request = httpMock.expectOne('http://localhost:8000/api/auth/forgot-password/');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ email: 'member@example.com' });
+    request.flush({ success: true });
+
+    flushMicrotasks();
+
+    expect(responseBody).toEqual({ success: true });
+  }));
+
+  it('gets reset-token validation data from the existing auth endpoint', fakeAsync(() => {
+    let responseBody: unknown;
+
+    service.validatePasswordResetToken('uid-token', 'reset-token').subscribe((response) => {
+      responseBody = response;
+    });
+
+    const request = httpMock.expectOne(
+      'http://localhost:8000/api/auth/reset-password/uid-token/reset-token/validate/'
+    );
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      email: 'm***@example.com',
+      expires_at: '2026-07-23T10:30:00Z',
+      status: 'valid',
+    });
+
+    flushMicrotasks();
+
+    expect(responseBody).toEqual({
+      email: 'm***@example.com',
+      expires_at: '2026-07-23T10:30:00Z',
+      status: 'valid',
+    });
+  }));
+
+  it('posts reset-password confirmation to the existing auth endpoint', fakeAsync(() => {
+    let responseBody: unknown;
+
+    service
+      .confirmPasswordReset('uid-token', 'reset-token', {
+        new_password: 'NewSecret1!',
+        confirm_password: 'NewSecret1!',
+      })
+      .subscribe((response) => {
+        responseBody = response;
+      });
+
+    const request = httpMock.expectOne(
+      'http://localhost:8000/api/auth/reset-password/uid-token/reset-token/confirm/'
+    );
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      new_password: 'NewSecret1!',
+      confirm_password: 'NewSecret1!',
+    });
+    request.flush({ success: true, message: 'Password has been reset.' });
+
+    flushMicrotasks();
+
+    expect(responseBody).toEqual({ success: true, message: 'Password has been reset.' });
+  }));
 });

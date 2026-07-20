@@ -49,11 +49,17 @@ export class DeepLinkService implements OnDestroy {
     }
     console.log('[DeepLinkService] parsed route', parsed.pathname);
     const handler = this.routeHandlers.get(parsed.pathname);
-    if (!handler) {
-      console.warn('[DeepLinkService] no handler for path', parsed.pathname);
+    if (handler) {
+      handler(parsed.searchParams);
       return;
     }
-    handler(parsed.searchParams);
+
+    if (this.isResetPasswordPath(parsed.pathname)) {
+      this.navigate(parsed.pathname);
+      return;
+    }
+
+    console.warn('[DeepLinkService] no handler for path', parsed.pathname);
   }
 
   private parseUrl(rawUrl: string): { pathname: string; searchParams: URLSearchParams } | null {
@@ -93,6 +99,10 @@ export class DeepLinkService implements OnDestroy {
     }
 
     return parsed.pathname;
+  }
+
+  private isResetPasswordPath(pathname: string): boolean {
+    return /^\/reset-password\/[^/]+\/[^/]+\/?$/.test(pathname);
   }
 
   private navigate(path: string, queryParams?: Record<string, string>): void {

@@ -74,6 +74,30 @@ export interface MemberLoginRequest {
   password: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+}
+
+export interface PasswordResetValidateResponse {
+  email?: string;
+  expires_at?: string;
+  status: 'valid' | string;
+}
+
+export interface PasswordResetConfirmRequest {
+  new_password: string;
+  confirm_password: string;
+}
+
+export interface PasswordResetConfirmResponse {
+  success: boolean;
+  message?: string;
+}
+
 export interface MemberRegisterRequest {
   first_name: string;
   last_name: string;
