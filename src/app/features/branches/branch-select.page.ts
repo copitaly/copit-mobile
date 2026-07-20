@@ -1,33 +1,44 @@
 import { CommonModule } from '@angular/common';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
+import { IonicModule, ToastController } from '@ionic/angular';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+
 import { PublicBranch } from '../../core/models/branch.model';
 import { SavedChurch } from '../../core/models/user.model';
+import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
 import { BranchesService } from '../../core/services/branches.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
-import { AnalyticsService } from '../../core/services/analytics.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
-type BrowseLevel = 'districts' | 'areas' | 'churches';
-
-interface AreaBrowseGroup {
-  key: string;
-  id: number | null;
-  name: string;
-  districtName: string;
-  branches: PublicBranch[];
-}
+type BrowseLevel = 'areas' | 'districts' | 'churches';
 
 interface DistrictBrowseGroup {
   key: string;
   id: number | null;
   name: string;
-  areas: AreaBrowseGroup[];
+  areaName: string;
+  branches: PublicBranch[];
+}
+
+interface AreaBrowseGroup {
+  key: string;
+  id: number | null;
+  name: string;
+  districts: DistrictBrowseGroup[];
+}
+
+type SearchResultItem =
+  | { kind: 'area'; area: AreaBrowseGroup }
+  | { kind: 'district'; area: AreaBrowseGroup; district: DistrictBrowseGroup }
+  | { kind: 'church'; branch: PublicBranch };
+
+interface SearchResultSection {
+  title: string;
+  items: SearchResultItem[];
 }
 
 @Component({
@@ -41,7 +52,7 @@ interface DistrictBrowseGroup {
         <div class="branch-hero app-header app-header--inner">
           <app-mobile-header
             title="Choose your church"
-            subtitle="Your donation goes directly to the selected branch."
+            [subtitle]="currentHelperText"
             [centerCopy]="false"
             fallbackRoute="/home"
           ></app-mobile-header>
@@ -51,7 +62,7 @@ interface DistrictBrowseGroup {
           <div class="surface__content">
             <ion-searchbar
               [(ngModel)]="searchTerm"
-              placeholder="Search by church, district, or area..."
+              [placeholder]="searchPlaceholder"
               debounce="250"
               (ionInput)="onSearchChange()"
               class="branch-search"
@@ -81,47 +92,96 @@ interface DistrictBrowseGroup {
 
             <ng-container *ngIf="!loading && !error && allBranches.length > 0">
               <ng-container *ngIf="isSearching; else hierarchyBrowser">
-                <div *ngIf="searchResults.length > 0; else noSearchResults" class="district-section">
-                  <div class="district-header">Matching Churches</div>
-                  <ion-list lines="none">
-                    <ion-item
-                      button
-                      [detail]="false"
-                      lines="none"
-                      *ngFor="let branch of searchResults"
-                      (click)="selectBranch(branch)"
-                      class="branch-card"
-                    >
-                      <ion-icon name="location" slot="start" aria-hidden="true"></ion-icon>
+                <div *ngIf="searchResultSections.length > 0; else noSearchResults" class="district-section">
+                  <div *ngFor="let section of searchResultSections" class="district-section">
+                    <div class="district-header">{{ section.title }}</div>
+                    <ion-list lines="none">
+                      <ng-container *ngFor="let item of section.items">
+                        <ion-item
+                          *ngIf="item.kind === 'area'"
+                          button
+                          [detail]="false"
+                          lines="none"
+                          (click)="openArea(item.area)"
+                          class="branch-card hierarchy-card"
+                        >
+                          <ion-icon name="map-outline" slot="start" aria-hidden="true"></ion-icon>
+                          <ion-label>
+                            <div class="label-top">
+                              <h2>{{ item.area.name }}</h2>
+                              <p class="hierarchy">
+                                {{ item.area.districts.length }} district{{ item.area.districts.length === 1 ? '' : 's' }}
+                              </p>
+                            </div>
+                          </ion-label>
+                          <span class="branch-card__chevron" aria-hidden="true">
+                            <ion-icon name="chevron-forward"></ion-icon>
+                          </span>
+                        </ion-item>
 
-                      <ion-label>
-                        <div class="label-top">
-                          <h2>{{ branch.name }}</h2>
-                          <p class="hierarchy" *ngIf="getHierarchy(branch) as hierarchy">{{ hierarchy }}</p>
-                          <p class="code" *ngIf="branch.branch_code">{{ branch.branch_code }}</p>
-                        </div>
-                      </ion-label>
+                        <ion-item
+                          *ngIf="item.kind === 'district'"
+                          button
+                          [detail]="false"
+                          lines="none"
+                          (click)="openDistrict(item.area, item.district)"
+                          class="branch-card hierarchy-card"
+                        >
+                          <ion-icon name="business-outline" slot="start" aria-hidden="true"></ion-icon>
+                          <ion-label>
+                            <div class="label-top">
+                              <h2>{{ item.district.name }}</h2>
+                              <p class="hierarchy" *ngIf="item.district.areaName">{{ item.district.areaName }}</p>
+                            </div>
+                          </ion-label>
+                          <span class="branch-card__chevron" aria-hidden="true">
+                            <ion-icon name="chevron-forward"></ion-icon>
+                          </span>
+                        </ion-item>
 
-                      <ion-button
-                        *ngIf="isAuthenticated"
-                        fill="clear"
-                        slot="end"
-                        class="save-button"
-                        [class.save-button--saved]="isSaved(branch.id)"
-                        [class.save-button--animating-save]="heartAnimationState(branch.id) === 'save'"
-                        [class.save-button--animating-unsave]="heartAnimationState(branch.id) === 'unsave'"
-                        [disabled]="isSaving(branch.id)"
-                        [attr.aria-label]="isSaved(branch.id) ? 'Remove saved church' : 'Save church'"
-                        (click)="toggleSavedChurch(branch, $event)"
-                      >
-                        <ion-icon [name]="isSaved(branch.id) ? 'heart' : 'heart-outline'" aria-hidden="true"></ion-icon>
-                      </ion-button>
+                        <ion-item
+                          *ngIf="item.kind === 'church'"
+                          button
+                          [detail]="false"
+                          lines="none"
+                          (click)="selectBranch(item.branch)"
+                          class="branch-card"
+                        >
+                          <ion-icon name="location" slot="start" aria-hidden="true"></ion-icon>
 
-                      <span class="branch-card__chevron" aria-hidden="true">
-                        <ion-icon name="chevron-forward"></ion-icon>
-                      </span>
-                    </ion-item>
-                  </ion-list>
+                          <ion-label>
+                            <div class="label-top">
+                              <h2>{{ item.branch.name }}</h2>
+                              <p class="hierarchy" *ngIf="getHierarchy(item.branch) as hierarchy">{{ hierarchy }}</p>
+                              <p class="code" *ngIf="item.branch.branch_code">{{ item.branch.branch_code }}</p>
+                            </div>
+                          </ion-label>
+
+                          <ion-button
+                            *ngIf="isAuthenticated"
+                            fill="clear"
+                            slot="end"
+                            class="save-button"
+                            [class.save-button--saved]="isSaved(item.branch.id)"
+                            [class.save-button--animating-save]="heartAnimationState(item.branch.id) === 'save'"
+                            [class.save-button--animating-unsave]="heartAnimationState(item.branch.id) === 'unsave'"
+                            [disabled]="isSaving(item.branch.id)"
+                            [attr.aria-label]="isSaved(item.branch.id) ? 'Remove saved church' : 'Save church'"
+                            (click)="toggleSavedChurch(item.branch, $event)"
+                          >
+                            <ion-icon
+                              [name]="isSaved(item.branch.id) ? 'heart' : 'heart-outline'"
+                              aria-hidden="true"
+                            ></ion-icon>
+                          </ion-button>
+
+                          <span class="branch-card__chevron" aria-hidden="true">
+                            <ion-icon name="chevron-forward"></ion-icon>
+                          </span>
+                        </ion-item>
+                      </ng-container>
+                    </ion-list>
+                  </div>
                 </div>
               </ng-container>
 
@@ -170,22 +230,25 @@ interface DistrictBrowseGroup {
 
                 <div class="browse-shell" *ngIf="hierarchyBaseBranches.length > 0; else noHierarchyBranches">
                   <div class="browse-header">
-                    <div class="district-header">{{ currentSectionTitle }}</div>
+                    <div>
+                      <div class="district-header">{{ currentSectionTitle }}</div>
+                      <p class="browse-helper">{{ currentHelperText }}</p>
+                    </div>
                     <button
-                      *ngIf="currentLevel !== 'districts'"
+                      *ngIf="currentLevel !== 'areas'"
                       type="button"
                       class="hierarchy-back"
                       (click)="stepBack()"
                     >
                       <ion-icon name="chevron-back" aria-hidden="true"></ion-icon>
-                      <span>{{ currentLevel === 'churches' ? 'Back to areas' : 'Back to districts' }}</span>
+                      <span>{{ currentLevel === 'churches' ? 'Back to districts' : 'Back to areas' }}</span>
                     </button>
                   </div>
 
                   <div class="breadcrumb" *ngIf="breadcrumbs.length > 0">
-                    <button type="button" class="breadcrumb__crumb" (click)="resetHierarchy()">Districts</button>
+                    <button type="button" class="breadcrumb__crumb" (click)="resetHierarchy()">Areas</button>
                     <ng-container *ngFor="let crumb of breadcrumbs">
-                      <span class="breadcrumb__divider">›</span>
+                      <span class="breadcrumb__divider">></span>
                       <button
                         type="button"
                         class="breadcrumb__crumb"
@@ -197,20 +260,22 @@ interface DistrictBrowseGroup {
                     </ng-container>
                   </div>
 
-                  <ion-list lines="none" *ngIf="currentLevel === 'districts'">
+                  <ion-list lines="none" *ngIf="currentLevel === 'areas'">
                     <ion-item
                       button
                       [detail]="false"
                       lines="none"
-                      *ngFor="let district of districtGroups"
-                      (click)="selectDistrict(district)"
+                      *ngFor="let area of areaGroups"
+                      (click)="selectArea(area)"
                       class="branch-card hierarchy-card"
                     >
-                      <ion-icon name="business-outline" slot="start" aria-hidden="true"></ion-icon>
+                      <ion-icon name="map-outline" slot="start" aria-hidden="true"></ion-icon>
                       <ion-label>
                         <div class="label-top">
-                          <h2>{{ district.name }}</h2>
-                          <p class="hierarchy">{{ district.areas.length }} area{{ district.areas.length === 1 ? '' : 's' }}</p>
+                          <h2>{{ area.name }}</h2>
+                          <p class="hierarchy">
+                            {{ area.districts.length }} district{{ area.districts.length === 1 ? '' : 's' }}
+                          </p>
                         </div>
                       </ion-label>
                       <span class="branch-card__chevron" aria-hidden="true">
@@ -219,20 +284,22 @@ interface DistrictBrowseGroup {
                     </ion-item>
                   </ion-list>
 
-                  <ion-list lines="none" *ngIf="currentLevel === 'areas'">
+                  <ion-list lines="none" *ngIf="currentLevel === 'districts'">
                     <ion-item
                       button
                       [detail]="false"
                       lines="none"
-                      *ngFor="let area of currentAreaGroups"
-                      (click)="selectArea(area)"
+                      *ngFor="let district of currentDistrictGroups"
+                      (click)="selectDistrict(district)"
                       class="branch-card hierarchy-card"
                     >
-                      <ion-icon name="map-outline" slot="start" aria-hidden="true"></ion-icon>
+                      <ion-icon name="business-outline" slot="start" aria-hidden="true"></ion-icon>
                       <ion-label>
                         <div class="label-top">
-                          <h2>{{ area.name }}</h2>
-                          <p class="hierarchy">{{ area.branches.length }} church{{ area.branches.length === 1 ? '' : 'es' }}</p>
+                          <h2>{{ district.name }}</h2>
+                          <p class="hierarchy">
+                            {{ district.branches.length }} church{{ district.branches.length === 1 ? '' : 'es' }}
+                          </p>
                         </div>
                       </ion-label>
                       <span class="branch-card__chevron" aria-hidden="true">
@@ -288,7 +355,7 @@ interface DistrictBrowseGroup {
               <div class="state-card empty-state">
                 <div class="empty-copy">
                   <h3>No matching churches</h3>
-                  <p>Try a different church name, district, or area.</p>
+                  <p>Try a different church, district, or area.</p>
                 </div>
               </div>
             </ng-template>
@@ -510,6 +577,12 @@ interface DistrictBrowseGroup {
         flex-wrap: wrap;
       }
 
+      .browse-helper {
+        margin: 0.25rem 0 0;
+        font-size: 0.92rem;
+        color: rgba(3, 23, 63, 0.74);
+      }
+
       .hierarchy-back {
         display: inline-flex;
         align-items: center;
@@ -605,8 +678,8 @@ export class BranchSelectPage implements OnInit {
   allBranches: PublicBranch[] = [];
   isAuthenticated = false;
 
-  private selectedDistrictKey: string | null = null;
   private selectedAreaKey: string | null = null;
+  private selectedDistrictKey: string | null = null;
   private savedChurchIdsByBranchId = new Map<number, number>();
   private savingBranchIds = new Set<number>();
   private heartAnimationByBranchId = new Map<number, 'save' | 'unsave'>();
@@ -662,13 +735,43 @@ export class BranchSelectPage implements OnInit {
   }
 
   get currentLevel(): BrowseLevel {
-    if (this.selectedDistrictKey && this.selectedAreaKey) {
+    if (this.selectedAreaKey && this.selectedDistrictKey) {
       return 'churches';
     }
-    if (this.selectedDistrictKey) {
-      return 'areas';
+    if (this.selectedAreaKey) {
+      return 'districts';
     }
-    return 'districts';
+    return 'areas';
+  }
+
+  get currentSectionTitle(): string {
+    if (this.currentLevel === 'churches') {
+      return 'Local Branches';
+    }
+    if (this.currentLevel === 'districts') {
+      return 'Districts';
+    }
+    return 'Areas';
+  }
+
+  get currentHelperText(): string {
+    if (this.currentLevel === 'churches') {
+      return 'Select the church you want to give to';
+    }
+    if (this.currentLevel === 'districts') {
+      return 'Select your district';
+    }
+    return 'Select your area';
+  }
+
+  get searchPlaceholder(): string {
+    if (this.currentLevel === 'churches') {
+      return 'Search churches...';
+    }
+    if (this.currentLevel === 'districts') {
+      return 'Search districts or churches...';
+    }
+    return 'Search areas, districts, or churches...';
   }
 
   get savedBranches(): PublicBranch[] {
@@ -687,68 +790,56 @@ export class BranchSelectPage implements OnInit {
       : this.allBranches;
   }
 
-  get districtGroups(): DistrictBrowseGroup[] {
-    const districtMap = new Map<string, DistrictBrowseGroup>();
-    const areaMapByDistrict = new Map<string, Map<string, AreaBrowseGroup>>();
+  get areaGroups(): AreaBrowseGroup[] {
+    const areaMap = new Map<string, AreaBrowseGroup>();
+    const districtMapByArea = new Map<string, Map<string, DistrictBrowseGroup>>();
 
     this.hierarchyBaseBranches.forEach((branch) => {
-      const districtName = branch.district?.name?.trim() || 'Other districts';
-      const districtId = branch.district?.id ?? null;
-      const districtKey = this.buildHierarchyKey('district', districtId, districtName);
-
-      if (!districtMap.has(districtKey)) {
-        districtMap.set(districtKey, {
-          key: districtKey,
-          id: districtId,
-          name: districtName,
-          areas: [],
-        });
-        areaMapByDistrict.set(districtKey, new Map<string, AreaBrowseGroup>());
-      }
-
       const areaName = branch.area?.name?.trim() || 'Other areas';
       const areaId = branch.area?.id ?? null;
-      const areaKey = this.buildHierarchyKey('area', areaId, `${districtKey}:${areaName}`);
-      const areasForDistrict = areaMapByDistrict.get(districtKey)!;
+      const areaKey = this.buildHierarchyKey('area', areaId, areaName);
 
-      if (!areasForDistrict.has(areaKey)) {
-        const areaGroup: AreaBrowseGroup = {
+      if (!areaMap.has(areaKey)) {
+        areaMap.set(areaKey, {
           key: areaKey,
           id: areaId,
           name: areaName,
-          districtName,
-          branches: [],
-        };
-        areasForDistrict.set(areaKey, areaGroup);
-        districtMap.get(districtKey)!.areas.push(areaGroup);
+          districts: [],
+        });
+        districtMapByArea.set(areaKey, new Map<string, DistrictBrowseGroup>());
       }
 
-      areasForDistrict.get(areaKey)!.branches.push(branch);
+      const districtName = branch.district?.name?.trim() || 'Other districts';
+      const districtId = branch.district?.id ?? null;
+      const districtKey = this.buildHierarchyKey('district', districtId, `${areaKey}:${districtName}`);
+      const districtsForArea = districtMapByArea.get(areaKey)!;
+
+      if (!districtsForArea.has(districtKey)) {
+        const districtGroup: DistrictBrowseGroup = {
+          key: districtKey,
+          id: districtId,
+          name: districtName,
+          areaName,
+          branches: [],
+        };
+        districtsForArea.set(districtKey, districtGroup);
+        areaMap.get(areaKey)!.districts.push(districtGroup);
+      }
+
+      districtsForArea.get(districtKey)!.branches.push(branch);
     });
 
-    return [...districtMap.values()]
-      .map((district) => ({
-        ...district,
-        areas: [...district.areas]
-          .map((area) => ({
-            ...area,
-            branches: [...area.branches].sort((left, right) => left.name.localeCompare(right.name)),
+    return [...areaMap.values()]
+      .map((area) => ({
+        ...area,
+        districts: [...area.districts]
+          .map((district) => ({
+            ...district,
+            branches: [...district.branches].sort((left, right) => left.name.localeCompare(right.name)),
           }))
           .sort((left, right) => left.name.localeCompare(right.name)),
       }))
       .sort((left, right) => left.name.localeCompare(right.name));
-  }
-
-  get currentDistrictGroup(): DistrictBrowseGroup | null {
-    if (!this.selectedDistrictKey) {
-      return null;
-    }
-
-    return this.districtGroups.find((district) => district.key === this.selectedDistrictKey) ?? null;
-  }
-
-  get currentAreaGroups(): AreaBrowseGroup[] {
-    return this.currentDistrictGroup?.areas ?? [];
   }
 
   get currentAreaGroup(): AreaBrowseGroup | null {
@@ -756,45 +847,56 @@ export class BranchSelectPage implements OnInit {
       return null;
     }
 
-    return this.currentAreaGroups.find((area) => area.key === this.selectedAreaKey) ?? null;
+    return this.areaGroups.find((area) => area.key === this.selectedAreaKey) ?? null;
+  }
+
+  get currentDistrictGroups(): DistrictBrowseGroup[] {
+    return this.currentAreaGroup?.districts ?? [];
+  }
+
+  get currentDistrictGroup(): DistrictBrowseGroup | null {
+    if (!this.selectedDistrictKey) {
+      return null;
+    }
+
+    return this.currentDistrictGroups.find((district) => district.key === this.selectedDistrictKey) ?? null;
   }
 
   get currentChurches(): PublicBranch[] {
-    return this.currentAreaGroup?.branches ?? [];
-  }
-
-  get currentSectionTitle(): string {
-    if (this.currentLevel === 'churches') {
-      return 'Churches';
-    }
-    if (this.currentLevel === 'areas') {
-      return 'Areas';
-    }
-    return 'Districts';
+    return this.currentDistrictGroup?.branches ?? [];
   }
 
   get breadcrumbs(): Array<{ label: string; level: BrowseLevel; current: boolean }> {
     const crumbs: Array<{ label: string; level: BrowseLevel; current: boolean }> = [];
-    const district = this.currentDistrictGroup;
     const area = this.currentAreaGroup;
+    const district = this.currentDistrictGroup;
 
-    if (district) {
-      crumbs.push({ label: district.name, level: 'districts', current: this.currentLevel === 'areas' && !area });
-    }
     if (area) {
-      crumbs.push({ label: area.name, level: 'areas', current: this.currentLevel === 'churches' });
+      crumbs.push({ label: area.name, level: 'areas', current: this.currentLevel === 'districts' && !district });
+    }
+    if (district) {
+      crumbs.push({ label: district.name, level: 'districts', current: this.currentLevel === 'churches' });
     }
 
     return crumbs;
   }
 
-  get searchResults(): PublicBranch[] {
+  get searchResultSections(): SearchResultSection[] {
     const normalizedTerm = this.searchTerm.trim().toLowerCase();
     if (!normalizedTerm) {
       return [];
     }
 
-    return [...this.allBranches]
+    const areas = this.areaGroups.filter((area) => area.name.toLowerCase().includes(normalizedTerm));
+    const districts: Array<{ area: AreaBrowseGroup; district: DistrictBrowseGroup }> = [];
+    this.areaGroups.forEach((area) => {
+      area.districts.forEach((district) => {
+        if (district.name.toLowerCase().includes(normalizedTerm)) {
+          districts.push({ area, district });
+        }
+      });
+    });
+    const churches = [...this.allBranches]
       .filter((branch) => {
         const haystack = [
           branch.name,
@@ -813,41 +915,85 @@ export class BranchSelectPage implements OnInit {
         }
         return left.name.localeCompare(right.name);
       });
-  }
 
-  selectDistrict(district: DistrictBrowseGroup): void {
-    this.selectedDistrictKey = district.key;
-    this.selectedAreaKey = null;
+    const sections: SearchResultSection[] = [];
+
+    if (areas.length > 0) {
+      sections.push({
+        title: 'Areas',
+        items: areas.map((area) => ({ kind: 'area' as const, area })),
+      });
+    }
+
+    if (districts.length > 0) {
+      sections.push({
+        title: 'Districts',
+        items: districts.map((entry) => ({
+          kind: 'district' as const,
+          area: entry.area,
+          district: entry.district,
+        })),
+      });
+    }
+
+    if (churches.length > 0) {
+      sections.push({
+        title: 'Local Branches',
+        items: churches.map((branch) => ({ kind: 'church' as const, branch })),
+      });
+    }
+
+    return sections;
   }
 
   selectArea(area: AreaBrowseGroup): void {
+    this.openArea(area);
+  }
+
+  selectDistrict(district: DistrictBrowseGroup): void {
+    const area = this.currentAreaGroup;
+    if (!area) {
+      return;
+    }
+    this.openDistrict(area, district);
+  }
+
+  openArea(area: AreaBrowseGroup): void {
     this.selectedAreaKey = area.key;
+    this.selectedDistrictKey = null;
+    this.searchTerm = '';
+  }
+
+  openDistrict(area: AreaBrowseGroup, district: DistrictBrowseGroup): void {
+    this.selectedAreaKey = area.key;
+    this.selectedDistrictKey = district.key;
+    this.searchTerm = '';
   }
 
   navigateToBreadcrumb(level: BrowseLevel): void {
-    if (level === 'districts') {
-      this.selectedAreaKey = null;
+    if (level === 'areas') {
+      this.selectedDistrictKey = null;
       return;
     }
 
-    if (level === 'areas') {
-      this.selectedAreaKey = null;
+    if (level === 'districts') {
+      this.selectedDistrictKey = null;
     }
   }
 
   resetHierarchy(): void {
-    this.selectedDistrictKey = null;
     this.selectedAreaKey = null;
+    this.selectedDistrictKey = null;
   }
 
   stepBack(): void {
     if (this.currentLevel === 'churches') {
-      this.selectedAreaKey = null;
+      this.selectedDistrictKey = null;
       return;
     }
 
-    if (this.currentLevel === 'areas') {
-      this.selectedDistrictKey = null;
+    if (this.currentLevel === 'districts') {
+      this.selectedAreaKey = null;
     }
   }
 
@@ -856,6 +1002,7 @@ export class BranchSelectPage implements OnInit {
       void this.router.navigate(['/branches']);
       return;
     }
+
     void this.analyticsService.trackBranchSelected({
       church_id: branch.id,
       district_id: branch.district?.id ?? undefined,
@@ -873,7 +1020,7 @@ export class BranchSelectPage implements OnInit {
     if (branch.area?.name) {
       parts.push(`${branch.area.name} Area`);
     }
-    return parts.join(' • ');
+    return parts.join(' - ');
   }
 
   isSaved(branchId: number): boolean {
@@ -946,15 +1093,15 @@ export class BranchSelectPage implements OnInit {
   }
 
   private ensureHierarchySelectionIsValid(): void {
-    const district = this.currentDistrictGroup;
-    if (!district) {
-      this.selectedDistrictKey = null;
+    const area = this.currentAreaGroup;
+    if (!area) {
       this.selectedAreaKey = null;
+      this.selectedDistrictKey = null;
       return;
     }
 
-    if (!district.areas.some((area) => area.key === this.selectedAreaKey)) {
-      this.selectedAreaKey = null;
+    if (!area.districts.some((district) => district.key === this.selectedDistrictKey)) {
+      this.selectedDistrictKey = null;
     }
   }
 
