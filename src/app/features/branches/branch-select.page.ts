@@ -232,7 +232,8 @@ interface SearchResultSection {
                   <div class="browse-header">
                     <div>
                       <div class="district-header">{{ currentSectionTitle }}</div>
-                      <p class="browse-helper">{{ currentHelperText }}</p>
+                      <p class="browse-helper" *ngIf="currentLevel !== 'churches'">{{ currentHelperText }}</p>
+                      <p class="browse-context" *ngIf="currentLevel === 'churches'">{{ currentChurchContext }}</p>
                     </div>
                     <button
                       *ngIf="currentLevel !== 'areas'"
@@ -245,7 +246,7 @@ interface SearchResultSection {
                     </button>
                   </div>
 
-                  <div class="breadcrumb" *ngIf="breadcrumbs.length > 0">
+                  <div class="breadcrumb" *ngIf="breadcrumbs.length > 0 && currentLevel !== 'churches'">
                     <button type="button" class="breadcrumb__crumb" (click)="resetHierarchy()">Areas</button>
                     <ng-container *ngFor="let crumb of breadcrumbs">
                       <span class="breadcrumb__divider">></span>
@@ -322,7 +323,7 @@ interface SearchResultSection {
                       <ion-label>
                         <div class="label-top">
                           <h2>{{ branch.name }}</h2>
-                          <p class="hierarchy" *ngIf="getHierarchy(branch) as hierarchy">{{ hierarchy }}</p>
+                          <p class="hierarchy" *ngIf="getBranchCardSecondaryText(branch) as hierarchy">{{ hierarchy }}</p>
                           <p class="code" *ngIf="branch.branch_code">{{ branch.branch_code }}</p>
                         </div>
                       </ion-label>
@@ -583,6 +584,12 @@ interface SearchResultSection {
         color: rgba(3, 23, 63, 0.74);
       }
 
+      .browse-context {
+        margin: 0.2rem 0 0;
+        font-size: 0.86rem;
+        color: rgba(3, 23, 63, 0.72);
+      }
+
       .hierarchy-back {
         display: inline-flex;
         align-items: center;
@@ -591,7 +598,7 @@ interface SearchResultSection {
         background: transparent;
         padding: 0;
         color: rgba(3, 23, 63, 0.72);
-        font-size: 0.9rem;
+        font-size: 0.84rem;
         font-weight: 600;
       }
 
@@ -626,6 +633,10 @@ interface SearchResultSection {
         color: rgba(3, 23, 63, 0.7);
         letter-spacing: 0.08em;
         text-transform: uppercase;
+      }
+
+      .browse-shell .branch-card:first-of-type {
+        margin-top: 0;
       }
 
       .label-top {
@@ -772,6 +783,21 @@ export class BranchSelectPage implements OnInit {
       return 'Search districts or churches...';
     }
     return 'Search areas, districts, or churches...';
+  }
+
+  get currentChurchContext(): string {
+    const districtName = this.currentDistrictGroup?.name?.trim();
+    const areaName = this.currentAreaGroup?.name?.trim();
+    const parts = [];
+
+    if (districtName) {
+      parts.push(`${districtName} District`);
+    }
+    if (areaName) {
+      parts.push(`${areaName} Area`);
+    }
+
+    return parts.join(' · ');
   }
 
   get savedBranches(): PublicBranch[] {
@@ -1021,6 +1047,10 @@ export class BranchSelectPage implements OnInit {
       parts.push(`${branch.area.name} Area`);
     }
     return parts.join(' - ');
+  }
+
+  getBranchCardSecondaryText(branch: PublicBranch): string {
+    return branch.district?.name?.trim() || '';
   }
 
   isSaved(branchId: number): boolean {
