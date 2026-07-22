@@ -185,6 +185,16 @@ ion-page {
   border: 1px solid rgba(2, 18, 54, 0.08);
 }
 
+.feature-card--button {
+  width: 100%;
+  text-align: left;
+  color: inherit;
+}
+
+.feature-card--static {
+  width: 100%;
+}
+
 .feature-icon {
   width: 44px;
   height: 44px;

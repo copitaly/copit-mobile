@@ -1,0 +1,162 @@
+:host {
+  display: block;
+}
+
+ion-page {
+  background: #0b1d73;
+}
+
+ion-content.prayer-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  --background: #0b1d73;
+}
+
+ion-content.prayer-content::part(scroll) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.prayer-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.prayer-hero {
+  width: 100%;
+  padding-bottom: 2rem;
+}
+
+.prayer-surface {
+  margin-top: -0.08rem;
+  padding-top: 1.25rem;
+  border-radius: 24px 24px 0 0;
+}
+
+.prayer-surface__content {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-bottom: calc(1.2rem + env(safe-area-inset-bottom));
+}
+
+.prayer-intro-card,
+.prayer-action-card {
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow: 0 14px 36px rgba(6, 21, 74, 0.1);
+}
+
+.prayer-intro-card {
+  padding: 1.2rem;
+  border: 1px solid rgba(11, 29, 115, 0.08);
+}
+
+.prayer-intro-card__eyebrow {
+  margin: 0 0 0.45rem;
+  color: #9a6d06;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.prayer-intro-card h2 {
+  margin: 0;
+  color: #03173f;
+  font-size: 1.28rem;
+  font-weight: 700;
+  line-height: 1.22;
+}
+
+.prayer-intro-card p {
+  margin: 0.55rem 0 0;
+  color: rgba(3, 23, 63, 0.68);
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+
+.prayer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+
+.prayer-action-card {
+  width: 100%;
+  border: 1px solid rgba(3, 23, 63, 0.08);
+  padding: 1rem 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  text-align: left;
+  color: inherit;
+}
+
+.prayer-action-card--primary {
+  background: linear-gradient(180deg, rgba(11, 29, 115, 0.02), rgba(245, 182, 40, 0.08));
+}
+
+.prayer-action-card--secondary,
+.prayer-action-card--member {
+  background: #ffffff;
+}
+
+.prayer-action-card__icon {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 16px;
+  background: rgba(245, 182, 40, 0.18);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #b98710;
+}
+
+.prayer-action-card--secondary .prayer-action-card__icon {
+  background: rgba(11, 29, 115, 0.08);
+  color: #0b1d73;
+}
+
+.prayer-action-card--member .prayer-action-card__icon {
+  background: rgba(47, 95, 180, 0.12);
+  color: #2f5fb4;
+}
+
+.prayer-action-card__icon ion-icon {
+  font-size: 1.45rem;
+}
+
+.prayer-action-card__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.prayer-action-card__copy strong {
+  color: #03173f;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.28;
+}
+
+.prayer-action-card__copy small {
+  color: rgba(3, 23, 63, 0.66);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.prayer-action-card__chevron {
+  color: rgba(3, 23, 63, 0.4);
+  font-size: 1.1rem;
+}

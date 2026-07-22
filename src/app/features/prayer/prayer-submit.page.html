@@ -1,0 +1,236 @@
+<ion-page>
+  <ion-content fullscreen class="prayer-submit-content">
+    <div class="prayer-submit-hero app-header app-header--inner">
+      <app-mobile-header
+        title="Submit a Prayer Request"
+        subtitle="Share what you would like us to pray for."
+        fallbackRoute="/prayer"
+      ></app-mobile-header>
+    </div>
+
+    <div class="surface prayer-submit-surface">
+      <div class="surface__content prayer-submit-surface__content">
+        <ng-container *ngIf="!showSuccessState; else successState">
+          <form [formGroup]="form" (ngSubmit)="submit()" class="prayer-form" novalidate>
+            <section class="prayer-form-card prayer-form-card--feature">
+              <label class="prayer-label" for="prayer-request-text">Prayer Request</label>
+              <p class="prayer-helper">Share what you would like us to pray for.</p>
+              <ion-item fill="solid" class="prayer-field prayer-field--textarea">
+                <ion-textarea
+                  id="prayer-request-text"
+                  formControlName="request_text"
+                  autoGrow="true"
+                  rows="5"
+                  placeholder="Write your prayer request here"
+                  (ionInput)="onFieldInput('request_text')"
+                ></ion-textarea>
+              </ion-item>
+              <ion-text color="danger" *ngIf="controlError('request_text')" class="prayer-error">
+                {{ controlError('request_text') }}
+              </ion-text>
+            </section>
+
+            <section class="prayer-form-card">
+              <label class="prayer-label" for="prayer-title">Title (optional)</label>
+              <ion-item fill="solid" class="prayer-field">
+                <ion-input
+                  id="prayer-title"
+                  formControlName="title"
+                  placeholder="Short title for your request"
+                  (ionInput)="onFieldInput('title')"
+                ></ion-input>
+              </ion-item>
+            </section>
+
+            <section class="prayer-form-card">
+              <label class="prayer-label" for="prayer-category">Category</label>
+              <ion-item fill="solid" class="prayer-field">
+                <ion-select
+                  id="prayer-category"
+                  interface="action-sheet"
+                  formControlName="category"
+                  placeholder="Choose a category"
+                  (ionChange)="onFieldInput('category')"
+                >
+                  <ion-select-option *ngFor="let category of categoryOptions" [value]="category.value">
+                    {{ category.label }}
+                  </ion-select-option>
+                </ion-select>
+              </ion-item>
+              <ion-text color="danger" *ngIf="controlError('category')" class="prayer-error">
+                {{ controlError('category') }}
+              </ion-text>
+            </section>
+
+            <section class="prayer-form-card">
+              <label class="prayer-label" for="prayer-scope">Prayer Scope</label>
+              <ion-item fill="solid" class="prayer-field">
+                <ion-select
+                  id="prayer-scope"
+                  interface="action-sheet"
+                  formControlName="scope"
+                  placeholder="Choose a scope"
+                  (ionChange)="onFieldInput('scope')"
+                >
+                  <ion-select-option *ngFor="let scope of scopeOptions" [value]="scope.value">
+                    {{ scope.label }}
+                  </ion-select-option>
+                </ion-select>
+              </ion-item>
+              <ion-text color="danger" *ngIf="controlError('scope')" class="prayer-error">
+                {{ controlError('scope') }}
+              </ion-text>
+              <div class="scope-list">
+                <article class="scope-row" *ngFor="let scope of scopeOptions">
+                  <strong>{{ scope.label }}</strong>
+                  <span>{{ scope.helper }}</span>
+                </article>
+              </div>
+            </section>
+
+            <section *ngIf="selectedScope === 'area'" class="prayer-form-card">
+              <label class="prayer-label">Area</label>
+              <div class="prayer-dependency-card">
+                <strong>Area selection is not available yet.</strong>
+                <span>{{ hierarchyDependency.reason }}</span>
+              </div>
+              <ion-text color="danger" *ngIf="controlError('selected_area_id')" class="prayer-error">
+                {{ controlError('selected_area_id') }}
+              </ion-text>
+            </section>
+
+            <section *ngIf="selectedScope === 'district'" class="prayer-form-card">
+              <label class="prayer-label">Area</label>
+              <div class="prayer-dependency-card">
+                <strong>Area and District selection are not available yet.</strong>
+                <span>{{ hierarchyDependency.reason }}</span>
+              </div>
+              <ion-text color="danger" *ngIf="controlError('selected_area_id')" class="prayer-error">
+                {{ controlError('selected_area_id') }}
+              </ion-text>
+              <ion-text color="danger" *ngIf="controlError('selected_district_id')" class="prayer-error">
+                {{ controlError('selected_district_id') }}
+              </ion-text>
+            </section>
+
+            <section *ngIf="selectedScope === 'local'" class="prayer-form-card">
+              <label class="prayer-label">Area</label>
+              <div class="prayer-dependency-card">
+                <strong>Area, District, and Local Church selection are not available yet.</strong>
+                <span>{{ hierarchyDependency.reason }}</span>
+              </div>
+              <ion-text color="danger" *ngIf="controlError('selected_area_id')" class="prayer-error">
+                {{ controlError('selected_area_id') }}
+              </ion-text>
+              <ion-text color="danger" *ngIf="controlError('selected_district_id')" class="prayer-error">
+                {{ controlError('selected_district_id') }}
+              </ion-text>
+              <ion-text color="danger" *ngIf="controlError('selected_local_church_id')" class="prayer-error">
+                {{ controlError('selected_local_church_id') }}
+              </ion-text>
+            </section>
+
+            <section class="prayer-form-card">
+              <label class="prayer-label">Visibility</label>
+              <div class="choice-stack">
+                <button
+                  *ngFor="let option of visibilityOptions"
+                  type="button"
+                  class="choice-card"
+                  [class.choice-card--selected]="form.controls.visibility.value === option.value"
+                  (click)="form.controls.visibility.setValue(option.value); onFieldInput('visibility')"
+                >
+                  <span class="choice-card__copy">
+                    <strong>{{ option.label }}</strong>
+                    <small>{{ option.helper }}</small>
+                  </span>
+                </button>
+              </div>
+            </section>
+
+            <section class="prayer-form-card">
+              <label class="prayer-label">How should your name appear?</label>
+              <div class="choice-stack choice-stack--compact">
+                <button
+                  type="button"
+                  class="choice-card"
+                  [class.choice-card--selected]="form.controls.is_anonymous_publicly.value"
+                  (click)="form.controls.is_anonymous_publicly.setValue(true); onFieldInput('is_anonymous_publicly')"
+                >
+                  <span class="choice-card__copy">
+                    <strong>Submit anonymously</strong>
+                    <small>Your public request would show as Anonymous.</small>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  class="choice-card"
+                  [class.choice-card--selected]="!form.controls.is_anonymous_publicly.value"
+                  (click)="form.controls.is_anonymous_publicly.setValue(false); onFieldInput('is_anonymous_publicly')"
+                >
+                  <span class="choice-card__copy">
+                    <strong>Share my name</strong>
+                    <small>Your name may be shown if your public request is approved.</small>
+                  </span>
+                </button>
+              </div>
+
+              <div *ngIf="isNamedSubmission" class="named-field">
+                <label class="prayer-label" for="prayer-submitter-name">Your name</label>
+                <p class="prayer-helper">This is the name that may be shown if your public request is approved.</p>
+                <ion-item fill="solid" class="prayer-field">
+                  <ion-input
+                    id="prayer-submitter-name"
+                    formControlName="submitter_name"
+                    placeholder="Enter the name to display"
+                    (ionInput)="onFieldInput('submitter_name')"
+                  ></ion-input>
+                </ion-item>
+                <ion-text color="danger" *ngIf="controlError('submitter_name')" class="prayer-error">
+                  {{ controlError('submitter_name') }}
+                </ion-text>
+              </div>
+            </section>
+
+            <div *ngIf="genericErrorMessage" class="prayer-feedback prayer-feedback--error" role="alert">
+              {{ genericErrorMessage }}
+            </div>
+
+            <ion-button expand="block" type="submit" class="prayer-submit-button" [disabled]="!canSubmit">
+              <ion-spinner *ngIf="isSubmitting" slot="start" name="crescent"></ion-spinner>
+              <span>{{ submitButtonLabel }}</span>
+            </ion-button>
+          </form>
+        </ng-container>
+
+        <ng-template #successState>
+          <section class="prayer-form-card prayer-success-card">
+            <div class="prayer-success-card__icon" aria-hidden="true">
+              <ion-icon name="checkmark-circle"></ion-icon>
+            </div>
+            <h2>Prayer request received</h2>
+            <p>Thank you for sharing your prayer request.</p>
+            <p>{{ successMessage }}</p>
+
+            <ion-button expand="block" class="prayer-submit-button" (click)="resetForAnotherRequest()">
+              Submit Another Request
+            </ion-button>
+            <ion-button expand="block" fill="outline" class="prayer-secondary-button" (click)="goBackToPrayer()">
+              Back to Prayer &amp; Care
+            </ion-button>
+            <ion-button
+              *ngIf="isAuthenticatedMember"
+              expand="block"
+              fill="clear"
+              class="prayer-link-button"
+              (click)="goToMyPrayerRequests()"
+            >
+              View My Prayer Requests
+            </ion-button>
+          </section>
+        </ng-template>
+      </div>
+    </div>
+  </ion-content>
+</ion-page>

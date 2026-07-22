@@ -2,7 +2,7 @@ import { inject, NgModule } from '@angular/core';
 import { CanMatchFn, PreloadAllModules, Router, RouterModule, Routes } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 import { AuthService } from './core/services/auth.service';
-import { SentryTelemetryService } from './core/services/sentry-telemetry.service';
+import { FeatureArea, SentryTelemetryService } from './core/services/sentry-telemetry.service';
 
 const redirectAuthenticatedAwayFromAuthPages: CanMatchFn = () => {
   const authService = inject(AuthService);
@@ -19,7 +19,7 @@ const redirectAuthenticatedAwayFromAuthPages: CanMatchFn = () => {
   return true;
 };
 
-const allowAuthenticatedMembersIntoAccountSettings: CanMatchFn = (route) => {
+const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
   const authService = inject(AuthService);
   const router = inject(Router);
   const sentryTelemetry = inject(SentryTelemetryService);
@@ -27,15 +27,19 @@ const allowAuthenticatedMembersIntoAccountSettings: CanMatchFn = (route) => {
   const user = authService.currentUserSnapshot;
   const isAuthenticated = authService.isAuthenticatedSnapshot || !!authService.accessTokenSnapshot;
   const routePath = `/${route.path ?? 'profile/account-settings'}`;
+  const feature = (route.data?.['memberFeature'] === 'app' ? 'app' : 'profile') as FeatureArea;
+  const unauthenticatedRedirect = String(route.data?.['unauthenticatedRedirect'] ?? '/login');
+  const forbiddenRedirect = String(route.data?.['forbiddenRedirect'] ?? '/profile');
+  const deniedRoute = routePath === '/my-requests' ? '/prayer/my-requests' : routePath;
 
   if (!isAuthenticated) {
-    sentryTelemetry.addFeatureBreadcrumb('profile', 'Route guard denied account settings access', {
-      route: routePath,
+    sentryTelemetry.addFeatureBreadcrumb(feature, 'Route guard denied member access', {
+      route: deniedRoute,
       reason: 'unauthenticated',
     }, 'warning');
-    console.log('[account-settings] denied reason=unauthenticated');
-    console.log('[account-settings] guard result', {
-      route: routePath,
+    console.log(`[${feature}] denied reason=unauthenticated`);
+    console.log(`[${feature}] guard result`, {
+      route: deniedRoute,
       isAuthenticated,
       memberProfileLoaded: false,
       memberProfileId: user?.id ?? null,
@@ -43,21 +47,21 @@ const allowAuthenticatedMembersIntoAccountSettings: CanMatchFn = (route) => {
       deniedReason: 'unauthenticated',
       allowed: false,
     });
-    return router.parseUrl('/login');
+    return router.parseUrl(unauthenticatedRedirect);
   }
 
   if (user?.role) {
     const allowed = user.role === 'member';
     const deniedReason = allowed ? null : 'non-member-role';
     if (deniedReason) {
-      sentryTelemetry.addFeatureBreadcrumb('profile', 'Route guard denied account settings access', {
-        route: routePath,
+      sentryTelemetry.addFeatureBreadcrumb(feature, 'Route guard denied member access', {
+        route: deniedRoute,
         reason: deniedReason,
       }, 'warning');
-      console.log('[account-settings] denied reason=' + deniedReason);
+      console.log(`[${feature}] denied reason=${deniedReason}`);
     }
-    console.log('[account-settings] guard result', {
-      route: routePath,
+    console.log(`[${feature}] guard result`, {
+      route: deniedRoute,
       isAuthenticated,
       memberProfileLoaded: true,
       memberProfileId: user.id ?? null,
@@ -65,21 +69,21 @@ const allowAuthenticatedMembersIntoAccountSettings: CanMatchFn = (route) => {
       deniedReason,
       allowed,
     });
-    return allowed ? true : router.parseUrl('/profile');
+    return allowed ? true : router.parseUrl(forbiddenRedirect);
   }
 
-  console.log('[account-settings] waiting for role/member profile');
+  console.log(`[${feature}] waiting for role/member profile`);
 
   return authService.getCurrentUser().pipe(
     map((resolvedProfile) => {
-      const allowed = !!resolvedProfile?.id;
+      const allowed = resolvedProfile?.role === 'member';
       if (allowed) {
-        sentryTelemetry.addFeatureBreadcrumb('profile', 'Route guard allowed account settings access', {
-          route: routePath,
+        sentryTelemetry.addFeatureBreadcrumb(feature, 'Route guard allowed member access', {
+          route: deniedRoute,
         });
-        console.log('[account-settings] allowed after profile load');
-        console.log('[account-settings] guard result', {
-          route: routePath,
+        console.log(`[${feature}] allowed after profile load`);
+        console.log(`[${feature}] guard result`, {
+          route: deniedRoute,
           isAuthenticated: true,
           memberProfileLoaded: true,
           memberProfileId: resolvedProfile?.id ?? null,
@@ -90,14 +94,14 @@ const allowAuthenticatedMembersIntoAccountSettings: CanMatchFn = (route) => {
         return true;
       }
 
-      const deniedReason = !resolvedProfile ? 'missing-profile' : 'non-member-profile';
-      sentryTelemetry.addFeatureBreadcrumb('profile', 'Route guard denied account settings access', {
-        route: routePath,
+      const deniedReason = !resolvedProfile ? 'missing-profile' : 'non-member-role';
+      sentryTelemetry.addFeatureBreadcrumb(feature, 'Route guard denied member access', {
+        route: deniedRoute,
         reason: deniedReason,
       }, 'warning');
-      console.log('[account-settings] denied reason=' + deniedReason);
-      console.log('[account-settings] guard result', {
-        route: routePath,
+      console.log(`[${feature}] denied reason=${deniedReason}`);
+      console.log(`[${feature}] guard result`, {
+        route: deniedRoute,
         isAuthenticated: true,
         memberProfileLoaded: !!resolvedProfile,
         memberProfileId: resolvedProfile?.id ?? null,
@@ -105,16 +109,16 @@ const allowAuthenticatedMembersIntoAccountSettings: CanMatchFn = (route) => {
         deniedReason,
         allowed: false,
       });
-      return router.parseUrl(!resolvedProfile ? '/login' : '/profile');
+      return router.parseUrl(!resolvedProfile ? unauthenticatedRedirect : forbiddenRedirect);
     }),
     catchError(() => {
-      sentryTelemetry.addFeatureBreadcrumb('profile', 'Route guard redirected account settings access', {
-        route: routePath,
+      sentryTelemetry.addFeatureBreadcrumb(feature, 'Route guard redirected member access', {
+        route: deniedRoute,
         reason: 'profile-load-error',
       }, 'error');
-      console.log('[account-settings] denied reason=profile-load-error');
-      console.log('[account-settings] guard result', {
-        route: routePath,
+      console.log(`[${feature}] denied reason=profile-load-error`);
+      console.log(`[${feature}] guard result`, {
+        route: deniedRoute,
         isAuthenticated: true,
         memberProfileLoaded: false,
         memberProfileId: null,
@@ -122,7 +126,7 @@ const allowAuthenticatedMembersIntoAccountSettings: CanMatchFn = (route) => {
         deniedReason: 'profile-load-error',
         allowed: false,
       });
-      return of(router.parseUrl('/login'));
+      return of(router.parseUrl(unauthenticatedRedirect));
     })
   );
 };
@@ -157,17 +161,20 @@ const routes: Routes = [
   },
   {
     path: 'profile/account-settings/edit-profile',
-    canMatch: [allowAuthenticatedMembersIntoAccountSettings],
+    canMatch: [allowAuthenticatedMembersOnly],
+    data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/profile' },
     loadComponent: () => import('./features/auth/edit-profile.page').then(m => m.EditProfilePage)
   },
   {
     path: 'profile/account-settings/delete-account',
-    canMatch: [allowAuthenticatedMembersIntoAccountSettings],
+    canMatch: [allowAuthenticatedMembersOnly],
+    data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/profile' },
     loadComponent: () => import('./features/auth/delete-account.page').then(m => m.DeleteAccountPage)
   },
   {
     path: 'profile/account-settings',
-    canMatch: [allowAuthenticatedMembersIntoAccountSettings],
+    canMatch: [allowAuthenticatedMembersOnly],
+    data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/profile' },
     loadComponent: () => import('./features/auth/account-settings.page').then(m => m.AccountSettingsPage)
   },
   {
@@ -194,6 +201,24 @@ const routes: Routes = [
   {
     path: 'saved-churches',
     loadComponent: () => import('./features/branches/saved-churches.page').then(m => m.SavedChurchesPage)
+  },
+  {
+    path: 'prayer',
+    loadComponent: () => import('./features/prayer/prayer.page').then(m => m.PrayerPage)
+  },
+  {
+    path: 'prayer/submit',
+    loadComponent: () => import('./features/prayer/prayer-submit.page').then(m => m.PrayerSubmitPage)
+  },
+  {
+    path: 'prayer/community',
+    loadComponent: () => import('./features/prayer/prayer-community.page').then(m => m.PrayerCommunityPage)
+  },
+  {
+    path: 'prayer/my-requests',
+    canMatch: [allowAuthenticatedMembersOnly],
+    data: { memberFeature: 'app', unauthenticatedRedirect: '/login', forbiddenRedirect: '/prayer' },
+    loadComponent: () => import('./features/prayer/prayer-my-requests.page').then(m => m.PrayerMyRequestsPage)
   },
   {
     path: 'donate/success',

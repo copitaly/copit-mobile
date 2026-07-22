@@ -1,0 +1,62 @@
+<ion-page>
+  <ion-content fullscreen class="prayer-content">
+    <div class="prayer-hero app-header app-header--inner">
+      <app-mobile-header
+        title="Prayer &amp; Care"
+        subtitle="Share your prayer request or pray with our community."
+        [centerCopy]="false"
+        fallbackRoute="/home"
+      ></app-mobile-header>
+    </div>
+
+    <div class="surface prayer-surface">
+      <div class="surface__content prayer-surface__content">
+        <section class="prayer-intro-card">
+          <p class="prayer-intro-card__eyebrow">Open to everyone</p>
+          <h2>Stay connected in prayer</h2>
+          <p>
+            Submit a prayer request, support others in prayer, and return here for future Prayer &amp; Care updates.
+          </p>
+        </section>
+
+        <section class="prayer-actions" aria-label="Prayer actions">
+          <button
+            *ngFor="let action of primaryActions"
+            type="button"
+            class="prayer-action-card"
+            [ngClass]="action.accentClass"
+            [attr.aria-label]="action.title"
+            (click)="openAction(action.route)"
+          >
+            <span class="prayer-action-card__icon" aria-hidden="true">
+              <ion-icon [name]="action.icon"></ion-icon>
+            </span>
+            <span class="prayer-action-card__copy">
+              <strong>{{ action.title }}</strong>
+              <small>{{ action.description }}</small>
+            </span>
+            <ion-icon class="prayer-action-card__chevron" name="chevron-forward" aria-hidden="true"></ion-icon>
+          </button>
+
+          <button
+            *ngIf="showMemberAction"
+            type="button"
+            class="prayer-action-card"
+            [ngClass]="memberAction.accentClass"
+            [attr.aria-label]="memberAction.title"
+            (click)="openAction(memberAction.route)"
+          >
+            <span class="prayer-action-card__icon" aria-hidden="true">
+              <ion-icon [name]="memberAction.icon"></ion-icon>
+            </span>
+            <span class="prayer-action-card__copy">
+              <strong>{{ memberAction.title }}</strong>
+              <small>{{ memberAction.description }}</small>
+            </span>
+            <ion-icon class="prayer-action-card__chevron" name="chevron-forward" aria-hidden="true"></ion-icon>
+          </button>
+        </section>
+      </div>
+    </div>
+  </ion-content>
+</ion-page>
