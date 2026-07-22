@@ -206,6 +206,248 @@ ion-content.my-prayers-content::part(scroll) {
   flex-direction: column;
 }
 
+.my-prayers-content .my-prayers-intro-card,
+.my-prayers-content .my-prayer-card,
+.my-prayers-content .state-card {
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow: 0 14px 36px rgba(6, 21, 74, 0.1);
+}
+
+.my-prayers-content .my-prayers-intro-card,
+.my-prayers-content .my-prayer-card,
+.my-prayers-content .state-card {
+  padding: 0.95rem 1rem;
+}
+
+.my-prayers-content .my-prayers-intro-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 1px solid rgba(11, 29, 115, 0.08);
+}
+
+.my-prayers-content .my-prayers-intro-card h2,
+.my-prayers-content .state-copy h2,
+.my-prayers-content .my-prayer-card__title {
+  margin: 0;
+  color: #03173f;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.my-prayers-content .my-prayers-intro-card h2 {
+  font-size: 1rem;
+}
+
+.my-prayers-content .my-prayers-intro-card p,
+.my-prayers-content .state-copy p,
+.my-prayers-content .my-prayer-card__body,
+.my-prayers-content .load-more-error p {
+  margin: 0;
+  color: rgba(3, 23, 63, 0.68);
+  line-height: 1.55;
+}
+
+.my-prayers-content .my-prayer-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.my-prayers-content .my-prayer-card__action {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  text-align: left;
+  color: inherit;
+}
+
+.my-prayers-content .my-prayer-card__action:focus-visible {
+  outline: 2px solid rgba(11, 29, 115, 0.42);
+  outline-offset: -2px;
+}
+
+.my-prayers-content .my-prayers-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.my-prayers-content .my-prayers-filters .filter-field:last-child {
+  grid-column: 1 / -1;
+}
+
+.my-prayers-content .filter-field span,
+.my-prayers-content .reset-filters-button,
+.my-prayers-content .detail-link {
+  color: #03173f;
+  font-weight: 700;
+}
+
+.my-prayers-content .filter-field select {
+  min-height: 48px;
+  border: 1px solid rgba(11, 29, 115, 0.12);
+  border-radius: 16px;
+  padding: 0.7rem 0.85rem;
+  background: #ffffff;
+  color: #03173f;
+}
+
+.my-prayers-content .reset-filters-button,
+.my-prayers-content .detail-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.my-prayers-content .status-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0.26rem 0.72rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.my-prayers-content .status-chip--pending {
+  background: rgba(245, 182, 40, 0.16);
+  color: #87620a;
+}
+
+.my-prayers-content .status-chip--approved {
+  background: rgba(78, 155, 116, 0.14);
+  color: #356e53;
+}
+
+.my-prayers-content .status-chip--rejected {
+  background: rgba(128, 140, 164, 0.14);
+  color: #5b6478;
+}
+
+.my-prayers-content .status-chip--resolved {
+  background: rgba(61, 91, 165, 0.12);
+  color: #3d5ba5;
+}
+
+.my-prayers-content .my-prayer-card__date,
+.my-prayers-content .meta-row span {
+  color: rgba(3, 23, 63, 0.58);
+}
+
+.my-prayers-content .my-prayer-card__title {
+  font-size: 1.12rem;
+  letter-spacing: -0.01em;
+}
+
+.my-prayers-content .my-prayer-card__body {
+  color: #1f2c4d;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.my-prayers-content .my-prayer-card__meta-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(3, 23, 63, 0.08);
+  color: rgba(3, 23, 63, 0.72);
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.my-prayers-content .meta-row strong {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.my-prayers-content .detail-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.05rem;
+  color: #425ea6;
+}
+
+.my-prayers-content .detail-link ion-icon {
+  font-size: 1rem;
+  color: rgba(66, 94, 166, 0.8);
+}
+
+@media (max-width: 420px) {
+  .my-prayers-content .my-prayers-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .my-prayers-content .my-prayers-filters .filter-field:last-child {
+    grid-column: auto;
+  }
+}
+
+.detail-modal-content .detail-modal-shell,
+.detail-modal-content .detail-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-modal-content .detail-modal-shell,
+.detail-modal-content .detail-state,
+.detail-modal-content .detail-card {
+  padding: 1rem;
+}
+
+.detail-modal-content .detail-meta {
+  gap: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(3, 23, 63, 0.08);
+}
+
+.detail-modal-content .detail-card {
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow: 0 14px 36px rgba(6, 21, 74, 0.1);
+}
+
+.detail-modal-content .detail-card__eyebrow {
+  margin: 0 0 0.45rem;
+  color: #9a6d06;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.detail-modal-content .detail-card__title,
+.detail-modal-content .detail-state h2 {
+  margin: 0;
+  color: #03173f;
+  font-size: 1.12rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.detail-modal-content .detail-card__body,
+.detail-modal-content .detail-state p,
+.detail-modal-content .detail-helper {
+  margin: 0;
+  color: #1f2c4d;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.detail-modal-content .detail-state {
+  text-align: center;
+}
+
 .profile-hero {
   width: 100%;
   padding-bottom: 2.15rem;

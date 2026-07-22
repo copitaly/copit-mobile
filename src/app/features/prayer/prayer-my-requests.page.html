@@ -11,9 +11,8 @@
     <div class="surface my-prayers-surface">
       <div class="surface__content my-prayers-surface__content">
         <section class="my-prayers-intro-card">
-          <p class="my-prayers-intro-card__eyebrow">Member prayer history</p>
-          <h2>Track your submitted prayer requests.</h2>
-          <p>Review their status, visibility, and scope without exposing private account details.</p>
+          <h2>My submitted prayers</h2>
+          <p>Track the status, visibility, and scope of prayer requests submitted while signed in.</p>
         </section>
 
         <section class="my-prayers-filters" aria-label="My prayer request filters">
@@ -118,32 +117,34 @@
 
         <section *ngIf="!loading && !errorMessage && prayers.length > 0" class="my-prayers-feed" aria-label="My prayer requests">
           <article class="my-prayer-card" *ngFor="let prayer of prayers" data-testid="my-prayer-card">
-            <div class="my-prayer-card__top">
-              <span class="status-chip" [ngClass]="statusClass(prayer.status)">{{ formatStatusLabel(prayer.status) }}</span>
-              <span class="my-prayer-card__date">{{ formatDate(prayer.created_at) }}</span>
-            </div>
-
-            <h2 *ngIf="prayer.title" class="my-prayer-card__title" data-testid="prayer-title">{{ prayer.title }}</h2>
-
-            <p class="my-prayer-card__body" data-testid="prayer-preview">{{ requestPreview(prayer.request_text) }}</p>
-
-            <div class="my-prayer-card__meta">
-              <div class="meta-row">
-                <span>Category</span>
-                <strong>{{ formatCategoryLabel(prayer.category) }}</strong>
+            <button
+              type="button"
+              class="my-prayer-card__action"
+              data-testid="view-details"
+              [attr.aria-label]="'View prayer request details for ' + (prayer.title || 'submitted prayer request')"
+              (click)="openPrayerDetails(prayer)"
+            >
+              <div class="my-prayer-card__top">
+                <span class="status-chip" [ngClass]="statusClass(prayer.status)">{{ formatStatusLabel(prayer.status) }}</span>
+                <span class="my-prayer-card__date">{{ formatDate(prayer.created_at) }}</span>
               </div>
-              <div class="meta-row">
-                <span>Prayer scope</span>
-                <strong>{{ formatScopeContext(prayer) }}</strong>
-              </div>
-              <div class="meta-row">
-                <span>Visibility</span>
-                <strong>{{ formatVisibilityLabel(prayer.visibility) }}</strong>
-              </div>
-            </div>
 
-            <button type="button" class="detail-link" data-testid="view-details" (click)="openPrayerDetails(prayer)">
-              View details
+              <h2 *ngIf="prayer.title" class="my-prayer-card__title" data-testid="prayer-title">{{ prayer.title }}</h2>
+
+              <p class="my-prayer-card__body" data-testid="prayer-preview">{{ requestPreview(prayer.request_text) }}</p>
+
+              <div class="my-prayer-card__meta-line" aria-label="Prayer metadata">
+                <span>{{ formatCategoryLabel(prayer.category) }}</span>
+                <span aria-hidden="true">&bull;</span>
+                <span>{{ formatScopeContext(prayer) }}</span>
+                <span aria-hidden="true">&bull;</span>
+                <span>{{ formatVisibilityLabel(prayer.visibility) }}</span>
+              </div>
+
+              <span class="detail-link">
+                <span>View details</span>
+                <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
+              </span>
             </button>
           </article>
 
