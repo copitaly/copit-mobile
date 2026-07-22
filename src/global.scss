@@ -161,7 +161,6 @@ body {
   border-top-left-radius: 28px;
   border-top-right-radius: 28px;
   padding: 1.2rem 1.25rem 2rem;
-  min-height: 100%;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -176,17 +175,23 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-  overflow: auto;
+  overflow: visible;
   padding-bottom: calc(2rem + var(--keyboard-offset, 0px));
 }
 
 ion-content.profile-content,
-ion-content.branch-content,
-ion-content.my-prayers-content {
+ion-content.branch-content {
   height: 100%;
   display: flex;
   flex-direction: column;
   --background: #0b1d73;
+}
+
+ion-content.my-prayers-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  --background: #f5f6fa;
 }
 
 ion-content.profile-content::part(scroll),

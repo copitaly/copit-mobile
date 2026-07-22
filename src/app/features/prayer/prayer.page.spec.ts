@@ -7,6 +7,7 @@ import { PrayerPage } from './prayer.page';
 
 describe('PrayerPage', () => {
   let page: PrayerPage;
+  let fixture: { nativeElement: HTMLElement } | null;
   let router: jasmine.SpyObj<{ navigateByUrl: (url: string) => Promise<boolean> }>;
   let authState$: BehaviorSubject<boolean>;
   let currentUser$: BehaviorSubject<{ role: string } | null>;
@@ -17,6 +18,7 @@ describe('PrayerPage', () => {
     router = jasmine.createSpyObj('Router', ['navigateByUrl']);
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
     TestBed.configureTestingModule({
+      imports: [PrayerPage],
       providers: [
         {
           provide: AuthService,
@@ -29,11 +31,19 @@ describe('PrayerPage', () => {
       ],
     });
     page = TestBed.runInInjectionContext(() => new PrayerPage());
+    fixture = null;
   });
 
   afterEach(() => {
     page.ngOnDestroy();
   });
+
+  function createComponent(): HTMLElement {
+    const componentFixture = TestBed.createComponent(PrayerPage);
+    componentFixture.detectChanges();
+    fixture = componentFixture;
+    return componentFixture.nativeElement as HTMLElement;
+  }
 
   it('shows only public actions for guests', () => {
     page.ngOnInit();
@@ -73,5 +83,34 @@ describe('PrayerPage', () => {
     page.openAction('/prayer/community');
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/prayer/community');
+  });
+
+  it('removes the stay connected in prayer intro card', () => {
+    const element = createComponent();
+
+    expect(element.textContent).not.toContain('Stay connected in prayer');
+    expect(element.textContent).not.toContain('OPEN TO EVERYONE');
+  });
+
+  it('still renders the public prayer action cards', () => {
+    const element = createComponent();
+
+    expect(element.textContent).toContain('Submit a Prayer Request');
+    expect(element.textContent).toContain('Community Prayers');
+  });
+
+  it('keeps my prayer requests hidden for guests in the rendered template', () => {
+    const element = createComponent();
+
+    expect(element.textContent).not.toContain('My Prayer Requests');
+  });
+
+  it('renders my prayer requests for authenticated members', () => {
+    authState$.next(true);
+    currentUser$.next({ role: 'member' });
+
+    const element = createComponent();
+
+    expect(element.textContent).toContain('My Prayer Requests');
   });
 });

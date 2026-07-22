@@ -202,6 +202,18 @@ describe('PrayerMyRequestsPage', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="prayer-title"]')?.textContent).toContain('Strength for this week');
   });
 
+  it('removes the my submitted prayers intro card copy', async () => {
+    prayerService.getMyPrayerRequests.and.returnValue(of(buildResponse([basePrayer])));
+    prayerService.getMyPrayerRequest.and.returnValue(of(basePrayer));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.textContent).not.toContain('My submitted prayers');
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'Track the status, visibility, and scope of prayer requests submitted while signed in.'
+    );
+  });
+
   it('renders cleanly when the title is missing', async () => {
     prayerService.getMyPrayerRequests.and.returnValue(of(buildResponse([{ ...basePrayer, title: '' }])));
     prayerService.getMyPrayerRequest.and.returnValue(of(basePrayer));
@@ -362,6 +374,17 @@ describe('PrayerMyRequestsPage', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('Private');
     expect(text).toContain('Public');
+  });
+
+  it('renders the status, visibility, and scope filters', async () => {
+    prayerService.getMyPrayerRequests.and.returnValue(of(buildResponse([basePrayer])));
+    prayerService.getMyPrayerRequest.and.returnValue(of(basePrayer));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="status-filter"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="visibility-filter"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="scope-filter"]')).not.toBeNull();
   });
 
   it('sends the status filter to the backend', async () => {
@@ -586,6 +609,19 @@ describe('PrayerMyRequestsPage', () => {
     expect(page.selectedPrayerDetail?.resolved_at).toBe('2026-07-22T15:00:00Z');
   });
 
+  it('opens prayer details from a prayer card', async () => {
+    prayerService.getMyPrayerRequests.and.returnValue(of(buildResponse([basePrayer])));
+    prayerService.getMyPrayerRequest.and.returnValue(of({ ...basePrayer, resolved_at: '2026-07-22T15:00:00Z' }));
+
+    await createComponent();
+
+    page.openPrayerDetails(basePrayer);
+    fixture.detectChanges();
+
+    expect(page.isDetailOpen).toBeTrue();
+    expect(page.selectedPrayerDetail?.id).toBe(basePrayer.id);
+  });
+
   it('does not render user email, phone, or moderated_by identity', async () => {
     prayerService.getMyPrayerRequests.and.returnValue(of(buildResponse([basePrayer])));
     prayerService.getMyPrayerRequest.and.returnValue(of(basePrayer));
@@ -618,5 +654,51 @@ describe('PrayerMyRequestsPage', () => {
 
     expect(fixture.nativeElement.querySelector('[data-testid="debug-banner"]')).toBeNull();
     expect(fixture.nativeElement.textContent).not.toContain('My Prayer Requests debug:');
+  });
+
+  it('keeps the prayer list inside the main light content structure without a fixed-height sheet rule', async () => {
+    prayerService.getMyPrayerRequests.and.returnValue(of(buildResponse([basePrayer])));
+    prayerService.getMyPrayerRequest.and.returnValue(of(basePrayer));
+
+    await createComponent();
+
+    const surface = fixture.nativeElement.querySelector('.my-prayers-surface') as HTMLElement | null;
+    const feed = fixture.nativeElement.querySelector('.my-prayers-feed') as HTMLElement | null;
+
+    expect(surface).not.toBeNull();
+    expect(feed).not.toBeNull();
+    expect(surface?.contains(feed as Node)).toBeTrue();
+    expect(surface?.style.height).toBe('');
+    expect(surface?.style.minHeight).toBe('');
+    expect(surface?.style.position).toBe('');
+  });
+
+  it('preserves comfortable bottom safe-area padding for the final prayer card stack', async () => {
+    prayerService.getMyPrayerRequests.and.returnValue(of(buildResponse([basePrayer])));
+    prayerService.getMyPrayerRequest.and.returnValue(of(basePrayer));
+
+    await createComponent();
+
+    const content = fixture.nativeElement.querySelector('.my-prayers-surface__content') as HTMLElement | null;
+
+    expect(content).not.toBeNull();
+    expect(getComputedStyle(content as Element).paddingBottom).not.toBe('0px');
+  });
+
+  it('uses a light content surface beneath the prayer list instead of exposing the blue hero background', async () => {
+    prayerService.getMyPrayerRequests.and.returnValue(of(buildResponse([basePrayer])));
+    prayerService.getMyPrayerRequest.and.returnValue(of(basePrayer));
+
+    await createComponent();
+
+    const ionContent = fixture.nativeElement.querySelector('ion-content.my-prayers-content') as HTMLElement | null;
+    const surface = fixture.nativeElement.querySelector('.my-prayers-surface') as HTMLElement | null;
+    const surfaceContent = fixture.nativeElement.querySelector('.my-prayers-surface__content') as HTMLElement | null;
+
+    expect(ionContent).not.toBeNull();
+    expect(surface).not.toBeNull();
+    expect(surfaceContent).not.toBeNull();
+    expect(getComputedStyle(surface as Element).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+    expect(getComputedStyle(surfaceContent as Element).overflow).not.toBe('hidden');
   });
 });
