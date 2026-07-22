@@ -8,6 +8,7 @@ import { Subject, combineLatest } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import {
+  PublicChurchHierarchy,
   PrayerCategory,
   PrayerRequestSubmissionPayload,
   PrayerScope,
@@ -70,8 +71,6 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
     },
   ];
 
-  readonly hierarchyDependency = this.prayerService.hierarchyDependency;
-
   readonly form = this.formBuilder.group({
     request_text: ['', [requiredTrimmedValidator()]],
     title: [''],
@@ -92,11 +91,23 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
   lastSubmittedVisibility: PrayerVisibility = 'private';
   isAuthenticatedUser = false;
   currentUserRole: string | null = null;
+  areas: PublicChurchHierarchy[] = [];
+  districts: PublicChurchHierarchy[] = [];
+  localChurches: PublicChurchHierarchy[] = [];
+  isAreasLoading = false;
+  isDistrictsLoading = false;
+  isLocalChurchesLoading = false;
+  areaLoadError = '';
+  districtLoadError = '';
+  localChurchLoadError = '';
+  private districtsRequestId = 0;
+  private localChurchesRequestId = 0;
   private readonly destroy$ = new Subject<void>();
 
   ngOnInit(): void {
     this.configureScopeValidators();
     this.configureSubmitterValidators();
+    this.loadAreas();
 
     combineLatest([this.authService.isAuthenticated$, this.authService.currentUser$])
       .pipe(takeUntil(this.destroy$))
@@ -138,12 +149,28 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
     return this.isSubmitting ? 'Submitting...' : 'Submit Prayer Request';
   }
 
-  get scopeRequiresUnavailableHierarchy(): boolean {
-    return this.selectedScope !== '' && this.selectedScope !== 'global' && !this.hierarchyDependency.available;
-  }
-
   get canSubmit(): boolean {
     return !this.isSubmitting && !this.showSuccessState;
+  }
+
+  get showAreaSelector(): boolean {
+    return this.selectedScope === 'area' || this.selectedScope === 'district' || this.selectedScope === 'local';
+  }
+
+  get showDistrictSelector(): boolean {
+    return this.selectedScope === 'district' || this.selectedScope === 'local';
+  }
+
+  get showLocalChurchSelector(): boolean {
+    return this.selectedScope === 'local';
+  }
+
+  get selectedAreaId(): number | null {
+    return this.form.controls.selected_area_id.value;
+  }
+
+  get selectedDistrictId(): number | null {
+    return this.form.controls.selected_district_id.value;
   }
 
   get successMessage(): string {
@@ -175,6 +202,9 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
       delete this.fieldErrors['selected_district_id'];
       delete this.fieldErrors['selected_local_church_id'];
     }
+    if (field === 'selected_area_id' || field === 'selected_district_id' || field === 'selected_local_church_id') {
+      delete this.fieldErrors[field];
+    }
     if (!Object.keys(this.fieldErrors).length) {
       this.genericErrorMessage = '';
     }
@@ -183,14 +213,31 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
   handleScopeChange(scope: PrayerScope | ''): void {
     if (scope === 'global') {
       this.clearHierarchySelections();
+      this.clearDistrictState();
+      this.clearLocalChurchState();
     }
 
     if (scope === 'area') {
       this.form.patchValue({ selected_district_id: null, selected_local_church_id: null }, { emitEvent: false });
+      this.clearDistrictState();
+      this.clearLocalChurchState();
     }
 
     if (scope === 'district') {
       this.form.patchValue({ selected_local_church_id: null }, { emitEvent: false });
+      this.clearLocalChurchState();
+      if (this.selectedAreaId && !this.districts.length && !this.isDistrictsLoading) {
+        this.loadDistricts(this.selectedAreaId);
+      }
+    }
+
+    if (scope === 'local') {
+      if (this.selectedAreaId && !this.districts.length && !this.isDistrictsLoading) {
+        this.loadDistricts(this.selectedAreaId);
+      }
+      if (this.selectedDistrictId && !this.localChurches.length && !this.isLocalChurchesLoading) {
+        this.loadLocalChurches(this.selectedDistrictId);
+      }
     }
 
     this.configureScopeValidators();
@@ -208,6 +255,13 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
       },
       { emitEvent: false }
     );
+    this.clearDistrictState();
+    this.clearLocalChurchState();
+    this.onFieldInput('selected_area_id');
+
+    if (areaId && (this.selectedScope === 'district' || this.selectedScope === 'local')) {
+      this.loadDistricts(areaId);
+    }
   }
 
   onDistrictSelectionChanged(districtId: number | null): void {
@@ -218,6 +272,17 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
       },
       { emitEvent: false }
     );
+    this.clearLocalChurchState();
+    this.onFieldInput('selected_district_id');
+
+    if (districtId && this.selectedScope === 'local') {
+      this.loadLocalChurches(districtId);
+    }
+  }
+
+  onLocalChurchSelectionChanged(localChurchId: number | null): void {
+    this.form.patchValue({ selected_local_church_id: localChurchId }, { emitEvent: false });
+    this.onFieldInput('selected_local_church_id');
   }
 
   buildSubmissionPayload(): PrayerRequestSubmissionPayload {
@@ -248,11 +313,6 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
     this.configureSubmitterValidators();
     this.form.markAllAsTouched();
     this.form.updateValueAndValidity({ emitEvent: false });
-
-    if (this.scopeRequiresUnavailableHierarchy) {
-      this.genericErrorMessage = this.hierarchyDependency.reason;
-      return;
-    }
 
     if (this.form.invalid) {
       this.genericErrorMessage = 'Please complete the required prayer request fields.';
@@ -303,6 +363,22 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
     void this.router.navigateByUrl('/prayer/my-requests');
   }
 
+  retryAreaLoad(): void {
+    this.loadAreas();
+  }
+
+  retryDistrictLoad(): void {
+    if (this.selectedAreaId) {
+      this.loadDistricts(this.selectedAreaId);
+    }
+  }
+
+  retryLocalChurchLoad(): void {
+    if (this.selectedDistrictId) {
+      this.loadLocalChurches(this.selectedDistrictId);
+    }
+  }
+
   controlError(controlName: string): string {
     if (this.fieldErrors[controlName]?.length) {
       return this.fieldErrors[controlName][0];
@@ -346,6 +422,87 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
       },
       { emitEvent: false }
     );
+  }
+
+  private clearDistrictState(): void {
+    this.districts = [];
+    this.isDistrictsLoading = false;
+    this.districtLoadError = '';
+  }
+
+  private clearLocalChurchState(): void {
+    this.localChurches = [];
+    this.isLocalChurchesLoading = false;
+    this.localChurchLoadError = '';
+  }
+
+  private loadAreas(): void {
+    this.isAreasLoading = true;
+    this.areaLoadError = '';
+
+    this.prayerService.getPublicChurches('area').subscribe({
+      next: (areas) => {
+        this.areas = areas;
+        this.isAreasLoading = false;
+      },
+      error: () => {
+        this.areas = [];
+        this.isAreasLoading = false;
+        this.areaLoadError = "We couldn't load Areas right now.";
+      },
+    });
+  }
+
+  private loadDistricts(areaId: number): void {
+    const requestId = ++this.districtsRequestId;
+    this.isDistrictsLoading = true;
+    this.districtLoadError = '';
+
+    this.prayerService.getPublicChurches('district', areaId).subscribe({
+      next: (districts) => {
+        if (requestId !== this.districtsRequestId || this.selectedAreaId !== areaId) {
+          return;
+        }
+
+        this.districts = districts;
+        this.isDistrictsLoading = false;
+      },
+      error: () => {
+        if (requestId !== this.districtsRequestId || this.selectedAreaId !== areaId) {
+          return;
+        }
+
+        this.districts = [];
+        this.isDistrictsLoading = false;
+        this.districtLoadError = "We couldn't load Districts right now.";
+      },
+    });
+  }
+
+  private loadLocalChurches(districtId: number): void {
+    const requestId = ++this.localChurchesRequestId;
+    this.isLocalChurchesLoading = true;
+    this.localChurchLoadError = '';
+
+    this.prayerService.getPublicChurches('local', districtId).subscribe({
+      next: (localChurches) => {
+        if (requestId !== this.localChurchesRequestId || this.selectedDistrictId !== districtId) {
+          return;
+        }
+
+        this.localChurches = localChurches;
+        this.isLocalChurchesLoading = false;
+      },
+      error: () => {
+        if (requestId !== this.localChurchesRequestId || this.selectedDistrictId !== districtId) {
+          return;
+        }
+
+        this.localChurches = [];
+        this.isLocalChurchesLoading = false;
+        this.localChurchLoadError = "We couldn't load Local churches right now.";
+      },
+    });
   }
 
   private configureScopeValidators(): void {

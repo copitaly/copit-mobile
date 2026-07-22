@@ -1,10 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { BehaviorSubject, of, throwError } from 'rxjs';
+import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 
 import { AuthService } from '../../core/services/auth.service';
-import { PrayerRequestSubmissionResponse } from '../../core/models/prayer.model';
+import { PrayerRequestSubmissionResponse, PublicChurchHierarchy } from '../../core/models/prayer.model';
 import { PrayerService } from '../../core/services/prayer.service';
 import { PrayerSubmitPage } from './prayer-submit.page';
 
@@ -15,6 +15,9 @@ describe('PrayerSubmitPage', () => {
   let authState$: BehaviorSubject<boolean>;
   let currentUser$: BehaviorSubject<any>;
   let authServiceValue: any;
+  let areaChurch: PublicChurchHierarchy;
+  let districtChurch: PublicChurchHierarchy;
+  let localChurch: PublicChurchHierarchy;
 
   const successResponse: PrayerRequestSubmissionResponse = {
     id: 44,
@@ -35,13 +38,50 @@ describe('PrayerSubmitPage', () => {
   }
 
   beforeEach(() => {
-    prayerService = jasmine.createSpyObj<PrayerService>('PrayerService', ['submitPrayerRequest'], {
+    areaChurch = {
+      id: 10,
+      name: 'Roma Area',
+      level: 'area',
+      parent: null,
+      district: null,
+      area: null,
+      is_active: true,
+    };
+    districtChurch = {
+      id: 20,
+      name: 'Roma Centro',
+      level: 'district',
+      parent: { id: 10, name: 'Roma Area', level: 'area' },
+      district: null,
+      area: { id: 10, name: 'Roma Area', level: 'area' },
+      is_active: true,
+    };
+    localChurch = {
+      id: 30,
+      name: 'Roma Central Assembly',
+      level: 'local',
+      parent: { id: 20, name: 'Roma Centro', level: 'district' },
+      district: { id: 20, name: 'Roma Centro', level: 'district' },
+      area: { id: 10, name: 'Roma Area', level: 'area' },
+      is_active: true,
+    };
+
+    prayerService = jasmine.createSpyObj<PrayerService>('PrayerService', ['submitPrayerRequest', 'getPublicChurches'], {
       hierarchyDependency: {
-        available: false,
-        reason: 'Area, district, and local prayer scopes need a public church hierarchy endpoint that is not available in the current backend.',
+        available: true,
+        reason: '',
       },
     });
     prayerService.submitPrayerRequest.and.returnValue(of(successResponse));
+    prayerService.getPublicChurches.and.callFake((level: 'area' | 'district' | 'local', parentId?: number) => {
+      if (level === 'area') {
+        return of([areaChurch]);
+      }
+      if (level === 'district') {
+        return of(parentId === 10 ? [districtChurch] : []);
+      }
+      return of(parentId === 20 ? [localChurch] : []);
+    });
 
     router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
@@ -96,6 +136,11 @@ describe('PrayerSubmitPage', () => {
     expect(page.controlError('scope')).toBe('Please choose a prayer scope.');
   });
 
+  it('loads areas from the public churches endpoint on init', () => {
+    expect(prayerService.getPublicChurches).toHaveBeenCalledWith('area');
+    expect(page.areas).toEqual([areaChurch]);
+  });
+
   it('global scope builds a payload with no usable church id', () => {
     page.form.patchValue({
       request_text: 'Please pray for wisdom.',
@@ -147,6 +192,8 @@ describe('PrayerSubmitPage', () => {
     expect(page.form.controls.selected_area_id.value).toBe(99);
     expect(page.form.controls.selected_district_id.value).toBeNull();
     expect(page.form.controls.selected_local_church_id.value).toBeNull();
+    expect(page.districts).toEqual([]);
+    expect(page.localChurches).toEqual([]);
   });
 
   it('changing district clears local selection', () => {
@@ -159,6 +206,7 @@ describe('PrayerSubmitPage', () => {
 
     expect(page.form.controls.selected_district_id.value).toBe(22);
     expect(page.form.controls.selected_local_church_id.value).toBeNull();
+    expect(page.localChurches).toEqual([]);
   });
 
   it('switching to global clears all hierarchy selections', () => {
@@ -173,6 +221,259 @@ describe('PrayerSubmitPage', () => {
     expect(page.form.controls.selected_area_id.value).toBeNull();
     expect(page.form.controls.selected_district_id.value).toBeNull();
     expect(page.form.controls.selected_local_church_id.value).toBeNull();
+  });
+
+  it('shows no hierarchy selectors for global scope', () => {
+    page.form.patchValue({ scope: 'global' });
+    page.handleScopeChange('global');
+
+    expect(page.showAreaSelector).toBeFalse();
+    expect(page.showDistrictSelector).toBeFalse();
+    expect(page.showLocalChurchSelector).toBeFalse();
+  });
+
+  it('shows the area selector for area scope and requires an area', () => {
+    page.form.patchValue({ request_text: 'Please pray.', category: 'personal', scope: 'area' });
+    page.submit();
+
+    expect(page.showAreaSelector).toBeTrue();
+    expect(page.controlError('selected_area_id')).toBe('Please select an Area.');
+  });
+
+  it('area submission uses the selected area id', () => {
+    page.form.patchValue({
+      request_text: 'Please pray.',
+      category: 'personal',
+      scope: 'area',
+      selected_area_id: 10,
+    });
+
+    page.submit();
+
+    expect(prayerService.submitPrayerRequest.calls.mostRecent().args[0].church_id).toBe(10);
+  });
+
+  it('shows area and district for district scope and keeps district unavailable before area selection', () => {
+    page.form.patchValue({ scope: 'district' });
+    page.handleScopeChange('district');
+
+    expect(page.showAreaSelector).toBeTrue();
+    expect(page.showDistrictSelector).toBeTrue();
+    expect(page.selectedAreaId).toBeNull();
+    expect(page.districts).toEqual([]);
+  });
+
+  it('selecting an area loads districts for that area', () => {
+    page.form.patchValue({ scope: 'district' });
+
+    page.onAreaSelectionChanged(10);
+
+    expect(prayerService.getPublicChurches).toHaveBeenCalledWith('district', 10);
+    expect(page.districts).toEqual([districtChurch]);
+  });
+
+  it('district scope requires a district and submits the selected district id', () => {
+    page.form.patchValue({
+      request_text: 'Please pray.',
+      category: 'personal',
+      scope: 'district',
+      selected_area_id: 10,
+    });
+    page.submit();
+    expect(page.controlError('selected_district_id')).toBe('Please select a District.');
+
+    page.form.patchValue({ selected_district_id: 20 });
+    page.submit();
+    expect(prayerService.submitPrayerRequest.calls.mostRecent().args[0].church_id).toBe(20);
+  });
+
+  it('shows local hierarchy and loads local churches from the selected district', () => {
+    page.form.patchValue({ scope: 'local' });
+    page.onAreaSelectionChanged(10);
+    page.onDistrictSelectionChanged(20);
+
+    expect(page.showLocalChurchSelector).toBeTrue();
+    expect(prayerService.getPublicChurches).toHaveBeenCalledWith('local', 20);
+    expect(page.localChurches).toEqual([localChurch]);
+  });
+
+  it('local scope requires a local church and submits the selected local church id', () => {
+    page.form.patchValue({
+      request_text: 'Please pray.',
+      category: 'personal',
+      scope: 'local',
+      selected_area_id: 10,
+      selected_district_id: 20,
+    });
+    page.submit();
+    expect(page.controlError('selected_local_church_id')).toBe('Please select a Local Church.');
+
+    page.form.patchValue({ selected_local_church_id: 30 });
+    page.submit();
+    expect(prayerService.submitPrayerRequest.calls.mostRecent().args[0].church_id).toBe(30);
+  });
+
+  it('changing scope to area clears district and local selections', () => {
+    page.form.patchValue({
+      selected_area_id: 10,
+      selected_district_id: 20,
+      selected_local_church_id: 30,
+    });
+
+    page.handleScopeChange('area');
+
+    expect(page.form.controls.selected_district_id.value).toBeNull();
+    expect(page.form.controls.selected_local_church_id.value).toBeNull();
+  });
+
+  it('stale district responses do not populate the wrong area', () => {
+    const areaOneDistricts$ = new Subject<PublicChurchHierarchy[]>();
+    const areaTwoDistricts$ = new Subject<PublicChurchHierarchy[]>();
+    prayerService.getPublicChurches.and.callFake((level: 'area' | 'district' | 'local', parentId?: number) => {
+      if (level === 'area') {
+        return of([areaChurch, { ...areaChurch, id: 11, name: 'Milano Area' }]);
+      }
+      if (level === 'district' && parentId === 10) {
+        return areaOneDistricts$.asObservable();
+      }
+      if (level === 'district' && parentId === 11) {
+        return areaTwoDistricts$.asObservable();
+      }
+      return of([]);
+    });
+
+    page.ngOnDestroy();
+    page = createPage();
+    page.ngOnInit();
+
+    page.form.patchValue({ scope: 'district' });
+    page.onAreaSelectionChanged(10);
+    page.onAreaSelectionChanged(11);
+    areaOneDistricts$.next([districtChurch]);
+    areaTwoDistricts$.next([{ ...districtChurch, id: 21, name: 'Milano Centro', parent: { id: 11, name: 'Milano Area', level: 'area' } }]);
+
+    expect(page.selectedAreaId).toBe(11);
+    expect(page.districts.map((district) => district.id)).toEqual([21]);
+  });
+
+  it('stale local responses do not populate the wrong district', () => {
+    const localOne$ = new Subject<PublicChurchHierarchy[]>();
+    const localTwo$ = new Subject<PublicChurchHierarchy[]>();
+    prayerService.getPublicChurches.and.callFake((level: 'area' | 'district' | 'local', parentId?: number) => {
+      if (level === 'area') {
+        return of([areaChurch]);
+      }
+      if (level === 'district') {
+        return of([districtChurch, { ...districtChurch, id: 21, name: 'Roma Sud' }]);
+      }
+      if (level === 'local' && parentId === 20) {
+        return localOne$.asObservable();
+      }
+      if (level === 'local' && parentId === 21) {
+        return localTwo$.asObservable();
+      }
+      return of([]);
+    });
+
+    page.ngOnDestroy();
+    page = createPage();
+    page.ngOnInit();
+
+    page.form.patchValue({ scope: 'local' });
+    page.onAreaSelectionChanged(10);
+    page.onDistrictSelectionChanged(20);
+    page.onDistrictSelectionChanged(21);
+    localOne$.next([localChurch]);
+    localTwo$.next([{ ...localChurch, id: 31, name: 'Roma Sud Assembly', parent: { id: 21, name: 'Roma Sud', level: 'district' } }]);
+
+    expect(page.selectedDistrictId).toBe(21);
+    expect(page.localChurches.map((church) => church.id)).toEqual([31]);
+  });
+
+  it('tracks area loading state and preserves global submission if area loading fails', () => {
+    prayerService.getPublicChurches.and.returnValue(throwError(() => new Error('network')));
+    page.ngOnDestroy();
+    page = createPage();
+    page.ngOnInit();
+
+    expect(page.areaLoadError).toContain("couldn't load Areas");
+    page.form.patchValue({ request_text: 'Please pray.', category: 'personal', scope: 'global' });
+    page.submit();
+    expect(prayerService.submitPrayerRequest).toHaveBeenCalled();
+  });
+
+  it('preserves the selected area when district loading fails', () => {
+    prayerService.getPublicChurches.and.callFake((level: 'area' | 'district' | 'local') => {
+      if (level === 'area') {
+        return of([areaChurch]);
+      }
+      return throwError(() => new Error('network'));
+    });
+    page.ngOnDestroy();
+    page = createPage();
+    page.ngOnInit();
+
+    page.form.patchValue({ scope: 'district' });
+    page.onAreaSelectionChanged(10);
+
+    expect(page.selectedAreaId).toBe(10);
+    expect(page.districtLoadError).toContain("couldn't load Districts");
+  });
+
+  it('preserves the selected district when local church loading fails', () => {
+    prayerService.getPublicChurches.and.callFake((level: 'area' | 'district' | 'local') => {
+      if (level === 'area') {
+        return of([areaChurch]);
+      }
+      if (level === 'district') {
+        return of([districtChurch]);
+      }
+      return throwError(() => new Error('network'));
+    });
+    page.ngOnDestroy();
+    page = createPage();
+    page.ngOnInit();
+
+    page.form.patchValue({ scope: 'local' });
+    page.onAreaSelectionChanged(10);
+    page.onDistrictSelectionChanged(20);
+
+    expect(page.selectedDistrictId).toBe(20);
+    expect(page.localChurchLoadError).toContain("couldn't load Local churches");
+  });
+
+  it('renders empty district and local states through page state', () => {
+    prayerService.getPublicChurches.and.callFake((level: 'area' | 'district' | 'local') => {
+      if (level === 'area') {
+        return of([areaChurch]);
+      }
+      return of([]);
+    });
+    page.ngOnDestroy();
+    page = createPage();
+    page.ngOnInit();
+
+    page.form.patchValue({ scope: 'district' });
+    page.onAreaSelectionChanged(10);
+    expect(page.districts).toEqual([]);
+
+    page.form.patchValue({ scope: 'local', selected_district_id: 20 });
+    page.onDistrictSelectionChanged(20);
+    expect(page.localChurches).toEqual([]);
+  });
+
+  it('retry behavior reloads hierarchy options', () => {
+    prayerService.getPublicChurches.calls.reset();
+    page.retryAreaLoad();
+    expect(prayerService.getPublicChurches).toHaveBeenCalledWith('area');
+
+    page.form.patchValue({ selected_area_id: 10 });
+    page.retryDistrictLoad();
+    expect(prayerService.getPublicChurches).toHaveBeenCalledWith('district', 10);
+
+    page.form.patchValue({ selected_district_id: 20 });
+    page.retryLocalChurchLoad();
+    expect(prayerService.getPublicChurches).toHaveBeenCalledWith('local', 20);
   });
 
   it('guest anonymous submission does not require a name', () => {
@@ -269,19 +570,6 @@ describe('PrayerSubmitPage', () => {
     expect(payload['moderated_by']).toBeUndefined();
     expect(payload['moderated_at']).toBeUndefined();
     expect(payload['resolved_at']).toBeUndefined();
-  });
-
-  it('prevents non-global submission because hierarchy is unavailable', () => {
-    page.form.patchValue({
-      request_text: 'Please pray.',
-      category: 'personal',
-      scope: 'area',
-    });
-
-    page.submit();
-
-    expect(page.genericErrorMessage).toContain('public church hierarchy endpoint');
-    expect(prayerService.submitPrayerRequest).not.toHaveBeenCalled();
   });
 
   it('submits through the public prayer endpoint service and shows success state', () => {

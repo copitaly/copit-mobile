@@ -28,6 +28,22 @@ export interface PrayerChurchSummary {
   } | null;
 }
 
+export interface PublicChurchHierarchySummary {
+  id: number;
+  name: string;
+  level: string;
+}
+
+export interface PublicChurchHierarchy {
+  id: number;
+  name: string;
+  level: string;
+  parent: PublicChurchHierarchySummary | null;
+  district: PublicChurchHierarchySummary | null;
+  area: PublicChurchHierarchySummary | null;
+  is_active: boolean;
+}
+
 export interface PrayerRequestSubmissionPayload {
   scope: PrayerScope;
   church_id?: number | null;

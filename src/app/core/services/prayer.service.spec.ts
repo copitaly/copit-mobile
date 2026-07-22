@@ -75,4 +75,37 @@ describe('PrayerService', () => {
     expect(request.request.params.keys().length).toBe(0);
     request.flush({ count: 0, next: null, previous: null, results: [] });
   });
+
+  it('maps the paginated public church hierarchy response correctly', () => {
+    let responseBody: unknown;
+
+    service.getPublicChurches('area').subscribe((response) => {
+      responseBody = response;
+    });
+
+    const request = httpMock.expectOne((req) => req.url.endsWith('/api/public/churches/'));
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.get('level')).toBe('area');
+    expect(request.request.params.get('page_size')).toBe('100');
+    request.flush({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [{ id: 1, name: 'Roma Area', level: 'area', parent: null, district: null, area: null, is_active: true }],
+    });
+
+    expect(responseBody).toEqual([
+      { id: 1, name: 'Roma Area', level: 'area', parent: null, district: null, area: null, is_active: true },
+    ]);
+  });
+
+  it('uses the public churches endpoint and never the public branches endpoint for prayer hierarchy', () => {
+    service.getPublicChurches('district', 17).subscribe();
+
+    const request = httpMock.expectOne((req) => req.url.endsWith('/api/public/churches/'));
+    expect(request.request.params.get('level')).toBe('district');
+    expect(request.request.params.get('parent')).toBe('17');
+    httpMock.expectNone((req) => req.url.endsWith('/api/public/branches/'));
+    request.flush({ count: 0, next: null, previous: null, results: [] });
+  });
 });

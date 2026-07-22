@@ -64,6 +64,7 @@
 
             <section class="prayer-form-card">
               <label class="prayer-label" for="prayer-scope">Prayer Scope</label>
+              <p class="prayer-helper">Global shares with the whole COP Italy organization.</p>
               <ion-item fill="solid" class="prayer-field">
                 <ion-select
                   id="prayer-scope"
@@ -88,43 +89,87 @@
               </div>
             </section>
 
-            <section *ngIf="selectedScope === 'area'" class="prayer-form-card">
+            <section *ngIf="showAreaSelector" class="prayer-form-card">
               <label class="prayer-label">Area</label>
-              <div class="prayer-dependency-card">
-                <strong>Area selection is not available yet.</strong>
-                <span>{{ hierarchyDependency.reason }}</span>
+              <ion-item fill="solid" class="prayer-field">
+                <ion-select
+                  interface="action-sheet"
+                  formControlName="selected_area_id"
+                  placeholder="Choose an Area"
+                  [disabled]="isAreasLoading || areas.length === 0"
+                  (ionChange)="onAreaSelectionChanged($any($event.detail).value)"
+                >
+                  <ion-select-option *ngFor="let area of areas" [value]="area.id">
+                    {{ area.name }}
+                  </ion-select-option>
+                </ion-select>
+              </ion-item>
+              <p *ngIf="isAreasLoading" class="prayer-inline-state">Loading Areas...</p>
+              <div *ngIf="areaLoadError" class="prayer-inline-state prayer-inline-state--error">
+                <span>{{ areaLoadError }}</span>
+                <button type="button" class="prayer-inline-action" (click)="retryAreaLoad()">Retry</button>
               </div>
+              <p *ngIf="!isAreasLoading && !areaLoadError && areas.length === 0" class="prayer-inline-state">
+                No Areas are available right now.
+              </p>
               <ion-text color="danger" *ngIf="controlError('selected_area_id')" class="prayer-error">
                 {{ controlError('selected_area_id') }}
               </ion-text>
             </section>
 
-            <section *ngIf="selectedScope === 'district'" class="prayer-form-card">
-              <label class="prayer-label">Area</label>
-              <div class="prayer-dependency-card">
-                <strong>Area and District selection are not available yet.</strong>
-                <span>{{ hierarchyDependency.reason }}</span>
+            <section *ngIf="showDistrictSelector" class="prayer-form-card">
+              <label class="prayer-label">District</label>
+              <ion-item fill="solid" class="prayer-field">
+                <ion-select
+                  interface="action-sheet"
+                  formControlName="selected_district_id"
+                  placeholder="Choose a District"
+                  [disabled]="!selectedAreaId || isDistrictsLoading || districts.length === 0"
+                  (ionChange)="onDistrictSelectionChanged($any($event.detail).value)"
+                >
+                  <ion-select-option *ngFor="let district of districts" [value]="district.id">
+                    {{ district.name }}
+                  </ion-select-option>
+                </ion-select>
+              </ion-item>
+              <p *ngIf="!selectedAreaId" class="prayer-inline-state">Choose an Area first.</p>
+              <p *ngIf="selectedAreaId && isDistrictsLoading" class="prayer-inline-state">Loading Districts...</p>
+              <div *ngIf="districtLoadError" class="prayer-inline-state prayer-inline-state--error">
+                <span>{{ districtLoadError }}</span>
+                <button type="button" class="prayer-inline-action" (click)="retryDistrictLoad()">Retry</button>
               </div>
-              <ion-text color="danger" *ngIf="controlError('selected_area_id')" class="prayer-error">
-                {{ controlError('selected_area_id') }}
-              </ion-text>
+              <p *ngIf="selectedAreaId && !isDistrictsLoading && !districtLoadError && districts.length === 0" class="prayer-inline-state">
+                No districts are available for this Area.
+              </p>
               <ion-text color="danger" *ngIf="controlError('selected_district_id')" class="prayer-error">
                 {{ controlError('selected_district_id') }}
               </ion-text>
             </section>
 
-            <section *ngIf="selectedScope === 'local'" class="prayer-form-card">
-              <label class="prayer-label">Area</label>
-              <div class="prayer-dependency-card">
-                <strong>Area, District, and Local Church selection are not available yet.</strong>
-                <span>{{ hierarchyDependency.reason }}</span>
+            <section *ngIf="showLocalChurchSelector" class="prayer-form-card">
+              <label class="prayer-label">Local Church</label>
+              <ion-item fill="solid" class="prayer-field">
+                <ion-select
+                  interface="action-sheet"
+                  formControlName="selected_local_church_id"
+                  placeholder="Choose a Local Church"
+                  [disabled]="!selectedDistrictId || isLocalChurchesLoading || localChurches.length === 0"
+                  (ionChange)="onLocalChurchSelectionChanged($any($event.detail).value)"
+                >
+                  <ion-select-option *ngFor="let localChurch of localChurches" [value]="localChurch.id">
+                    {{ localChurch.name }}
+                  </ion-select-option>
+                </ion-select>
+              </ion-item>
+              <p *ngIf="!selectedDistrictId" class="prayer-inline-state">Choose a District first.</p>
+              <p *ngIf="selectedDistrictId && isLocalChurchesLoading" class="prayer-inline-state">Loading Local churches...</p>
+              <div *ngIf="localChurchLoadError" class="prayer-inline-state prayer-inline-state--error">
+                <span>{{ localChurchLoadError }}</span>
+                <button type="button" class="prayer-inline-action" (click)="retryLocalChurchLoad()">Retry</button>
               </div>
-              <ion-text color="danger" *ngIf="controlError('selected_area_id')" class="prayer-error">
-                {{ controlError('selected_area_id') }}
-              </ion-text>
-              <ion-text color="danger" *ngIf="controlError('selected_district_id')" class="prayer-error">
-                {{ controlError('selected_district_id') }}
-              </ion-text>
+              <p *ngIf="selectedDistrictId && !isLocalChurchesLoading && !localChurchLoadError && localChurches.length === 0" class="prayer-inline-state">
+                No local churches are available for this District.
+              </p>
               <ion-text color="danger" *ngIf="controlError('selected_local_church_id')" class="prayer-error">
                 {{ controlError('selected_local_church_id') }}
               </ion-text>

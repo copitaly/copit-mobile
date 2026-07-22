@@ -5,6 +5,7 @@ import { catchError, map, switchMap, tap } from 'rxjs/operators';
 
 import {
   CommunityPrayerRequest,
+  PublicChurchHierarchy,
   PrayerHierarchyDependency,
   PrayerRequestSubmissionPayload,
   PrayerRequestSubmissionResponse,
@@ -23,6 +24,13 @@ export interface CommunityPrayerFilters extends QueryParams {
   page?: number;
 }
 
+export interface PublicChurchHierarchyFilters extends QueryParams {
+  level: PrayerScope;
+  parent?: number;
+  page?: number;
+  page_size?: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PrayerService {
   private readonly http = inject(HttpClient);
@@ -32,11 +40,12 @@ export class PrayerService {
 
   private readonly submitEndpoint = 'public/prayer-requests/submit/';
   private readonly communityEndpoint = 'public/prayer-requests/';
+  private readonly publicChurchesEndpoint = 'public/churches/';
+  private readonly hierarchyPageSize = 100;
 
   readonly hierarchyDependency: PrayerHierarchyDependency = {
-    available: false,
-    reason:
-      'Area, district, and local prayer scopes need a public church hierarchy endpoint that is not available in the current backend.',
+    available: true,
+    reason: '',
   };
 
   submitPrayerRequest(
@@ -107,6 +116,22 @@ export class PrayerService {
     );
   }
 
+  getPublicChurches(
+    level: Exclude<PrayerScope, 'global'>,
+    parentId?: number
+  ): Observable<PublicChurchHierarchy[]> {
+    const params: PublicChurchHierarchyFilters = {
+      level,
+      page: 1,
+      page_size: this.hierarchyPageSize,
+      ...(parentId ? { parent: parentId } : {}),
+    };
+
+    return this.api.get<PaginatedResponse<PublicChurchHierarchy>>(this.publicChurchesEndpoint, params).pipe(
+      map((response) => response.results.map((church) => this.normalizePublicChurch(church)))
+    );
+  }
+
   private buildUrl(path: string): string {
     const baseUrl = environment.apiBaseUrl.replace(/\/+$/, '');
     const normalizedPath = path.replace(/^\/*/, '').replace(/\/+$/, '');
@@ -123,6 +148,15 @@ export class PrayerService {
     return {
       page: 1,
       ...filters,
+    };
+  }
+
+  private normalizePublicChurch(church: PublicChurchHierarchy): PublicChurchHierarchy {
+    return {
+      ...church,
+      parent: church.parent ?? null,
+      district: church.district ?? null,
+      area: church.area ?? null,
     };
   }
 

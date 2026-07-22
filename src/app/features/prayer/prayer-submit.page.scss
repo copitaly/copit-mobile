@@ -148,6 +148,30 @@ ion-content.prayer-submit-content::part(scroll) {
   line-height: 1.45;
 }
 
+.prayer-inline-state {
+  margin: 0.65rem 0 0;
+  color: rgba(3, 23, 63, 0.62);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.prayer-inline-state--error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  color: #9a2230;
+}
+
+.prayer-inline-action {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #0b1d73;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .choice-stack {
   display: grid;
   gap: 0.72rem;
