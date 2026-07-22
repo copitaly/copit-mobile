@@ -4,6 +4,9 @@ import { catchError, map, of } from 'rxjs';
 import { AuthService } from './core/services/auth.service';
 import { FeatureArea, SentryTelemetryService } from './core/services/sentry-telemetry.service';
 
+const normalizeRole = (role: string | null | undefined): string | null =>
+  typeof role === 'string' && role.trim() ? role.trim().toLowerCase() : null;
+
 const redirectAuthenticatedAwayFromAuthPages: CanMatchFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
@@ -51,7 +54,8 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
   }
 
   if (user?.role) {
-    const allowed = user.role === 'member';
+    const normalizedRole = normalizeRole(user.role);
+    const allowed = normalizedRole === 'member';
     const deniedReason = allowed ? null : 'non-member-role';
     if (deniedReason) {
       sentryTelemetry.addFeatureBreadcrumb(feature, 'Route guard denied member access', {
@@ -65,7 +69,7 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
       isAuthenticated,
       memberProfileLoaded: true,
       memberProfileId: user.id ?? null,
-      role: user.role,
+      role: normalizedRole,
       deniedReason,
       allowed,
     });
@@ -76,7 +80,8 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
 
   return authService.getCurrentUser().pipe(
     map((resolvedProfile) => {
-      const allowed = resolvedProfile?.role === 'member';
+      const normalizedRole = normalizeRole(resolvedProfile?.role);
+      const allowed = normalizedRole === 'member';
       if (allowed) {
         sentryTelemetry.addFeatureBreadcrumb(feature, 'Route guard allowed member access', {
           route: deniedRoute,
@@ -87,7 +92,7 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
           isAuthenticated: true,
           memberProfileLoaded: true,
           memberProfileId: resolvedProfile?.id ?? null,
-          role: resolvedProfile?.role ?? null,
+          role: normalizedRole,
           deniedReason: null,
           allowed: true,
         });
@@ -105,7 +110,7 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
         isAuthenticated: true,
         memberProfileLoaded: !!resolvedProfile,
         memberProfileId: resolvedProfile?.id ?? null,
-        role: resolvedProfile?.role ?? null,
+        role: normalizedRole,
         deniedReason,
         allowed: false,
       });

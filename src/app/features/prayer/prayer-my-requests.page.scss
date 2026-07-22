@@ -1,0 +1,313 @@
+:host {
+  display: block;
+}
+
+ion-page {
+  background: #0b1d73;
+}
+
+.my-prayers-feed,
+.skeleton-stack,
+.state-copy,
+.detail-modal-shell,
+.detail-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.my-prayers-hero {
+  padding-bottom: 2rem;
+}
+
+.my-prayers-surface {
+  margin-top: -0.08rem;
+  padding-top: 1.25rem;
+  border-radius: 24px 24px 0 0;
+}
+
+.my-prayers-surface__content {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow: visible;
+  padding-bottom: calc(1.2rem + env(safe-area-inset-bottom));
+}
+
+.my-prayers-intro-card,
+.my-prayer-card,
+.state-card,
+.detail-card {
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 14px 36px rgba(6, 21, 74, 0.1);
+}
+
+.state-copy,
+.detail-meta {
+  gap: 0.9rem;
+}
+
+.my-prayers-intro-card,
+.my-prayer-card,
+.state-card,
+.detail-card {
+  padding: 1rem 1.05rem;
+}
+
+.my-prayers-intro-card {
+  margin-bottom: 1rem;
+  border: 1px solid rgba(11, 29, 115, 0.08);
+}
+
+.my-prayers-intro-card__eyebrow,
+.my-prayer-card__date,
+.meta-row span,
+.filter-field span,
+.load-more-error p {
+  font-size: 0.8rem;
+}
+
+.my-prayers-intro-card__eyebrow,
+.detail-card__eyebrow {
+  margin: 0 0 0.45rem;
+  color: #9a6d06;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.my-prayers-intro-card h2,
+.state-copy h2,
+.my-prayer-card__title,
+.detail-card__title,
+.detail-state h2 {
+  margin: 0;
+  color: #03173f;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.my-prayers-intro-card p,
+.state-copy p,
+.my-prayer-card__body,
+.load-more-error p,
+.detail-card__body,
+.detail-state p,
+.detail-helper {
+  margin: 0;
+  color: rgba(3, 23, 63, 0.68);
+  line-height: 1.55;
+}
+
+.my-prayer-card__body,
+.detail-card__body {
+  color: #1f2c4d;
+  white-space: pre-wrap;
+}
+
+.my-prayers-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.filter-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.filter-field span,
+.meta-row strong,
+.reset-filters-button,
+.detail-link {
+  color: #03173f;
+  font-weight: 700;
+}
+
+.filter-field select {
+  min-height: 48px;
+  border: 1px solid rgba(11, 29, 115, 0.12);
+  border-radius: 16px;
+  padding: 0.7rem 0.85rem;
+  background: #fff;
+  color: #03173f;
+}
+
+.reset-filters-button,
+.detail-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.reset-filters-button {
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.my-prayers-feed,
+.skeleton-stack {
+  gap: 1rem;
+}
+
+.my-prayer-card__top,
+.meta-row,
+.skeleton-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.status-chip--pending {
+  background: rgba(245, 182, 40, 0.18);
+  color: #8c5b02;
+}
+
+.status-chip--approved {
+  background: rgba(11, 137, 87, 0.14);
+  color: #0a6b46;
+}
+
+.status-chip--rejected {
+  background: rgba(120, 132, 158, 0.16);
+  color: #41506d;
+}
+
+.status-chip--resolved {
+  background: rgba(11, 29, 115, 0.09);
+  color: #0b1d73;
+}
+
+.my-prayer-card__date,
+.meta-row span {
+  color: rgba(3, 23, 63, 0.58);
+}
+
+.my-prayer-card__title,
+.detail-card__title {
+  font-size: 1.04rem;
+}
+
+.my-prayer-card__meta,
+.detail-meta {
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(3, 23, 63, 0.08);
+}
+
+.meta-row strong {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.state-card,
+.detail-state {
+  text-align: center;
+}
+
+.state-button,
+.submit-button {
+  --border-radius: 16px;
+  font-weight: 600;
+}
+
+.state-button {
+  --background: #0b1d73;
+  --background-activated: #09175c;
+  --box-shadow: 0 12px 22px rgba(11, 29, 115, 0.2);
+}
+
+.state-button--secondary {
+  --background: transparent;
+  --color: #0b1d73;
+  --border-color: rgba(11, 29, 115, 0.14);
+  --box-shadow: none;
+}
+
+.submit-button {
+  --background: #f5b628;
+  --background-activated: #d79d1f;
+  --border-radius: 999px;
+  --box-shadow: 0 10px 22px rgba(245, 182, 40, 0.24);
+  --color: #0b1d73;
+  min-height: 52px;
+  font-weight: 700;
+}
+
+.load-more-error {
+  display: grid;
+  padding: 0 0.1rem;
+}
+
+.load-more-error p {
+  color: #a3323f;
+  text-align: center;
+}
+
+.skeleton {
+  animation: pulse 1.2s infinite ease-in-out;
+}
+
+.skeleton-row {
+  margin-bottom: 0.7rem;
+}
+
+.skeleton-pill,
+.skeleton-line {
+  display: block;
+  background: rgba(11, 26, 115, 0.08);
+  border-radius: 999px;
+}
+
+.skeleton-pill--badge,
+.skeleton-pill--meta {
+  width: 96px;
+  height: 14px;
+}
+
+.skeleton-pill--date {
+  width: 78px;
+  height: 14px;
+}
+
+.skeleton-line--title {
+  width: 58%;
+  height: 16px;
+  margin-bottom: 0.7rem;
+}
+
+.skeleton-line--body {
+  width: 100%;
+  height: 12px;
+  margin-bottom: 0.45rem;
+}
+
+.skeleton-line--body.short,
+.skeleton-pill--meta.short {
+  width: 74%;
+  margin-bottom: 0;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@media (max-width: 420px) {
+  .my-prayers-filters {
+    grid-template-columns: 1fr;
+  }
+}

@@ -181,7 +181,8 @@ body {
 }
 
 ion-content.profile-content,
-ion-content.branch-content {
+ion-content.branch-content,
+ion-content.my-prayers-content {
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -189,7 +190,8 @@ ion-content.branch-content {
 }
 
 ion-content.profile-content::part(scroll),
-ion-content.branch-content::part(scroll) {
+ion-content.branch-content::part(scroll),
+ion-content.my-prayers-content::part(scroll) {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -197,7 +199,8 @@ ion-content.branch-content::part(scroll) {
 }
 
 .profile-content,
-.branch-content {
+.branch-content,
+.my-prayers-content {
   flex: 1;
   display: flex;
   flex-direction: column;

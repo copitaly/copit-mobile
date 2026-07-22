@@ -53,6 +53,14 @@ describe('PrayerPage', () => {
     expect(page.showMemberAction).toBeTrue();
   });
 
+  it('shows my prayer requests when the member role casing is inconsistent', () => {
+    page.ngOnInit();
+    authState$.next(true);
+    currentUser$.next({ role: ' Member ' });
+
+    expect(page.showMemberAction).toBeTrue();
+  });
+
   it('does not show my prayer requests for authenticated non-members', () => {
     page.ngOnInit();
     authState$.next(true);

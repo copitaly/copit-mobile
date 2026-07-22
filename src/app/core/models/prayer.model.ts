@@ -10,6 +10,7 @@ export type PrayerCategory =
   | 'other';
 
 export type PrayerVisibility = 'private' | 'public';
+export type PrayerStatus = 'pending' | 'approved' | 'rejected' | 'resolved';
 
 export interface PrayerChurchSummary {
   id: number;
@@ -78,6 +79,21 @@ export interface CommunityPrayerRequest {
   request_text: string;
   display_name: string;
   created_at: string;
+}
+
+export interface MemberPrayerRequest {
+  id: number;
+  scope: PrayerScope;
+  church: PrayerChurchSummary | null;
+  category: PrayerCategory;
+  title: string | null;
+  request_text: string;
+  visibility: PrayerVisibility;
+  status: PrayerStatus;
+  is_anonymous_publicly: boolean;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PrayerHierarchyDependency {

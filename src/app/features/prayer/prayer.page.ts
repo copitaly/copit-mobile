@@ -60,7 +60,7 @@ export class PrayerPage implements OnInit, OnDestroy {
     combineLatest([this.authService.isAuthenticated$, this.authService.currentUser$])
       .pipe(takeUntil(this.destroy$))
       .subscribe(([isAuthenticated, user]) => {
-        this.showMemberAction = !!isAuthenticated && user?.role === 'member';
+        this.showMemberAction = !!isAuthenticated && this.normalizeRole(user?.role) === 'member';
       });
   }
 
@@ -71,5 +71,9 @@ export class PrayerPage implements OnInit, OnDestroy {
 
   openAction(route: string): void {
     void this.router.navigateByUrl(route);
+  }
+
+  private normalizeRole(role: string | null | undefined): string | null {
+    return typeof role === 'string' && role.trim() ? role.trim().toLowerCase() : null;
   }
 }

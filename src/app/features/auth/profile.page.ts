@@ -15,6 +15,7 @@ type QuickAction = {
   icon: string;
   soon?: boolean;
   route?: string;
+  membersOnly?: boolean;
 };
 
 @Component({
@@ -97,7 +98,7 @@ type QuickAction = {
                   <button
                     type="button"
                     class="action-row"
-                    *ngFor="let action of quickActions; let last = last"
+                    *ngFor="let action of visibleQuickActions; let last = last"
                     [class.action-row--last]="last"
                     (click)="openQuickAction(action)"
                   >
@@ -303,6 +304,13 @@ type QuickAction = {
         text-transform: uppercase;
       }
 
+      .profile-debug-role {
+        margin: 0 0 0 0.15rem;
+        color: rgba(3, 23, 63, 0.56);
+        font-size: 0.82rem;
+        line-height: 1.35;
+      }
+
       .action-card {
         overflow: hidden;
       }
@@ -432,6 +440,13 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   readonly quickActions: QuickAction[] = [
     {
+      title: 'My Prayer Requests',
+      subtitle: 'Review your submitted prayer history',
+      icon: 'chatbubbles-outline',
+      route: '/prayer/my-requests',
+      membersOnly: true,
+    },
+    {
       title: 'My Donations',
       subtitle: 'View your giving history',
       icon: 'heart-outline',
@@ -481,6 +496,14 @@ export class ProfilePage implements OnInit, OnDestroy {
     }
 
     return joinedDate.getUTCFullYear().toString();
+  }
+
+  get visibleQuickActions(): QuickAction[] {
+    return this.quickActions.filter((action) => !action.membersOnly || this.resolvedRole === 'member');
+  }
+
+  get resolvedRole(): string | null {
+    return this.normalizeRole(this.profile?.role);
   }
 
   ngOnInit(): void {
@@ -546,5 +569,9 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   goToLogin(): void {
     void this.router.navigate(['/login']);
+  }
+
+  private normalizeRole(role: string | null | undefined): string | null {
+    return typeof role === 'string' && role.trim() ? role.trim().toLowerCase() : null;
   }
 }
