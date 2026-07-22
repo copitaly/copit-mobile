@@ -5,8 +5,8 @@ const firebaseConfig: FirebaseOptions | null = null;
 
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://copit-api-staging.up.railway.app/api',
-  appOrigin: 'https://copit-staging.web.app',
+  apiBaseUrl: 'https://copit-api-production.up.railway.app/api',
+  appOrigin: 'https://copit-production-97631.web.app',
   appVersion,
   stripePublishableKey: 'pk_live_51THm0S4tk8nFl69pks57XRVERr8Y65ENIuRi6JpcYven8OXWqjIIkJ2PR6Vt49msvMwVDAPCnMsxYQngysnfkxyn00sTkuEh0I',
   stripeMerchantDisplayName: 'COP Italy',
