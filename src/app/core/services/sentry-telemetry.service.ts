@@ -213,7 +213,6 @@ export class SentryTelemetryService implements OnDestroy {
 
     Sentry.setUser({
       id: String(user.id),
-      email: user.email ?? undefined,
     });
     Sentry.setTag('member_role', user.role ?? 'unknown');
     Sentry.setContext('member', {

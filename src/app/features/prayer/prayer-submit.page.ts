@@ -14,6 +14,7 @@ import {
   PrayerScope,
   PrayerVisibility,
 } from '../../core/models/prayer.model';
+import { MemberProfile } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
 import { PrayerService } from '../../core/services/prayer.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
@@ -182,14 +183,7 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
   }
 
   get memberDisplayName(): string {
-    const profile = this.authService.currentUserSnapshot;
-    const fullName = profile?.full_name?.trim();
-    if (fullName) {
-      return fullName;
-    }
-
-    const composedName = `${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`.trim();
-    return composedName;
+    return this.resolveProfileDisplayName(this.authService.currentUserSnapshot);
   }
 
   onFieldInput(field: string): void {
@@ -604,5 +598,19 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
   private firstFieldError(errors: FieldErrorMap): string {
     const firstKey = Object.keys(errors)[0];
     return firstKey ? errors[firstKey][0] : '';
+  }
+
+  private resolveProfileDisplayName(profile: MemberProfile | null): string {
+    const fullName = profile?.full_name?.trim();
+    if (fullName) {
+      return fullName;
+    }
+
+    const composedName = `${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`.trim();
+    if (composedName) {
+      return composedName;
+    }
+
+    return '';
   }
 }

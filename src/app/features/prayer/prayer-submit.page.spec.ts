@@ -92,6 +92,7 @@ describe('PrayerSubmitPage', () => {
       isAuthenticated$: authState$.asObservable(),
       currentUser$: currentUser$.asObservable(),
       currentUserSnapshot: null,
+      updateMemberProfile: jasmine.createSpy('updateMemberProfile'),
     };
 
     TestBed.configureTestingModule({
@@ -490,7 +491,12 @@ describe('PrayerSubmitPage', () => {
     expect(prayerService.submitPrayerRequest.calls.mostRecent().args[0].submitter_name).toBeUndefined();
   });
 
-  it('guest named submission requires a non-blank name and sends it', () => {
+  it('guest named submission starts empty, requires a non-blank name, and sends it', () => {
+    page.form.patchValue({ is_anonymous_publicly: false });
+    page['configureSubmitterValidators']();
+
+    expect(page.form.controls.submitter_name.value).toBe('');
+
     page.form.patchValue({
       request_text: 'Please pray.',
       category: 'personal',
@@ -509,7 +515,37 @@ describe('PrayerSubmitPage', () => {
     expect(prayerService.submitPrayerRequest.calls.mostRecent().args[0].submitter_name).toBe('Kwame');
   });
 
-  it('member named submission defaults from the profile and can be edited', () => {
+  it('authenticated member selecting Share my name pre-fills the profile full name', () => {
+    authServiceValue.currentUserSnapshot = {
+      first_name: 'Prayer',
+      last_name: 'Member',
+      full_name: 'Prayer Member',
+    };
+    authState$.next(true);
+    currentUser$.next({ role: 'member' });
+
+    page.form.patchValue({ is_anonymous_publicly: false });
+    page['configureSubmitterValidators']();
+
+    expect(page.form.controls.submitter_name.value).toBe('Prayer Member');
+  });
+
+  it('combines first_name and last_name when full_name is unavailable', () => {
+    authServiceValue.currentUserSnapshot = {
+      first_name: 'Prayer',
+      last_name: 'Member',
+      full_name: '   ',
+    };
+    authState$.next(true);
+    currentUser$.next({ role: 'member' });
+
+    page.form.patchValue({ is_anonymous_publicly: false });
+    page['configureSubmitterValidators']();
+
+    expect(page.form.controls.submitter_name.value).toBe('Prayer Member');
+  });
+
+  it('member named submission pre-fill stays editable and submits the edited name', () => {
     authServiceValue.currentUserSnapshot = {
       first_name: 'Prayer',
       last_name: 'Member',
@@ -529,7 +565,25 @@ describe('PrayerSubmitPage', () => {
     expect(page.form.controls.submitter_name.value).toBe('Prayer Member');
 
     page.form.patchValue({ submitter_name: 'Prayer Team' });
-    expect(page.buildSubmissionPayload().submitter_name).toBe('Prayer Team');
+    page.submit();
+
+    expect(prayerService.submitPrayerRequest.calls.mostRecent().args[0].submitter_name).toBe('Prayer Team');
+  });
+
+  it('editing the prayer display name does not call any profile-update API', () => {
+    authServiceValue.currentUserSnapshot = {
+      first_name: 'Prayer',
+      last_name: 'Member',
+      full_name: 'Prayer Member',
+    };
+    authState$.next(true);
+    currentUser$.next({ role: 'member' });
+
+    page.form.patchValue({ is_anonymous_publicly: false });
+    page['configureSubmitterValidators']();
+    page.form.patchValue({ submitter_name: 'Prayer Team' });
+
+    expect(authServiceValue.updateMemberProfile).not.toHaveBeenCalled();
   });
 
   it('member anonymous submission does not require a name', () => {
@@ -553,6 +607,71 @@ describe('PrayerSubmitPage', () => {
 
     expect(prayerService.submitPrayerRequest).toHaveBeenCalled();
     expect(prayerService.submitPrayerRequest.calls.mostRecent().args[0].submitter_name).toBeUndefined();
+  });
+
+  it('switching anonymous to named preserves a previously edited name', () => {
+    authServiceValue.currentUserSnapshot = {
+      first_name: 'Prayer',
+      last_name: 'Member',
+      full_name: 'Prayer Member',
+    };
+    authState$.next(true);
+    currentUser$.next({ role: 'member' });
+
+    page.form.patchValue({ is_anonymous_publicly: false });
+    page['configureSubmitterValidators']();
+    page.form.patchValue({ submitter_name: 'Prayer Team' });
+
+    page.form.patchValue({ is_anonymous_publicly: true });
+    page['configureSubmitterValidators']();
+    page.form.patchValue({ is_anonymous_publicly: false });
+    page['configureSubmitterValidators']();
+
+    expect(page.form.controls.submitter_name.value).toBe('Prayer Team');
+  });
+
+  it('auto-fill does not overwrite an already entered name', () => {
+    page.form.patchValue({
+      is_anonymous_publicly: false,
+      submitter_name: 'Already Entered',
+    });
+    page['configureSubmitterValidators']();
+
+    authServiceValue.currentUserSnapshot = {
+      first_name: 'Prayer',
+      last_name: 'Member',
+      full_name: 'Prayer Member',
+    };
+    authState$.next(true);
+    currentUser$.next({ role: 'member' });
+
+    expect(page.form.controls.submitter_name.value).toBe('Already Entered');
+  });
+
+  it('member with no usable profile name gets an empty field and must enter a name', () => {
+    authServiceValue.currentUserSnapshot = {
+      first_name: '   ',
+      last_name: '',
+      full_name: '   ',
+    };
+    authState$.next(true);
+    currentUser$.next({ role: 'member' });
+
+    page.form.patchValue({
+      request_text: 'Please pray.',
+      category: 'personal',
+      scope: 'global',
+      is_anonymous_publicly: false,
+      submitter_name: '',
+    });
+    page['configureSubmitterValidators']();
+
+    expect(page.form.controls.submitter_name.value).toBe('');
+
+    page.submit();
+
+    expect(page.controlError('submitter_name')).toBe('Your name is required when you choose to share it.');
+    expect(prayerService.submitPrayerRequest).not.toHaveBeenCalled();
   });
 
   it('does not send protected backend fields', () => {
