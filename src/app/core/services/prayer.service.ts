@@ -1,20 +1,37 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
-import { catchError, switchMap, tap } from 'rxjs/operators';
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
 
-import { PrayerHierarchyDependency, PrayerRequestSubmissionPayload, PrayerRequestSubmissionResponse } from '../models/prayer.model';
+import {
+  CommunityPrayerRequest,
+  PrayerHierarchyDependency,
+  PrayerRequestSubmissionPayload,
+  PrayerRequestSubmissionResponse,
+  PrayerCategory,
+  PrayerScope,
+} from '../models/prayer.model';
 import { AuthService } from './auth.service';
 import { SentryTelemetryService } from './sentry-telemetry.service';
 import { environment } from '../../../environments/environment';
+import { ApiService, QueryParams } from './api.service';
+import { PaginatedResponse } from '../models/pagination.model';
+
+export interface CommunityPrayerFilters extends QueryParams {
+  category?: PrayerCategory;
+  scope?: PrayerScope;
+  page?: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class PrayerService {
   private readonly http = inject(HttpClient);
+  private readonly api = inject(ApiService);
   private readonly authService = inject(AuthService);
   private readonly sentryTelemetry = inject(SentryTelemetryService);
 
   private readonly submitEndpoint = 'public/prayer-requests/submit/';
+  private readonly communityEndpoint = 'public/prayer-requests/';
 
   readonly hierarchyDependency: PrayerHierarchyDependency = {
     available: false,
@@ -53,6 +70,43 @@ export class PrayerService {
     );
   }
 
+  getCommunityPrayers(
+    filters?: CommunityPrayerFilters,
+    pathOrUrl: string = this.communityEndpoint
+  ): Observable<PaginatedResponse<CommunityPrayerRequest>> {
+    const params = pathOrUrl === this.communityEndpoint ? this.buildCommunityFilters(filters) : undefined;
+
+    this.sentryTelemetry.addFeatureBreadcrumb('app', 'Community prayers load started', {
+      category: filters?.category ?? null,
+      scope: filters?.scope ?? null,
+      path: pathOrUrl === this.communityEndpoint ? this.communityEndpoint : 'paginated-next',
+    });
+
+    return this.api.get<PaginatedResponse<CommunityPrayerRequest>>(pathOrUrl, params).pipe(
+      map((response) => ({
+        ...response,
+        results: response.results.map((prayer) => ({
+          ...prayer,
+          church: prayer.church ?? null,
+          title: prayer.title ?? '',
+          display_name: prayer.display_name ?? 'Anonymous',
+        })),
+      })),
+      tap((response) => {
+        this.sentryTelemetry.addFeatureBreadcrumb('app', 'Community prayers load succeeded', {
+          count: response.results.length,
+          has_next_page: !!response.next,
+        });
+      }),
+      catchError((error) => {
+        this.sentryTelemetry.captureFeatureError('app', 'Community prayers load failed', error, {
+          status: this.getHttpStatus(error),
+        });
+        return throwError(() => error);
+      })
+    );
+  }
+
   private buildUrl(path: string): string {
     const baseUrl = environment.apiBaseUrl.replace(/\/+$/, '');
     const normalizedPath = path.replace(/^\/*/, '').replace(/\/+$/, '');
@@ -63,6 +117,13 @@ export class PrayerService {
     return new HttpHeaders({
       Authorization: `Bearer ${token}`,
     });
+  }
+
+  private buildCommunityFilters(filters?: CommunityPrayerFilters): CommunityPrayerFilters {
+    return {
+      page: 1,
+      ...filters,
+    };
   }
 
   private withOptionalAuth<T>(requestFactory: (token: string | null) => Observable<T>): Observable<T> {

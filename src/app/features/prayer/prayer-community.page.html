@@ -1,0 +1,154 @@
+<ion-page>
+  <ion-content fullscreen class="community-content">
+    <div class="community-hero app-header app-header--inner">
+      <app-mobile-header
+        title="Community Prayers"
+        subtitle="Pray together with our community."
+        fallbackRoute="/prayer"
+      ></app-mobile-header>
+    </div>
+
+    <div class="surface community-surface">
+      <div class="surface__content community-surface__content">
+        <section class="community-intro-card">
+          <p class="community-intro-card__eyebrow">Public prayer feed</p>
+          <h2>Pray together with our community.</h2>
+          <p>These prayer requests have been shared publicly and approved for the community.</p>
+        </section>
+
+        <section class="community-filters" aria-label="Community prayer filters">
+          <label class="filter-field">
+            <span>Category</span>
+            <select
+              data-testid="category-filter"
+              [value]="selectedCategory"
+              (change)="onCategoryChange($any($event.target).value)"
+            >
+              <option *ngFor="let option of categoryOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+          </label>
+
+          <label class="filter-field">
+            <span>Scope</span>
+            <select
+              data-testid="scope-filter"
+              [value]="selectedScope"
+              (change)="onScopeChange($any($event.target).value)"
+            >
+              <option *ngFor="let option of scopeOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+          </label>
+        </section>
+
+        <button
+          *ngIf="hasActiveFilters"
+          type="button"
+          class="reset-filters-button"
+          data-testid="reset-filters"
+          (click)="resetFilters()"
+        >
+          Reset filters
+        </button>
+
+        <div *ngIf="loading" class="skeleton-stack" aria-live="polite">
+          <div class="community-card skeleton" *ngFor="let item of skeletonItems">
+            <div class="skeleton-row skeleton-row--top">
+              <span class="skeleton-pill skeleton-pill--badge"></span>
+              <span class="skeleton-pill skeleton-pill--date"></span>
+            </div>
+            <span class="skeleton-line skeleton-line--title"></span>
+            <span class="skeleton-line skeleton-line--body"></span>
+            <span class="skeleton-line skeleton-line--body short"></span>
+            <div class="skeleton-row skeleton-row--bottom">
+              <span class="skeleton-pill skeleton-pill--meta"></span>
+              <span class="skeleton-pill skeleton-pill--meta short"></span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="!loading && errorMessage" class="state-card error-state" data-testid="error-state">
+          <div class="state-copy">
+            <h2>We couldn't load community prayers right now.</h2>
+            <p>{{ errorMessage }}</p>
+          </div>
+          <ion-button expand="block" class="state-button" (click)="retryLoad()">Try Again</ion-button>
+        </div>
+
+        <div *ngIf="!loading && !errorMessage && prayers.length === 0" class="state-card empty-state" data-testid="empty-state">
+          <div class="state-copy">
+            <h2>{{ hasActiveFilters ? 'No prayers match these filters.' : 'No community prayers yet' }}</h2>
+            <p>
+              {{
+                hasActiveFilters
+                  ? 'Try different filters or reset them to see approved public prayer requests.'
+                  : 'Approved public prayer requests will appear here.'
+              }}
+            </p>
+          </div>
+          <ion-button
+            *ngIf="!hasActiveFilters"
+            expand="block"
+            class="submit-button"
+            data-testid="submit-action"
+            (click)="goToSubmit()"
+          >
+            Submit a Prayer Request
+          </ion-button>
+          <ion-button
+            *ngIf="hasActiveFilters"
+            expand="block"
+            fill="outline"
+            class="state-button state-button--secondary"
+            (click)="resetFilters()"
+          >
+            Reset filters
+          </ion-button>
+        </div>
+
+        <section *ngIf="!loading && !errorMessage && prayers.length > 0" class="community-feed" aria-label="Community prayers feed">
+          <article class="community-card" *ngFor="let prayer of prayers" data-testid="community-card">
+            <div class="community-card__top">
+              <span class="category-chip">{{ formatCategoryLabel(prayer.category) }}</span>
+              <span class="community-card__date">{{ formatDate(prayer.created_at) }}</span>
+            </div>
+
+            <h2 *ngIf="prayer.title" class="community-card__title" data-testid="prayer-title">{{ prayer.title }}</h2>
+
+            <p class="community-card__body">{{ prayer.request_text }}</p>
+
+            <div class="community-card__meta">
+              <div class="meta-row">
+                <span>Shared by</span>
+                <strong>{{ prayer.display_name }}</strong>
+              </div>
+              <div class="meta-row">
+                <span>Prayer scope</span>
+                <strong>{{ formatScopeContext(prayer) }}</strong>
+              </div>
+            </div>
+          </article>
+
+          <div *ngIf="loadMoreErrorMessage" class="load-more-error" data-testid="load-more-error">
+            <p>{{ loadMoreErrorMessage }}</p>
+          </div>
+
+          <ion-button
+            *ngIf="nextPageUrl"
+            expand="block"
+            fill="outline"
+            class="state-button state-button--secondary"
+            [disabled]="loadingMore"
+            (click)="loadMore()"
+          >
+            <ion-spinner *ngIf="loadingMore" slot="start" name="crescent"></ion-spinner>
+            <span>{{ loadingMore ? 'Loading more...' : 'Load more' }}</span>
+          </ion-button>
+
+          <ion-button expand="block" class="submit-button submit-button--footer" (click)="goToSubmit()">
+            Submit a Prayer Request
+          </ion-button>
+        </section>
+      </div>
+    </div>
+  </ion-content>
+</ion-page>

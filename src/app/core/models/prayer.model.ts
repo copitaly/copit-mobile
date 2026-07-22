@@ -53,6 +53,17 @@ export interface PrayerRequestSubmissionResponse {
   created_at: string;
 }
 
+export interface CommunityPrayerRequest {
+  id: number;
+  scope: PrayerScope;
+  church: PrayerChurchSummary | null;
+  category: PrayerCategory;
+  title: string | null;
+  request_text: string;
+  display_name: string;
+  created_at: string;
+}
+
 export interface PrayerHierarchyDependency {
   available: boolean;
   reason: string;
