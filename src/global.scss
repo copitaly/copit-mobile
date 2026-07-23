@@ -156,6 +156,22 @@ body {
   text-wrap: pretty;
 }
 
+.prayer-submit-hero .app-header__inner {
+  align-items: flex-start;
+}
+
+.prayer-submit-hero .app-header__copy {
+  max-width: none;
+}
+
+.prayer-submit-hero .app-header__title {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
 .surface {
   background: #f5f6fa;
   border-top-left-radius: 28px;

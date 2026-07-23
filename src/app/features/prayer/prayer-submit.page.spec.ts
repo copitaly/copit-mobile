@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
@@ -35,6 +36,14 @@ describe('PrayerSubmitPage', () => {
 
   function createPage(): PrayerSubmitPage {
     return TestBed.runInInjectionContext(() => new PrayerSubmitPage());
+  }
+
+  async function createComponent(): Promise<ComponentFixture<PrayerSubmitPage>> {
+    const fixture = TestBed.createComponent(PrayerSubmitPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
   }
 
   beforeEach(() => {
@@ -96,6 +105,7 @@ describe('PrayerSubmitPage', () => {
     };
 
     TestBed.configureTestingModule({
+      imports: [PrayerSubmitPage],
       providers: [
         { provide: PrayerService, useValue: prayerService },
         { provide: Router, useValue: router },
@@ -753,5 +763,48 @@ describe('PrayerSubmitPage', () => {
     authState$.next(true);
     currentUser$.next({ role: 'member' });
     expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('renders the full submit title text and subtitle in the header', async () => {
+    const fixture = await createComponent();
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(host.textContent).toContain('Submit a Prayer Request');
+    expect(host.textContent).toContain('Share what you would like us to pray for.');
+  });
+
+  it('keeps the submit header back button accessible', async () => {
+    const fixture = await createComponent();
+    const backButton = fixture.nativeElement.querySelector('.app-header__back') as HTMLButtonElement | null;
+
+    expect(backButton).not.toBeNull();
+    expect(backButton?.getAttribute('aria-label')).toBe('Go back');
+  });
+
+  it('removes ellipsis styling from the submit header title', async () => {
+    const fixture = await createComponent();
+    const title = fixture.nativeElement.querySelector('.app-header__title') as HTMLElement | null;
+
+    expect(title).not.toBeNull();
+
+    const styles = window.getComputedStyle(title!);
+    expect(styles.whiteSpace).toBe('normal');
+    expect(styles.textOverflow).toBe('clip');
+    expect(styles.overflow).toBe('visible');
+  });
+
+  it('allows the submit header title container to wrap on narrow layouts', async () => {
+    const fixture = await createComponent();
+    const host = fixture.nativeElement as HTMLElement;
+    host.style.width = '260px';
+    fixture.detectChanges();
+
+    const title = host.querySelector('.app-header__title') as HTMLElement | null;
+    const copy = host.querySelector('.app-header__copy') as HTMLElement | null;
+
+    expect(title).not.toBeNull();
+    expect(copy).not.toBeNull();
+    expect(window.getComputedStyle(title!).whiteSpace).toBe('normal');
+    expect(window.getComputedStyle(copy!).minWidth).toBe('0px');
   });
 });
