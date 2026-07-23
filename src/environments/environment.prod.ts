@@ -17,3 +17,4 @@ export const environment = {
   analyticsEnabled: false,
   firebaseConfig: firebaseConfig as FirebaseOptions | null,
 };
+  
