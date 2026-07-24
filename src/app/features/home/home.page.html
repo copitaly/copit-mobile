@@ -72,7 +72,12 @@
         </div>
         <ion-icon name="chevron-forward" class="card-chevron" aria-hidden="true"></ion-icon>
       </article>
-      <article class="feature-card feature-card--static">
+      <button
+        type="button"
+        class="feature-card feature-card--button"
+        aria-label="Open Bible Study"
+        (click)="goToBibleStudy()"
+      >
         <div class="feature-icon">
           <ion-icon name="book-outline" aria-hidden="true"></ion-icon>
         </div>
@@ -81,7 +86,7 @@
           <p>Weekly studies &amp; inspiration</p>
         </div>
         <ion-icon name="chevron-forward" class="card-chevron" aria-hidden="true"></ion-icon>
-      </article>
+      </button>
     </section>
 
     <div *ngIf="showBuildSafetyLabel" class="build-safety-label-row">

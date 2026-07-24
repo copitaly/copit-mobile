@@ -212,6 +212,14 @@ const routes: Routes = [
     loadComponent: () => import('./features/prayer/prayer.page').then(m => m.PrayerPage)
   },
   {
+    path: 'bible-study',
+    loadComponent: () => import('./features/bible-study/bible-study.page').then(m => m.BibleStudyPage)
+  },
+  {
+    path: 'bible-study/:id',
+    loadComponent: () => import('./features/bible-study/bible-study-detail.page').then(m => m.BibleStudyDetailPage)
+  },
+  {
     path: 'prayer/submit',
     loadComponent: () => import('./features/prayer/prayer-submit.page').then(m => m.PrayerSubmitPage)
   },

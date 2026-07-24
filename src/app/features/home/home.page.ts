@@ -99,6 +99,10 @@ export class HomePage implements OnInit, OnDestroy {
     void this.router.navigate(['/prayer']);
   }
 
+  goToBibleStudy(): void {
+    void this.router.navigate(['/bible-study']);
+  }
+
   goToAccount(isAuthenticated: boolean | null): void {
     void this.router.navigate([isAuthenticated ? '/profile' : '/login']);
   }

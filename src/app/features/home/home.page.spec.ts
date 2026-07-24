@@ -83,6 +83,12 @@ describe('HomePage', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/prayer']);
   });
 
+  it('navigates the home Bible Study entry to the Bible Study page', () => {
+    page.goToBibleStudy();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/bible-study']);
+  });
+
   it('keeps branch navigation unchanged', () => {
     page.goToBranches();
 

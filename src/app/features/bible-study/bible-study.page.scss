@@ -1,0 +1,247 @@
+:host {
+  display: block;
+}
+
+ion-page {
+  background: #0b1d73;
+}
+
+ion-content.bible-study-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  --background: #0b1d73;
+}
+
+ion-content.bible-study-content::part(scroll),
+.bible-study-content,
+.manual-feed,
+.skeleton-stack,
+.state-copy {
+  display: flex;
+  flex-direction: column;
+}
+
+ion-content.bible-study-content::part(scroll),
+.bible-study-content {
+  flex: 1;
+  min-height: 100%;
+}
+
+.bible-study-hero {
+  width: 100%;
+  padding-bottom: 2rem;
+}
+
+.bible-study-surface {
+  margin-top: -0.08rem;
+  padding-top: 1.25rem;
+  border-radius: 24px 24px 0 0;
+}
+
+.bible-study-surface__content {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding-bottom: calc(1.2rem + env(safe-area-inset-bottom));
+}
+
+.bible-study-intro-card,
+.manual-card,
+.state-card {
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 14px 36px rgba(6, 21, 74, 0.1);
+}
+
+.bible-study-intro-card,
+.manual-card,
+.state-card,
+.manual-feed,
+.skeleton-stack,
+.state-copy {
+  gap: 0.9rem;
+}
+
+.bible-study-intro-card,
+.manual-card,
+.state-card {
+  padding: 1rem 1.05rem;
+}
+
+.bible-study-intro-card {
+  margin-bottom: 1rem;
+  border: 1px solid rgba(11, 29, 115, 0.08);
+}
+
+.bible-study-intro-card__eyebrow,
+.manual-card__meta,
+.manual-card__detail {
+  font-size: 0.8rem;
+}
+
+.bible-study-intro-card__eyebrow {
+  margin: 0 0 0.45rem;
+  color: #9a6d06;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.bible-study-intro-card h2,
+.state-copy h2,
+.manual-card h2 {
+  margin: 0;
+  color: #03173f;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.bible-study-intro-card p,
+.state-copy p,
+.manual-card__meta,
+.manual-card__detail {
+  margin: 0;
+  color: rgba(3, 23, 63, 0.68);
+  line-height: 1.55;
+}
+
+.manual-feed,
+.skeleton-stack {
+  gap: 1rem;
+}
+
+.manual-card--button {
+  width: 100%;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.manual-card__body {
+  display: flex;
+  align-items: stretch;
+  gap: 0.95rem;
+}
+
+.manual-card__cover,
+.manual-card__cover-skeleton {
+  width: 78px;
+  min-width: 78px;
+  height: 104px;
+  border-radius: 18px;
+}
+
+.manual-card__cover {
+  overflow: hidden;
+  background: rgba(11, 29, 115, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0b1d73;
+}
+
+.manual-card__cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.manual-card__cover--placeholder ion-icon {
+  font-size: 1.8rem;
+  opacity: 0.7;
+}
+
+.manual-card__copy {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+.manual-card__top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.manual-card__top ion-icon {
+  margin-left: auto;
+  color: rgba(3, 23, 63, 0.42);
+  flex-shrink: 0;
+}
+
+.manual-card h2 {
+  font-size: 1.04rem;
+}
+
+.state-card {
+  align-items: center;
+  text-align: center;
+}
+
+.state-button {
+  --border-radius: 16px;
+  --background: #0b1d73;
+  --background-activated: #09175c;
+  --box-shadow: 0 12px 22px rgba(11, 29, 115, 0.2);
+  font-weight: 600;
+}
+
+.skeleton {
+  animation: pulse 1.2s infinite ease-in-out;
+}
+
+.manual-card__cover-skeleton,
+.skeleton-line {
+  display: block;
+  background: rgba(11, 26, 115, 0.08);
+}
+
+.manual-card__cover-skeleton {
+  border-radius: 18px;
+}
+
+.skeleton-line {
+  border-radius: 999px;
+}
+
+.skeleton-line--title {
+  width: 72%;
+  height: 16px;
+  margin-bottom: 0.2rem;
+}
+
+.skeleton-line--meta {
+  width: 64%;
+  height: 12px;
+}
+
+.skeleton-line--meta.short {
+  width: 56%;
+}
+
+.skeleton-line--meta.shorter {
+  width: 44%;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@media (max-width: 380px) {
+  .manual-card__body {
+    gap: 0.8rem;
+  }
+
+  .manual-card__cover,
+  .manual-card__cover-skeleton {
+    width: 68px;
+    min-width: 68px;
+    height: 96px;
+  }
+}

@@ -440,6 +440,12 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   readonly quickActions: QuickAction[] = [
     {
+      title: 'Bible Study',
+      subtitle: 'Browse published Bible Study manuals',
+      icon: 'book-outline',
+      route: '/bible-study',
+    },
+    {
       title: 'My Prayer Requests',
       subtitle: 'Review your submitted prayer history',
       icon: 'chatbubbles-outline',
@@ -543,7 +549,7 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   openQuickAction(action: QuickAction): void {
     if (action.route) {
-      void this.router.navigate([action.route]);
+      void this.router.navigateByUrl(action.route);
       return;
     }
 

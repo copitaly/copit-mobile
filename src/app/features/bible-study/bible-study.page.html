@@ -1,0 +1,80 @@
+<ion-page>
+  <ion-content fullscreen class="bible-study-content">
+    <div class="bible-study-hero app-header app-header--inner">
+      <app-mobile-header
+        title="Bible Study"
+        subtitle="Browse published Bible Study manuals."
+        fallbackRoute="/profile"
+      ></app-mobile-header>
+    </div>
+
+    <div class="surface bible-study-surface">
+      <div class="surface__content bible-study-surface__content">
+        <section class="bible-study-intro-card">
+          <p class="bible-study-intro-card__eyebrow">Published manuals</p>
+          <h2>Read weekly Bible Study manuals on mobile.</h2>
+          <p>Browse current published manuals by year and language. PDF reading will be added separately.</p>
+        </section>
+
+        <div *ngIf="loading" class="skeleton-stack" aria-live="polite">
+          <div class="manual-card skeleton" *ngFor="let item of skeletonItems">
+            <div class="manual-card__body">
+              <div class="manual-card__cover-skeleton"></div>
+              <div class="manual-card__copy">
+                <span class="skeleton-line skeleton-line--title"></span>
+                <span class="skeleton-line skeleton-line--meta"></span>
+                <span class="skeleton-line skeleton-line--meta short"></span>
+                <span class="skeleton-line skeleton-line--meta shorter"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="!loading && errorMessage" class="state-card error-state" data-testid="error-state">
+          <div class="state-copy">
+            <h2>We couldn't load Bible Study manuals right now.</h2>
+            <p>{{ errorMessage }}</p>
+          </div>
+          <ion-button expand="block" class="state-button" (click)="retryLoad()">Try Again</ion-button>
+        </div>
+
+        <div *ngIf="!loading && !errorMessage && manuals.length === 0" class="state-card empty-state" data-testid="empty-state">
+          <div class="state-copy">
+            <h2>No Bible Study manuals yet</h2>
+            <p>Published Bible Study manuals will appear here when they become available.</p>
+          </div>
+        </div>
+
+        <section *ngIf="!loading && !errorMessage && manuals.length > 0" class="manual-feed" aria-label="Bible Study manuals">
+          <button
+            *ngFor="let manual of manuals"
+            type="button"
+            class="manual-card manual-card--button"
+            [attr.aria-label]="'Open Bible Study manual ' + manual.title"
+            data-testid="manual-card"
+            (click)="openManual(manual)"
+          >
+            <div class="manual-card__body">
+              <div class="manual-card__cover" [class.manual-card__cover--placeholder]="!manual.cover_image_url">
+                <img *ngIf="manual.cover_image_url; else coverPlaceholder" [src]="manual.cover_image_url" [alt]="manual.title + ' cover'" />
+                <ng-template #coverPlaceholder>
+                  <ion-icon name="book-outline" aria-hidden="true"></ion-icon>
+                </ng-template>
+              </div>
+
+              <div class="manual-card__copy">
+                <div class="manual-card__top">
+                  <h2>{{ manual.title }}</h2>
+                  <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
+                </div>
+                <p class="manual-card__meta">{{ manual.year }} · {{ manual.language_display }}</p>
+                <p *ngIf="formatVolume(manual.volume)" class="manual-card__detail">{{ formatVolume(manual.volume) }}</p>
+                <p class="manual-card__detail">{{ formatWeekRange(manual) }}</p>
+              </div>
+            </div>
+          </button>
+        </section>
+      </div>
+    </div>
+  </ion-content>
+</ion-page>
