@@ -7,12 +7,14 @@ import { of, throwError } from 'rxjs';
 import { BibleStudyManualDetail } from '../../core/models/bible-study.model';
 import { AuthService } from '../../core/services/auth.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
+import { ExternalBrowserService } from '../../core/services/external-browser.service';
 import { BibleStudyDetailPage } from './bible-study-detail.page';
 
 describe('BibleStudyDetailPage', () => {
   let fixture: ComponentFixture<BibleStudyDetailPage>;
   let page: BibleStudyDetailPage;
   let bibleStudyService: jasmine.SpyObj<BibleStudyService>;
+  let externalBrowserService: jasmine.SpyObj<ExternalBrowserService>;
   let toastController: jasmine.SpyObj<ToastController>;
   let toastElement: { present: jasmine.Spy };
 
@@ -36,6 +38,7 @@ describe('BibleStudyDetailPage', () => {
       imports: [BibleStudyDetailPage],
       providers: [
         { provide: BibleStudyService, useValue: bibleStudyService },
+        { provide: ExternalBrowserService, useValue: externalBrowserService },
         { provide: ToastController, useValue: toastController },
         {
           provide: ActivatedRoute,
@@ -58,6 +61,8 @@ describe('BibleStudyDetailPage', () => {
 
   beforeEach(() => {
     bibleStudyService = jasmine.createSpyObj<BibleStudyService>('BibleStudyService', ['getPublishedManualDetail']);
+    externalBrowserService = jasmine.createSpyObj<ExternalBrowserService>('ExternalBrowserService', ['openUrl']);
+    externalBrowserService.openUrl.and.returnValue(Promise.resolve());
     toastElement = { present: jasmine.createSpy('present').and.returnValue(Promise.resolve()) };
     toastController = jasmine.createSpyObj<ToastController>('ToastController', ['create']);
     toastController.create.and.returnValue(Promise.resolve(toastElement as never));
@@ -118,29 +123,33 @@ describe('BibleStudyDetailPage', () => {
     expect(button.disabled).toBeTrue();
   });
 
-  it('opens the current signed PDF URL in a new browser tab', async () => {
+  it('opens the current signed PDF URL in the Capacitor browser', async () => {
     bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
-    const windowOpenSpy = spyOn(window, 'open').and.returnValue({ closed: false } as Window);
 
     await createComponent();
     await page.openPdf();
 
-    expect(windowOpenSpy).toHaveBeenCalledWith(
-      'https://example.com/manual.pdf?X-Amz-Signature=secret',
-      '_blank',
-      'noopener,noreferrer'
-    );
+    expect(externalBrowserService.openUrl).toHaveBeenCalledWith('https://example.com/manual.pdf?X-Amz-Signature=secret');
   });
 
   it('shows a toast if opening the PDF fails', async () => {
     bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
-    spyOn(window, 'open').and.returnValue(null);
+    externalBrowserService.openUrl.and.returnValue(Promise.reject(new Error('browser failed')));
 
     await createComponent();
     await page.openPdf();
 
     expect(toastController.create).toHaveBeenCalled();
     expect(toastElement.present).toHaveBeenCalled();
+  });
+
+  it('does not invoke the native browser when pdf_url is missing', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of({ ...manual, pdf_url: null }));
+
+    await createComponent();
+    await page.openPdf();
+
+    expect(externalBrowserService.openUrl).not.toHaveBeenCalled();
   });
 
   it('renders Full year when the manual has no explicit week range', async () => {

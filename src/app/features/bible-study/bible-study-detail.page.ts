@@ -6,6 +6,7 @@ import { IonicModule, ToastController } from '@ionic/angular';
 
 import { BibleStudyManualDetail } from '../../core/models/bible-study.model';
 import { BibleStudyService } from '../../core/services/bible-study.service';
+import { ExternalBrowserService } from '../../core/services/external-browser.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
@@ -19,6 +20,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 export class BibleStudyDetailPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly bibleStudyService = inject(BibleStudyService);
+  private readonly externalBrowserService = inject(ExternalBrowserService);
   private readonly toastController = inject(ToastController);
 
   manual: BibleStudyManualDetail | null = null;
@@ -73,10 +75,7 @@ export class BibleStudyDetailPage implements OnInit {
     this.openingPdf = true;
 
     try {
-      const openedWindow = window.open(this.manual.pdf_url, '_blank', 'noopener,noreferrer');
-      if (!openedWindow) {
-        throw new Error('Failed to open PDF window.');
-      }
+      await this.externalBrowserService.openUrl(this.manual.pdf_url);
     } catch {
       const toast = await this.toastController.create({
         message: 'Unable to open this PDF right now. Please try again.',
