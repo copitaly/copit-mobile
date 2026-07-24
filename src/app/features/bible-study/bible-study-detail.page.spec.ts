@@ -1,22 +1,18 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { ToastController } from '@ionic/angular';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { BibleStudyManualDetail } from '../../core/models/bible-study.model';
 import { AuthService } from '../../core/services/auth.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
-import { ExternalBrowserService } from '../../core/services/external-browser.service';
 import { BibleStudyDetailPage } from './bible-study-detail.page';
 
 describe('BibleStudyDetailPage', () => {
   let fixture: ComponentFixture<BibleStudyDetailPage>;
   let page: BibleStudyDetailPage;
   let bibleStudyService: jasmine.SpyObj<BibleStudyService>;
-  let externalBrowserService: jasmine.SpyObj<ExternalBrowserService>;
-  let toastController: jasmine.SpyObj<ToastController>;
-  let toastElement: { present: jasmine.Spy };
+  let router: jasmine.SpyObj<Router>;
 
   const manual: BibleStudyManualDetail = {
     id: 14,
@@ -38,8 +34,7 @@ describe('BibleStudyDetailPage', () => {
       imports: [BibleStudyDetailPage],
       providers: [
         { provide: BibleStudyService, useValue: bibleStudyService },
-        { provide: ExternalBrowserService, useValue: externalBrowserService },
-        { provide: ToastController, useValue: toastController },
+        { provide: Router, useValue: router },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -61,11 +56,8 @@ describe('BibleStudyDetailPage', () => {
 
   beforeEach(() => {
     bibleStudyService = jasmine.createSpyObj<BibleStudyService>('BibleStudyService', ['getPublishedManualDetail']);
-    externalBrowserService = jasmine.createSpyObj<ExternalBrowserService>('ExternalBrowserService', ['openUrl']);
-    externalBrowserService.openUrl.and.returnValue(Promise.resolve());
-    toastElement = { present: jasmine.createSpy('present').and.returnValue(Promise.resolve()) };
-    toastController = jasmine.createSpyObj<ToastController>('ToastController', ['create']);
-    toastController.create.and.returnValue(Promise.resolve(toastElement as never));
+    router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl'], { events: of() });
+    router.navigateByUrl.and.returnValue(Promise.resolve(true));
   });
 
   it('loads and renders the published manual detail', async () => {
@@ -123,33 +115,22 @@ describe('BibleStudyDetailPage', () => {
     expect(button.disabled).toBeTrue();
   });
 
-  it('opens the current signed PDF URL in the Capacitor browser', async () => {
+  it('navigates to the in-app reader route instead of opening an external browser', async () => {
     bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
 
     await createComponent();
     await page.openPdf();
 
-    expect(externalBrowserService.openUrl).toHaveBeenCalledWith('https://example.com/manual.pdf?X-Amz-Signature=secret');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/14/read');
   });
 
-  it('shows a toast if opening the PDF fails', async () => {
-    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
-    externalBrowserService.openUrl.and.returnValue(Promise.reject(new Error('browser failed')));
-
-    await createComponent();
-    await page.openPdf();
-
-    expect(toastController.create).toHaveBeenCalled();
-    expect(toastElement.present).toHaveBeenCalled();
-  });
-
-  it('does not invoke the native browser when pdf_url is missing', async () => {
+  it('does not navigate to the reader when pdf_url is missing', async () => {
     bibleStudyService.getPublishedManualDetail.and.returnValue(of({ ...manual, pdf_url: null }));
 
     await createComponent();
     await page.openPdf();
 
-    expect(externalBrowserService.openUrl).not.toHaveBeenCalled();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
   it('renders Full year when the manual has no explicit week range', async () => {

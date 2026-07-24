@@ -34,6 +34,31 @@
                 "glob": "**/*.svg",
                 "input": "node_modules/ionicons/dist/ionicons/svg",
                 "output": "./svg"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/ngx-extended-pdf-viewer/assets",
+                "output": "assets"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/ngx-extended-pdf-viewer/assets/cmaps",
+                "output": "web/cmaps"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/ngx-extended-pdf-viewer/assets/standard_fonts",
+                "output": "web/standard_fonts"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/ngx-extended-pdf-viewer/assets/wasm",
+                "output": "web/wasm"
+              },
+              {
+                "glob": "**/*",
+                "input": "src/web/iccs",
+                "output": "web/iccs"
               }
             ],
             "styles": ["src/global.scss", "src/theme/variables.scss"],
@@ -143,6 +168,31 @@
                 "glob": "**/*.svg",
                 "input": "node_modules/ionicons/dist/ionicons/svg",
                 "output": "./svg"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/ngx-extended-pdf-viewer/assets",
+                "output": "assets"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/ngx-extended-pdf-viewer/assets/cmaps",
+                "output": "web/cmaps"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/ngx-extended-pdf-viewer/assets/standard_fonts",
+                "output": "web/standard_fonts"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/ngx-extended-pdf-viewer/assets/wasm",
+                "output": "web/wasm"
+              },
+              {
+                "glob": "**/*",
+                "input": "src/web/iccs",
+                "output": "web/iccs"
               }
             ],
             "styles": ["src/global.scss", "src/theme/variables.scss"],

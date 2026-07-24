@@ -1,0 +1,213 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+ion-page,
+ion-content.reader-content {
+  --background: #091649;
+  background: #091649;
+  height: 100%;
+}
+
+.reader-header {
+  flex: 0 0 auto;
+  padding-top: env(safe-area-inset-top);
+}
+
+.reader-toolbar {
+  --background: rgba(9, 22, 73, 0.96);
+  --color: #ffffff;
+  --min-height: 72px;
+  box-shadow: 0 12px 28px rgba(2, 11, 43, 0.32);
+}
+
+.reader-toolbar__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.85rem 0.7rem;
+}
+
+.reader-toolbar__back {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reader-toolbar__back ion-icon {
+  font-size: 1.15rem;
+}
+
+.reader-toolbar__copy {
+  min-width: 0;
+}
+
+.reader-toolbar__copy h1,
+.reader-toolbar__copy p {
+  margin: 0;
+}
+
+.reader-toolbar__copy h1 {
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reader-toolbar__copy p {
+  margin-top: 0.12rem;
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.reader-toolbar__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.reader-toolbar__icon {
+  min-width: 38px;
+  --color: #ffffff;
+  font-size: 0.82rem;
+}
+
+.reader-surface,
+.reader-shell,
+.reader-state,
+.reader-state__copy,
+.reader-viewer {
+  display: flex;
+  flex-direction: column;
+}
+
+.reader-surface {
+  height: 100%;
+  min-height: 100%;
+  padding: 0.8rem 0.65rem calc(0.9rem + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.reader-shell {
+  flex: 1;
+  min-height: 0;
+}
+
+.reader-state {
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 300px;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 16px 36px rgba(5, 14, 54, 0.24);
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.reader-state__copy h2,
+.reader-state__copy p {
+  margin: 0;
+}
+
+.reader-state__copy h2 {
+  color: #03173f;
+  font-size: 1.1rem;
+}
+
+.reader-state__copy p {
+  margin-top: 0.45rem;
+  color: rgba(3, 23, 63, 0.7);
+  line-height: 1.55;
+}
+
+.reader-state__button {
+  --border-radius: 16px;
+  --background: #0b1d73;
+  --background-activated: #09175c;
+  --box-shadow: 0 12px 22px rgba(11, 29, 115, 0.22);
+  width: 100%;
+  max-width: 320px;
+  font-weight: 600;
+}
+
+.reader-viewer {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  border-radius: 22px;
+  overflow: hidden;
+  background: #dfe7ff;
+  box-shadow: 0 16px 36px rgba(5, 14, 54, 0.24);
+}
+
+.reader-viewer__loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(238, 243, 255, 0.82), rgba(238, 243, 255, 0.38));
+  color: #0b1d73;
+  text-align: center;
+}
+
+.reader-viewer__loading p {
+  margin: 0;
+  font-weight: 600;
+}
+
+:host ::ng-deep app-bible-study-pdf-viewer,
+:host ::ng-deep ngx-extended-pdf-viewer {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+:host ::ng-deep ngx-extended-pdf-viewer .html,
+:host ::ng-deep ngx-extended-pdf-viewer #outerContainer,
+:host ::ng-deep ngx-extended-pdf-viewer #mainContainer,
+:host ::ng-deep ngx-extended-pdf-viewer #viewerContainer,
+:host ::ng-deep ngx-extended-pdf-viewer #viewer {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+@media (max-width: 420px) {
+  .reader-toolbar__row {
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      'back copy'
+      'actions actions';
+    row-gap: 0.45rem;
+  }
+
+  .reader-toolbar__back {
+    grid-area: back;
+  }
+
+  .reader-toolbar__copy {
+    grid-area: copy;
+  }
+
+  .reader-toolbar__actions {
+    grid-area: actions;
+    justify-content: flex-end;
+  }
+}

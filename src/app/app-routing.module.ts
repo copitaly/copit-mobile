@@ -216,6 +216,10 @@ const routes: Routes = [
     loadComponent: () => import('./features/bible-study/bible-study.page').then(m => m.BibleStudyPage)
   },
   {
+    path: 'bible-study/:id/read',
+    loadComponent: () => import('./features/bible-study/bible-study-reader.page').then(m => m.BibleStudyReaderPage)
+  },
+  {
     path: 'bible-study/:id',
     loadComponent: () => import('./features/bible-study/bible-study-detail.page').then(m => m.BibleStudyDetailPage)
   },

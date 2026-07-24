@@ -12,8 +12,8 @@
       <div class="surface__content bible-study-detail-surface__content">
         <section class="bible-study-detail-intro-card">
           <p class="bible-study-detail-intro-card__eyebrow">Published manual</p>
-          <h2>Open the current signed PDF from this page.</h2>
-          <p>The PDF link comes from the latest API response and is used only for this session.</p>
+          <h2>Read the current signed PDF inside COP.</h2>
+          <p>The reader requests a fresh signed PDF link when you open it and does not store that link.</p>
         </section>
 
         <div *ngIf="loading" class="skeleton-stack" aria-live="polite" data-testid="loading-state">
@@ -72,9 +72,9 @@
 
         <div *ngIf="!loading && !notFound && !errorMessage && manual" class="state-card info-state">
           <div class="state-copy">
-            <h2>Manual PDF</h2>
+            <h2>Manual reader</h2>
             <p *ngIf="manual.pdf_url; else missingPdfCopy">
-              Open the currently published PDF in a new browser tab. The signed URL may expire, so it is not stored on the device.
+              Read the currently published PDF inside the app. If the signed link expires, the reader can request a fresh one.
             </p>
             <ng-template #missingPdfCopy>
               <p>This manual does not currently have a readable PDF link.</p>
@@ -89,8 +89,8 @@
             (click)="openPdf()"
           >
             <ion-spinner *ngIf="openingPdf" slot="start" name="crescent"></ion-spinner>
-            <ion-icon *ngIf="!openingPdf" slot="start" name="document-text-outline" aria-hidden="true"></ion-icon>
-            <span>{{ openingPdf ? 'Opening PDF...' : 'Open PDF' }}</span>
+            <ion-icon *ngIf="!openingPdf" slot="start" name="reader-outline" aria-hidden="true"></ion-icon>
+            <span>{{ openingPdf ? 'Opening reader...' : 'Read Manual' }}</span>
           </ion-button>
         </div>
       </div>

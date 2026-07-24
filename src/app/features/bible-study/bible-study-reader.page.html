@@ -1,0 +1,133 @@
+<ion-page>
+  <ion-header class="reader-header">
+    <ion-toolbar class="reader-toolbar">
+      <div class="reader-toolbar__row">
+        <button
+          type="button"
+          class="reader-toolbar__back"
+          aria-label="Go back"
+          (click)="goBackToManual()"
+        >
+          <ion-icon name="chevron-back" aria-hidden="true"></ion-icon>
+        </button>
+
+        <div class="reader-toolbar__copy">
+          <h1>{{ manual?.title || 'Bible Study reader' }}</h1>
+          <p>{{ formatPageIndicator() }}</p>
+        </div>
+
+        <div class="reader-toolbar__actions">
+          <ion-button
+            fill="clear"
+            size="small"
+            class="reader-toolbar__icon"
+            aria-label="Zoom out"
+            [disabled]="!pdfAvailable || !!pdfErrorMessage"
+            (click)="zoomOut()"
+          >
+            <ion-icon slot="icon-only" name="remove-outline"></ion-icon>
+          </ion-button>
+
+          <ion-button
+            fill="clear"
+            size="small"
+            class="reader-toolbar__icon"
+            aria-label="Reset zoom to fit width"
+            [disabled]="!pdfAvailable || !!pdfErrorMessage"
+            (click)="resetZoom()"
+          >
+            Fit
+          </ion-button>
+
+          <ion-button
+            fill="clear"
+            size="small"
+            class="reader-toolbar__icon"
+            aria-label="Zoom in"
+            [disabled]="!pdfAvailable || !!pdfErrorMessage"
+            (click)="zoomIn()"
+          >
+            <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+          </ion-button>
+        </div>
+      </div>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-content fullscreen class="reader-content" [scrollY]="false">
+    <div class="reader-surface">
+      <div class="reader-shell">
+        <div *ngIf="loading" class="reader-state reader-state--loading" data-testid="reader-loading-state">
+          <ion-spinner name="crescent"></ion-spinner>
+          <div class="reader-state__copy">
+            <h2>Loading manual</h2>
+            <p>Requesting a fresh signed PDF link.</p>
+          </div>
+        </div>
+
+        <div *ngIf="!loading && notFound" class="reader-state" data-testid="reader-not-found-state">
+          <div class="reader-state__copy">
+            <h2>Manual not found</h2>
+            <p>This Bible Study manual is no longer available or may not be published.</p>
+          </div>
+          <ion-button expand="block" class="reader-state__button" (click)="goBackToList()">
+            Back to Bible Study
+          </ion-button>
+        </div>
+
+        <div *ngIf="!loading && !notFound && errorMessage" class="reader-state" data-testid="reader-error-state">
+          <div class="reader-state__copy">
+            <h2>We couldn't load this manual</h2>
+            <p>{{ errorMessage }}</p>
+          </div>
+          <ion-button expand="block" class="reader-state__button" (click)="retryLoad()">Try Again</ion-button>
+        </div>
+
+        <div *ngIf="!loading && !notFound && !errorMessage && manual && !pdfAvailable" class="reader-state" data-testid="reader-no-pdf-state">
+          <div class="reader-state__copy">
+            <h2>PDF unavailable</h2>
+            <p>This manual does not currently have a readable PDF link.</p>
+          </div>
+          <ion-button expand="block" class="reader-state__button" (click)="goBackToManual()">
+            Back to Manual
+          </ion-button>
+        </div>
+
+        <div *ngIf="!loading && !notFound && !errorMessage && manual && pdfAvailable && pdfErrorMessage" class="reader-state" data-testid="reader-pdf-error-state">
+          <div class="reader-state__copy">
+            <h2>PDF unavailable</h2>
+            <p>{{ pdfErrorMessage }}</p>
+          </div>
+          <ion-button expand="block" class="reader-state__button" (click)="retryPdfLoad()">Retry</ion-button>
+        </div>
+
+        <section
+          *ngIf="!loading && !notFound && !errorMessage && manual && pdfAvailable && !pdfErrorMessage"
+          #viewerSurface
+          class="reader-viewer"
+        >
+          <div *ngIf="pdfLoading" class="reader-viewer__loading" data-testid="pdf-loading-state">
+            <ion-spinner name="crescent"></ion-spinner>
+            <p>Rendering pages{{ viewerProgressPercent ? ' (' + viewerProgressPercent + '%)' : '' }}...</p>
+          </div>
+
+          <app-bible-study-pdf-viewer
+            *ngIf="viewerVisible && pdfSourceUrl"
+            data-testid="pdf-viewer"
+            [src]="pdfSourceUrl"
+            [page]="currentPage"
+            [zoom]="zoom"
+            (progress)="handleViewerProgress($event)"
+            (pageChange)="handlePageChange($event)"
+            (pageRendered)="handlePageRendered($event)"
+            (pagesLoaded)="handlePagesLoaded($event)"
+            (pdfLoadingStarts)="handlePdfLoadingStarts($event)"
+            (pdfLoaded)="handlePdfLoaded($event)"
+            (pdfLoadingFailed)="handlePdfLoadingFailed($event)"
+            (currentZoomFactor)="handleCurrentZoomFactor($event)"
+          ></app-bible-study-pdf-viewer>
+        </section>
+      </div>
+    </div>
+  </ion-content>
+</ion-page>
