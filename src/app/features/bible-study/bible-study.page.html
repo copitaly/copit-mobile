@@ -67,7 +67,7 @@
                   <h2>{{ manual.title }}</h2>
                   <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
                 </div>
-                <p class="manual-card__meta">{{ manual.year }} · {{ manual.language_display }}</p>
+                <p class="manual-card__meta">{{ manual.year }} • {{ manual.language_display }}</p>
                 <p *ngIf="formatVolume(manual.volume)" class="manual-card__detail">{{ formatVolume(manual.volume) }}</p>
                 <p class="manual-card__detail">{{ formatWeekRange(manual) }}</p>
               </div>

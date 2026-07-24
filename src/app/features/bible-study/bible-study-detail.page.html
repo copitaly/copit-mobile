@@ -1,0 +1,99 @@
+<ion-page>
+  <ion-content fullscreen class="bible-study-detail-content">
+    <div class="bible-study-detail-hero app-header app-header--inner">
+      <app-mobile-header
+        title="Bible Study Manual"
+        subtitle="Read published manual details."
+        fallbackRoute="/bible-study"
+      ></app-mobile-header>
+    </div>
+
+    <div class="surface bible-study-detail-surface">
+      <div class="surface__content bible-study-detail-surface__content">
+        <section class="bible-study-detail-intro-card">
+          <p class="bible-study-detail-intro-card__eyebrow">Published manual</p>
+          <h2>Open the current signed PDF from this page.</h2>
+          <p>The PDF link comes from the latest API response and is used only for this session.</p>
+        </section>
+
+        <div *ngIf="loading" class="skeleton-stack" aria-live="polite" data-testid="loading-state">
+          <div class="detail-card skeleton">
+            <div class="detail-card__body">
+              <div class="detail-card__cover-skeleton"></div>
+              <div class="detail-card__copy">
+                <span class="skeleton-line skeleton-line--title"></span>
+                <span class="skeleton-line skeleton-line--meta"></span>
+                <span class="skeleton-line skeleton-line--meta short"></span>
+                <span class="skeleton-line skeleton-line--meta shorter"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-card skeleton detail-card--secondary" *ngFor="let item of skeletonItems">
+            <span class="skeleton-line skeleton-line--secondary"></span>
+          </div>
+        </div>
+
+        <div *ngIf="!loading && notFound" class="state-card empty-state" data-testid="not-found-state">
+          <div class="state-copy">
+            <h2>Manual not found</h2>
+            <p>This Bible Study manual is no longer available or may not be published.</p>
+          </div>
+          <ion-button expand="block" class="state-button" routerLink="/bible-study">
+            Back to Bible Study
+          </ion-button>
+        </div>
+
+        <div *ngIf="!loading && !notFound && errorMessage" class="state-card error-state" data-testid="error-state">
+          <div class="state-copy">
+            <h2>We couldn't load this manual</h2>
+            <p>{{ errorMessage }}</p>
+          </div>
+          <ion-button expand="block" class="state-button" (click)="retryLoad()">Try Again</ion-button>
+        </div>
+
+        <section *ngIf="!loading && !notFound && !errorMessage && manual" class="detail-card" data-testid="manual-detail">
+          <div class="detail-card__body">
+            <div class="detail-card__cover" [class.detail-card__cover--placeholder]="!manual.cover_image_url">
+              <img *ngIf="manual.cover_image_url; else coverPlaceholder" [src]="manual.cover_image_url" [alt]="manual.title + ' cover'" />
+              <ng-template #coverPlaceholder>
+                <ion-icon name="book-outline" aria-hidden="true"></ion-icon>
+              </ng-template>
+            </div>
+
+            <div class="detail-card__copy">
+              <h2>{{ manual.title }}</h2>
+              <p class="detail-card__meta">{{ manual.year }} • {{ manual.language_display }}</p>
+              <p *ngIf="formatVolume(manual.volume)" class="detail-card__detail">{{ formatVolume(manual.volume) }}</p>
+              <p class="detail-card__detail">{{ formatWeekRange(manual) }}</p>
+            </div>
+          </div>
+        </section>
+
+        <div *ngIf="!loading && !notFound && !errorMessage && manual" class="state-card info-state">
+          <div class="state-copy">
+            <h2>Manual PDF</h2>
+            <p *ngIf="manual.pdf_url; else missingPdfCopy">
+              Open the currently published PDF in a new browser tab. The signed URL may expire, so it is not stored on the device.
+            </p>
+            <ng-template #missingPdfCopy>
+              <p>This manual does not currently have a readable PDF link.</p>
+            </ng-template>
+          </div>
+
+          <ion-button
+            expand="block"
+            class="state-button"
+            [disabled]="!manual.pdf_url || openingPdf"
+            data-testid="open-pdf-button"
+            (click)="openPdf()"
+          >
+            <ion-spinner *ngIf="openingPdf" slot="start" name="crescent"></ion-spinner>
+            <ion-icon *ngIf="!openingPdf" slot="start" name="document-text-outline" aria-hidden="true"></ion-icon>
+            <span>{{ openingPdf ? 'Opening PDF...' : 'Open PDF' }}</span>
+          </ion-button>
+        </div>
+      </div>
+    </div>
+  </ion-content>
+</ion-page>
