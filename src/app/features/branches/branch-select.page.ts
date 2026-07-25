@@ -50,7 +50,7 @@ interface SearchResultSection {
     <ion-page>
       <ion-content fullscreen class="branch-content">
         <app-feature-page-shell
-            title="Choose your church"
+            title="Choose Church"
             [subtitle]="currentHelperText"
             backFallbackRoute="/home"
           >

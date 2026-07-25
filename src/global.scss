@@ -52,6 +52,10 @@
   --feature-shell-nav-size: 38px;
   --feature-shell-nav-gap: 1.05rem;
   --feature-shell-title-max-width: 28rem;
+  --feature-shell-compact-title-size: 1.75rem;
+  --feature-shell-compact-title-line-height: 1.1;
+  --feature-shell-compact-subtitle-size: 0.96rem;
+  --feature-shell-compact-subtitle-line-height: 1.4;
   --feature-shell-sheet-radius: 28px;
   --feature-shell-sheet-overlap: -0.08rem;
   --feature-shell-sheet-horizontal-gutter: 1.25rem;
@@ -206,6 +210,7 @@ ion-button,
 
 .app-header__inner--mobile-header {
   min-height: 58px;
+  align-items: flex-start;
 }
 
 .app-header__copy {
@@ -217,6 +222,14 @@ ion-button,
   max-width: min(100%, var(--feature-shell-title-max-width));
   text-align: left;
   align-items: flex-start;
+}
+
+.app-header__inner--mobile-header .app-header__copy {
+  gap: 0.35rem;
+  max-width: min(
+    var(--feature-shell-title-max-width),
+    calc(100% - var(--feature-shell-nav-size) - var(--feature-shell-nav-gap))
+  );
 }
 
 .app-header__copy--centered {
@@ -235,6 +248,16 @@ ion-button,
   text-overflow: ellipsis;
 }
 
+.app-header__inner--mobile-header .app-header__title {
+  font-size: var(--feature-shell-compact-title-size);
+  font-weight: 700;
+  line-height: var(--feature-shell-compact-title-line-height);
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+
 .app-header__subtitle {
   margin: 0;
   font-size: var(--app-type-secondary-size);
@@ -244,6 +267,12 @@ ion-button,
   color: rgba(255, 255, 255, 0.85);
   width: 100%;
   text-wrap: pretty;
+}
+
+.app-header__inner--mobile-header .app-header__subtitle {
+  font-size: var(--feature-shell-compact-subtitle-size);
+  font-weight: 500;
+  line-height: var(--feature-shell-compact-subtitle-line-height);
 }
 
 .prayer-submit-hero .app-header__inner {
