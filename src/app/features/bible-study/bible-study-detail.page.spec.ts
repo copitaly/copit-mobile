@@ -114,6 +114,8 @@ describe('BibleStudyDetailPage', () => {
     expect(fixture.debugElement.query(By.directive(FeaturePageShellComponent))).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="feature-page-surface"]')).not.toBeNull();
     const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
+    expect(header.title).toBe('Bible Study');
+    expect(header.subtitle).toBe('Read published manual details.');
     expect(header.fallbackRoute).toBe('/bible-study');
     expect(header.showBack).toBeTrue();
   });
@@ -196,7 +198,8 @@ describe('BibleStudyDetailPage', () => {
     bibleStudyService.getPublishedManualDetail.and.returnValues(of(manual), of(refreshedManual));
     downloadService.downloadPdf.and.resolveTo({
       fileName: 'manual.pdf',
-      locationLabel: 'your browser downloads',
+      locationLabel: 'your device share sheet',
+      shared: true,
     });
     const localStorageSpy = spyOn(window.localStorage, 'setItem');
     const sessionStorageSpy = spyOn(window.sessionStorage, 'setItem');
@@ -211,7 +214,7 @@ describe('BibleStudyDetailPage', () => {
     );
     expect(toastController.create).toHaveBeenCalledWith(
       jasmine.objectContaining({
-        message: 'manual.pdf saved to your browser downloads.',
+        message: 'manual.pdf is ready from your device share sheet.',
         icon: 'checkmark-circle-outline',
       })
     );

@@ -169,6 +169,8 @@ describe('BibleStudyPage', () => {
     expect(fixture.debugElement.query(By.directive(FeaturePageShellComponent))).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="feature-page-surface"]')).not.toBeNull();
     const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
+    expect(header.title).toBe('Bible Study');
+    expect(header.subtitle).toBe('Browse published Bible Study manuals.');
     expect(header.fallbackRoute).toBe('/home');
     expect(header.showBack).toBeTrue();
   });

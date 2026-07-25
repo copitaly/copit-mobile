@@ -15,10 +15,7 @@
           class="reader-controls"
           data-testid="reader-controls"
         >
-          <div class="reader-controls__status">
-            <p class="reader-controls__label">Current page</p>
-            <strong>{{ formatPageIndicator() }}</strong>
-          </div>
+          <strong class="reader-controls__page">{{ formatPageIndicator() }}</strong>
 
           <div class="reader-controls__buttons">
             <ion-button
@@ -26,7 +23,7 @@
               size="small"
               class="reader-controls__button"
               aria-label="Zoom out"
-              [disabled]="!pdfAvailable || !!pdfErrorMessage"
+              [disabled]="toolbarDisabled"
               (click)="zoomOut()"
             >
               <ion-icon slot="icon-only" name="remove-outline"></ion-icon>
@@ -37,7 +34,7 @@
               size="small"
               class="reader-controls__button reader-controls__button--fit"
               aria-label="Reset zoom to fit width"
-              [disabled]="!pdfAvailable || !!pdfErrorMessage"
+              [disabled]="toolbarDisabled"
               (click)="resetZoom()"
             >
               Fit
@@ -48,7 +45,7 @@
               size="small"
               class="reader-controls__button"
               aria-label="Zoom in"
-              [disabled]="!pdfAvailable || !!pdfErrorMessage"
+              [disabled]="toolbarDisabled"
               (click)="zoomIn()"
             >
               <ion-icon slot="icon-only" name="add-outline"></ion-icon>
@@ -95,7 +92,7 @@
         <div *ngIf="!loading && !notFound && !errorMessage && manual && pdfAvailable && pdfErrorMessage" class="reader-state" data-testid="reader-pdf-error-state">
           <div class="reader-state__copy">
             <h2>PDF unavailable</h2>
-            <p>{{ pdfErrorMessage }}</p>
+            <p>We could not render this PDF right now.</p>
           </div>
           <ion-button expand="block" class="reader-state__button" (click)="retryPdfLoad()">Retry</ion-button>
         </div>

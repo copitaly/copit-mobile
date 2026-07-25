@@ -19,6 +19,7 @@ import { FeaturePageShellComponent } from '../../shared/feature-page-shell.compo
   styleUrls: ['./bible-study-detail.page.scss'],
 })
 export class BibleStudyDetailPage implements OnInit {
+  private static readonly DEV_DIAGNOSTICS = typeof ngDevMode !== 'undefined' && !!ngDevMode;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly bibleStudyService = inject(BibleStudyService);
@@ -95,6 +96,7 @@ export class BibleStudyDetailPage implements OnInit {
     try {
       const freshManual = await firstValueFrom(this.bibleStudyService.getPublishedManualDetail(this.manual.id));
       this.manual = freshManual;
+      this.logDiagnostics('download fresh manual', { manualId: freshManual.id, hasPdfUrl: !!freshManual.pdf_url });
       await this.downloadFromManual(freshManual, false);
     } catch (error) {
       await this.presentToast(this.resolveDownloadErrorMessage(error), 'alert-circle-outline');
@@ -140,11 +142,18 @@ export class BibleStudyDetailPage implements OnInit {
 
     try {
       const result = await this.bibleStudyDownloadService.downloadPdf(pdfUrl, fileName);
-      await this.presentToast(`${result.fileName} saved to ${result.locationLabel}.`, 'checkmark-circle-outline');
+      const successMessage = result.shared
+        ? `${result.fileName} is ready from your device share sheet.`
+        : `${result.fileName} saved to ${result.locationLabel}.`;
+      await this.presentToast(successMessage, 'checkmark-circle-outline');
     } catch (error) {
       if (!hasRetried && this.shouldRetryExpiredLink(error)) {
         const refreshedManual = await firstValueFrom(this.bibleStudyService.getPublishedManualDetail(manual.id));
         this.manual = refreshedManual;
+        this.logDiagnostics('download retry fresh manual', {
+          manualId: refreshedManual.id,
+          hasPdfUrl: !!refreshedManual.pdf_url,
+        });
         await this.downloadFromManual(refreshedManual, true);
         return;
       }
@@ -209,5 +218,13 @@ export class BibleStudyDetailPage implements OnInit {
     } catch {
       // ignore toast errors
     }
+  }
+
+  private logDiagnostics(event: string, payload: Record<string, unknown>): void {
+    if (!BibleStudyDetailPage.DEV_DIAGNOSTICS) {
+      return;
+    }
+
+    console.debug('[BibleStudyDetail]', event, payload);
   }
 }

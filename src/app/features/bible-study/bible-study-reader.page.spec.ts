@@ -119,6 +119,8 @@ describe('BibleStudyReaderPage', () => {
 
     await createComponent();
 
+    expect(page.readerTitle).toBe('Bible Study');
+    expect(page.readerSubtitle).toBe('Reader');
     expect(bibleStudyService.getPublishedManualDetail).toHaveBeenCalledWith(14);
     const viewer = fixture.debugElement.query(By.directive(MockBibleStudyPdfViewerComponent))
       ?.componentInstance as MockBibleStudyPdfViewerComponent | undefined;
@@ -199,7 +201,7 @@ describe('BibleStudyReaderPage', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('[data-testid="reader-pdf-error-state"]')?.textContent).toContain(
-      'fresh signed copy'
+      'We could not render this PDF right now.'
     );
 
     page.retryPdfLoad();
@@ -239,7 +241,7 @@ describe('BibleStudyReaderPage', () => {
 
       expect(page.pdfLoading).toBeFalse();
       expect(fixture.nativeElement.querySelector('[data-testid="reader-pdf-error-state"]')?.textContent).toContain(
-      "couldn't finish loading"
+      'We could not render this PDF right now.'
       );
     } finally {
       jasmine.clock().uninstall();
@@ -273,7 +275,7 @@ describe('BibleStudyReaderPage', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('[data-testid="reader-pdf-error-state"]')?.textContent).toContain(
-      'fresh signed copy'
+      'We could not render this PDF right now.'
     );
   });
 
@@ -282,12 +284,15 @@ describe('BibleStudyReaderPage', () => {
 
     await createComponent();
 
+    expect(page.toolbarDisabled).toBeTrue();
     page.handlePagesLoaded({ source: null, pagesCount: 18 });
     page.handlePageChange(4);
     page.handleCurrentZoomFactor(1.5);
+    page.handlePageRendered({ pageNumber: 4, cssTransform: false, source: {} as never });
     page.zoomIn();
     fixture.detectChanges();
 
+    expect(page.toolbarDisabled).toBeFalse();
     expect(page.totalPages).toBe(18);
     expect(page.currentPage).toBe(4);
     expect(page.zoom).toBe('175%');

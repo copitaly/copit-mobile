@@ -19,6 +19,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { BibleStudyPdfViewerComponent } from './bible-study-pdf-viewer.component';
 
 type ZoomPreset = string | number;
+type ReaderState = 'loading-manual' | 'loading-document' | 'rendering' | 'ready' | 'unavailable' | 'error';
 
 @Component({
   standalone: true,
@@ -32,6 +33,7 @@ export class BibleStudyReaderPage implements OnDestroy {
   private static readonly PDF_LOAD_TIMEOUT_MS = 12000;
   private static readonly VIEWER_LAYOUT_RETRY_MS = 48;
   private static readonly VIEWER_LAYOUT_MAX_ATTEMPTS = 12;
+  private static readonly DEV_DIAGNOSTICS = typeof ngDevMode !== 'undefined' && !!ngDevMode;
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -46,6 +48,7 @@ export class BibleStudyReaderPage implements OnDestroy {
   private isViewActive = false;
   private loadRequestId = 0;
   private pendingViewerActivation = false;
+  private readerState: ReaderState = 'loading-manual';
 
   manual: BibleStudyManualDetail | null = null;
   loading = true;
@@ -70,19 +73,23 @@ export class BibleStudyReaderPage implements OnDestroy {
 
   ionViewWillEnter(): void {
     this.isViewActive = true;
+    this.logDiagnostics('ionViewWillEnter', {});
     this.loadManual();
   }
 
   ionViewDidEnter(): void {
     this.isViewActive = true;
+    this.logDiagnostics('ionViewDidEnter', {});
     this.scheduleViewerActivation();
   }
 
   ionViewWillLeave(): void {
+    this.logDiagnostics('ionViewWillLeave', {});
     this.teardownActiveSession();
   }
 
   ionViewDidLeave(): void {
+    this.logDiagnostics('ionViewDidLeave', {});
     this.teardownActiveSession();
   }
 
@@ -97,6 +104,7 @@ export class BibleStudyReaderPage implements OnDestroy {
       this.notFound = false;
       this.errorMessage = 'Invalid Bible Study manual ID.';
       this.manual = null;
+      this.setReaderState('error', { reason: 'invalid-id' });
       this.resetViewerState();
       return;
     }
@@ -111,6 +119,7 @@ export class BibleStudyReaderPage implements OnDestroy {
     this.resetViewerState();
 
     const requestId = ++this.loadRequestId;
+    this.setReaderState('loading-manual', { requestId });
     this.manualRequestSubscription = this.bibleStudyService
       .getPublishedManualDetail(rawId)
       .subscribe({
@@ -126,8 +135,11 @@ export class BibleStudyReaderPage implements OnDestroy {
           this.pdfSourceUrl = pdfSourceUrl;
           this.pdfAvailable = !!pdfSourceUrl;
           if (pdfSourceUrl) {
+            this.setReaderState('loading-document', { requestId });
             this.prepareViewer();
             this.scheduleViewerActivation();
+          } else {
+            this.setReaderState('unavailable', { reason: 'missing-pdf-url' });
           }
         },
         error: (error: unknown) => {
@@ -141,6 +153,7 @@ export class BibleStudyReaderPage implements OnDestroy {
           this.errorMessage = this.notFound
             ? ''
             : "We couldn't load this Bible Study manual right now.";
+          this.setReaderState('error', { notFound: this.notFound });
         },
       });
   }
@@ -177,18 +190,21 @@ export class BibleStudyReaderPage implements OnDestroy {
   handlePdfLoadingStarts(_event: PdfLoadingStartsEvent): void {
     this.pdfLoadStarted = true;
     this.pdfLoading = true;
+    this.setReaderState('rendering', { phase: 'pdf-loading-starts' });
     this.startPdfLoadTimeout();
   }
 
   handlePdfLoaded(event: PdfLoadedEvent): void {
     this.totalPages = event.pagesCount;
     this.pdfErrorMessage = '';
+    this.logDiagnostics('pdfLoaded', { pagesCount: event.pagesCount });
   }
 
   handlePageRendered(event: PageRenderedEvent): void {
     this.currentPage = event.pageNumber;
     this.hasRenderedVisiblePage = true;
     this.pdfLoading = false;
+    this.setReaderState('ready', { pageNumber: event.pageNumber });
     this.clearPdfLoadTimeout();
   }
 
@@ -199,6 +215,7 @@ export class BibleStudyReaderPage implements OnDestroy {
     this.pdfLoading = false;
     this.hasRenderedVisiblePage = false;
     this.pdfErrorMessage = this.resolvePdfErrorMessage(error);
+    this.setReaderState('unavailable', { message: error?.message ?? 'pdf-load-failed' });
   }
 
   handlePageChange(page: number): void {
@@ -227,7 +244,7 @@ export class BibleStudyReaderPage implements OnDestroy {
   }
 
   get readerTitle(): string {
-    return this.manual?.title || 'Bible Study Reader';
+    return 'Bible Study';
   }
 
   get readerBackFallbackRoute(): string {
@@ -235,7 +252,11 @@ export class BibleStudyReaderPage implements OnDestroy {
   }
 
   get readerSubtitle(): string {
-    return this.totalPages ? this.formatPageIndicator() : 'Read manual pages';
+    return 'Reader';
+  }
+
+  get toolbarDisabled(): boolean {
+    return this.readerState !== 'ready' || !this.pdfAvailable || !!this.pdfErrorMessage || !this.totalPages;
   }
 
   formatPageIndicator(): string {
@@ -260,6 +281,7 @@ export class BibleStudyReaderPage implements OnDestroy {
     this.totalPages = 0;
     this.zoom = 'page-width';
     this.zoomPercent = 100;
+    this.setReaderState('loading-document', { action: 'prepare-viewer' });
   }
 
   private resetViewerState(): void {
@@ -315,6 +337,7 @@ export class BibleStudyReaderPage implements OnDestroy {
       this.viewerSurface?.nativeElement ??
       (this.host.nativeElement.querySelector('.reader-viewer') as HTMLElement | null);
     const { width, height } = surface?.getBoundingClientRect() ?? { width: 0, height: 0 };
+    this.logDiagnostics('viewer container', { width, height, attempt });
     if (width > 0 && height > 0) {
       this.viewerVisible = false;
       queueMicrotask(() => {
@@ -395,5 +418,18 @@ export class BibleStudyReaderPage implements OnDestroy {
     }
 
     return "We couldn't render this PDF right now. Retry to request a fresh signed copy.";
+  }
+
+  private setReaderState(nextState: ReaderState, context: Record<string, unknown>): void {
+    this.readerState = nextState;
+    this.logDiagnostics('state', { state: nextState, ...context });
+  }
+
+  private logDiagnostics(event: string, payload: Record<string, unknown>): void {
+    if (!BibleStudyReaderPage.DEV_DIAGNOSTICS) {
+      return;
+    }
+
+    console.debug('[BibleStudyReader]', event, payload);
   }
 }
