@@ -8,7 +8,7 @@ ion-page {
 }
 
 ion-content.reader-content {
-  --background: #eef2f7;
+  --background: #0b1d73;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -32,30 +32,30 @@ ion-content.reader-content::part(scroll),
 }
 
 .reader-hero {
-  --header-extra-top: 0.35rem;
-  padding-bottom: 0.75rem;
-  border-bottom-left-radius: 18px;
-  border-bottom-right-radius: 18px;
+  flex-shrink: 0;
 }
 
 .reader-surface {
   flex: 1;
   min-height: 0;
-  margin-top: 0;
-  padding: 0.45rem 0.3rem calc(0.45rem + env(safe-area-inset-bottom));
-  border-radius: 0;
-  background: #eef2f7;
-  box-shadow: none;
+  margin-top: var(--feature-shell-sheet-overlap);
+  padding:
+    var(--feature-shell-sheet-top-padding)
+    var(--feature-shell-sheet-horizontal-gutter)
+    calc(var(--feature-shell-sheet-top-padding) + env(safe-area-inset-bottom));
+  border-radius: var(--feature-shell-sheet-radius) var(--feature-shell-sheet-radius) 0 0;
+  background: #ffffff;
+  box-shadow: 0 -6px 22px rgba(2, 18, 54, 0.08);
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .reader-shell {
   flex: 1;
   min-height: 0;
   width: 100%;
-  max-width: none;
-  margin: 0 auto;
-  gap: 0.4rem;
-  padding-bottom: 0;
+  gap: 0.55rem;
 }
 
 .reader-controls {
@@ -143,10 +143,9 @@ ion-content.reader-content::part(scroll),
   flex: 1;
   min-height: 0;
   height: 100%;
-  min-height: 0;
   overflow: clip;
   background: #eef2f7;
-  box-shadow: none;
+  border-radius: 18px;
 }
 
 .reader-viewer__loading {
@@ -217,12 +216,9 @@ ion-content.reader-content::part(scroll),
 }
 
 @media (max-width: 420px) {
-  .reader-hero {
-    padding-bottom: 0.65rem;
-  }
-
   .reader-surface {
-    padding-inline: 0.2rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 
   .reader-controls {

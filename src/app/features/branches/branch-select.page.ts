@@ -382,17 +382,17 @@ interface SearchResultSection {
       .branch-card.skeleton {
         display: flex;
         align-items: center;
-        padding: 1rem 1.2rem;
-        border-radius: 22px;
+        padding: var(--app-card-padding);
+        border-radius: var(--app-card-radius);
         box-shadow: none;
         background: #ffffff;
         animation: pulse 1.2s infinite ease-in-out;
       }
 
       .icon-placeholder {
-        width: 32px;
-        height: 32px;
-        border-radius: 12px;
+        width: var(--app-icon-container-size);
+        height: var(--app-icon-container-size);
+        border-radius: var(--app-icon-container-radius);
         background: rgba(11, 26, 115, 0.1);
         margin-right: 0.5rem;
       }
@@ -466,7 +466,7 @@ interface SearchResultSection {
       .branch-search {
         --background: #ffffff;
         --border-radius: 16px;
-        box-shadow: 0 6px 14px rgba(2, 18, 54, 0.06);
+        box-shadow: var(--app-card-shadow);
         --padding-start: 1rem;
         --padding-end: 1rem;
         height: 44px;
@@ -479,9 +479,9 @@ interface SearchResultSection {
 
       .branch-card {
         background: #ffffff;
-        border-radius: 22px;
-        padding: 1rem 1.2rem;
-        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+        border-radius: var(--app-card-radius);
+        padding: var(--app-card-padding);
+        box-shadow: var(--app-card-shadow);
         --background: transparent;
         align-items: center;
         transition: transform 120ms ease-out, box-shadow 120ms ease-out;
@@ -569,13 +569,13 @@ interface SearchResultSection {
       .browse-helper {
         margin: 0.25rem 0 0;
         font-size: 0.92rem;
-        color: rgba(3, 23, 63, 0.74);
+        color: var(--app-secondary-text-color);
       }
 
       .browse-context {
         margin: 0.2rem 0 0;
         font-size: 0.86rem;
-        color: rgba(3, 23, 63, 0.72);
+        color: var(--app-secondary-text-color);
       }
 
       .hierarchy-back {
@@ -618,7 +618,7 @@ interface SearchResultSection {
       .district-header {
         font-size: 0.9rem;
         font-weight: 600;
-        color: rgba(3, 23, 63, 0.7);
+        color: var(--app-secondary-text-color);
         letter-spacing: 0.08em;
         text-transform: uppercase;
       }
@@ -647,7 +647,7 @@ interface SearchResultSection {
         font-size: 0.85rem;
         font-weight: 400;
         line-height: 1.35;
-        color: rgba(3, 23, 63, 0.78);
+        color: var(--app-secondary-text-color);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;

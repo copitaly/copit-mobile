@@ -2,6 +2,10 @@
   display: block;
 }
 
+.bible-study-content {
+  --background: #0b1d73;
+}
+
 .manual-feed,
 .skeleton-stack,
 .state-copy {
@@ -9,111 +13,65 @@
   flex-direction: column;
 }
 
-.bible-study-intro,
-.manual-card,
-.state-card {
-  background: #fff;
-  border-radius: 22px;
-  box-shadow: 0 14px 36px rgba(6, 21, 74, 0.1);
-}
-
-.bible-study-intro,
-.manual-card,
-.state-card,
-.manual-feed,
-.skeleton-stack,
-.state-copy {
-  gap: 0.9rem;
-}
-
-.bible-study-intro,
-.manual-card,
-.state-card {
-  padding: 1rem 1.05rem;
-}
-
-.bible-study-intro {
-  margin-bottom: 1rem;
-  padding: 0 0 0.15rem;
-  background: transparent;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.bible-study-intro__eyebrow,
-.manual-card__meta,
-.manual-card__detail {
-  font-size: 0.8rem;
-}
-
-.bible-study-intro__eyebrow {
-  margin: 0 0 0.45rem;
-  color: #9a6d06;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.bible-study-intro h2,
-.state-copy h2,
-.manual-card h2 {
-  margin: 0;
-  color: #03173f;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-.bible-study-intro p,
-.state-copy p,
-.manual-card__meta,
-.manual-card__detail {
-  margin: 0;
-  color: rgba(3, 23, 63, 0.68);
-  line-height: 1.55;
-}
-
-.bible-study-intro h2 {
-  font-size: 1.28rem;
-}
-
 .manual-feed,
 .skeleton-stack {
-  gap: 1rem;
+  gap: 0.6rem;
+}
+
+.manual-card,
+.state-card {
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+}
+
+.manual-card {
+  padding: 1rem 1.2rem;
 }
 
 .manual-card--button {
   width: 100%;
   border: 0;
+  background: #ffffff;
   text-align: left;
   cursor: pointer;
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .manual-card--button:active {
-  transform: scale(0.99);
+  transform: scale(0.98);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+}
+
+.manual-card--button:focus-visible {
+  outline: 2px solid rgba(11, 29, 115, 0.24);
+  outline-offset: 2px;
 }
 
 .manual-card__body {
   display: flex;
-  align-items: stretch;
-  gap: 0.95rem;
+  align-items: center;
+  gap: 0.9rem;
 }
 
 .manual-card__cover,
 .manual-card__cover-skeleton {
-  width: 78px;
-  min-width: 78px;
-  height: 104px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
   border-radius: 18px;
 }
 
 .manual-card__cover {
   overflow: hidden;
-  background: rgba(11, 29, 115, 0.08);
+  background: rgba(3, 23, 63, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #0b1d73;
+  align-self: center;
 }
 
 .manual-card__cover img {
@@ -124,8 +82,7 @@
 }
 
 .manual-card__cover--placeholder ion-icon {
-  font-size: 1.8rem;
-  opacity: 0.7;
+  font-size: 1.2rem;
 }
 
 .manual-card__copy {
@@ -133,35 +90,74 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
   justify-content: center;
 }
 
 .manual-card__top {
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 .manual-card__top ion-icon {
-  margin-left: auto;
-  color: rgba(3, 23, 63, 0.42);
+  color: rgba(3, 23, 63, 0.55);
+  font-size: 18px;
   flex-shrink: 0;
 }
 
 .manual-card h2 {
-  font-size: 1.04rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #03173f;
+}
+
+.manual-card__meta,
+.manual-card__detail {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: rgba(3, 23, 63, 0.78);
 }
 
 .state-card {
+  padding: 1.2rem 1.25rem;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   text-align: center;
+  gap: 0.8rem;
+}
+
+.state-copy {
+  gap: 0.3rem;
+}
+
+.state-copy h2,
+.state-copy p {
+  margin: 0;
+}
+
+.state-copy h2 {
+  color: #03173f;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.state-copy p {
+  color: rgba(3, 23, 63, 0.65);
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
 
 .state-button {
-  --border-radius: 16px;
   --background: #0b1d73;
+  --background-hover: #0b1d73;
   --background-activated: #09175c;
+  --border-radius: 16px;
   --box-shadow: 0 12px 22px rgba(11, 29, 115, 0.2);
   font-weight: 600;
 }
@@ -186,13 +182,14 @@
 
 .skeleton-line--title {
   width: 72%;
-  height: 16px;
-  margin-bottom: 0.2rem;
+  height: 14px;
+  margin-bottom: 0.45rem;
 }
 
 .skeleton-line--meta {
   width: 64%;
-  height: 12px;
+  height: 10px;
+  margin-bottom: 0.35rem;
 }
 
 .skeleton-line--meta.short {
@@ -201,23 +198,19 @@
 
 .skeleton-line--meta.shorter {
   width: 44%;
+  margin-bottom: 0;
 }
 
 @keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+
   50% {
     opacity: 0.6;
   }
-}
 
-@media (max-width: 380px) {
-  .manual-card__body {
-    gap: 0.8rem;
-  }
-
-  .manual-card__cover,
-  .manual-card__cover-skeleton {
-    width: 68px;
-    min-width: 68px;
-    height: 96px;
+  100% {
+    opacity: 1;
   }
 }

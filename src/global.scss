@@ -47,19 +47,19 @@
   --app-safe-area-left: env(safe-area-inset-left, 0px);
   --feature-shell-header-radius: 28px;
   --feature-shell-header-extra-top: 0.8rem;
-  --feature-shell-header-horizontal-padding: 1.25rem;
+  --feature-shell-header-horizontal-padding: var(--app-compact-header-horizontal-padding);
   --feature-shell-header-bottom-padding: 1.35rem;
   --feature-shell-nav-size: 38px;
   --feature-shell-nav-gap: 1.05rem;
   --feature-shell-title-max-width: 28rem;
-  --feature-shell-compact-title-size: 1.75rem;
-  --feature-shell-compact-title-line-height: 1.1;
-  --feature-shell-compact-subtitle-size: 0.96rem;
-  --feature-shell-compact-subtitle-line-height: 1.4;
+  --feature-shell-compact-title-size: var(--app-compact-title-size);
+  --feature-shell-compact-title-line-height: var(--app-compact-title-line-height);
+  --feature-shell-compact-subtitle-size: var(--app-compact-subtitle-size);
+  --feature-shell-compact-subtitle-line-height: var(--app-compact-subtitle-line-height);
   --feature-shell-sheet-radius: 28px;
   --feature-shell-sheet-overlap: -0.08rem;
-  --feature-shell-sheet-horizontal-gutter: 1.25rem;
-  --feature-shell-sheet-top-padding: 1.2rem;
+  --feature-shell-sheet-horizontal-gutter: var(--app-content-horizontal-gutter);
+  --feature-shell-sheet-top-padding: var(--app-content-top-spacing);
   --feature-shell-card-gap: 0.9rem;
 }
 
@@ -154,7 +154,7 @@ ion-button,
 }
 
 .app-header {
-  background: linear-gradient(180deg, #081b61, #0b1d73 80%);
+  background: var(--app-compact-header-background);
   --header-extra-top: 1.2rem;
   padding:
     calc(var(--app-safe-area-top) + var(--header-extra-top))
@@ -250,7 +250,7 @@ ion-button,
 
 .app-header__inner--mobile-header .app-header__title {
   font-size: var(--feature-shell-compact-title-size);
-  font-weight: 700;
+  font-weight: var(--app-compact-title-weight);
   line-height: var(--feature-shell-compact-title-line-height);
   white-space: normal;
   overflow: visible;
@@ -263,7 +263,7 @@ ion-button,
   font-size: var(--app-type-secondary-size);
   font-weight: var(--app-type-weight-secondary);
   line-height: var(--app-line-height-secondary);
-  opacity: 0.85;
+  opacity: var(--app-compact-subtitle-opacity);
   color: rgba(255, 255, 255, 0.85);
   width: 100%;
   text-wrap: pretty;
@@ -271,7 +271,7 @@ ion-button,
 
 .app-header__inner--mobile-header .app-header__subtitle {
   font-size: var(--feature-shell-compact-subtitle-size);
-  font-weight: 500;
+  font-weight: var(--app-compact-subtitle-weight);
   line-height: var(--feature-shell-compact-subtitle-line-height);
 }
 
@@ -292,7 +292,7 @@ ion-button,
 }
 
 .surface {
-  background: #f5f6fa;
+  background: var(--app-content-background);
   border-top-left-radius: var(--feature-shell-sheet-radius);
   border-top-right-radius: var(--feature-shell-sheet-radius);
   padding: var(--feature-shell-sheet-top-padding) var(--feature-shell-sheet-horizontal-gutter) 2rem;
@@ -311,7 +311,7 @@ ion-button,
   flex-direction: column;
   gap: var(--feature-shell-card-gap);
   overflow: visible;
-  padding-bottom: calc(2rem + var(--keyboard-offset, 0px));
+  padding-bottom: calc(var(--app-bottom-safe-padding) + var(--keyboard-offset, 0px));
 }
 
 ion-content.profile-content,

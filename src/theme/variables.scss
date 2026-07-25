@@ -19,4 +19,24 @@
   --app-type-weight-button: 600;
   --app-type-weight-heading: 700;
   --app-type-weight-hero: 800;
+  --app-compact-header-background: linear-gradient(180deg, #081b61, #0b1d73 80%);
+  --app-compact-header-horizontal-padding: 1.25rem;
+  --app-compact-title-size: 1.75rem;
+  --app-compact-title-weight: 700;
+  --app-compact-title-line-height: 1.1;
+  --app-compact-subtitle-size: 0.96rem;
+  --app-compact-subtitle-weight: 500;
+  --app-compact-subtitle-line-height: 1.4;
+  --app-compact-subtitle-opacity: 0.85;
+  --app-content-background: #f5f6fa;
+  --app-content-horizontal-gutter: 1.25rem;
+  --app-content-top-spacing: 1.2rem;
+  --app-card-radius: 22px;
+  --app-card-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+  --app-card-padding: 1rem 1.2rem;
+  --app-card-gap: 0.6rem;
+  --app-icon-container-size: 32px;
+  --app-icon-container-radius: 12px;
+  --app-secondary-text-color: rgba(3, 23, 63, 0.78);
+  --app-bottom-safe-padding: calc(1.2rem + env(safe-area-inset-bottom));
 }
