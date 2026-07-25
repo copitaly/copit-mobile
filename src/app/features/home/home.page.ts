@@ -26,8 +26,6 @@ import {
 export class HomePage implements OnInit, OnDestroy {
   readonly isAuthenticated$: Observable<boolean>;
   readonly showBuildSafetyLabel = shouldShowBuildSafetyLabel();
-  ctaLabel = 'Give Now';
-  helperText = '';
   private readonly destroy$ = new Subject<void>();
   private savedChurches: SavedChurch[] = [];
   private defaultBranch: PublicBranch | null = null;
@@ -64,6 +62,18 @@ export class HomePage implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  get greeting(): string {
+    const firstName = this.authService.currentUserSnapshot?.first_name?.trim();
+    if (!firstName) {
+      return 'Welcome';
+    }
+    return `Welcome back, ${firstName}`;
+  }
+
+  get selectedBranchName(): string | null {
+    return this.defaultBranch?.name?.trim() || null;
+  }
+
   handlePrimaryCta(): void {
     if (this.defaultBranch) {
       void this.analyticsService.trackGiveNowTapped('saved_church');
@@ -95,12 +105,20 @@ export class HomePage implements OnInit, OnDestroy {
     void this.router.navigate(['/branches']);
   }
 
+  goToGive(): void {
+    this.handlePrimaryCta();
+  }
+
   goToPrayer(): void {
     void this.router.navigate(['/prayer']);
   }
 
   goToBibleStudy(): void {
     void this.router.navigate(['/bible-study']);
+  }
+
+  goToDevotionals(): void {
+    // Placeholder until the mobile devotionals route is available.
   }
 
   goToAccount(isAuthenticated: boolean | null): void {
@@ -160,12 +178,6 @@ export class HomePage implements OnInit, OnDestroy {
     this.personalizationRequestId++;
     this.savedChurches = [];
     this.defaultBranch = null;
-    this.applyGuestCta();
-  }
-
-  private applyGuestCta(): void {
-    this.ctaLabel = 'Give Now';
-    this.helperText = '';
   }
 
   private isRequestCurrent(requestId: number): boolean {
@@ -173,20 +185,8 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   private applyAuthenticatedCta(savedChurches: SavedChurch[], defaultBranch: PublicBranch | null): void {
-    if (defaultBranch) {
-      this.ctaLabel = `Give to ${defaultBranch.name}`;
-      this.helperText = 'Your giving shortcut is ready';
-      return;
-    }
-
-    if (savedChurches.length > 1) {
-      this.ctaLabel = 'Give to saved church';
-      this.helperText = 'Choose one of your saved churches';
-      return;
-    }
-
-    this.ctaLabel = 'Give Now';
-    this.helperText = 'Choose and save a church for faster giving';
+    this.savedChurches = savedChurches;
+    this.defaultBranch = defaultBranch;
   }
 
   private resolveDefaultBranch(

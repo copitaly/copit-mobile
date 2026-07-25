@@ -22,72 +22,97 @@
         </button>
       </ng-template>
       <div class="hero-content">
-        <p class="hero-label">C.O.P. ITALY</p>
-        <h1>Give to Your Local Church</h1>
-        <p class="hero-subtitle">Support your community with tithes, offerings, and special gifts. securely and instantly.</p>
-        <ion-button expand="block" class="hero-cta" size="large" (click)="handlePrimaryCta()">{{ ctaLabel }}</ion-button>
+        <p class="hero-greeting">{{ greeting }}</p>
+        <h1>Connect with Your Church</h1>
+        <p class="hero-subtitle">Grow, give, pray, and stay connected with your church family.</p>
       </div>
     </div>
 
-    <section class="trust-row">
-      <article class="trust-pill">
-        <ion-icon name="lock-closed" aria-hidden="true"></ion-icon>
-        <span>Secure</span>
-      </article>
-      <article class="trust-pill">
-        <ion-icon name="flash" aria-hidden="true"></ion-icon>
-        <span>Instant</span>
-      </article>
-      <article class="trust-pill">
-        <ion-icon name="document-text" aria-hidden="true"></ion-icon>
-        <span>Receipts</span>
-      </article>
-    </section>
+    <section class="quick-actions-section">
+    <section class="feature-grid" aria-label="Quick actions">
+      <button
+        type="button"
+        class="feature-card feature-card--button feature-card--grid feature-card--give ion-activatable"
+        aria-label="Open Give"
+        (click)="goToGive()"
+      >
+        <div class="feature-icon">
+          <ion-icon name="wallet-outline" aria-hidden="true"></ion-icon>
+        </div>
+        <div class="feature-copy">
+          <h3>Give</h3>
+          <p>Tithes &amp; Offerings</p>
+        </div>
+        <ion-ripple-effect></ion-ripple-effect>
+      </button>
 
-    <section class="shortcut-card" (click)="goToBranches()">
-      <div>
-        <h3 class="shortcut-title">Choose your branch</h3>
-      </div>
-      <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
-    </section>
-
-    <section class="coming-soon">
-      <button type="button" class="feature-card feature-card--button" aria-label="Open Prayer and Care" (click)="goToPrayer()">
+      <button
+        type="button"
+        class="feature-card feature-card--button feature-card--grid feature-card--prayer ion-activatable"
+        aria-label="Open Prayer Requests"
+        (click)="goToPrayer()"
+      >
         <div class="feature-icon">
           <ion-icon name="hand-left-outline" aria-hidden="true"></ion-icon>
         </div>
-        <div>
+        <div class="feature-copy">
           <h3>Prayer Requests</h3>
-          <p>Share needs and receive support</p>
+          <p>Share &amp; Pray</p>
         </div>
-        <ion-icon name="chevron-forward" class="card-chevron" aria-hidden="true"></ion-icon>
+        <ion-ripple-effect></ion-ripple-effect>
       </button>
-      <article class="feature-card feature-card--static">
-        <div class="feature-icon">
-          <ion-icon name="sunny-outline" aria-hidden="true"></ion-icon>
-        </div>
-        <div>
-          <h3>Devotionals</h3>
-          <p>Daily encouragement from the Word</p>
-        </div>
-        <ion-icon name="chevron-forward" class="card-chevron" aria-hidden="true"></ion-icon>
-      </article>
+
       <button
         type="button"
-        class="feature-card feature-card--button"
+        class="feature-card feature-card--button feature-card--grid feature-card--bible-study ion-activatable"
         aria-label="Open Bible Study"
         (click)="goToBibleStudy()"
       >
         <div class="feature-icon">
           <ion-icon name="book-outline" aria-hidden="true"></ion-icon>
         </div>
-        <div>
+        <div class="feature-copy">
           <h3>Bible Study</h3>
-          <p>Weekly studies &amp; inspiration</p>
+          <p>Weekly manuals</p>
         </div>
-        <ion-icon name="chevron-forward" class="card-chevron" aria-hidden="true"></ion-icon>
+        <ion-ripple-effect></ion-ripple-effect>
+      </button>
+
+      <button
+        type="button"
+        class="feature-card feature-card--button feature-card--grid feature-card--devotionals ion-activatable"
+        aria-label="Open Devotionals"
+        (click)="goToDevotionals()"
+      >
+        <div class="feature-icon">
+          <ion-icon name="sunny-outline" aria-hidden="true"></ion-icon>
+        </div>
+        <div class="feature-copy">
+          <h3>Devotionals</h3>
+          <p>Daily encouragement</p>
+        </div>
+        <ion-ripple-effect></ion-ripple-effect>
       </button>
     </section>
+    </section>
+
+    <button
+      *ngIf="selectedBranchName"
+      type="button"
+      class="branch-card branch-card__content ion-activatable"
+      aria-label="Open My Branch"
+      (click)="goToBranches()"
+    >
+        <div class="branch-card__icon" aria-hidden="true">
+          <ion-icon name="location-outline"></ion-icon>
+        </div>
+        <div class="branch-card__copy">
+          <h3>My Branch</h3>
+          <p>{{ selectedBranchName }}</p>
+        </div>
+        <ion-icon name="chevron-forward" class="branch-card__chevron" aria-hidden="true"></ion-icon>
+        <ion-ripple-effect></ion-ripple-effect>
+    </button>
 
     <div *ngIf="showBuildSafetyLabel" class="build-safety-label-row">
       <app-build-safety-label></app-build-safety-label>
