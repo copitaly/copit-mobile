@@ -45,6 +45,18 @@
   --app-safe-area-right: env(safe-area-inset-right, 0px);
   --app-safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --app-safe-area-left: env(safe-area-inset-left, 0px);
+  --feature-shell-header-radius: 28px;
+  --feature-shell-header-extra-top: 0.8rem;
+  --feature-shell-header-horizontal-padding: 1.25rem;
+  --feature-shell-header-bottom-padding: 1.35rem;
+  --feature-shell-nav-size: 38px;
+  --feature-shell-nav-gap: 1.05rem;
+  --feature-shell-title-max-width: 28rem;
+  --feature-shell-sheet-radius: 28px;
+  --feature-shell-sheet-overlap: -0.08rem;
+  --feature-shell-sheet-horizontal-gutter: 1.25rem;
+  --feature-shell-sheet-top-padding: 1.2rem;
+  --feature-shell-card-gap: 0.9rem;
 }
 
 html,
@@ -142,9 +154,9 @@ ion-button,
   --header-extra-top: 1.2rem;
   padding:
     calc(var(--app-safe-area-top) + var(--header-extra-top))
-    calc(var(--app-safe-area-right) + 1.25rem)
-    1.35rem
-    calc(var(--app-safe-area-left) + 1.25rem);
+    calc(var(--app-safe-area-right) + var(--feature-shell-header-horizontal-padding))
+    var(--feature-shell-header-bottom-padding)
+    calc(var(--app-safe-area-left) + var(--feature-shell-header-horizontal-padding));
   color: #ffffff;
   display: flex;
   flex-direction: column;
@@ -155,7 +167,7 @@ ion-button,
 }
 
 .app-header--inner {
-  --header-extra-top: 0.8rem;
+  --header-extra-top: var(--feature-shell-header-extra-top);
 }
 
 .app-header__back {
@@ -165,10 +177,10 @@ ion-button,
   cursor: pointer;
   margin: 0;
   padding: 0;
-  width: 38px;
-  height: 38px;
-  min-width: 38px;
-  min-height: 38px;
+  width: var(--feature-shell-nav-size);
+  height: var(--feature-shell-nav-size);
+  min-width: var(--feature-shell-nav-size);
+  min-height: var(--feature-shell-nav-size);
   border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.11);
@@ -188,7 +200,7 @@ ion-button,
 .app-header__inner {
   display: flex;
   align-items: center;
-  gap: 1.05rem;
+  gap: var(--feature-shell-nav-gap);
   min-width: 0;
 }
 
@@ -202,7 +214,7 @@ ion-button,
   gap: 0.25rem;
   flex: 1;
   min-width: 0;
-  max-width: min(100%, 28rem);
+  max-width: min(100%, var(--feature-shell-title-max-width));
   text-align: left;
   align-items: flex-start;
 }
@@ -252,9 +264,9 @@ ion-button,
 
 .surface {
   background: #f5f6fa;
-  border-top-left-radius: 28px;
-  border-top-right-radius: 28px;
-  padding: 1.2rem 1.25rem 2rem;
+  border-top-left-radius: var(--feature-shell-sheet-radius);
+  border-top-right-radius: var(--feature-shell-sheet-radius);
+  padding: var(--feature-shell-sheet-top-padding) var(--feature-shell-sheet-horizontal-gutter) 2rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -268,13 +280,14 @@ ion-button,
   max-width: 520px;
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: var(--feature-shell-card-gap);
   overflow: visible;
   padding-bottom: calc(2rem + var(--keyboard-offset, 0px));
 }
 
 ion-content.profile-content,
-ion-content.branch-content {
+ion-content.branch-content,
+ion-content.feature-page-content {
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -290,6 +303,7 @@ ion-content.my-prayers-content {
 
 ion-content.profile-content::part(scroll),
 ion-content.branch-content::part(scroll),
+ion-content.feature-page-content::part(scroll),
 ion-content.my-prayers-content::part(scroll) {
   flex: 1;
   display: flex;
@@ -299,6 +313,7 @@ ion-content.my-prayers-content::part(scroll) {
 
 .profile-content,
 .branch-content,
+.feature-page-content,
 .my-prayers-content {
   flex: 1;
   display: flex;

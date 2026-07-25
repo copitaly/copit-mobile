@@ -12,7 +12,7 @@ import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
 import { BranchesService } from '../../core/services/branches.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
-import { MobileHeaderComponent } from '../../shared/mobile-header.component';
+import { FeaturePageShellComponent } from '../../shared/feature-page-shell.component';
 
 type BrowseLevel = 'areas' | 'districts' | 'churches';
 
@@ -43,23 +43,17 @@ interface SearchResultSection {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, FormsModule, IonicModule, FeaturePageShellComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-branch-select',
   template: `
     <ion-page>
       <ion-content fullscreen class="branch-content">
-        <div class="branch-hero app-header app-header--inner">
-          <app-mobile-header
+        <app-feature-page-shell
             title="Choose your church"
             [subtitle]="currentHelperText"
-            [centerCopy]="false"
-            fallbackRoute="/home"
-          ></app-mobile-header>
-        </div>
-
-        <div class="surface branch-surface">
-          <div class="surface__content">
+            backFallbackRoute="/home"
+          >
             <ion-searchbar
               [(ngModel)]="searchTerm"
               [placeholder]="searchPlaceholder"
@@ -369,8 +363,7 @@ interface SearchResultSection {
                 </div>
               </div>
             </ng-template>
-          </div>
-        </div>
+        </app-feature-page-shell>
       </ion-content>
     </ion-page>
   `,
@@ -378,11 +371,6 @@ interface SearchResultSection {
     `
       :host {
         display: block;
-      }
-
-      .branch-hero {
-        border-bottom-left-radius: 28px;
-        border-bottom-right-radius: 28px;
       }
 
       .skeleton-stack {

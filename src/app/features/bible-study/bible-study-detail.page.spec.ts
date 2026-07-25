@@ -10,6 +10,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { BibleStudyDownloadService } from '../../core/services/bible-study-download.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
+import { FeaturePageShellComponent } from '../../shared/feature-page-shell.component';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { BibleStudyDetailPage } from './bible-study-detail.page';
 
@@ -110,8 +111,11 @@ describe('BibleStudyDetailPage', () => {
 
     await createComponent();
 
+    expect(fixture.debugElement.query(By.directive(FeaturePageShellComponent))).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="feature-page-surface"]')).not.toBeNull();
     const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
     expect(header.fallbackRoute).toBe('/bible-study');
+    expect(header.showBack).toBeTrue();
   });
 
   it('shows the generic error state and retries', async () => {

@@ -14,10 +14,11 @@ import {
   BuildSafetyLabelComponent,
   shouldShowBuildSafetyLabel,
 } from '../../shared/components/build-safety-label.component';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, BuildSafetyLabelComponent],
+  imports: [CommonModule, IonicModule, BuildSafetyLabelComponent, PageHeaderComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-home',
   templateUrl: './home.page.html',
@@ -74,6 +75,10 @@ export class HomePage implements OnInit, OnDestroy {
     return this.defaultBranch?.name?.trim() || null;
   }
 
+  get profileIcon(): string {
+    return this.authService.isAuthenticatedSnapshot ? 'person-circle' : 'person-outline';
+  }
+
   handlePrimaryCta(): void {
     if (this.defaultBranch) {
       void this.analyticsService.trackGiveNowTapped('saved_church');
@@ -124,6 +129,10 @@ export class HomePage implements OnInit, OnDestroy {
   goToAccount(isAuthenticated: boolean | null): void {
     void this.router.navigate([isAuthenticated ? '/profile' : '/login']);
   }
+
+  readonly openAccountFromHeader = (): void => {
+    this.goToAccount(this.authService.isAuthenticatedSnapshot);
+  };
 
   private loadPersonalization(): void {
     if (!this.authService.isAuthenticatedSnapshot) {

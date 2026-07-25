@@ -1,10 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { BehaviorSubject, of } from 'rxjs';
 
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
+import { StackNavigationService } from '../../core/services/stack-navigation.service';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 import { HomePage } from './home.page';
 
 describe('HomePage', () => {
@@ -58,6 +61,12 @@ describe('HomePage', () => {
             trackGiveNowTapped: jasmine.createSpy().and.resolveTo(),
             trackBranchSelected: jasmine.createSpy().and.resolveTo(),
             getUserType: jasmine.createSpy().and.returnValue('guest'),
+          },
+        },
+        {
+          provide: StackNavigationService,
+          useValue: {
+            backWithFallback: jasmine.createSpy().and.resolveTo(),
           },
         },
       ],
@@ -117,6 +126,15 @@ describe('HomePage', () => {
     expect(text).toContain('Grow, give, pray, and stay connected with your church family.');
     expect(text).not.toContain('Give to Your Local Church');
     expect(text).not.toContain('Give Now');
+  });
+
+  it('uses the hero header variant on the home screen', async () => {
+    fixture = await createComponent();
+
+    const header = fixture.debugElement.query(By.directive(PageHeaderComponent))?.componentInstance as PageHeaderComponent;
+    expect(header.variant).toBe('hero');
+    expect(header.showProfile).toBeTrue();
+    expect(header.showBack).toBeFalse();
   });
 
   it('renders feature cards in the expected order', async () => {

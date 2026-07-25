@@ -8,11 +8,11 @@ import { firstValueFrom } from 'rxjs';
 import { BibleStudyManualDetail } from '../../core/models/bible-study.model';
 import { BibleStudyDownloadService } from '../../core/services/bible-study-download.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
-import { MobileHeaderComponent } from '../../shared/mobile-header.component';
+import { FeaturePageShellComponent } from '../../shared/feature-page-shell.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, IonicModule, FeaturePageShellComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-bible-study-detail',
   templateUrl: './bible-study-detail.page.html',

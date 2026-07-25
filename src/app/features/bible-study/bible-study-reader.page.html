@@ -1,62 +1,60 @@
 <ion-page>
-  <ion-header class="reader-header">
-    <ion-toolbar class="reader-toolbar">
-      <div class="reader-toolbar__row">
-        <button
-          type="button"
-          class="reader-toolbar__back"
-          aria-label="Go back"
-          (click)="goBackToManual()"
-        >
-          <ion-icon name="chevron-back" aria-hidden="true"></ion-icon>
-        </button>
-
-        <div class="reader-toolbar__copy">
-          <h1>{{ manual?.title || 'Bible Study reader' }}</h1>
-          <p>{{ formatPageIndicator() }}</p>
-        </div>
-
-        <div class="reader-toolbar__actions">
-          <ion-button
-            fill="clear"
-            size="small"
-            class="reader-toolbar__icon"
-            aria-label="Zoom out"
-            [disabled]="!pdfAvailable || !!pdfErrorMessage"
-            (click)="zoomOut()"
-          >
-            <ion-icon slot="icon-only" name="remove-outline"></ion-icon>
-          </ion-button>
-
-          <ion-button
-            fill="clear"
-            size="small"
-            class="reader-toolbar__icon"
-            aria-label="Reset zoom to fit width"
-            [disabled]="!pdfAvailable || !!pdfErrorMessage"
-            (click)="resetZoom()"
-          >
-            Fit
-          </ion-button>
-
-          <ion-button
-            fill="clear"
-            size="small"
-            class="reader-toolbar__icon"
-            aria-label="Zoom in"
-            [disabled]="!pdfAvailable || !!pdfErrorMessage"
-            (click)="zoomIn()"
-          >
-            <ion-icon slot="icon-only" name="add-outline"></ion-icon>
-          </ion-button>
-        </div>
-      </div>
-    </ion-toolbar>
-  </ion-header>
-
   <ion-content fullscreen class="reader-content" [scrollY]="false">
+    <app-page-header
+      variant="compact"
+      [title]="readerTitle"
+      [subtitle]="formatPageIndicator()"
+      [backFallbackRoute]="readerBackFallbackRoute"
+    ></app-page-header>
+
     <div class="reader-surface">
       <div class="reader-shell">
+        <section
+          *ngIf="!loading && !notFound && !errorMessage && manual && pdfAvailable && !pdfErrorMessage"
+          class="reader-controls"
+          data-testid="reader-controls"
+        >
+          <div class="reader-controls__status">
+            <p class="reader-controls__label">Current page</p>
+            <strong>{{ formatPageIndicator() }}</strong>
+          </div>
+
+          <div class="reader-controls__buttons">
+            <ion-button
+              fill="clear"
+              size="small"
+              class="reader-controls__button"
+              aria-label="Zoom out"
+              [disabled]="!pdfAvailable || !!pdfErrorMessage"
+              (click)="zoomOut()"
+            >
+              <ion-icon slot="icon-only" name="remove-outline"></ion-icon>
+            </ion-button>
+
+            <ion-button
+              fill="clear"
+              size="small"
+              class="reader-controls__button reader-controls__button--fit"
+              aria-label="Reset zoom to fit width"
+              [disabled]="!pdfAvailable || !!pdfErrorMessage"
+              (click)="resetZoom()"
+            >
+              Fit
+            </ion-button>
+
+            <ion-button
+              fill="clear"
+              size="small"
+              class="reader-controls__button"
+              aria-label="Zoom in"
+              [disabled]="!pdfAvailable || !!pdfErrorMessage"
+              (click)="zoomIn()"
+            >
+              <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+            </ion-button>
+          </div>
+        </section>
+
         <div *ngIf="loading" class="reader-state reader-state--loading" data-testid="reader-loading-state">
           <ion-spinner name="crescent"></ion-spinner>
           <div class="reader-state__copy">

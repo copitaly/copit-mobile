@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
+import { FeaturePageShellComponent } from '../../shared/feature-page-shell.component';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { PrayerPage } from './prayer.page';
 
@@ -121,13 +122,17 @@ describe('PrayerPage', () => {
     expect(element.textContent).toContain('My Prayer Requests');
   });
 
-  it('configures the shared mobile header to fall back to the home screen', () => {
+  it('uses the shared feature page shell with the compact header fallback to home', () => {
     const componentFixture = TestBed.createComponent(PrayerPage);
     componentFixture.detectChanges();
 
+    expect(componentFixture.nativeElement.querySelector('[data-testid="feature-page-surface"]')).not.toBeNull();
+
+    const shell = componentFixture.debugElement.query(By.directive(FeaturePageShellComponent));
     const header = componentFixture.debugElement.query(By.directive(MobileHeaderComponent))
       ?.componentInstance as MobileHeaderComponent;
 
+    expect(shell).not.toBeNull();
     expect(header.fallbackRoute).toBe('/home');
   });
 });

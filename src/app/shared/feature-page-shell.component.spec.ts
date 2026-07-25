@@ -1,0 +1,54 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { Component } from '@angular/core';
+import { Router } from '@angular/router';
+
+import { AuthService } from '../core/services/auth.service';
+import { StackNavigationService } from '../core/services/stack-navigation.service';
+import { FeaturePageShellComponent } from './feature-page-shell.component';
+import { MobileHeaderComponent } from './mobile-header.component';
+
+@Component({
+  standalone: true,
+  imports: [FeaturePageShellComponent],
+  template: `
+    <app-feature-page-shell title="Bible Study" subtitle="Browse manuals." backFallbackRoute="/home">
+      <div class="projected-content">Body content</div>
+    </app-feature-page-shell>
+  `,
+})
+class TestHostComponent {}
+
+describe('FeaturePageShellComponent', () => {
+  let fixture: ComponentFixture<TestHostComponent>;
+  let router: jasmine.SpyObj<Router>;
+  let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
+
+  beforeEach(async () => {
+    router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
+    router.navigateByUrl.and.returnValue(Promise.resolve(true));
+    stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
+    stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
+
+    await TestBed.configureTestingModule({
+      imports: [TestHostComponent],
+      providers: [
+        { provide: Router, useValue: router },
+        { provide: StackNavigationService, useValue: stackNavigationService },
+        { provide: AuthService, useValue: { isAuthenticatedSnapshot: false } },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(TestHostComponent);
+    fixture.detectChanges();
+  });
+
+  it('renders the shared compact page header and white content surface', () => {
+    const mobileHeader = fixture.debugElement.query(By.directive(MobileHeaderComponent))
+      ?.componentInstance as MobileHeaderComponent;
+
+    expect(mobileHeader.fallbackRoute).toBe('/home');
+    expect(fixture.nativeElement.querySelector('[data-testid="feature-page-surface"]')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Body content');
+  });
+});

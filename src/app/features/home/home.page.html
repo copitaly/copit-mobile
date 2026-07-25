@@ -1,32 +1,15 @@
 ﻿<ion-page>
   <ion-content fullscreen class="home-content">
-    <div class="hero hero-v2">
-      <ng-container *ngIf="isAuthenticated$ | async as isAuthenticated; else guestAccountButton">
-        <button
-          type="button"
-          class="hero-account"
-          aria-label="Account"
-          (click)="goToAccount(isAuthenticated)"
-        >
-          <ion-icon [name]="isAuthenticated ? 'person-circle' : 'person-outline'" aria-hidden="true"></ion-icon>
-        </button>
-      </ng-container>
-      <ng-template #guestAccountButton>
-        <button
-          type="button"
-          class="hero-account"
-          aria-label="Account"
-          (click)="goToAccount(false)"
-        >
-          <ion-icon name="person-outline" aria-hidden="true"></ion-icon>
-        </button>
-      </ng-template>
-      <div class="hero-content">
-        <p class="hero-greeting">{{ greeting }}</p>
-        <h1>Connect with Your Church</h1>
-        <p class="hero-subtitle">Grow, give, pray, and stay connected with your church family.</p>
-      </div>
-    </div>
+    <app-page-header
+      [eyebrow]="greeting"
+      variant="hero"
+      title="Connect with Your Church"
+      subtitle="Grow, give, pray, and stay connected with your church family."
+      [showBack]="false"
+      [showProfile]="true"
+      [profileAction]="openAccountFromHeader"
+      [profileIcon]="profileIcon"
+    ></app-page-header>
 
     <section class="quick-actions-section">
     <section class="feature-grid" aria-label="Quick actions">

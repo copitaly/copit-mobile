@@ -1,16 +1,10 @@
 <ion-page>
-  <ion-content fullscreen class="prayer-content">
-    <div class="prayer-hero app-header app-header--inner">
-      <app-mobile-header
+  <ion-content fullscreen class="feature-page-content prayer-content">
+    <app-feature-page-shell
         title="Prayer &amp; Care"
         subtitle="Share your prayer request or pray with our community."
-        [centerCopy]="false"
-        fallbackRoute="/home"
-      ></app-mobile-header>
-    </div>
-
-    <div class="surface prayer-surface">
-      <div class="surface__content prayer-surface__content">
+        backFallbackRoute="/home"
+      >
         <section class="prayer-actions" aria-label="Prayer actions">
           <button
             *ngFor="let action of primaryActions"
@@ -48,7 +42,6 @@
             <ion-icon class="prayer-action-card__chevron" name="chevron-forward" aria-hidden="true"></ion-icon>
           </button>
         </section>
-      </div>
-    </div>
+    </app-feature-page-shell>
   </ion-content>
 </ion-page>

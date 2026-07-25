@@ -1,15 +1,10 @@
 <ion-page>
-  <ion-content fullscreen class="bible-study-detail-content">
-    <div class="bible-study-detail-hero app-header app-header--inner">
-      <app-mobile-header
-        title="Bible Study Manual"
-        subtitle="Read published manual details."
-        fallbackRoute="/bible-study"
-      ></app-mobile-header>
-    </div>
-
-    <div class="surface bible-study-detail-surface">
-      <div class="surface__content bible-study-detail-surface__content">
+  <ion-content fullscreen class="feature-page-content bible-study-detail-content">
+    <app-feature-page-shell
+      title="Bible Study Manual"
+      subtitle="Read published manual details."
+      backFallbackRoute="/bible-study"
+    >
         <div *ngIf="loading" class="skeleton-stack" aria-live="polite" data-testid="loading-state">
           <div class="detail-card skeleton">
             <div class="detail-card__body">
@@ -103,7 +98,6 @@
             </ion-button>
           </div>
         </section>
-      </div>
-    </div>
+    </app-feature-page-shell>
   </ion-content>
 </ion-page>

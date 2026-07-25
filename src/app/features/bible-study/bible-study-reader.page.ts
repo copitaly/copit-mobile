@@ -15,6 +15,7 @@ import {
 import { BibleStudyManualDetail } from '../../core/models/bible-study.model';
 import { BibleStudyService } from '../../core/services/bible-study.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 import { BibleStudyPdfViewerComponent } from './bible-study-pdf-viewer.component';
 
 type ZoomPreset = string | number;
@@ -22,7 +23,7 @@ type ZoomPreset = string | number;
 @Component({
   standalone: true,
   selector: 'app-bible-study-reader',
-  imports: [CommonModule, IonicModule, BibleStudyPdfViewerComponent],
+  imports: [CommonModule, IonicModule, BibleStudyPdfViewerComponent, PageHeaderComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './bible-study-reader.page.html',
   styleUrls: ['./bible-study-reader.page.scss'],
@@ -222,6 +223,14 @@ export class BibleStudyReaderPage implements OnDestroy {
   resetZoom(): void {
     this.zoom = 'page-width';
     this.zoomPercent = 100;
+  }
+
+  get readerTitle(): string {
+    return this.manual?.title || 'Bible Study Reader';
+  }
+
+  get readerBackFallbackRoute(): string {
+    return this.manual?.id ? `/bible-study/${this.manual.id}` : '/bible-study';
   }
 
   formatPageIndicator(): string {

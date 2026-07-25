@@ -291,6 +291,7 @@ describe('BibleStudyReaderPage', () => {
     expect(page.totalPages).toBe(18);
     expect(page.currentPage).toBe(4);
     expect(page.zoom).toBe('175%');
+    expect(fixture.nativeElement.querySelector('[data-testid="reader-controls"]')).not.toBeNull();
   });
 
   it('uses the viewer as the vertical scroll owner instead of ion-content', async () => {

@@ -6,7 +6,7 @@ import { Subject, combineLatest } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { AuthService } from '../../core/services/auth.service';
-import { MobileHeaderComponent } from '../../shared/mobile-header.component';
+import { FeaturePageShellComponent } from '../../shared/feature-page-shell.component';
 
 type PrayerAction = {
   title: string;
@@ -18,7 +18,7 @@ type PrayerAction = {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, IonicModule, FeaturePageShellComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-prayer',
   templateUrl: './prayer.page.html',

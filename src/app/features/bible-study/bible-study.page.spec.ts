@@ -7,6 +7,7 @@ import { BibleStudyManualListItem } from '../../core/models/bible-study.model';
 import { AuthService } from '../../core/services/auth.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
+import { FeaturePageShellComponent } from '../../shared/feature-page-shell.component';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { BibleStudyPage } from './bible-study.page';
 
@@ -165,8 +166,11 @@ describe('BibleStudyPage', () => {
 
     await createComponent();
 
+    expect(fixture.debugElement.query(By.directive(FeaturePageShellComponent))).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="feature-page-surface"]')).not.toBeNull();
     const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
     expect(header.fallbackRoute).toBe('/home');
+    expect(header.showBack).toBeTrue();
   });
 
   it('does not intentionally render admin-only fields', async () => {
