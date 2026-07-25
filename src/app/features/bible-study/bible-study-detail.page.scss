@@ -47,7 +47,6 @@ ion-content.bible-study-detail-content::part(scroll),
   gap: 1rem;
 }
 
-.bible-study-detail-intro,
 .detail-card,
 .state-card,
 .action-card {
@@ -56,35 +55,17 @@ ion-content.bible-study-detail-content::part(scroll),
   box-shadow: 0 14px 36px rgba(6, 21, 74, 0.1);
 }
 
-.bible-study-detail-intro,
 .detail-card,
 .state-card,
 .action-card {
   padding: 1rem 1.05rem;
 }
 
-.bible-study-detail-intro {
-  padding: 0 0 0.15rem;
-  background: transparent;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.bible-study-detail-intro__eyebrow,
 .detail-card__meta,
 .detail-card__detail {
   font-size: 0.8rem;
 }
 
-.bible-study-detail-intro__eyebrow {
-  margin: 0 0 0.45rem;
-  color: #9a6d06;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.bible-study-detail-intro h2,
 .detail-card h2,
 .state-copy h2 {
   margin: 0;
@@ -93,7 +74,6 @@ ion-content.bible-study-detail-content::part(scroll),
   line-height: 1.25;
 }
 
-.bible-study-detail-intro p,
 .detail-card__meta,
 .detail-card__detail,
 .state-copy p {
@@ -102,14 +82,40 @@ ion-content.bible-study-detail-content::part(scroll),
   line-height: 1.55;
 }
 
-.bible-study-detail-intro h2 {
-  font-size: 1.28rem;
-}
-
 .detail-card__body {
   display: flex;
   align-items: stretch;
   gap: 0.95rem;
+}
+
+.detail-card--interactive {
+  width: 100%;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    background-color 0.16s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.detail-card--interactive:hover:not(:disabled),
+.detail-card--interactive:focus-visible {
+  box-shadow: 0 18px 42px rgba(6, 21, 74, 0.16);
+}
+
+.detail-card--interactive:active:not(:disabled) {
+  transform: translateY(1px) scale(0.995);
+}
+
+.detail-card--interactive:focus-visible {
+  outline: 2px solid rgba(11, 29, 115, 0.28);
+  outline-offset: 3px;
+}
+
+.detail-card--interactive:disabled {
+  cursor: default;
 }
 
 .detail-card__cover,

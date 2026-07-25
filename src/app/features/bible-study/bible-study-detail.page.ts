@@ -124,6 +124,11 @@ export class BibleStudyDetailPage implements OnInit {
     return /^volume\b/i.test(trimmed) ? trimmed : `Volume ${trimmed}`;
   }
 
+  buildReaderAriaLabel(manual: Pick<BibleStudyManualDetail, 'language_display' | 'language'>): string {
+    const languageLabel = manual.language_display?.trim() || manual.language?.trim() || 'Bible Study';
+    return `Read ${languageLabel} Manual in the app`;
+  }
+
   private async downloadFromManual(manual: BibleStudyManualDetail, hasRetried: boolean): Promise<void> {
     const pdfUrl = this.normalizePdfUrl(manual.pdf_url);
     if (!pdfUrl) {

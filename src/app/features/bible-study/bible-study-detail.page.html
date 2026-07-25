@@ -46,7 +46,15 @@
           <ion-button expand="block" class="state-button" (click)="retryLoad()">Try Again</ion-button>
         </div>
 
-        <section *ngIf="!loading && !notFound && !errorMessage && manual" class="detail-card" data-testid="manual-detail">
+        <button
+          *ngIf="!loading && !notFound && !errorMessage && manual"
+          type="button"
+          class="detail-card detail-card--interactive ion-activatable"
+          data-testid="manual-detail"
+          [disabled]="!manual.pdf_url || openingReader || downloadingPdf"
+          [attr.aria-label]="buildReaderAriaLabel(manual)"
+          (click)="openReader()"
+        >
           <div class="detail-card__body">
             <div class="detail-card__cover" [class.detail-card__cover--placeholder]="!manual.cover_image_url">
               <img *ngIf="manual.cover_image_url; else coverPlaceholder" [src]="manual.cover_image_url" [alt]="manual.title + ' cover'" />
@@ -62,14 +70,11 @@
               <p class="detail-card__detail">{{ formatWeekRange(manual) }}</p>
             </div>
           </div>
-        </section>
+          <ion-ripple-effect></ion-ripple-effect>
+        </button>
 
         <section *ngIf="!loading && !notFound && !errorMessage && manual" class="action-card" data-testid="manual-actions">
           <div class="state-copy action-card__copy">
-            <h2>Choose how to open this manual</h2>
-            <p *ngIf="manual.pdf_url; else missingPdfCopy">
-              Read inside COP or download a fresh copy to your device.
-            </p>
             <ng-template #missingPdfCopy>
               <p>This manual does not currently have a readable PDF link.</p>
             </ng-template>

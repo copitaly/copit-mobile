@@ -92,7 +92,6 @@ describe('BibleStudyDetailPage', () => {
     expect(text).toContain('English');
     expect(text).toContain('Volume 1');
     expect(text).toContain('Weeks 1-4');
-    expect(text).toContain('Choose how to open this manual');
     expect(fixture.nativeElement.querySelector('[data-testid="manual-detail"]')).not.toBeNull();
   });
 
@@ -161,7 +160,20 @@ describe('BibleStudyDetailPage', () => {
     bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
 
     await createComponent();
-    await page.openReader();
+    const card = fixture.nativeElement.querySelector('[data-testid="manual-detail"]') as HTMLButtonElement;
+    card.click();
+    await fixture.whenStable();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/14/read');
+  });
+
+  it('uses the same reader navigation when Read in App is tapped', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+    const readButton = fixture.nativeElement.querySelector('[data-testid="open-pdf-button"]') as HTMLButtonElement;
+    readButton.click();
+    await fixture.whenStable();
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/14/read');
   });
@@ -201,6 +213,23 @@ describe('BibleStudyDetailPage', () => {
     );
     expect(localStorageSpy).not.toHaveBeenCalled();
     expect(sessionStorageSpy).not.toHaveBeenCalled();
+  });
+
+  it('keeps Download PDF isolated from reader navigation', async () => {
+    const refreshedManual = { ...manual, pdf_url: 'https://example.com/manual.pdf?X-Amz-Signature=fresh-download' };
+    bibleStudyService.getPublishedManualDetail.and.returnValues(of(manual), of(refreshedManual));
+    downloadService.downloadPdf.and.resolveTo({
+      fileName: 'manual.pdf',
+      locationLabel: 'your browser downloads',
+    });
+
+    await createComponent();
+    const downloadButton = fixture.nativeElement.querySelector('[data-testid="download-pdf-button"]') as HTMLButtonElement;
+    downloadButton.click();
+    await fixture.whenStable();
+
+    expect(downloadService.downloadPdf).toHaveBeenCalled();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
   it('prevents duplicate download taps while a download is in progress', async () => {
