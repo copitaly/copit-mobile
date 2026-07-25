@@ -7,6 +7,7 @@ import { AppRoutingModule } from '../../app-routing.module';
 import { CommunityPrayerRequest } from '../../core/models/prayer.model';
 import { PrayerService } from '../../core/services/prayer.service';
 import { AuthService } from '../../core/services/auth.service';
+import { StackNavigationService } from '../../core/services/stack-navigation.service';
 import { PrayerCommunityPage } from './prayer-community.page';
 
 describe('PrayerCommunityPage routing', () => {
@@ -39,6 +40,7 @@ describe('PrayerCommunityPage', () => {
   let page: PrayerCommunityPage;
   let prayerService: jasmine.SpyObj<PrayerService>;
   let router: jasmine.SpyObj<Router>;
+  let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
 
   const firstPrayer: CommunityPrayerRequest = {
     id: 11,
@@ -82,6 +84,10 @@ describe('PrayerCommunityPage', () => {
             isAuthenticatedSnapshot: false,
           },
         },
+        {
+          provide: StackNavigationService,
+          useValue: stackNavigationService,
+        },
       ],
     }).compileComponents();
 
@@ -94,6 +100,12 @@ describe('PrayerCommunityPage', () => {
     prayerService = jasmine.createSpyObj<PrayerService>('PrayerService', ['getCommunityPrayers']);
     router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl'], { url: '/prayer/community' });
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
+    stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', [
+      'backWithFallback',
+      'hasInAppBackHistory',
+    ]);
+    stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
+    stackNavigationService.hasInAppBackHistory.and.returnValue(false);
   });
 
   it('calls the prayer service on load and does not redirect guests to login', async () => {

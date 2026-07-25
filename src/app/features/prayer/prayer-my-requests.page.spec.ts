@@ -7,6 +7,7 @@ import { AppRoutingModule } from '../../app-routing.module';
 import { AuthService } from '../../core/services/auth.service';
 import { PrayerService } from '../../core/services/prayer.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
+import { StackNavigationService } from '../../core/services/stack-navigation.service';
 import { MemberPrayerRequest } from '../../core/models/prayer.model';
 import { PrayerMyRequestsPage } from './prayer-my-requests.page';
 
@@ -115,6 +116,7 @@ describe('PrayerMyRequestsPage', () => {
   let page: PrayerMyRequestsPage;
   let prayerService: jasmine.SpyObj<PrayerService>;
   let router: jasmine.SpyObj<Router>;
+  let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
 
   const basePrayer: MemberPrayerRequest = {
     id: 11,
@@ -170,6 +172,10 @@ describe('PrayerMyRequestsPage', () => {
             getCurrentUser: jasmine.createSpy().and.returnValue(of({ id: 1, role: 'member' })),
           },
         },
+        {
+          provide: StackNavigationService,
+          useValue: stackNavigationService,
+        },
       ],
     }).compileComponents();
 
@@ -182,6 +188,12 @@ describe('PrayerMyRequestsPage', () => {
     prayerService = jasmine.createSpyObj<PrayerService>('PrayerService', ['getMyPrayerRequests', 'getMyPrayerRequest']);
     router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl'], { url: '/prayer/my-requests' });
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
+    stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', [
+      'backWithFallback',
+      'hasInAppBackHistory',
+    ]);
+    stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
+    stackNavigationService.hasInAppBackHistory.and.returnValue(false);
   });
 
   it('calls GET /api/members/me/prayer-requests/ through the service on load', async () => {
