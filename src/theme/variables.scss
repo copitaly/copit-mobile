@@ -1,4 +1,22 @@
-﻿:root {
+:root {
+  --app-font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ion-font-family: var(--app-font-family);
   --ion-background-color: #F5F6FA;
   --ion-text-color: #1A2B4B;
+  --app-line-height-tight: 1.2;
+  --app-line-height-heading: 1.25;
+  --app-line-height-body: 1.5;
+  --app-line-height-secondary: 1.4;
+  --app-type-hero-size: 2.25rem;
+  --app-type-page-title-size: 2rem;
+  --app-type-section-heading-size: 1.5rem;
+  --app-type-card-title-size: 1.25rem;
+  --app-type-body-size: 1rem;
+  --app-type-secondary-size: 0.875rem;
+  --app-type-label-size: 0.75rem;
+  --app-type-weight-body: 400;
+  --app-type-weight-secondary: 500;
+  --app-type-weight-button: 600;
+  --app-type-weight-heading: 700;
+  --app-type-weight-hero: 800;
 }

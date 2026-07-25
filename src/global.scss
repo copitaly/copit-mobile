@@ -9,7 +9,7 @@
  * https://ionicframework.com/docs/layout/global-stylesheets
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
 /* Core CSS required for Ionic components to work properly */
 @import "@ionic/angular/css/core.css";
@@ -52,12 +52,89 @@ body,
 ion-app,
 app-root {
   min-height: 100%;
+  font-family: var(--ion-font-family);
 }
 
 body {
-  font-family: inherit;
   background: #F5F6FA;
   color: #1A2B4B;
+  font-size: var(--app-type-body-size);
+  font-weight: var(--app-type-weight-body);
+  line-height: var(--app-line-height-body);
+}
+
+button,
+input,
+textarea,
+select,
+ion-button,
+ion-input,
+ion-item,
+ion-label,
+ion-title,
+ion-card,
+ion-text,
+ion-tab-button,
+ion-segment-button {
+  font: inherit;
+}
+
+h1,
+.app-type-hero {
+  font-size: var(--app-type-hero-size);
+  font-weight: var(--app-type-weight-hero);
+  line-height: var(--app-line-height-tight);
+}
+
+h2,
+.app-type-section-heading {
+  font-size: var(--app-type-section-heading-size);
+  font-weight: var(--app-type-weight-heading);
+  line-height: var(--app-line-height-heading);
+}
+
+h3,
+.app-type-card-title {
+  font-size: var(--app-type-card-title-size);
+  font-weight: var(--app-type-weight-heading);
+  line-height: var(--app-line-height-heading);
+}
+
+p,
+li,
+ion-text,
+textarea,
+input,
+ion-input {
+  font-size: var(--app-type-body-size);
+  font-weight: var(--app-type-weight-body);
+  line-height: var(--app-line-height-body);
+}
+
+small,
+label,
+ion-label,
+.app-type-secondary {
+  font-size: var(--app-type-secondary-size);
+  font-weight: var(--app-type-weight-secondary);
+  line-height: var(--app-line-height-secondary);
+}
+
+button,
+ion-button,
+.button-native,
+.app-type-button {
+  font-size: var(--app-type-body-size);
+  font-weight: var(--app-type-weight-button);
+  line-height: var(--app-line-height-body);
+}
+
+.app-type-label {
+  font-size: var(--app-type-label-size);
+  font-weight: var(--app-type-weight-button);
+  line-height: var(--app-line-height-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .app-header {
@@ -137,9 +214,9 @@ body {
 
 .app-header__title {
   margin: 0;
-  font-size: 1.8rem;
-  font-weight: 600;
-  line-height: 1.2;
+  font-size: var(--app-type-page-title-size);
+  font-weight: var(--app-type-weight-heading);
+  line-height: var(--app-line-height-heading);
   width: 100%;
   white-space: nowrap;
   overflow: hidden;
@@ -148,8 +225,9 @@ body {
 
 .app-header__subtitle {
   margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.4;
+  font-size: var(--app-type-secondary-size);
+  font-weight: var(--app-type-weight-secondary);
+  line-height: var(--app-line-height-secondary);
   opacity: 0.85;
   color: rgba(255, 255, 255, 0.85);
   width: 100%;
