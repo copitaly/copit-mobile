@@ -82,7 +82,7 @@ pdfDefaultOptions.workerSrc = () => `/assets/pdf.worker-${pdfjsVersion}.min.mjs`
 })
 export class BibleStudyPdfViewerComponent {
   @Input({ required: true }) src = '';
-  @Input() page = 1;
+  @Input() page?: number;
   @Input() zoom: string | number = 'page-width';
 
   @Output() progress = new EventEmitter<ProgressBarEvent>();

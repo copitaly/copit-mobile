@@ -112,7 +112,7 @@
             *ngIf="viewerVisible && pdfSourceUrl"
             data-testid="pdf-viewer"
             [src]="pdfSourceUrl"
-            [page]="currentPage"
+            [page]="viewerPage"
             [zoom]="zoom"
             (progress)="handleViewerProgress($event)"
             (pageChange)="handlePageChange($event)"

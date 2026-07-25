@@ -23,7 +23,7 @@ import { BibleStudyReaderPage } from './bible-study-reader.page';
 })
 class MockBibleStudyPdfViewerComponent {
   @Input({ required: true }) src = '';
-  @Input() page = 1;
+  @Input() page?: number;
   @Input() zoom: string | number = 'page-width';
 
   @Output() progress = new EventEmitter<ProgressBarEvent>();
@@ -41,7 +41,7 @@ describe('BibleStudyReaderPage', () => {
   let page: BibleStudyReaderPage;
   let bibleStudyService: jasmine.SpyObj<BibleStudyService>;
   let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
-  let dispatchEventSpy: jasmine.Spy<(event: Event) => boolean>;
+  let boundingRectSpy: jasmine.Spy<() => DOMRect>;
 
   const manual: BibleStudyManualDetail = {
     id: 14,
@@ -92,6 +92,11 @@ describe('BibleStudyReaderPage', () => {
     fixture.detectChanges();
   }
 
+  async function settleInitialViewerPageCommand(): Promise<void> {
+    page.handlePageRendered({ pageNumber: 1, cssTransform: false, source: {} as never });
+    await Promise.resolve();
+  }
+
   beforeEach(() => {
     bibleStudyService = jasmine.createSpyObj<BibleStudyService>('BibleStudyService', ['getPublishedManualDetail']);
     stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
@@ -100,8 +105,7 @@ describe('BibleStudyReaderPage', () => {
       callback(16);
       return 1;
     });
-    dispatchEventSpy = spyOn(window, 'dispatchEvent').and.callThrough();
-    spyOn(HTMLElement.prototype, 'getBoundingClientRect').and.returnValue({
+    boundingRectSpy = spyOn(HTMLElement.prototype, 'getBoundingClientRect').and.returnValue({
       width: 360,
       height: 640,
       top: 0,
@@ -127,7 +131,7 @@ describe('BibleStudyReaderPage', () => {
 
     expect(viewer?.src).toBe('https://example.com/manual.pdf?X-Amz-Signature=fresh');
     expect(viewer?.zoom).toBe('page-width');
-    expect(dispatchEventSpy).toHaveBeenCalled();
+    expect(viewer?.page).toBe(1);
   });
 
   it('does not create the viewer before a usable pdf_url exists', async () => {
@@ -317,6 +321,19 @@ describe('BibleStudyReaderPage', () => {
     expect(page.zoom).toBe('page-width');
   });
 
+  it('clears the initial page command after the first rendered page', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+
+    expect(page.viewerPage).toBe(1);
+
+    page.handlePageRendered({ pageNumber: 1, cssTransform: false, source: {} as never });
+    await Promise.resolve();
+
+    expect(page.viewerPage).toBeUndefined();
+  });
+
   it('uses the viewer as the vertical scroll owner instead of ion-content', async () => {
     bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
 
@@ -352,16 +369,154 @@ describe('BibleStudyReaderPage', () => {
     expect(page.pdfSourceUrl).toContain('second');
   });
 
-  it('recalculates the viewer layout after ionViewDidEnter and viewport changes', async () => {
+  it('ignores repeated identical resize events while ready', async () => {
     bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
 
     await createComponent();
+    await settleInitialViewerPageCommand();
+    page.handlePageRendered({ pageNumber: 4, cssTransform: false, source: {} as never });
+    page.handlePageChange(4);
+    await Promise.resolve();
 
-    dispatchEventSpy.calls.reset();
-    page.handleViewportResize();
-    page.handleOrientationChange();
+    jasmine.clock().install();
+    try {
+      page.handleViewportResize();
+      page.handleViewportResize();
+      jasmine.clock().tick(200);
 
-    expect(dispatchEventSpy).toHaveBeenCalledWith(jasmine.any(Event));
+      expect(page.viewerPage).toBeUndefined();
+      await Promise.resolve();
+      expect(page.viewerPage).toBeUndefined();
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
+  it('debounces meaningful resize changes and preserves the current page', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+    await settleInitialViewerPageCommand();
+    page.handlePageRendered({ pageNumber: 7, cssTransform: false, source: {} as never });
+    page.handlePageChange(7);
+    await Promise.resolve();
+
+    boundingRectSpy.and.returnValue({
+      width: 420,
+      height: 740,
+      top: 0,
+      left: 0,
+      right: 420,
+      bottom: 740,
+      x: 0,
+      y: 0,
+      toJSON: () => '',
+    } as DOMRect);
+
+    jasmine.clock().install();
+    try {
+      page.handleOrientationChange();
+      jasmine.clock().tick(100);
+      expect(page.viewerPage).toBeUndefined();
+
+      jasmine.clock().tick(50);
+      expect(page.viewerPage).toBe(7);
+      page.handlePageChange(7);
+      await Promise.resolve();
+      expect(page.viewerPage).toBeUndefined();
+      expect(page.currentPage).toBe(7);
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
+  it('pageRendered and pageChange do not feed back into viewer navigation', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+    await settleInitialViewerPageCommand();
+
+    page.handlePageChange(5);
+    page.handlePageRendered({ pageNumber: 5, cssTransform: false, source: {} as never });
+    await Promise.resolve();
+
+    expect(page.currentPage).toBe(5);
+    expect(page.viewerPage).toBeUndefined();
+  });
+
+  it('leaving disconnects active resize handling and clears the viewer command state', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+    page.handlePageRendered({ pageNumber: 6, cssTransform: false, source: {} as never });
+    page.handlePageChange(6);
+
+    boundingRectSpy.and.returnValue({
+      width: 420,
+      height: 740,
+      top: 0,
+      left: 0,
+      right: 420,
+      bottom: 740,
+      x: 0,
+      y: 0,
+      toJSON: () => '',
+    } as DOMRect);
+
+    jasmine.clock().install();
+    try {
+      page.handleOrientationChange();
+      page.ionViewWillLeave();
+      jasmine.clock().tick(200);
+
+      expect(page.viewerPage).toBe(1);
+      expect(page.pdfSourceUrl).toBeNull();
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
+  it('reopening starts a fresh reader session with a single initial page command', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValues(
+      of(manual),
+      of({ ...manual, pdf_url: 'https://example.com/manual.pdf?X-Amz-Signature=second' })
+    );
+
+    await createComponent();
+    page.handlePageRendered({ pageNumber: 3, cssTransform: false, source: {} as never });
+    await Promise.resolve();
+
+    page.ionViewDidLeave();
+    page.ionViewWillEnter();
+    fixture.detectChanges();
+    await Promise.resolve();
+    page.ionViewDidEnter();
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    expect(bibleStudyService.getPublishedManualDetail.calls.count()).toBe(2);
+    expect(page.viewerPage).toBe(1);
+  });
+
+  it('does not advance pages while idle after the document is ready', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+    await settleInitialViewerPageCommand();
+    page.handlePageRendered({ pageNumber: 20, cssTransform: false, source: {} as never });
+    page.handlePageChange(20);
+    await Promise.resolve();
+
+    jasmine.clock().install();
+    try {
+      page.handleViewportResize();
+      jasmine.clock().tick(500);
+
+      expect(page.currentPage).toBe(20);
+      expect(page.viewerPage).toBeUndefined();
+    } finally {
+      jasmine.clock().uninstall();
+    }
   });
 
   it('uses the shared stack back flow for the reader with the manual detail fallback', async () => {

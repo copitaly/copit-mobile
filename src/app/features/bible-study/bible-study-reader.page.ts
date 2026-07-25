@@ -33,6 +33,8 @@ export class BibleStudyReaderPage implements OnDestroy {
   private static readonly PDF_LOAD_TIMEOUT_MS = 12000;
   private static readonly VIEWER_LAYOUT_RETRY_MS = 48;
   private static readonly VIEWER_LAYOUT_MAX_ATTEMPTS = 12;
+  private static readonly VIEWPORT_RESIZE_DEBOUNCE_MS = 140;
+  private static readonly VIEWPORT_SIZE_THRESHOLD_PX = 12;
   private static readonly DEV_DIAGNOSTICS = typeof ngDevMode !== 'undefined' && !!ngDevMode;
   private static readonly DEFAULT_ZOOM: ZoomPreset = 'page-width';
 
@@ -43,12 +45,18 @@ export class BibleStudyReaderPage implements OnDestroy {
   private readonly host = inject(ElementRef<HTMLElement>);
   private pdfLoadTimeoutId: ReturnType<typeof setTimeout> | undefined;
   private viewerLayoutTimeoutId: ReturnType<typeof setTimeout> | undefined;
+  private viewportResizeTimeoutId: ReturnType<typeof setTimeout> | undefined;
   private manualRequestSubscription?: Subscription;
   private pdfLoadStarted = false;
   private hasRenderedVisiblePage = false;
   private isViewActive = false;
   private loadRequestId = 0;
   private pendingViewerActivation = false;
+  private initialFitApplied = false;
+  private pendingViewportWidth = 0;
+  private pendingViewportHeight = 0;
+  private lastViewportWidth = 0;
+  private lastViewportHeight = 0;
   private readerState: ReaderState = 'loading-manual';
 
   manual: BibleStudyManualDetail | null = null;
@@ -65,6 +73,7 @@ export class BibleStudyReaderPage implements OnDestroy {
 
   currentPage = 1;
   totalPages = 0;
+  viewerPage: number | undefined = 1;
   zoom: ZoomPreset = BibleStudyReaderPage.DEFAULT_ZOOM;
   zoomPercent = 100;
   readonly minZoomPercent = 50;
@@ -82,7 +91,6 @@ export class BibleStudyReaderPage implements OnDestroy {
     this.isViewActive = true;
     this.logDiagnostics('ionViewDidEnter', {});
     this.scheduleViewerActivation();
-    this.requestViewerReflow();
   }
 
   ionViewWillLeave(): void {
@@ -101,14 +109,12 @@ export class BibleStudyReaderPage implements OnDestroy {
 
   @HostListener('window:resize')
   handleViewportResize(): void {
-    this.logDiagnostics('viewportResize', {});
-    this.reflowActiveViewer();
+    this.scheduleViewportStabilization('resize');
   }
 
   @HostListener('window:orientationchange')
   handleOrientationChange(): void {
-    this.logDiagnostics('orientationChange', {});
-    this.reflowActiveViewer();
+    this.scheduleViewportStabilization('orientation');
   }
 
   loadManual(): void {
@@ -217,7 +223,10 @@ export class BibleStudyReaderPage implements OnDestroy {
   handlePageRendered(event: PageRenderedEvent): void {
     this.currentPage = event.pageNumber;
     this.hasRenderedVisiblePage = true;
+    this.initialFitApplied = true;
     this.pdfLoading = false;
+    this.clearViewerPageCommand(event.pageNumber);
+    this.captureViewportDimensions();
     this.setReaderState('ready', { pageNumber: event.pageNumber });
     this.clearPdfLoadTimeout();
   }
@@ -234,6 +243,7 @@ export class BibleStudyReaderPage implements OnDestroy {
 
   handlePageChange(page: number): void {
     this.currentPage = page;
+    this.clearViewerPageCommand(page);
   }
 
   handleCurrentZoomFactor(factor: number): void {
@@ -255,7 +265,6 @@ export class BibleStudyReaderPage implements OnDestroy {
   resetZoom(): void {
     this.zoom = BibleStudyReaderPage.DEFAULT_ZOOM;
     this.zoomPercent = 100;
-    this.requestViewerReflow();
   }
 
   get readerTitle(): string {
@@ -289,6 +298,7 @@ export class BibleStudyReaderPage implements OnDestroy {
   private prepareViewer(): void {
     this.clearPdfLoadTimeout();
     this.clearViewerLayoutTimer();
+    this.clearViewportResizeTimer();
     this.pdfLoadStarted = false;
     this.viewerVisible = false;
     this.pdfLoading = false;
@@ -296,8 +306,14 @@ export class BibleStudyReaderPage implements OnDestroy {
     this.viewerProgressPercent = 0;
     this.hasRenderedVisiblePage = false;
     this.pendingViewerActivation = true;
+    this.initialFitApplied = false;
+    this.lastViewportWidth = 0;
+    this.lastViewportHeight = 0;
+    this.pendingViewportWidth = 0;
+    this.pendingViewportHeight = 0;
     this.currentPage = 1;
     this.totalPages = 0;
+    this.viewerPage = 1;
     this.zoom = BibleStudyReaderPage.DEFAULT_ZOOM;
     this.zoomPercent = 100;
     this.setReaderState('loading-document', { action: 'prepare-viewer' });
@@ -306,17 +322,24 @@ export class BibleStudyReaderPage implements OnDestroy {
   private resetViewerState(): void {
     this.clearPdfLoadTimeout();
     this.clearViewerLayoutTimer();
+    this.clearViewportResizeTimer();
     this.viewerVisible = false;
     this.pdfLoading = false;
     this.pdfLoadStarted = false;
     this.pendingViewerActivation = false;
     this.hasRenderedVisiblePage = false;
+    this.initialFitApplied = false;
     this.pdfAvailable = false;
     this.pdfSourceUrl = null;
     this.viewerProgressPercent = 0;
     this.viewerRefreshToken += 1;
+    this.lastViewportWidth = 0;
+    this.lastViewportHeight = 0;
+    this.pendingViewportWidth = 0;
+    this.pendingViewportHeight = 0;
     this.currentPage = 1;
     this.totalPages = 0;
+    this.viewerPage = 1;
     this.zoom = BibleStudyReaderPage.DEFAULT_ZOOM;
     this.zoomPercent = 100;
   }
@@ -366,7 +389,7 @@ export class BibleStudyReaderPage implements OnDestroy {
 
         this.viewerVisible = true;
         this.pendingViewerActivation = false;
-        this.requestViewerReflow();
+        this.captureViewportDimensions();
       });
       return;
     }
@@ -383,23 +406,7 @@ export class BibleStudyReaderPage implements OnDestroy {
   }
 
   private requestViewerReflow(): void {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (!this.isViewActive) {
-          return;
-        }
-
-        window.dispatchEvent(new Event('resize'));
-      });
-    });
-  }
-
-  private reflowActiveViewer(): void {
-    if (!this.isViewActive || !this.viewerVisible || !this.pdfSourceUrl) {
-      return;
-    }
-
-    this.requestViewerReflow();
+    this.captureViewportDimensions();
   }
 
   private clearViewerLayoutTimer(): void {
@@ -409,6 +416,15 @@ export class BibleStudyReaderPage implements OnDestroy {
 
     clearTimeout(this.viewerLayoutTimeoutId);
     this.viewerLayoutTimeoutId = undefined;
+  }
+
+  private clearViewportResizeTimer(): void {
+    if (!this.viewportResizeTimeoutId) {
+      return;
+    }
+
+    clearTimeout(this.viewportResizeTimeoutId);
+    this.viewportResizeTimeoutId = undefined;
   }
 
   private cancelManualRequest(): void {
@@ -421,9 +437,100 @@ export class BibleStudyReaderPage implements OnDestroy {
     this.cancelManualRequest();
     this.clearPdfLoadTimeout();
     this.clearViewerLayoutTimer();
+    this.clearViewportResizeTimer();
     this.pdfErrorMessage = '';
     this.loading = false;
     this.resetViewerState();
+  }
+
+  private scheduleViewportStabilization(reason: 'resize' | 'orientation'): void {
+    if (!this.isViewActive || !this.viewerVisible || !this.pdfSourceUrl) {
+      return;
+    }
+
+    const dimensions = this.measureViewerViewport();
+    if (!dimensions) {
+      return;
+    }
+
+    const widthDelta = Math.abs(dimensions.width - this.lastViewportWidth);
+    const heightDelta = Math.abs(dimensions.height - this.lastViewportHeight);
+
+    if (
+      this.lastViewportWidth > 0 &&
+      this.lastViewportHeight > 0 &&
+      widthDelta < BibleStudyReaderPage.VIEWPORT_SIZE_THRESHOLD_PX &&
+      heightDelta < BibleStudyReaderPage.VIEWPORT_SIZE_THRESHOLD_PX
+    ) {
+      return;
+    }
+
+    this.pendingViewportWidth = dimensions.width;
+    this.pendingViewportHeight = dimensions.height;
+    this.clearViewportResizeTimer();
+    this.viewportResizeTimeoutId = setTimeout(() => {
+      this.applyViewportStabilization(reason);
+    }, BibleStudyReaderPage.VIEWPORT_RESIZE_DEBOUNCE_MS);
+  }
+
+  private applyViewportStabilization(reason: 'resize' | 'orientation'): void {
+    this.viewportResizeTimeoutId = undefined;
+    if (!this.isViewActive || !this.viewerVisible || !this.pdfSourceUrl) {
+      return;
+    }
+
+    this.lastViewportWidth = this.pendingViewportWidth;
+    this.lastViewportHeight = this.pendingViewportHeight;
+
+    if (!this.initialFitApplied || this.currentPage <= 0) {
+      return;
+    }
+
+    this.viewerPage = this.currentPage;
+    this.logDiagnostics('viewport stabilized', {
+      reason,
+      width: this.lastViewportWidth,
+      height: this.lastViewportHeight,
+      page: this.currentPage,
+    });
+  }
+
+  private captureViewportDimensions(): void {
+    const dimensions = this.measureViewerViewport();
+    if (!dimensions) {
+      return;
+    }
+
+    this.lastViewportWidth = dimensions.width;
+    this.lastViewportHeight = dimensions.height;
+  }
+
+  private measureViewerViewport(): { width: number; height: number } | null {
+    const surface =
+      this.viewerSurface?.nativeElement ??
+      (this.host.nativeElement.querySelector('.reader-viewer') as HTMLElement | null);
+    if (!surface) {
+      return null;
+    }
+
+    const { width, height } = surface.getBoundingClientRect();
+    if (width <= 0 || height <= 0) {
+      return null;
+    }
+
+    return { width: Math.round(width), height: Math.round(height) };
+  }
+
+  private clearViewerPageCommand(page: number): void {
+    if (this.viewerPage !== page) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      if (this.viewerPage === page) {
+        this.viewerPage = undefined;
+      }
+    });
   }
 
   private normalizePdfSourceUrl(value: string | null): string | null {
