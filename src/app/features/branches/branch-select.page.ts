@@ -48,8 +48,12 @@ interface SearchResultSection {
   selector: 'app-branch-select',
   template: `
     <ion-page>
-      <ion-content fullscreen class="branch-content">
-        <app-feature-page-shell
+      <ion-content fullscreen class="branch-content" style="--background:#ffffff">
+        <div
+          class="branch-page"
+          style="min-height:100%;display:flex;flex-direction:column;background:linear-gradient(180deg,#0b1d73 0,#0b1d73 180px,#ffffff 180px,#ffffff 100%)"
+        >
+          <app-feature-page-shell style="flex:1;min-height:100%"
             title="Choose Church"
             [subtitle]="currentHelperText"
             backFallbackRoute="/home"
@@ -363,7 +367,8 @@ interface SearchResultSection {
                 </div>
               </div>
             </ng-template>
-        </app-feature-page-shell>
+          </app-feature-page-shell>
+        </div>
       </ion-content>
     </ion-page>
   `,

@@ -3,18 +3,19 @@
 }
 
 ion-page {
-  background: #0b1d73;
+  background: #ffffff;
 }
 
 ion-content.community-content {
   height: 100%;
   display: flex;
   flex-direction: column;
-  --background: #0b1d73;
+  --background: #ffffff;
 }
 
 ion-content.community-content::part(scroll),
 .community-content,
+.community-page,
 .community-feed,
 .skeleton-stack,
 .state-copy {
@@ -23,9 +24,14 @@ ion-content.community-content::part(scroll),
 }
 
 ion-content.community-content::part(scroll),
-.community-content {
+.community-content,
+.community-page {
   flex: 1;
   min-height: 100%;
+}
+
+.community-page {
+  background: linear-gradient(180deg, #0b1d73 0, #0b1d73 180px, #ffffff 180px, #ffffff 100%);
 }
 
 .community-hero {
@@ -34,16 +40,22 @@ ion-content.community-content::part(scroll),
 }
 
 .community-surface {
+  flex: 1;
+  min-height: 0;
+  background: #ffffff;
+  box-sizing: border-box;
   margin-top: -0.08rem;
   padding-top: 1.25rem;
   border-radius: 24px 24px 0 0;
 }
 
 .community-surface__content {
+  min-height: 100%;
   width: 100%;
   max-width: 440px;
   margin: 0 auto;
-  padding-bottom: calc(1.2rem + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
 }
 
 .community-intro-card,
