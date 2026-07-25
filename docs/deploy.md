@@ -139,6 +139,19 @@ This script:
 - syncs Capacitor Android
 - runs Gradle `bundleRelease`
 
+Important:
+- Android production WebView origin is intentionally fixed by `copit-mobile/capacitor.config.ts`.
+- The app must keep:
+
+```ts
+server: {
+  hostname: 'localhost',
+  androidScheme: 'https',
+}
+```
+
+- Do not inject `server.url` into production, staging, or debug release builds. That would change the WebView origin and break Bible Study S3 CORS expectations.
+
 ## 7. Locate the `.aab`
 
 After a successful build, the Play upload bundle is here:

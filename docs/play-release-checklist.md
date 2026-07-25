@@ -62,6 +62,11 @@ Status markers:
 - [ ] Verify custom-scheme deep links still open the app on a real Android device.
 - [ ] Verify HTTPS App Links on the current donor redirect host open the app on a real Android device.
 - [ ] Confirm the current test build label is visible for testers.
+- [ ] Verify the Capacitor Android WebView origin remains `https://localhost`.
+  - Google Play delivery does not change this origin.
+  - `copit-mobile/capacitor.config.ts` is the source of truth.
+- [ ] Verify the S3 PDF response includes `Access-Control-Allow-Origin: https://localhost`.
+- [ ] Verify Bible Study PDF read, retry, reopen, and download all succeed on the installed internal-test build.
 
 ## Required Before Closed Testing
 
@@ -123,3 +128,25 @@ Status markers:
 - [ ] The current `production` environment is not production-safe for Play release because it still uses staging URLs and a Stripe `pk_test` key.
 - [ ] A signed `.aab` has not yet been fully verified from this environment because Java/`JAVA_HOME` and local signing inputs are still machine-dependent prerequisites.
 - [ ] Privacy policy, Data Safety, store listing assets, and Play Console setup remain external release blockers.
+
+## Bible Study Release Verification
+
+Run this checklist for each Android release candidate:
+
+1. Build the production web bundle.
+   - `npm run build`
+2. Sync the native Android project.
+   - `npx cap sync android`
+3. Generate the signed release artifact.
+   - `npm run android:bundle`
+4. Upload the signed APK/AAB to Google Play Internal Testing.
+5. Install the Internal Testing build on a real Android device.
+6. Verify the running app origin is `https://localhost`.
+   - Confirm in Android WebView DevTools or equivalent runtime inspection.
+7. Open a Bible Study manual and confirm the signed S3 PDF response includes:
+   - `Access-Control-Allow-Origin: https://localhost`
+8. Confirm the full Bible Study flow works:
+   - read
+   - retry after a failed render
+   - reopen the same manual
+   - download/share the PDF
