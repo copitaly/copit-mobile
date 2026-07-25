@@ -163,11 +163,8 @@ ion-content.bible-study-detail-content::part(scroll),
 .action-card {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
-}
-
-.action-card__copy {
-  text-align: left;
+  padding-top: 1.25rem;
+  padding-bottom: 1.25rem;
 }
 
 .action-card__buttons {

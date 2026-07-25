@@ -74,12 +74,6 @@
         </button>
 
         <section *ngIf="!loading && !notFound && !errorMessage && manual" class="action-card" data-testid="manual-actions">
-          <div class="state-copy action-card__copy">
-            <ng-template #missingPdfCopy>
-              <p>This manual does not currently have a readable PDF link.</p>
-            </ng-template>
-          </div>
-
           <div class="action-card__buttons">
             <ion-button
               expand="block"
