@@ -15,7 +15,7 @@ import {
 import { BibleStudyManualDetail } from '../../core/models/bible-study.model';
 import { BibleStudyService } from '../../core/services/bible-study.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
-import { PageHeaderComponent } from '../../shared/page-header.component';
+import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { BibleStudyPdfViewerComponent } from './bible-study-pdf-viewer.component';
 
 type ZoomPreset = string | number;
@@ -23,7 +23,7 @@ type ZoomPreset = string | number;
 @Component({
   standalone: true,
   selector: 'app-bible-study-reader',
-  imports: [CommonModule, IonicModule, BibleStudyPdfViewerComponent, PageHeaderComponent],
+  imports: [CommonModule, IonicModule, BibleStudyPdfViewerComponent, MobileHeaderComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './bible-study-reader.page.html',
   styleUrls: ['./bible-study-reader.page.scss'],
@@ -176,6 +176,7 @@ export class BibleStudyReaderPage implements OnDestroy {
 
   handlePdfLoadingStarts(_event: PdfLoadingStartsEvent): void {
     this.pdfLoadStarted = true;
+    this.pdfLoading = true;
     this.startPdfLoadTimeout();
   }
 
@@ -233,6 +234,10 @@ export class BibleStudyReaderPage implements OnDestroy {
     return this.manual?.id ? `/bible-study/${this.manual.id}` : '/bible-study';
   }
 
+  get readerSubtitle(): string {
+    return this.totalPages ? this.formatPageIndicator() : 'Read manual pages';
+  }
+
   formatPageIndicator(): string {
     if (!this.totalPages) {
       return 'Page -';
@@ -246,7 +251,7 @@ export class BibleStudyReaderPage implements OnDestroy {
     this.clearViewerLayoutTimer();
     this.pdfLoadStarted = false;
     this.viewerVisible = false;
-    this.pdfLoading = true;
+    this.pdfLoading = false;
     this.pdfErrorMessage = '';
     this.viewerProgressPercent = 0;
     this.hasRenderedVisiblePage = false;

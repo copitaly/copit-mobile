@@ -219,7 +219,7 @@ describe('BibleStudyReaderPage', () => {
       jasmine.clock().tick(12001);
       fixture.detectChanges();
 
-      expect(page.pdfLoading).toBeTrue();
+      expect(page.pdfLoading).toBeFalse();
       expect(fixture.nativeElement.querySelector('[data-testid="reader-pdf-error-state"]')).toBeNull();
     } finally {
       jasmine.clock().uninstall();

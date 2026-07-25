@@ -1,14 +1,15 @@
 <ion-page>
   <ion-content fullscreen class="reader-content" [scrollY]="false">
-    <app-page-header
-      variant="compact"
-      [title]="readerTitle"
-      [subtitle]="formatPageIndicator()"
-      [backFallbackRoute]="readerBackFallbackRoute"
-    ></app-page-header>
+    <div class="reader-hero app-header app-header--inner">
+      <app-mobile-header
+        [title]="readerTitle"
+        [subtitle]="readerSubtitle"
+        [fallbackRoute]="readerBackFallbackRoute"
+      ></app-mobile-header>
+    </div>
 
-    <div class="reader-surface">
-      <div class="reader-shell">
+    <div class="surface reader-surface">
+      <div class="surface__content reader-shell">
         <section
           *ngIf="!loading && !notFound && !errorMessage && manual && pdfAvailable && !pdfErrorMessage"
           class="reader-controls"

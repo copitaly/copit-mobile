@@ -3,13 +3,19 @@
   height: 100%;
 }
 
-ion-page,
-ion-content.reader-content {
-  --background: #091649;
-  background: #091649;
-  height: 100%;
+ion-page {
+  background: #0b1d73;
 }
 
+ion-content.reader-content {
+  --background: #0b1d73;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+ion-content.reader-content::part(scroll),
+.reader-content,
 .reader-surface,
 .reader-shell,
 .reader-state,
@@ -19,17 +25,33 @@ ion-content.reader-content {
   flex-direction: column;
 }
 
-.reader-surface {
-  height: 100%;
+ion-content.reader-content::part(scroll),
+.reader-content {
+  flex: 1;
   min-height: 100%;
-  padding: 0.8rem 0.65rem calc(0.9rem + env(safe-area-inset-bottom));
-  box-sizing: border-box;
+}
+
+.reader-hero {
+  border-bottom-left-radius: var(--feature-shell-header-radius);
+  border-bottom-right-radius: var(--feature-shell-header-radius);
+}
+
+.reader-surface {
+  flex: 1;
+  min-height: 0;
+  margin-top: var(--feature-shell-sheet-overlap);
+  padding-top: var(--feature-shell-sheet-top-padding);
+  border-radius: var(--feature-shell-sheet-radius) var(--feature-shell-sheet-radius) 0 0;
 }
 
 .reader-shell {
   flex: 1;
   min-height: 0;
-  gap: 0.75rem;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  gap: var(--feature-shell-card-gap);
+  padding-bottom: calc(var(--feature-shell-sheet-top-padding) + env(safe-area-inset-bottom));
 }
 
 .reader-controls {
@@ -131,6 +153,7 @@ ion-content.reader-content {
   flex: 1;
   min-height: 0;
   height: 100%;
+  min-height: 420px;
   border-radius: 22px;
   overflow: hidden;
   background: #dfe7ff;
@@ -182,5 +205,9 @@ ion-content.reader-content {
 
   .reader-controls__buttons {
     justify-content: flex-end;
+  }
+
+  .reader-viewer {
+    min-height: 360px;
   }
 }
