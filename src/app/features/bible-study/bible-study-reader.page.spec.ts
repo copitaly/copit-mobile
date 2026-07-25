@@ -11,6 +11,7 @@ import { ProgressBarEvent } from 'ngx-extended-pdf-viewer';
 import { BibleStudyManualDetail } from '../../core/models/bible-study.model';
 import { AuthService } from '../../core/services/auth.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
+import { StackNavigationService } from '../../core/services/stack-navigation.service';
 import { BibleStudyPdfViewerComponent } from './bible-study-pdf-viewer.component';
 import { BibleStudyReaderPage } from './bible-study-reader.page';
 
@@ -39,6 +40,7 @@ describe('BibleStudyReaderPage', () => {
   let fixture: ComponentFixture<BibleStudyReaderPage>;
   let page: BibleStudyReaderPage;
   let bibleStudyService: jasmine.SpyObj<BibleStudyService>;
+  let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
   let dispatchEventSpy: jasmine.Spy<(event: Event) => boolean>;
 
   const manual: BibleStudyManualDetail = {
@@ -61,6 +63,7 @@ describe('BibleStudyReaderPage', () => {
       imports: [BibleStudyReaderPage],
       providers: [
         { provide: BibleStudyService, useValue: bibleStudyService },
+        { provide: StackNavigationService, useValue: stackNavigationService },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -91,6 +94,8 @@ describe('BibleStudyReaderPage', () => {
 
   beforeEach(() => {
     bibleStudyService = jasmine.createSpyObj<BibleStudyService>('BibleStudyService', ['getPublishedManualDetail']);
+    stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
+    stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
     spyOn(window, 'requestAnimationFrame').and.callFake((callback: FrameRequestCallback): number => {
       callback(16);
       return 1;
@@ -321,6 +326,35 @@ describe('BibleStudyReaderPage', () => {
 
     expect(bibleStudyService.getPublishedManualDetail.calls.count()).toBe(2);
     expect(page.pdfSourceUrl).toContain('second');
+  });
+
+  it('uses Ionic stack back for the reader when there is prior history', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+    await page.goBackToManual();
+
+    expect(stackNavigationService.backWithFallback).toHaveBeenCalledWith('/bible-study/14');
+  });
+
+  it('falls back to the manual detail page when the reader has no previous history', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+    await page.goBackToManual();
+
+    expect(stackNavigationService.backWithFallback).toHaveBeenCalledWith('/bible-study/14');
+  });
+
+  it('falls back to the Bible Study list when the reader has no previous history and no manual is loaded', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+    page.manual = null;
+
+    await page.goBackToManual();
+
+    expect(stackNavigationService.backWithFallback).toHaveBeenCalledWith('/bible-study');
   });
 
   it('leaving clears timers and viewer source', async () => {

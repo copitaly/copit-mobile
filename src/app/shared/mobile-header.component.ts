@@ -1,8 +1,9 @@
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, Input } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { AuthService } from '../core/services/auth.service';
+import { StackNavigationService } from '../core/services/stack-navigation.service';
 
 @Component({
   standalone: true,
@@ -37,9 +38,9 @@ export class MobileHeaderComponent {
   @Input() fallbackRoute = '/home';
 
   constructor(
-    private readonly location: Location,
     private readonly router: Router,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly stackNavigation: StackNavigationService
   ) {}
 
   goBack(): void {
@@ -48,11 +49,6 @@ export class MobileHeaderComponent {
       return;
     }
 
-    if (typeof window !== 'undefined' && window.history.length > 1) {
-      this.location.back();
-      return;
-    }
-
-    void this.router.navigateByUrl(this.fallbackRoute, { replaceUrl: true });
+    void this.stackNavigation.backWithFallback(this.fallbackRoute);
   }
 }

@@ -1,10 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { BibleStudyManualListItem } from '../../core/models/bible-study.model';
 import { AuthService } from '../../core/services/auth.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
+import { StackNavigationService } from '../../core/services/stack-navigation.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { BibleStudyPage } from './bible-study.page';
 
 describe('BibleStudyPage', () => {
@@ -12,6 +15,7 @@ describe('BibleStudyPage', () => {
   let page: BibleStudyPage;
   let bibleStudyService: jasmine.SpyObj<BibleStudyService>;
   let router: jasmine.SpyObj<Router>;
+  let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
 
   const firstManual: BibleStudyManualListItem = {
     id: 11,
@@ -39,6 +43,7 @@ describe('BibleStudyPage', () => {
       providers: [
         { provide: BibleStudyService, useValue: bibleStudyService },
         { provide: Router, useValue: router },
+        { provide: StackNavigationService, useValue: stackNavigationService },
         { provide: AuthService, useValue: { isAuthenticatedSnapshot: false } },
       ],
     }).compileComponents();
@@ -55,6 +60,8 @@ describe('BibleStudyPage', () => {
     ]);
     router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
+    stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
+    stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
   });
 
   it('calls the public Bible Study service on load', async () => {
@@ -161,6 +168,15 @@ describe('BibleStudyPage', () => {
     page.openManual(firstManual);
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/11');
+  });
+
+  it('configures the list header to fall back to the home screen when there is no history', async () => {
+    bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
+
+    await createComponent();
+
+    const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
+    expect(header.fallbackRoute).toBe('/home');
   });
 
   it('does not intentionally render admin-only fields', async () => {

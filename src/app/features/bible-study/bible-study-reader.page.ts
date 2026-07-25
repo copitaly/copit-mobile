@@ -14,6 +14,7 @@ import {
 
 import { BibleStudyManualDetail } from '../../core/models/bible-study.model';
 import { BibleStudyService } from '../../core/services/bible-study.service';
+import { StackNavigationService } from '../../core/services/stack-navigation.service';
 import { BibleStudyPdfViewerComponent } from './bible-study-pdf-viewer.component';
 
 type ZoomPreset = string | number;
@@ -34,6 +35,7 @@ export class BibleStudyReaderPage implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly bibleStudyService = inject(BibleStudyService);
+  private readonly stackNavigation = inject(StackNavigationService);
   private readonly host = inject(ElementRef<HTMLElement>);
   private pdfLoadTimeoutId: ReturnType<typeof setTimeout> | undefined;
   private viewerLayoutTimeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -152,15 +154,15 @@ export class BibleStudyReaderPage implements OnDestroy {
 
   async goBackToManual(): Promise<void> {
     if (!this.manual?.id) {
-      await this.router.navigateByUrl('/bible-study');
+      await this.stackNavigation.backWithFallback('/bible-study');
       return;
     }
 
-    await this.router.navigateByUrl(`/bible-study/${this.manual.id}`);
+    await this.stackNavigation.backWithFallback(`/bible-study/${this.manual.id}`);
   }
 
   async goBackToList(): Promise<void> {
-    await this.router.navigateByUrl('/bible-study');
+    await this.stackNavigation.backWithFallback('/bible-study');
   }
 
   handlePagesLoaded(event: PagesLoadedEvent): void {

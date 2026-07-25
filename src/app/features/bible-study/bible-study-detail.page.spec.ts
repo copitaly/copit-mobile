@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { ToastController } from '@ionic/angular';
 import { of, throwError } from 'rxjs';
@@ -8,6 +9,8 @@ import { BibleStudyManualDetail } from '../../core/models/bible-study.model';
 import { AuthService } from '../../core/services/auth.service';
 import { BibleStudyDownloadService } from '../../core/services/bible-study-download.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
+import { StackNavigationService } from '../../core/services/stack-navigation.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { BibleStudyDetailPage } from './bible-study-detail.page';
 
 describe('BibleStudyDetailPage', () => {
@@ -17,6 +20,7 @@ describe('BibleStudyDetailPage', () => {
   let downloadService: jasmine.SpyObj<BibleStudyDownloadService>;
   let router: jasmine.SpyObj<Router>;
   let toastController: jasmine.SpyObj<ToastController>;
+  let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
   let toastElement: { present: jasmine.Spy<() => Promise<void>> };
 
   const manual: BibleStudyManualDetail = {
@@ -42,6 +46,7 @@ describe('BibleStudyDetailPage', () => {
         { provide: BibleStudyDownloadService, useValue: downloadService },
         { provide: Router, useValue: router },
         { provide: ToastController, useValue: toastController },
+        { provide: StackNavigationService, useValue: stackNavigationService },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -66,6 +71,8 @@ describe('BibleStudyDetailPage', () => {
     downloadService = jasmine.createSpyObj<BibleStudyDownloadService>('BibleStudyDownloadService', ['downloadPdf']);
     router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl'], { events: of() });
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
+    stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
+    stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
     toastElement = {
       present: jasmine.createSpy('present').and.returnValue(Promise.resolve()),
     };
@@ -97,6 +104,15 @@ describe('BibleStudyDetailPage', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('Read in App');
     expect(text).toContain('Download PDF');
+  });
+
+  it('configures the detail header to fall back to the list page when there is no history', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+
+    const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
+    expect(header.fallbackRoute).toBe('/bible-study');
   });
 
   it('shows the generic error state and retries', async () => {
