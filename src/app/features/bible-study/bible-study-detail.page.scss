@@ -47,38 +47,44 @@ ion-content.bible-study-detail-content::part(scroll),
   gap: 1rem;
 }
 
-.bible-study-detail-intro-card,
+.bible-study-detail-intro,
 .detail-card,
-.state-card {
+.state-card,
+.action-card {
   background: #fff;
   border-radius: 22px;
   box-shadow: 0 14px 36px rgba(6, 21, 74, 0.1);
 }
 
-.bible-study-detail-intro-card,
+.bible-study-detail-intro,
 .detail-card,
-.state-card {
+.state-card,
+.action-card {
   padding: 1rem 1.05rem;
 }
 
-.bible-study-detail-intro-card {
-  border: 1px solid rgba(11, 29, 115, 0.08);
+.bible-study-detail-intro {
+  padding: 0 0 0.15rem;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-.bible-study-detail-intro-card__eyebrow,
+.bible-study-detail-intro__eyebrow,
 .detail-card__meta,
 .detail-card__detail {
   font-size: 0.8rem;
 }
 
-.bible-study-detail-intro-card__eyebrow {
+.bible-study-detail-intro__eyebrow {
   margin: 0 0 0.45rem;
   color: #9a6d06;
   font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
-.bible-study-detail-intro-card h2,
+.bible-study-detail-intro h2,
 .detail-card h2,
 .state-copy h2 {
   margin: 0;
@@ -87,13 +93,17 @@ ion-content.bible-study-detail-content::part(scroll),
   line-height: 1.25;
 }
 
-.bible-study-detail-intro-card p,
+.bible-study-detail-intro p,
 .detail-card__meta,
 .detail-card__detail,
 .state-copy p {
   margin: 0;
   color: rgba(3, 23, 63, 0.68);
   line-height: 1.55;
+}
+
+.bible-study-detail-intro h2 {
+  font-size: 1.28rem;
 }
 
 .detail-card__body {
@@ -142,6 +152,40 @@ ion-content.bible-study-detail-content::part(scroll),
 
 .state-card {
   text-align: center;
+}
+
+.action-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.action-card__copy {
+  text-align: left;
+}
+
+.action-card__buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.action-card__button {
+  min-height: 50px;
+  font-weight: 700;
+}
+
+.action-card__button--primary {
+  --background: #0b1d73;
+  --background-activated: #09175c;
+  --box-shadow: 0 12px 22px rgba(11, 29, 115, 0.2);
+  --border-radius: 16px;
+}
+
+.action-card__button--secondary {
+  --border-color: rgba(11, 29, 115, 0.2);
+  --color: #0b1d73;
+  --border-radius: 16px;
 }
 
 .state-button {

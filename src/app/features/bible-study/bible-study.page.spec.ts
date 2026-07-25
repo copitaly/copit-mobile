@@ -86,6 +86,18 @@ describe('BibleStudyPage', () => {
     expect(text).toContain('Weeks 1-4');
   });
 
+  it('renders the revised compact intro copy', async () => {
+    bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
+
+    await createComponent();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('PUBLISHED MANUALS');
+    expect(text).toContain('Weekly Bible Study');
+    expect(text).toContain('Choose a published manual to read or download.');
+    expect(text).not.toContain('PDF reading will be added separately');
+  });
+
   it('renders Full year when week range is missing', async () => {
     bibleStudyService.getPublishedManuals.and.returnValue(
       of(buildResponse([{ ...firstManual, start_week: null, end_week: null }]))
@@ -102,6 +114,14 @@ describe('BibleStudyPage', () => {
     await createComponent();
 
     expect(fixture.nativeElement.textContent).not.toContain('Volume 1');
+  });
+
+  it('adds a Volume label when the API returns a raw number-like volume value', async () => {
+    bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([{ ...firstManual, volume: '1' }])));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.textContent).toContain('Volume 1');
   });
 
   it('renders an empty state when there are no published manuals', async () => {

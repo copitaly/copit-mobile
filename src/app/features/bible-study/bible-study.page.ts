@@ -63,6 +63,10 @@ export class BibleStudyPage implements OnInit {
 
   formatVolume(volume: string | null | undefined): string | null {
     const trimmed = volume?.trim() ?? '';
-    return trimmed || null;
+    if (!trimmed) {
+      return null;
+    }
+
+    return /^volume\b/i.test(trimmed) ? trimmed : `Volume ${trimmed}`;
   }
 }

@@ -10,10 +10,10 @@
 
     <div class="surface bible-study-detail-surface">
       <div class="surface__content bible-study-detail-surface__content">
-        <section class="bible-study-detail-intro-card">
-          <p class="bible-study-detail-intro-card__eyebrow">Published manual</p>
-          <h2>Read the current signed PDF inside COP.</h2>
-          <p>The reader requests a fresh signed PDF link when you open it and does not store that link.</p>
+        <section class="bible-study-detail-intro">
+          <p class="bible-study-detail-intro__eyebrow">BIBLE STUDY MANUAL</p>
+          <h2>{{ manual?.title || 'Bible Study Manual' }}</h2>
+          <p>Choose how you want to open this manual.</p>
         </section>
 
         <div *ngIf="loading" class="skeleton-stack" aria-live="polite" data-testid="loading-state">
@@ -63,36 +63,53 @@
 
             <div class="detail-card__copy">
               <h2>{{ manual.title }}</h2>
-              <p class="detail-card__meta">{{ manual.year }} • {{ manual.language_display }}</p>
+              <p class="detail-card__meta">{{ manual.year }} / {{ manual.language_display }}</p>
               <p *ngIf="formatVolume(manual.volume)" class="detail-card__detail">{{ formatVolume(manual.volume) }}</p>
               <p class="detail-card__detail">{{ formatWeekRange(manual) }}</p>
             </div>
           </div>
         </section>
 
-        <div *ngIf="!loading && !notFound && !errorMessage && manual" class="state-card info-state">
-          <div class="state-copy">
-            <h2>Manual reader</h2>
+        <section *ngIf="!loading && !notFound && !errorMessage && manual" class="action-card" data-testid="manual-actions">
+          <div class="state-copy action-card__copy">
+            <h2>Choose how to open this manual</h2>
             <p *ngIf="manual.pdf_url; else missingPdfCopy">
-              Read the currently published PDF inside the app. If the signed link expires, the reader can request a fresh one.
+              Read inside COP or download a fresh copy to your device.
             </p>
             <ng-template #missingPdfCopy>
               <p>This manual does not currently have a readable PDF link.</p>
             </ng-template>
           </div>
 
-          <ion-button
-            expand="block"
-            class="state-button"
-            [disabled]="!manual.pdf_url || openingPdf"
-            data-testid="open-pdf-button"
-            (click)="openPdf()"
-          >
-            <ion-spinner *ngIf="openingPdf" slot="start" name="crescent"></ion-spinner>
-            <ion-icon *ngIf="!openingPdf" slot="start" name="reader-outline" aria-hidden="true"></ion-icon>
-            <span>{{ openingPdf ? 'Opening reader...' : 'Read Manual' }}</span>
-          </ion-button>
-        </div>
+          <div class="action-card__buttons">
+            <ion-button
+              expand="block"
+              class="state-button action-card__button action-card__button--primary"
+              [disabled]="!manual.pdf_url || openingReader || downloadingPdf"
+              data-testid="open-pdf-button"
+              aria-label="Read this manual in the app"
+              (click)="openReader()"
+            >
+              <ion-spinner *ngIf="openingReader" slot="start" name="crescent"></ion-spinner>
+              <ion-icon *ngIf="!openingReader" slot="start" name="reader-outline" aria-hidden="true"></ion-icon>
+              <span>{{ openingReader ? 'Opening reader...' : 'Read in App' }}</span>
+            </ion-button>
+
+            <ion-button
+              expand="block"
+              fill="outline"
+              class="action-card__button action-card__button--secondary"
+              [disabled]="!manual.pdf_url || openingReader || downloadingPdf"
+              data-testid="download-pdf-button"
+              aria-label="Download this manual as a PDF"
+              (click)="downloadPdf()"
+            >
+              <ion-spinner *ngIf="downloadingPdf" slot="start" name="crescent"></ion-spinner>
+              <ion-icon *ngIf="!downloadingPdf" slot="start" name="download-outline" aria-hidden="true"></ion-icon>
+              <span>{{ downloadingPdf ? 'Downloading...' : 'Download PDF' }}</span>
+            </ion-button>
+          </div>
+        </section>
       </div>
     </div>
   </ion-content>

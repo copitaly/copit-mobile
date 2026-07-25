@@ -10,10 +10,10 @@
 
     <div class="surface bible-study-surface">
       <div class="surface__content bible-study-surface__content">
-        <section class="bible-study-intro-card">
-          <p class="bible-study-intro-card__eyebrow">Published manuals</p>
-          <h2>Read weekly Bible Study manuals on mobile.</h2>
-          <p>Browse current published manuals by year and language. PDF reading will be added separately.</p>
+        <section class="bible-study-intro">
+          <p class="bible-study-intro__eyebrow">PUBLISHED MANUALS</p>
+          <h2>Weekly Bible Study</h2>
+          <p>Choose a published manual to read or download.</p>
         </section>
 
         <div *ngIf="loading" class="skeleton-stack" aria-live="polite">
@@ -67,7 +67,7 @@
                   <h2>{{ manual.title }}</h2>
                   <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
                 </div>
-                <p class="manual-card__meta">{{ manual.year }} • {{ manual.language_display }}</p>
+                <p class="manual-card__meta">{{ manual.year }} / {{ manual.language_display }}</p>
                 <p *ngIf="formatVolume(manual.volume)" class="manual-card__detail">{{ formatVolume(manual.volume) }}</p>
                 <p class="manual-card__detail">{{ formatWeekRange(manual) }}</p>
               </div>
