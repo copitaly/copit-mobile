@@ -328,16 +328,7 @@ describe('BibleStudyReaderPage', () => {
     expect(page.pdfSourceUrl).toContain('second');
   });
 
-  it('uses Ionic stack back for the reader when there is prior history', async () => {
-    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
-
-    await createComponent();
-    await page.goBackToManual();
-
-    expect(stackNavigationService.backWithFallback).toHaveBeenCalledWith('/bible-study/14');
-  });
-
-  it('falls back to the manual detail page when the reader has no previous history', async () => {
+  it('uses the shared stack back flow for the reader with the manual detail fallback', async () => {
     bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
 
     await createComponent();

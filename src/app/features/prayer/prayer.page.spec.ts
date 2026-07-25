@@ -1,14 +1,18 @@
 import { BehaviorSubject } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
+import { StackNavigationService } from '../../core/services/stack-navigation.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { PrayerPage } from './prayer.page';
 
 describe('PrayerPage', () => {
   let page: PrayerPage;
   let fixture: { nativeElement: HTMLElement } | null;
   let router: jasmine.SpyObj<{ navigateByUrl: (url: string) => Promise<boolean> }>;
+  let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
   let authState$: BehaviorSubject<boolean>;
   let currentUser$: BehaviorSubject<{ role: string } | null>;
 
@@ -17,6 +21,8 @@ describe('PrayerPage', () => {
     currentUser$ = new BehaviorSubject<{ role: string } | null>(null);
     router = jasmine.createSpyObj('Router', ['navigateByUrl']);
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
+    stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
+    stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
     TestBed.configureTestingModule({
       imports: [PrayerPage],
       providers: [
@@ -28,6 +34,7 @@ describe('PrayerPage', () => {
           },
         },
         { provide: Router, useValue: router },
+        { provide: StackNavigationService, useValue: stackNavigationService },
       ],
     });
     page = TestBed.runInInjectionContext(() => new PrayerPage());
@@ -112,5 +119,15 @@ describe('PrayerPage', () => {
     const element = createComponent();
 
     expect(element.textContent).toContain('My Prayer Requests');
+  });
+
+  it('configures the shared mobile header to fall back to the home screen', () => {
+    const componentFixture = TestBed.createComponent(PrayerPage);
+    componentFixture.detectChanges();
+
+    const header = componentFixture.debugElement.query(By.directive(MobileHeaderComponent))
+      ?.componentInstance as MobileHeaderComponent;
+
+    expect(header.fallbackRoute).toBe('/home');
   });
 });
