@@ -10,12 +10,6 @@
 
     <div class="surface bible-study-detail-surface">
       <div class="surface__content bible-study-detail-surface__content">
-        <section class="bible-study-detail-intro">
-          <p class="bible-study-detail-intro__eyebrow">BIBLE STUDY MANUAL</p>
-          <h2>{{ manual?.title || 'Bible Study Manual' }}</h2>
-          <p>Choose how you want to open this manual.</p>
-        </section>
-
         <div *ngIf="loading" class="skeleton-stack" aria-live="polite" data-testid="loading-state">
           <div class="detail-card skeleton">
             <div class="detail-card__body">

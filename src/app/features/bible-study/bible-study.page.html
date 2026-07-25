@@ -10,12 +10,6 @@
 
     <div class="surface bible-study-surface">
       <div class="surface__content bible-study-surface__content">
-        <section class="bible-study-intro">
-          <p class="bible-study-intro__eyebrow">PUBLISHED MANUALS</p>
-          <h2>Weekly Bible Study</h2>
-          <p>Choose a published manual to read or download.</p>
-        </section>
-
         <div *ngIf="loading" class="skeleton-stack" aria-live="polite">
           <div class="manual-card skeleton" *ngFor="let item of skeletonItems">
             <div class="manual-card__body">

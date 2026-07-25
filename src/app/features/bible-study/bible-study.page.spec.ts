@@ -91,18 +91,8 @@ describe('BibleStudyPage', () => {
     expect(text).toContain('English');
     expect(text).toContain('Volume 1');
     expect(text).toContain('Weeks 1-4');
-  });
-
-  it('renders the revised compact intro copy', async () => {
-    bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
-
-    await createComponent();
-
-    const text = fixture.nativeElement.textContent;
-    expect(text).toContain('PUBLISHED MANUALS');
-    expect(text).toContain('Weekly Bible Study');
-    expect(text).toContain('Choose a published manual to read or download.');
-    expect(text).not.toContain('PDF reading will be added separately');
+    expect(text).not.toContain('PUBLISHED MANUALS');
+    expect(text).not.toContain('Choose a published manual to read or download.');
   });
 
   it('renders Full year when week range is missing', async () => {
