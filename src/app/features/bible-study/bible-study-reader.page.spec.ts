@@ -126,6 +126,7 @@ describe('BibleStudyReaderPage', () => {
       ?.componentInstance as MockBibleStudyPdfViewerComponent | undefined;
 
     expect(viewer?.src).toBe('https://example.com/manual.pdf?X-Amz-Signature=fresh');
+    expect(viewer?.zoom).toBe('page-width');
     expect(dispatchEventSpy).toHaveBeenCalled();
   });
 
@@ -297,6 +298,23 @@ describe('BibleStudyReaderPage', () => {
     expect(page.currentPage).toBe(4);
     expect(page.zoom).toBe('175%');
     expect(fixture.nativeElement.querySelector('[data-testid="reader-controls"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.reader-controls--slim')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="reader-viewer"]')?.classList).toContain('reader-viewer--immersive');
+  });
+
+  it('uses fit width as the initial zoom mode and when reset', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+
+    expect(page.defaultZoomMode).toBe('page-width');
+    expect(page.zoom).toBe('page-width');
+
+    page.zoomIn();
+    expect(page.zoom).toBe('125%');
+
+    page.resetZoom();
+    expect(page.zoom).toBe('page-width');
   });
 
   it('uses the viewer as the vertical scroll owner instead of ion-content', async () => {
@@ -332,6 +350,18 @@ describe('BibleStudyReaderPage', () => {
 
     expect(bibleStudyService.getPublishedManualDetail.calls.count()).toBe(2);
     expect(page.pdfSourceUrl).toContain('second');
+  });
+
+  it('recalculates the viewer layout after ionViewDidEnter and viewport changes', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+
+    dispatchEventSpy.calls.reset();
+    page.handleViewportResize();
+    page.handleOrientationChange();
+
+    expect(dispatchEventSpy).toHaveBeenCalledWith(jasmine.any(Event));
   });
 
   it('uses the shared stack back flow for the reader with the manual detail fallback', async () => {

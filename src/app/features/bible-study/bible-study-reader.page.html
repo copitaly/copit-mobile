@@ -12,7 +12,7 @@
       <div class="surface__content reader-shell">
         <section
           *ngIf="!loading && !notFound && !errorMessage && manual && pdfAvailable && !pdfErrorMessage"
-          class="reader-controls"
+          class="reader-controls reader-controls--slim"
           data-testid="reader-controls"
         >
           <strong class="reader-controls__page">{{ formatPageIndicator() }}</strong>
@@ -100,7 +100,8 @@
         <section
           *ngIf="!loading && !notFound && !errorMessage && manual && pdfAvailable && !pdfErrorMessage"
           #viewerSurface
-          class="reader-viewer"
+          class="reader-viewer reader-viewer--immersive"
+          data-testid="reader-viewer"
         >
           <div *ngIf="pdfLoading" class="reader-viewer__loading" data-testid="pdf-loading-state">
             <ion-spinner name="crescent"></ion-spinner>

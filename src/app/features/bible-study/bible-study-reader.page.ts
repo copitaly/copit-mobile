@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, OnDestroy, ViewChild, inject } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, HostListener, OnDestroy, ViewChild, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { Subscription } from 'rxjs';
@@ -34,6 +34,7 @@ export class BibleStudyReaderPage implements OnDestroy {
   private static readonly VIEWER_LAYOUT_RETRY_MS = 48;
   private static readonly VIEWER_LAYOUT_MAX_ATTEMPTS = 12;
   private static readonly DEV_DIAGNOSTICS = typeof ngDevMode !== 'undefined' && !!ngDevMode;
+  private static readonly DEFAULT_ZOOM: ZoomPreset = 'page-width';
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -64,7 +65,7 @@ export class BibleStudyReaderPage implements OnDestroy {
 
   currentPage = 1;
   totalPages = 0;
-  zoom: ZoomPreset = 'page-width';
+  zoom: ZoomPreset = BibleStudyReaderPage.DEFAULT_ZOOM;
   zoomPercent = 100;
   readonly minZoomPercent = 50;
   readonly maxZoomPercent = 400;
@@ -81,6 +82,7 @@ export class BibleStudyReaderPage implements OnDestroy {
     this.isViewActive = true;
     this.logDiagnostics('ionViewDidEnter', {});
     this.scheduleViewerActivation();
+    this.requestViewerReflow();
   }
 
   ionViewWillLeave(): void {
@@ -95,6 +97,18 @@ export class BibleStudyReaderPage implements OnDestroy {
 
   ngOnDestroy(): void {
     this.teardownActiveSession();
+  }
+
+  @HostListener('window:resize')
+  handleViewportResize(): void {
+    this.logDiagnostics('viewportResize', {});
+    this.reflowActiveViewer();
+  }
+
+  @HostListener('window:orientationchange')
+  handleOrientationChange(): void {
+    this.logDiagnostics('orientationChange', {});
+    this.reflowActiveViewer();
   }
 
   loadManual(): void {
@@ -239,8 +253,9 @@ export class BibleStudyReaderPage implements OnDestroy {
   }
 
   resetZoom(): void {
-    this.zoom = 'page-width';
+    this.zoom = BibleStudyReaderPage.DEFAULT_ZOOM;
     this.zoomPercent = 100;
+    this.requestViewerReflow();
   }
 
   get readerTitle(): string {
@@ -267,6 +282,10 @@ export class BibleStudyReaderPage implements OnDestroy {
     return `${this.currentPage} / ${this.totalPages}`;
   }
 
+  get defaultZoomMode(): ZoomPreset {
+    return BibleStudyReaderPage.DEFAULT_ZOOM;
+  }
+
   private prepareViewer(): void {
     this.clearPdfLoadTimeout();
     this.clearViewerLayoutTimer();
@@ -279,7 +298,7 @@ export class BibleStudyReaderPage implements OnDestroy {
     this.pendingViewerActivation = true;
     this.currentPage = 1;
     this.totalPages = 0;
-    this.zoom = 'page-width';
+    this.zoom = BibleStudyReaderPage.DEFAULT_ZOOM;
     this.zoomPercent = 100;
     this.setReaderState('loading-document', { action: 'prepare-viewer' });
   }
@@ -298,7 +317,7 @@ export class BibleStudyReaderPage implements OnDestroy {
     this.viewerRefreshToken += 1;
     this.currentPage = 1;
     this.totalPages = 0;
-    this.zoom = 'page-width';
+    this.zoom = BibleStudyReaderPage.DEFAULT_ZOOM;
     this.zoomPercent = 100;
   }
 
@@ -373,6 +392,14 @@ export class BibleStudyReaderPage implements OnDestroy {
         window.dispatchEvent(new Event('resize'));
       });
     });
+  }
+
+  private reflowActiveViewer(): void {
+    if (!this.isViewActive || !this.viewerVisible || !this.pdfSourceUrl) {
+      return;
+    }
+
+    this.requestViewerReflow();
   }
 
   private clearViewerLayoutTimer(): void {

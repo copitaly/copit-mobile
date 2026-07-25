@@ -8,7 +8,7 @@ ion-page {
 }
 
 ion-content.reader-content {
-  --background: #0b1d73;
+  --background: #eef2f7;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -32,51 +32,57 @@ ion-content.reader-content::part(scroll),
 }
 
 .reader-hero {
-  border-bottom-left-radius: var(--feature-shell-header-radius);
-  border-bottom-right-radius: var(--feature-shell-header-radius);
+  --header-extra-top: 0.35rem;
+  padding-bottom: 0.75rem;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
 }
 
 .reader-surface {
   flex: 1;
   min-height: 0;
-  margin-top: var(--feature-shell-sheet-overlap);
-  padding-top: var(--feature-shell-sheet-top-padding);
-  border-radius: var(--feature-shell-sheet-radius) var(--feature-shell-sheet-radius) 0 0;
+  margin-top: 0;
+  padding: 0.45rem 0.3rem calc(0.45rem + env(safe-area-inset-bottom));
+  border-radius: 0;
+  background: #eef2f7;
+  box-shadow: none;
 }
 
 .reader-shell {
   flex: 1;
   min-height: 0;
   width: 100%;
-  max-width: 520px;
+  max-width: none;
   margin: 0 auto;
-  gap: var(--feature-shell-card-gap);
-  padding-bottom: calc(var(--feature-shell-sheet-top-padding) + env(safe-area-inset-bottom));
+  gap: 0.4rem;
+  padding-bottom: 0;
 }
 
 .reader-controls {
-  background: rgba(255, 255, 255, 0.98);
-  border-radius: 18px;
-  box-shadow: 0 14px 30px rgba(5, 14, 54, 0.2);
-  padding: 0.55rem 0.8rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(5, 14, 54, 0.06);
+  padding: 0.22rem 0.38rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.35rem;
+  min-height: 44px;
 }
 
 .reader-controls__page {
   margin: 0;
   color: #03173f;
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: var(--app-type-secondary-size);
+  font-weight: 500;
+  opacity: 0.86;
   white-space: nowrap;
 }
 
 .reader-controls__buttons {
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
+  gap: 0.1rem;
   flex-shrink: 0;
 }
 
@@ -84,12 +90,14 @@ ion-content.reader-content::part(scroll),
   --color: #0b1d73;
   --background-hover: rgba(11, 29, 115, 0.08);
   --background-activated: rgba(11, 29, 115, 0.12);
-  min-width: 38px;
+  min-width: 40px;
+  min-height: 40px;
+  margin: 0;
 }
 
 .reader-controls__button--fit {
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .reader-state {
@@ -135,11 +143,10 @@ ion-content.reader-content::part(scroll),
   flex: 1;
   min-height: 0;
   height: 100%;
-  min-height: 420px;
-  border-radius: 22px;
-  overflow: hidden;
-  background: #dfe7ff;
-  box-shadow: 0 16px 36px rgba(5, 14, 54, 0.24);
+  min-height: 0;
+  overflow: clip;
+  background: #eef2f7;
+  box-shadow: none;
 }
 
 .reader-viewer__loading {
@@ -152,7 +159,7 @@ ion-content.reader-content::part(scroll),
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(238, 243, 255, 0.82), rgba(238, 243, 255, 0.38));
+  background: linear-gradient(180deg, rgba(238, 242, 247, 0.72), rgba(238, 242, 247, 0.34));
   color: #0b1d73;
   text-align: center;
 }
@@ -179,9 +186,47 @@ ion-content.reader-content::part(scroll),
   min-height: 0 !important;
 }
 
+:host ::ng-deep ngx-extended-pdf-viewer #outerContainer,
+:host ::ng-deep ngx-extended-pdf-viewer #mainContainer,
+:host ::ng-deep ngx-extended-pdf-viewer #viewerContainer {
+  background: #eef2f7 !important;
+}
+
+:host ::ng-deep ngx-extended-pdf-viewer #viewerContainer {
+  padding: 4px 6px 8px !important;
+}
+
+:host ::ng-deep ngx-extended-pdf-viewer #viewer {
+  width: 100% !important;
+}
+
+:host ::ng-deep ngx-extended-pdf-viewer .page {
+  margin: 0 auto 8px !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+:host ::ng-deep ngx-extended-pdf-viewer .canvasWrapper,
+:host ::ng-deep ngx-extended-pdf-viewer canvas {
+  max-width: 100% !important;
+  box-shadow: none !important;
+}
+
+:host ::ng-deep ngx-extended-pdf-viewer canvas {
+  transform: none !important;
+}
+
 @media (max-width: 420px) {
+  .reader-hero {
+    padding-bottom: 0.65rem;
+  }
+
+  .reader-surface {
+    padding-inline: 0.2rem;
+  }
+
   .reader-controls {
-    gap: 0.4rem;
+    padding-inline: 0.28rem;
   }
 
   .reader-controls__buttons {
@@ -189,6 +234,10 @@ ion-content.reader-content::part(scroll),
   }
 
   .reader-viewer {
-    min-height: 360px;
+    min-height: 0;
+  }
+
+  :host ::ng-deep ngx-extended-pdf-viewer #viewerContainer {
+    padding-inline: 4px !important;
   }
 }
