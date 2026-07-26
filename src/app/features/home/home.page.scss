@@ -8,6 +8,26 @@ ion-page {
   padding-bottom: 1.4rem;
 }
 
+.home-header-wrap {
+  position: relative;
+}
+
+.home-wordmark {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 22px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.88);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .quick-actions-section,
 .branch-card {
   margin: 0 1.25rem;
@@ -181,6 +201,12 @@ ion-page {
   .branch-card {
     margin-left: 1rem;
     margin-right: 1rem;
+  }
+
+  .home-wordmark {
+    top: calc(env(safe-area-inset-top, 0px) + 20px);
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
   }
 
   .feature-card {

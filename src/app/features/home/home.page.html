@@ -1,15 +1,18 @@
 ﻿<ion-page>
   <ion-content fullscreen class="home-content">
-    <app-page-header
-      [eyebrow]="greeting"
-      variant="hero"
-      title="Connect with Your Church"
-      subtitle="Grow, give, pray, and stay connected with your church family."
-      [showBack]="false"
-      [showProfile]="true"
-      [profileAction]="openAccountFromHeader"
-      [profileIcon]="profileIcon"
-    ></app-page-header>
+    <div class="home-header-wrap">
+      <div class="home-wordmark" aria-hidden="true">C.O.P. ITALY</div>
+      <app-page-header
+        [eyebrow]="greeting"
+        variant="hero"
+        title="Connect with Your Church"
+        subtitle="Grow, give, pray, and stay connected with your church family."
+        [showBack]="false"
+        [showProfile]="true"
+        [profileAction]="openAccountFromHeader"
+        [profileIcon]="profileIcon"
+      ></app-page-header>
+    </div>
 
     <section class="quick-actions-section">
     <section class="feature-grid" aria-label="Quick actions">

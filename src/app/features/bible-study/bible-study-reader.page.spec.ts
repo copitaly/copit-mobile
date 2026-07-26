@@ -5,7 +5,7 @@ import { By } from '@angular/platform-browser';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { IonContent } from '@ionic/angular';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { ProgressBarEvent } from 'ngx-extended-pdf-viewer';
 
 import { BibleStudyManualDetail } from '../../core/models/bible-study.model';
@@ -144,14 +144,27 @@ describe('BibleStudyReaderPage', () => {
   });
 
   it('shows the loading state before the manual arrives', async () => {
-    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+    const manual$ = new Subject<BibleStudyManualDetail>();
+    bibleStudyService.getPublishedManualDetail.and.returnValue(manual$.asObservable());
 
     await createComponent();
 
-    page.loading = true;
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('[data-testid="reader-loading-state"]')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Preparing your manual...');
+    expect(fixture.nativeElement.querySelector('[data-testid="reader-viewer"]')).toBeNull();
+  });
+
+  it('shows the loading-document shell after metadata succeeds and before rendering begins', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="pdf-loading-state"]')?.textContent).toContain('Loading PDF...');
+    expect(fixture.nativeElement.querySelector('[data-testid="reader-controls"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="pdf-viewer-shell"]')?.getAttribute('aria-hidden')).toBe('true');
   });
 
   it('shows the generic API error and retries', async () => {
@@ -213,6 +226,10 @@ describe('BibleStudyReaderPage', () => {
     fixture.detectChanges();
 
     expect(bibleStudyService.getPublishedManualDetail.calls.count()).toBe(2);
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="reader-loading-state"]') ??
+        fixture.nativeElement.querySelector('[data-testid="pdf-loading-state"]')
+    ).not.toBeNull();
     expect(page.pdfSourceUrl).toBe('https://example.com/manual.pdf?X-Amz-Signature=renewed');
   });
 
@@ -262,13 +279,19 @@ describe('BibleStudyReaderPage', () => {
     page.handleViewerProgress({ source: null, type: 'load', total: 100, percent: 42 });
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('[data-testid="pdf-loading-state"]')?.textContent).toContain('42%');
+    expect(fixture.nativeElement.querySelector('[data-testid="pdf-loading-state"]')?.textContent).toContain(
+      'Rendering pages (42%)...'
+    );
+    expect(fixture.nativeElement.querySelector('[data-testid="pdf-viewer-shell"]')?.getAttribute('aria-hidden')).toBe('true');
 
     page.handlePageRendered({ pageNumber: 1, cssTransform: false, source: {} as never });
     fixture.detectChanges();
 
     expect(page.pdfLoading).toBeFalse();
     expect(fixture.nativeElement.querySelector('[data-testid="pdf-loading-state"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="pdf-viewer-shell"]')?.classList).toContain(
+      'reader-viewer__canvas--ready'
+    );
   });
 
   it('shows retry when the viewer emits a loading failure', async () => {
@@ -304,6 +327,17 @@ describe('BibleStudyReaderPage', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="reader-controls"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.reader-controls--slim')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="reader-viewer"]')?.classList).toContain('reader-viewer--immersive');
+  });
+
+  it('keeps the toolbar hidden before the first rendered page is ready', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+    page.handlePdfLoadingStarts({});
+    fixture.detectChanges();
+
+    expect(page.toolbarDisabled).toBeTrue();
+    expect(fixture.nativeElement.querySelector('[data-testid="reader-controls"]')).toBeNull();
   });
 
   it('uses fit width as the initial zoom mode and when reset', async () => {

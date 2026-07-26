@@ -279,6 +279,48 @@ export class BibleStudyReaderPage implements OnDestroy {
     return 'Reader';
   }
 
+  get isReaderReady(): boolean {
+    return this.readerState === 'ready' && this.hasRenderedVisiblePage && !this.pdfErrorMessage;
+  }
+
+  get showReaderLoadingShell(): boolean {
+    return (
+      !this.loading &&
+      !this.notFound &&
+      !this.errorMessage &&
+      !!this.manual &&
+      this.pdfAvailable &&
+      !this.pdfErrorMessage &&
+      !this.isReaderReady
+    );
+  }
+
+  get readerLoadingTitle(): string {
+    switch (this.readerState) {
+      case 'loading-document':
+        return 'Loading PDF...';
+      case 'rendering':
+        return this.viewerProgressPercent > 0
+          ? `Rendering pages (${this.viewerProgressPercent}%)...`
+          : 'Rendering pages...';
+      case 'loading-manual':
+      default:
+        return 'Preparing your manual...';
+    }
+  }
+
+  get readerLoadingMessage(): string {
+    switch (this.readerState) {
+      case 'loading-document':
+        return 'Starting the document viewer and fetching the PDF.';
+      case 'rendering':
+        return 'Rendering the first page for reading.';
+      case 'loading-manual':
+      default:
+        return 'Requesting a fresh signed PDF link.';
+    }
+  }
+
   get toolbarDisabled(): boolean {
     return this.readerState !== 'ready' || !this.pdfAvailable || !!this.pdfErrorMessage || !this.totalPages;
   }

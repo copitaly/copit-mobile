@@ -44,7 +44,7 @@ ion-content.reader-content::part(scroll),
     var(--feature-shell-sheet-horizontal-gutter)
     calc(var(--feature-shell-sheet-top-padding) + env(safe-area-inset-bottom));
   border-radius: var(--feature-shell-sheet-radius) var(--feature-shell-sheet-radius) 0 0;
-  background: #ffffff;
+  background: #fff;
   box-shadow: 0 -6px 22px rgba(2, 18, 54, 0.08);
   width: 100%;
   box-sizing: border-box;
@@ -54,7 +54,6 @@ ion-content.reader-content::part(scroll),
 .reader-shell {
   flex: 1;
   min-height: 0;
-  width: 100%;
   gap: 0.55rem;
 }
 
@@ -105,7 +104,7 @@ ion-content.reader-content::part(scroll),
   justify-content: center;
   gap: 1rem;
   min-height: 300px;
-  background: #ffffff;
+  background: #fff;
   border-radius: 24px;
   box-shadow: 0 16px 36px rgba(5, 14, 54, 0.24);
   padding: 1.25rem;
@@ -157,15 +156,19 @@ ion-content.reader-content::part(scroll),
   gap: 0.7rem;
   align-items: center;
   justify-content: center;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(238, 242, 247, 0.72), rgba(238, 242, 247, 0.34));
+  pointer-events: auto;
+  background: linear-gradient(180deg, rgba(238, 242, 247, 0.96), rgba(238, 242, 247, 0.92));
   color: #0b1d73;
   text-align: center;
 }
 
-.reader-viewer__loading p {
-  margin: 0;
-  font-weight: 600;
+.reader-viewer__canvas {
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.reader-viewer__canvas--ready {
+  opacity: 1;
 }
 
 :host ::ng-deep app-bible-study-pdf-viewer,
@@ -227,10 +230,6 @@ ion-content.reader-content::part(scroll),
 
   .reader-controls__buttons {
     justify-content: flex-end;
-  }
-
-  .reader-viewer {
-    min-height: 0;
   }
 
   :host ::ng-deep ngx-extended-pdf-viewer #viewerContainer {

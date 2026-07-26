@@ -11,7 +11,7 @@
     <div class="surface reader-surface">
       <div class="surface__content reader-shell">
         <section
-          *ngIf="!loading && !notFound && !errorMessage && manual && pdfAvailable && !pdfErrorMessage"
+          *ngIf="isReaderReady"
           class="reader-controls reader-controls--slim"
           data-testid="reader-controls"
         >
@@ -56,7 +56,7 @@
         <div *ngIf="loading" class="reader-state reader-state--loading" data-testid="reader-loading-state">
           <ion-spinner name="crescent"></ion-spinner>
           <div class="reader-state__copy">
-            <h2>Loading manual</h2>
+            <h2>Preparing your manual...</h2>
             <p>Requesting a fresh signed PDF link.</p>
           </div>
         </div>
@@ -101,28 +101,39 @@
           *ngIf="!loading && !notFound && !errorMessage && manual && pdfAvailable && !pdfErrorMessage"
           #viewerSurface
           class="reader-viewer reader-viewer--immersive"
+          [class.reader-viewer--ready]="isReaderReady"
           data-testid="reader-viewer"
         >
-          <div *ngIf="pdfLoading" class="reader-viewer__loading" data-testid="pdf-loading-state">
+          <div *ngIf="showReaderLoadingShell" class="reader-viewer__loading" data-testid="pdf-loading-state">
             <ion-spinner name="crescent"></ion-spinner>
-            <p>Rendering pages{{ viewerProgressPercent ? ' (' + viewerProgressPercent + '%)' : '' }}...</p>
+            <div class="reader-state__copy">
+              <h2>{{ readerLoadingTitle }}</h2>
+              <p>{{ readerLoadingMessage }}</p>
+            </div>
           </div>
 
-          <app-bible-study-pdf-viewer
-            *ngIf="viewerVisible && pdfSourceUrl"
-            data-testid="pdf-viewer"
-            [src]="pdfSourceUrl"
-            [page]="viewerPage"
-            [zoom]="zoom"
-            (progress)="handleViewerProgress($event)"
-            (pageChange)="handlePageChange($event)"
-            (pageRendered)="handlePageRendered($event)"
-            (pagesLoaded)="handlePagesLoaded($event)"
-            (pdfLoadingStarts)="handlePdfLoadingStarts($event)"
-            (pdfLoaded)="handlePdfLoaded($event)"
-            (pdfLoadingFailed)="handlePdfLoadingFailed($event)"
-            (currentZoomFactor)="handleCurrentZoomFactor($event)"
-          ></app-bible-study-pdf-viewer>
+          <div
+            class="reader-viewer__canvas"
+            [class.reader-viewer__canvas--ready]="isReaderReady"
+            [attr.aria-hidden]="!isReaderReady"
+            data-testid="pdf-viewer-shell"
+          >
+            <app-bible-study-pdf-viewer
+              *ngIf="viewerVisible && pdfSourceUrl"
+              data-testid="pdf-viewer"
+              [src]="pdfSourceUrl"
+              [page]="viewerPage"
+              [zoom]="zoom"
+              (progress)="handleViewerProgress($event)"
+              (pageChange)="handlePageChange($event)"
+              (pageRendered)="handlePageRendered($event)"
+              (pagesLoaded)="handlePagesLoaded($event)"
+              (pdfLoadingStarts)="handlePdfLoadingStarts($event)"
+              (pdfLoaded)="handlePdfLoaded($event)"
+              (pdfLoadingFailed)="handlePdfLoadingFailed($event)"
+              (currentZoomFactor)="handleCurrentZoomFactor($event)"
+            ></app-bible-study-pdf-viewer>
+          </div>
         </section>
       </div>
     </div>
