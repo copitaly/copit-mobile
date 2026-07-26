@@ -93,6 +93,12 @@ describe('BibleStudyDetailPage', () => {
     expect(text).toContain('English');
     expect(text).toContain('Volume 1');
     expect(text).toContain('Weeks 1-4');
+    expect(fixture.nativeElement.querySelector('[data-testid="manual-meta-primary"]')?.textContent).toContain(
+      'English • 2026'
+    );
+    expect(fixture.nativeElement.querySelector('[data-testid="manual-meta-secondary"]')?.textContent).toContain(
+      'Volume 1 • Weeks 1-4'
+    );
     expect(fixture.nativeElement.querySelector('[data-testid="manual-detail"]')).not.toBeNull();
   });
 
@@ -102,8 +108,19 @@ describe('BibleStudyDetailPage', () => {
     await createComponent();
 
     const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Open Manual');
     expect(text).toContain('Read in App');
     expect(text).toContain('Download PDF');
+  });
+
+  it('renders the about section copy', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+
+    const aboutSection = fixture.nativeElement.querySelector('[data-testid="about-section"]');
+    expect(aboutSection?.textContent).toContain('About this manual');
+    expect(aboutSection?.textContent).toContain('Official weekly Bible Study manual published by COP Italy.');
   });
 
   it('configures the detail header to fall back to the list page when there is no history', async () => {
@@ -283,6 +300,16 @@ describe('BibleStudyDetailPage', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('Full year');
     expect(text).not.toContain('Volume 1');
+  });
+
+  it('shows the styled cover fallback when no cover image exists', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of({ ...manual, cover_image_url: null, language: 'tw' }));
+
+    await createComponent();
+
+    const placeholder = fixture.nativeElement.querySelector('[data-testid="cover-placeholder"]');
+    expect(placeholder).not.toBeNull();
+    expect(placeholder.textContent).toContain('TW');
   });
 
   it('shows an invalid id error without calling the API', async () => {

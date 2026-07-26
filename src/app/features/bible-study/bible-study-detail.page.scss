@@ -29,7 +29,9 @@
 }
 
 .detail-card h2,
-.state-copy h2 {
+.state-copy h2,
+.action-card__heading h3,
+.about-section h3 {
   margin: 0;
   color: #03173f;
   font-weight: 700;
@@ -38,7 +40,8 @@
 
 .detail-card__meta,
 .detail-card__detail,
-.state-copy p {
+.state-copy p,
+.about-section p {
   margin: 0;
   color: rgba(3, 23, 63, 0.68);
   line-height: 1.55;
@@ -90,7 +93,7 @@
 
 .detail-card__cover {
   overflow: hidden;
-  background: rgba(11, 29, 115, 0.08);
+  background: linear-gradient(180deg, rgba(11, 29, 115, 0.12), rgba(11, 29, 115, 0.05));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -104,9 +107,23 @@
   display: block;
 }
 
+.detail-card__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 .detail-card__cover--placeholder ion-icon {
-  font-size: 2rem;
-  opacity: 0.7;
+  font-size: 2.35rem;
+  opacity: 0.76;
+}
+
+.detail-card__placeholder-language {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  opacity: 0.72;
 }
 
 .detail-card__copy {
@@ -129,18 +146,22 @@
   padding-bottom: 1.25rem;
 }
 
-.action-card,
+.action-card__heading {
+  margin-bottom: 1rem;
+}
+
+.action-card__heading h3 {
+  font-size: 1.05rem;
+}
+
 .detail-card,
 .state-card,
 .skeleton-stack {
   margin-bottom: 1rem;
 }
 
-.action-card:last-child,
-.detail-card:last-child,
-.state-card:last-child,
-.skeleton-stack:last-child {
-  margin-bottom: 0;
+.action-card {
+  margin-bottom: 1.6rem;
 }
 
 .action-card__buttons {
@@ -178,6 +199,20 @@
 .state-button[disabled] {
   --background: rgba(11, 29, 115, 0.3);
   --box-shadow: none;
+}
+
+.about-section {
+  padding-bottom: calc(0.35rem + env(safe-area-inset-bottom));
+}
+
+.about-section h3 {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.about-section p {
+  max-width: 36rem;
+  font-size: 0.9rem;
 }
 
 .skeleton-stack {
