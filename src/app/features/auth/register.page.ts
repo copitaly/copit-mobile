@@ -182,7 +182,7 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
       }
 
       ion-content.auth-content {
-        --background: #f4f7ff;
+        --background: #0b1d73;
         --keyboard-offset: 0px;
         height: 100%;
         display: flex;
@@ -194,7 +194,7 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
         min-height: 100%;
         display: flex;
         flex-direction: column;
-        background: #f4f7ff;
+        background: #0b1d73;
       }
 
       .auth-content {

@@ -101,7 +101,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
       }
 
       ion-content.auth-content {
-        --background: #f4f7ff;
+        --background: #0b1d73;
         --keyboard-offset: 0px;
         height: 100%;
         display: flex;
@@ -113,7 +113,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         min-height: 100%;
         display: flex;
         flex-direction: column;
-        background: #f4f7ff;
+        background: #0b1d73;
       }
 
       .auth-content {
