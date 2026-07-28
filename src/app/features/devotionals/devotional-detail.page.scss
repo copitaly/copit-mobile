@@ -2,14 +2,6 @@
   display: block;
 }
 
-.devotional-detail-content {
-  --background: var(--app-content-background, #f5f6fa);
-}
-
-.devotional-detail-content::part(scroll) {
-  background: var(--app-content-background, #f5f6fa);
-}
-
 .skeleton-stack,
 .devotional-detail {
   display: grid;

@@ -241,13 +241,15 @@ describe('DevotionalDetailPage', () => {
     expect(text).not.toContain('archived');
   });
 
-  it('uses the neutral content background on the scrolling container instead of the header blue', async () => {
+  it('reuses the shared feature-page shell for the blue header and white rounded content surface', async () => {
     devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
 
     await createComponent();
 
     const ionContent = fixture.nativeElement.querySelector('ion-content.devotional-detail-content') as HTMLElement | null;
+    const surface = fixture.nativeElement.querySelector('[data-testid="feature-page-surface"]') as HTMLElement | null;
     expect(ionContent).not.toBeNull();
+    expect(surface).not.toBeNull();
     expect(ionContent?.className).toContain('feature-page-content');
     expect(ionContent?.className).toContain('devotional-detail-content');
   });
