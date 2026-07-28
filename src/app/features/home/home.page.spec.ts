@@ -80,19 +80,7 @@ describe('HomePage', () => {
       ],
     });
 
-    page = new HomePage(
-      authServiceStub as unknown as AuthService,
-      devotionalService,
-      {
-        setBranch: jasmine.createSpy().and.returnValue(true),
-      } as unknown as SelectedBranchService,
-      router as never,
-      {
-        trackGiveNowTapped: jasmine.createSpy().and.resolveTo(),
-        trackBranchSelected: jasmine.createSpy().and.resolveTo(),
-        getUserType: jasmine.createSpy().and.returnValue('guest'),
-      } as unknown as AnalyticsService
-    );
+    page = TestBed.runInInjectionContext(() => new HomePage());
   });
 
   const todayDevotional: DevotionalPublicDetail = {

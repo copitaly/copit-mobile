@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, OnInit } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
@@ -28,6 +28,12 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
   styleUrls: ['./home.page.scss'],
 })
 export class HomePage implements OnInit, OnDestroy {
+  private readonly authService = inject(AuthService);
+  private readonly devotionalService = inject(DevotionalService);
+  private readonly selectedBranchService = inject(SelectedBranchService);
+  private readonly router = inject(Router);
+  private readonly analyticsService = inject(AnalyticsService);
+
   readonly isAuthenticated$: Observable<boolean>;
   readonly showBuildSafetyLabel = shouldShowBuildSafetyLabel();
   readonly devotionalPreviewMaxLength = 140;
@@ -45,13 +51,7 @@ export class HomePage implements OnInit, OnDestroy {
   todayDevotionalError = false;
   hasTodayDevotional = false;
 
-  constructor(
-    private readonly authService: AuthService,
-    private readonly devotionalService: DevotionalService,
-    private readonly selectedBranchService: SelectedBranchService,
-    private readonly router: Router,
-    private readonly analyticsService: AnalyticsService
-  ) {
+  constructor() {
     this.isAuthenticated$ = this.authService.isAuthenticated$;
   }
 
