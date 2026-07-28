@@ -14,72 +14,136 @@
       ></app-page-header>
     </div>
 
-    <section class="quick-actions-section">
-    <section class="feature-grid" aria-label="Quick actions">
+    <section
+      *ngIf="todayDevotionalLoading || hasTodayDevotional || todayDevotionalError"
+      class="today-devotional-section"
+      aria-label="Today's devotional"
+    >
+      <p class="today-devotional-section__label">TODAY'S DEVOTIONAL</p>
+
+      <div *ngIf="todayDevotionalLoading && !hasTodayDevotional" class="feature-card today-devotional-card today-devotional-card--loading" data-testid="today-devotional-loading">
+        <div class="today-devotional-card__skeleton today-devotional-card__skeleton--image"></div>
+        <div class="today-devotional-card__skeleton today-devotional-card__skeleton--title"></div>
+        <div class="today-devotional-card__skeleton today-devotional-card__skeleton--meta"></div>
+        <div class="today-devotional-card__skeleton today-devotional-card__skeleton--body"></div>
+      </div>
+
       <button
+        *ngIf="hasTodayDevotional && todayDevotional"
         type="button"
-        class="feature-card feature-card--button feature-card--grid feature-card--give ion-activatable"
-        aria-label="Open Give"
-        (click)="goToGive()"
+        class="feature-card today-devotional-card today-devotional-card--button ion-activatable"
+        data-testid="today-devotional-card"
+        [attr.aria-label]="buildTodayDevotionalAriaLabel()"
+        (click)="openTodayDevotional()"
       >
-        <div class="feature-icon">
-          <ion-icon name="wallet-outline" aria-hidden="true"></ion-icon>
+        <div *ngIf="shouldShowTodayDevotionalImage(); else devotionalImageFallback" class="today-devotional-card__image" data-testid="today-devotional-image">
+          <img
+            [src]="todayDevotional.cover_image!"
+            [alt]="getTodayDevotionalImageAlt()"
+            (error)="handleTodayDevotionalImageError()"
+          />
         </div>
-        <div class="feature-copy">
-          <h3>Give</h3>
-          <p>Tithes &amp; Offerings</p>
+
+        <ng-template #devotionalImageFallback>
+          <div class="today-devotional-card__image today-devotional-card__image--fallback" data-testid="today-devotional-image-fallback" aria-hidden="true">
+            <ion-icon name="sunny-outline"></ion-icon>
+          </div>
+        </ng-template>
+
+        <div class="today-devotional-card__copy">
+          <h3 data-testid="today-devotional-title">{{ todayDevotional.title }}</h3>
+          <p *ngIf="hasTodayScriptureReference()" class="today-devotional-card__reference" data-testid="today-devotional-scripture">
+            {{ todayDevotional.scripture_reference }}
+          </p>
+          <p class="today-devotional-card__preview" data-testid="today-devotional-preview">{{ getTodayDevotionalPreview() }}</p>
+          <span class="today-devotional-card__action">
+            <span>Read today's devotional</span>
+            <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
+          </span>
         </div>
         <ion-ripple-effect></ion-ripple-effect>
       </button>
 
-      <button
-        type="button"
-        class="feature-card feature-card--button feature-card--grid feature-card--prayer ion-activatable"
-        aria-label="Open Prayer Requests"
-        (click)="goToPrayer()"
-      >
-        <div class="feature-icon">
-          <ion-icon name="hand-left-outline" aria-hidden="true"></ion-icon>
-        </div>
-        <div class="feature-copy">
-          <h3>Prayer Requests</h3>
-          <p>Share &amp; Pray</p>
-        </div>
-        <ion-ripple-effect></ion-ripple-effect>
-      </button>
-
-      <button
-        type="button"
-        class="feature-card feature-card--button feature-card--grid feature-card--bible-study ion-activatable"
-        aria-label="Open Bible Study"
-        (click)="goToBibleStudy()"
-      >
-        <div class="feature-icon">
-          <ion-icon name="book-outline" aria-hidden="true"></ion-icon>
-        </div>
-        <div class="feature-copy">
-          <h3>Bible Study</h3>
-          <p>Weekly manuals</p>
-        </div>
-        <ion-ripple-effect></ion-ripple-effect>
-      </button>
-
-      <button
-        type="button"
-        class="feature-card feature-card--button feature-card--grid feature-card--devotionals ion-activatable"
-        aria-label="Open Devotionals"
-        (click)="goToDevotionals()"
-      >
-        <div class="feature-icon">
-          <ion-icon name="sunny-outline" aria-hidden="true"></ion-icon>
-        </div>
-        <div class="feature-copy">
-          <h3>Devotionals</h3>
-          <p>Daily encouragement</p>
-        </div>
-        <ion-ripple-effect></ion-ripple-effect>
-      </button>
+      <div *ngIf="todayDevotionalError && !hasTodayDevotional" class="feature-card today-devotional-card today-devotional-card--error" data-testid="today-devotional-error">
+        <p>Today's devotional could not be loaded.</p>
+        <button
+          type="button"
+          class="today-devotional-card__retry"
+          data-testid="today-devotional-retry"
+          aria-label="Retry loading today's devotional"
+          (click)="retryTodayDevotional()"
+        >
+          Retry
+        </button>
+      </div>
     </section>
+
+    <section class="quick-actions-section">
+      <section class="feature-grid" aria-label="Quick actions">
+        <button
+          type="button"
+          class="feature-card feature-card--button feature-card--grid feature-card--give ion-activatable"
+          aria-label="Open Give"
+          (click)="goToGive()"
+        >
+          <div class="feature-icon">
+            <ion-icon name="wallet-outline" aria-hidden="true"></ion-icon>
+          </div>
+          <div class="feature-copy">
+            <h3>Give</h3>
+            <p>Tithes &amp; Offerings</p>
+          </div>
+          <ion-ripple-effect></ion-ripple-effect>
+        </button>
+
+        <button
+          type="button"
+          class="feature-card feature-card--button feature-card--grid feature-card--prayer ion-activatable"
+          aria-label="Open Prayer Requests"
+          (click)="goToPrayer()"
+        >
+          <div class="feature-icon">
+            <ion-icon name="hand-left-outline" aria-hidden="true"></ion-icon>
+          </div>
+          <div class="feature-copy">
+            <h3>Prayer Requests</h3>
+            <p>Share &amp; Pray</p>
+          </div>
+          <ion-ripple-effect></ion-ripple-effect>
+        </button>
+
+        <button
+          type="button"
+          class="feature-card feature-card--button feature-card--grid feature-card--bible-study ion-activatable"
+          aria-label="Open Bible Study"
+          (click)="goToBibleStudy()"
+        >
+          <div class="feature-icon">
+            <ion-icon name="book-outline" aria-hidden="true"></ion-icon>
+          </div>
+          <div class="feature-copy">
+            <h3>Bible Study</h3>
+            <p>Weekly manuals</p>
+          </div>
+          <ion-ripple-effect></ion-ripple-effect>
+        </button>
+
+        <button
+          type="button"
+          class="feature-card feature-card--button feature-card--grid feature-card--devotionals ion-activatable"
+          aria-label="Open Devotionals"
+          (click)="goToDevotionals()"
+        >
+          <div class="feature-icon">
+            <ion-icon name="sunny-outline" aria-hidden="true"></ion-icon>
+          </div>
+          <div class="feature-copy">
+            <h3>Devotionals</h3>
+            <p>Daily encouragement</p>
+          </div>
+          <ion-ripple-effect></ion-ripple-effect>
+        </button>
+      </section>
     </section>
 
     <button

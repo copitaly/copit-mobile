@@ -29,7 +29,8 @@ ion-page {
 }
 
 .quick-actions-section,
-.branch-card {
+.branch-card,
+.today-devotional-section {
   margin: 0 1.25rem;
 }
 
@@ -198,7 +199,8 @@ ion-page {
 
 @media (max-width: 600px) {
   .quick-actions-section,
-  .branch-card {
+  .branch-card,
+  .today-devotional-section {
     margin-left: 1rem;
     margin-right: 1rem;
   }

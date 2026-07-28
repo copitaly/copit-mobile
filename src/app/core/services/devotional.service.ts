@@ -29,4 +29,8 @@ export class DevotionalService {
       `${this.publicDevotionalsEndpoint}${encodeURIComponent(normalizedSlug)}`
     );
   }
+
+  getTodayDevotional(): Observable<DevotionalPublicDetail> {
+    return this.api.get<DevotionalPublicDetail>(`${this.publicDevotionalsEndpoint}today/`);
+  }
 }

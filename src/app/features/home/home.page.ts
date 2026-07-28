@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
@@ -6,8 +7,10 @@ import { forkJoin, Observable, of, Subject } from 'rxjs';
 import { distinctUntilChanged, takeUntil } from 'rxjs/operators';
 
 import { PublicBranch } from '../../core/models/branch.model';
+import { DevotionalPublicDetail } from '../../core/models/devotional.model';
 import { MemberRecentDonation, SavedChurch } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
+import { DevotionalService } from '../../core/services/devotional.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import {
@@ -27,13 +30,24 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 export class HomePage implements OnInit, OnDestroy {
   readonly isAuthenticated$: Observable<boolean>;
   readonly showBuildSafetyLabel = shouldShowBuildSafetyLabel();
+  readonly devotionalPreviewMaxLength = 140;
   private readonly destroy$ = new Subject<void>();
   private savedChurches: SavedChurch[] = [];
   private defaultBranch: PublicBranch | null = null;
   private personalizationRequestId = 0;
+  private todayDevotionalRequestId = 0;
+  private todayDevotionalRequestInFlight = false;
+  private todayDevotionalImageFailed = false;
+
+  todayDevotional: DevotionalPublicDetail | null = null;
+  todayDevotionalLoading = true;
+  todayDevotionalRefreshing = false;
+  todayDevotionalError = false;
+  hasTodayDevotional = false;
 
   constructor(
     private readonly authService: AuthService,
+    private readonly devotionalService: DevotionalService,
     private readonly selectedBranchService: SelectedBranchService,
     private readonly router: Router,
     private readonly analyticsService: AnalyticsService
@@ -42,6 +56,8 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.loadTodayDevotional();
+
     this.isAuthenticated$
       .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
       .subscribe((isAuthenticated) => {
@@ -56,6 +72,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   ionViewWillEnter(): void {
     this.refreshForCurrentAuthState();
+    this.loadTodayDevotional({ preserveCurrent: this.hasTodayDevotional });
   }
 
   ngOnDestroy(): void {
@@ -126,6 +143,67 @@ export class HomePage implements OnInit, OnDestroy {
     void this.router.navigate(['/devotionals']);
   }
 
+  async openTodayDevotional(): Promise<void> {
+    const detailRoute = this.getTodayDevotionalDetailRoute();
+    if (!detailRoute) {
+      return;
+    }
+
+    await this.router.navigateByUrl(detailRoute);
+  }
+
+  retryTodayDevotional(): void {
+    this.loadTodayDevotional({ preserveCurrent: this.hasTodayDevotional });
+  }
+
+  hasTodayScriptureReference(): boolean {
+    return !!this.todayDevotional?.scripture_reference?.trim();
+  }
+
+  shouldShowTodayDevotionalImage(): boolean {
+    return !!this.todayDevotional?.cover_image?.trim() && !this.todayDevotionalImageFailed;
+  }
+
+  handleTodayDevotionalImageError(): void {
+    this.todayDevotionalImageFailed = true;
+  }
+
+  getTodayDevotionalPreview(): string {
+    const content = this.todayDevotional?.content ?? '';
+    const normalized = content.replace(/\s+/g, ' ').trim();
+
+    if (!normalized) {
+      return '';
+    }
+
+    if (normalized.length <= this.devotionalPreviewMaxLength) {
+      return normalized;
+    }
+
+    const clipped = normalized.slice(0, this.devotionalPreviewMaxLength + 1);
+    const lastSpace = clipped.lastIndexOf(' ');
+    const safePreview = (lastSpace > 0 ? clipped.slice(0, lastSpace) : clipped.slice(0, this.devotionalPreviewMaxLength)).trim();
+    return `${safePreview}…`;
+  }
+
+  buildTodayDevotionalAriaLabel(): string {
+    if (!this.todayDevotional) {
+      return "Read today's devotional";
+    }
+
+    const parts = ["Read today's devotional", this.todayDevotional.title];
+    if (this.hasTodayScriptureReference()) {
+      parts.push(this.todayDevotional.scripture_reference.trim());
+    }
+
+    return parts.join(', ');
+  }
+
+  getTodayDevotionalImageAlt(): string {
+    const title = this.todayDevotional?.title?.trim();
+    return title ? `${title} cover image` : 'Devotional cover image';
+  }
+
   goToAccount(isAuthenticated: boolean | null): void {
     void this.router.navigate([isAuthenticated ? '/profile' : '/login']);
   }
@@ -181,6 +259,70 @@ export class HomePage implements OnInit, OnDestroy {
     }
 
     this.loadPersonalization();
+  }
+
+  private loadTodayDevotional(options?: { preserveCurrent?: boolean }): void {
+    if (this.todayDevotionalRequestInFlight) {
+      return;
+    }
+
+    const preserveCurrent = !!options?.preserveCurrent && this.hasTodayDevotional && !!this.todayDevotional;
+    const requestId = ++this.todayDevotionalRequestId;
+
+    this.todayDevotionalRequestInFlight = true;
+    this.todayDevotionalLoading = !preserveCurrent;
+    this.todayDevotionalRefreshing = preserveCurrent;
+    this.todayDevotionalError = false;
+
+    if (!preserveCurrent) {
+      this.todayDevotional = null;
+      this.hasTodayDevotional = false;
+      this.todayDevotionalImageFailed = false;
+    }
+
+    this.devotionalService.getTodayDevotional().subscribe({
+      next: (devotional) => {
+        if (requestId !== this.todayDevotionalRequestId) {
+          return;
+        }
+
+        this.todayDevotional = devotional;
+        this.hasTodayDevotional = true;
+        this.todayDevotionalError = false;
+        this.todayDevotionalLoading = false;
+        this.todayDevotionalRefreshing = false;
+        this.todayDevotionalImageFailed = false;
+        this.todayDevotionalRequestInFlight = false;
+      },
+      error: (error: unknown) => {
+        if (requestId !== this.todayDevotionalRequestId) {
+          return;
+        }
+
+        this.todayDevotionalLoading = false;
+        this.todayDevotionalRefreshing = false;
+        this.todayDevotionalRequestInFlight = false;
+
+        if (error instanceof HttpErrorResponse && error.status === 404) {
+          this.todayDevotional = null;
+          this.hasTodayDevotional = false;
+          this.todayDevotionalError = false;
+          this.todayDevotionalImageFailed = false;
+          return;
+        }
+
+        this.todayDevotionalError = true;
+      },
+    });
+  }
+
+  private getTodayDevotionalDetailRoute(): string | null {
+    const normalizedSlug = this.todayDevotional?.slug?.trim() ?? '';
+    if (!normalizedSlug) {
+      return null;
+    }
+
+    return `/devotionals/${encodeURIComponent(normalizedSlug)}`;
   }
 
   private resetGuestState(): void {

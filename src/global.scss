@@ -527,6 +527,167 @@ ion-content.my-prayers-content::part(scroll) {
   color: rgba(66, 94, 166, 0.8);
 }
 
+.home-content .today-devotional-section {
+  padding-top: 1.15rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.home-content .today-devotional-section__label {
+  margin: 0;
+  color: #8f6a08;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.home-content .today-devotional-card {
+  min-height: 0;
+}
+
+.home-content .today-devotional-card--button {
+  width: 100%;
+  border: 0;
+  padding: 0.8rem;
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: start;
+  text-align: left;
+  color: inherit;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.home-content .today-devotional-card__image {
+  width: 108px;
+  min-width: 108px;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(245, 182, 40, 0.16), rgba(11, 29, 115, 0.05));
+}
+
+.home-content .today-devotional-card__image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-content .today-devotional-card__image--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c88d0b;
+}
+
+.home-content .today-devotional-card__image--fallback ion-icon {
+  font-size: 1.9rem;
+}
+
+.home-content .today-devotional-card__copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.34rem;
+}
+
+.home-content .today-devotional-card__copy h3,
+.home-content .today-devotional-card--error p {
+  margin: 0;
+  color: #03173f;
+}
+
+.home-content .today-devotional-card__copy h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.home-content .today-devotional-card__reference,
+.home-content .today-devotional-card__preview,
+.home-content .today-devotional-card__action {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.home-content .today-devotional-card__reference {
+  color: #20366d;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.home-content .today-devotional-card__preview,
+.home-content .today-devotional-card--error p {
+  color: rgba(2, 18, 54, 0.62);
+  font-size: 0.86rem;
+}
+
+.home-content .today-devotional-card__action {
+  margin-top: 0.22rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #425ea6;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.home-content .today-devotional-card__action ion-icon {
+  font-size: 0.95rem;
+}
+
+.home-content .today-devotional-card--error,
+.home-content .today-devotional-card--loading {
+  padding: 0.95rem;
+}
+
+.home-content .today-devotional-card--error {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.home-content .today-devotional-card__retry {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #425ea6;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.home-content .today-devotional-card__skeleton {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(226, 233, 250, 0.85), rgba(240, 244, 255, 0.98), rgba(226, 233, 250, 0.85));
+}
+
+.home-content .today-devotional-card__skeleton--image {
+  width: 100%;
+  aspect-ratio: 2.25 / 1;
+  border-radius: 16px;
+  margin-bottom: 0.8rem;
+}
+
+.home-content .today-devotional-card__skeleton--title {
+  width: 62%;
+  min-height: 1rem;
+  margin-bottom: 0.45rem;
+}
+
+.home-content .today-devotional-card__skeleton--meta {
+  width: 44%;
+  min-height: 0.8rem;
+  margin-bottom: 0.45rem;
+}
+
+.home-content .today-devotional-card__skeleton--body {
+  width: 100%;
+  min-height: 0.9rem;
+}
+
 @media (max-width: 420px) {
   .my-prayers-content .my-prayers-filters {
     grid-template-columns: 1fr;
@@ -534,6 +695,21 @@ ion-content.my-prayers-content::part(scroll) {
 
   .my-prayers-content .my-prayers-filters .filter-field:last-child {
     grid-column: auto;
+  }
+
+  .home-content .today-devotional-card--button {
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .home-content .today-devotional-card__image {
+    width: 96px;
+    min-width: 96px;
+  }
+
+  .home-content .today-devotional-card--loading,
+  .home-content .today-devotional-card--error {
+    padding: 0.9rem;
   }
 }
 

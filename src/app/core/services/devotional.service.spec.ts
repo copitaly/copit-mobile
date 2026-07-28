@@ -98,4 +98,43 @@ describe('DevotionalService', () => {
       publication_date: '2026-07-27',
     });
   });
+
+  it('calls the public today devotional endpoint', () => {
+    let responseBody: DevotionalPublicDetail | undefined;
+
+    service.getTodayDevotional().subscribe((response) => {
+      responseBody = response;
+    });
+
+    const request = httpMock.expectOne(`${environment.apiBaseUrl}/public/devotionals/today/`);
+    expect(request.request.method).toBe('GET');
+
+    request.flush({
+      id: 2,
+      title: 'Today with Christ',
+      slug: 'today-with-christ',
+      scripture_reference: 'Psalm 46:10',
+      scripture_text: 'Be still, and know that I am God.',
+      content: 'Pause and remember who is with you today.',
+      reflection_question: null,
+      prayer: null,
+      author_name: null,
+      cover_image: null,
+      publication_date: '2026-07-28',
+    });
+
+    expect(responseBody).toEqual({
+      id: 2,
+      title: 'Today with Christ',
+      slug: 'today-with-christ',
+      scripture_reference: 'Psalm 46:10',
+      scripture_text: 'Be still, and know that I am God.',
+      content: 'Pause and remember who is with you today.',
+      reflection_question: null,
+      prayer: null,
+      author_name: null,
+      cover_image: null,
+      publication_date: '2026-07-28',
+    });
+  });
 });
