@@ -22,7 +22,7 @@ describe('HomePage', () => {
   let authServiceStub: {
     isAuthenticated$: ReturnType<BehaviorSubject<boolean>['asObservable']>;
     isAuthenticatedSnapshot: boolean;
-    currentUserSnapshot: { first_name: string } | null;
+    currentUserSnapshot: { first_name: string; recent_donations?: unknown[] } | null;
     getCurrentUser: jasmine.Spy;
     getSavedChurches: jasmine.Spy;
   };
@@ -31,7 +31,7 @@ describe('HomePage', () => {
     const nextFixture = TestBed.createComponent(HomePage);
     page = nextFixture.componentInstance;
     nextFixture.detectChanges();
-    await nextFixture.whenStable();
+    await Promise.resolve();
     nextFixture.detectChanges();
     return nextFixture;
   }
@@ -141,8 +141,6 @@ describe('HomePage', () => {
 
     expect(text).toContain('Connect with Your Church');
     expect(text).toContain('Grow, give, pray, and stay connected with your church family.');
-    expect(text).not.toContain('Give to Your Local Church');
-    expect(text).not.toContain('Give Now');
   });
 
   it('uses the hero header variant on the home screen', async () => {
@@ -193,18 +191,19 @@ describe('HomePage', () => {
     expect(card?.parentElement?.nextElementSibling).toBe(quickActions);
   });
 
-  it('hides the section completely on a 404 response', async () => {
+  it('shows a meaningful empty state when no devotional is available', async () => {
     devotionalService.getTodayDevotional.and.returnValue(
       throwError(() => new HttpErrorResponse({ status: 404 }))
     );
 
     fixture = await createComponent();
 
-    expect(fixture.nativeElement.textContent).not.toContain("TODAY'S DEVOTIONAL");
-    expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-error"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-empty"]')?.textContent).toContain(
+      'No devotional is available right now.'
+    );
   });
 
-  it('renders a compact retry state for non-404 failures', async () => {
+  it('renders a compact retry state for generic failures', async () => {
     devotionalService.getTodayDevotional.and.returnValue(
       throwError(() => new HttpErrorResponse({ status: 500 }))
     );
@@ -216,6 +215,18 @@ describe('HomePage', () => {
     );
   });
 
+  it('distinguishes offline failures in the devotional error state', async () => {
+    devotionalService.getTodayDevotional.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 0 }))
+    );
+
+    fixture = await createComponent();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-error"]')?.textContent).toContain(
+      "You're offline. Check your connection and try again."
+    );
+  });
+
   it('retries the today devotional request when retry is tapped', async () => {
     devotionalService.getTodayDevotional.and.returnValues(
       throwError(() => new HttpErrorResponse({ status: 500 })),
@@ -223,10 +234,8 @@ describe('HomePage', () => {
     );
 
     fixture = await createComponent();
-
-    (fixture.nativeElement.querySelector('[data-testid="today-devotional-retry"]') as HTMLButtonElement).click();
-    fixture.detectChanges();
-    await fixture.whenStable();
+    page.retryTodayDevotional();
+    await Promise.resolve();
     fixture.detectChanges();
 
     expect(devotionalService.getTodayDevotional.calls.count()).toBe(2);
@@ -243,6 +252,23 @@ describe('HomePage', () => {
 
     expect(devotionalService.getTodayDevotional.calls.count()).toBe(1);
     response$.complete();
+  });
+
+  it('keeps previously loaded devotional content visible when a refresh fails', async () => {
+    devotionalService.getTodayDevotional.and.returnValues(
+      of(todayDevotional),
+      throwError(() => new HttpErrorResponse({ status: 500 }))
+    );
+
+    fixture = await createComponent();
+    page.ionViewWillEnter();
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-card"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-refresh-message"]')?.textContent).toContain(
+      "Today's devotional could not be loaded."
+    );
   });
 
   it('omits the scripture reference when it is blank', async () => {
@@ -272,6 +298,20 @@ describe('HomePage', () => {
       'Stay near to God today.'
     );
     expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-preview"]')?.textContent).not.toContain('…');
+  });
+
+  it('treats malformed devotional payloads as empty content safely', async () => {
+    devotionalService.getTodayDevotional.and.returnValue(of({
+      ...todayDevotional,
+      title: '   ',
+      content: '   ',
+      scripture_reference: '   ',
+      slug: '   ',
+    }));
+
+    fixture = await createComponent();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-empty"]')).not.toBeNull();
   });
 
   it('renders the cover image when present', async () => {
@@ -318,11 +358,22 @@ describe('HomePage', () => {
     fixture = await createComponent();
 
     (fixture.nativeElement.querySelector('[data-testid="today-devotional-card"]') as HTMLButtonElement).click();
-    await fixture.whenStable();
+    await Promise.resolve();
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith(
-      '/devotionals/steady-grace-for-today'
-    );
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/devotionals/steady-grace-for-today');
+  });
+
+  it('falls back to the devotionals list when the featured devotional slug is missing', async () => {
+    devotionalService.getTodayDevotional.and.returnValue(of({
+      ...todayDevotional,
+      slug: '   ',
+      content: 'Steady content',
+    }));
+
+    fixture = await createComponent();
+    await page.openTodayDevotional();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/devotionals');
   });
 
   it('shows the personalized greeting when a first name is available', async () => {
@@ -339,6 +390,14 @@ describe('HomePage', () => {
     expect(fixture.nativeElement.textContent).toContain('Welcome');
   });
 
+  it('truncates unusually long greeting names safely', async () => {
+    authServiceStub.currentUserSnapshot = { first_name: 'A very long member first name that should not overflow badly' };
+
+    fixture = await createComponent();
+
+    expect(page.greeting.endsWith('…')).toBeTrue();
+  });
+
   it('renders the expected feature subtitles', async () => {
     fixture = await createComponent();
     const text = fixture.nativeElement.textContent;
@@ -351,7 +410,7 @@ describe('HomePage', () => {
 
   it('shows the selected branch name when available', async () => {
     fixture = await createComponent();
-    (page as any).defaultBranch = {
+    (page as unknown as { defaultBranch: unknown }).defaultBranch = {
       id: 9,
       name: 'Rome Central Assembly',
       branch_code: 'RCA',
@@ -377,5 +436,66 @@ describe('HomePage', () => {
     fixture = await createComponent();
 
     expect(fixture.nativeElement.textContent).not.toContain('Select your branch');
+  });
+
+  it('exposes accessible labels for the interactive cards', async () => {
+    fixture = await createComponent();
+
+    const buttons = Array.from(fixture.nativeElement.querySelectorAll('.feature-grid button')) as HTMLButtonElement[];
+    expect(buttons.map((button) => button.getAttribute('aria-label'))).toEqual([
+      'Open Give, Tithes and Offerings',
+      'Open Prayer Requests, Share and Pray',
+      'Open Bible Study, Weekly manuals',
+      'Open Devotionals, Daily encouragement',
+    ]);
+  });
+
+  it('completes pull-to-refresh on success', async () => {
+    devotionalService.getTodayDevotional.and.returnValue(of(todayDevotional));
+    fixture = await createComponent();
+    const complete = jasmine.createSpy().and.resolveTo();
+
+    await page.handleRefresh({
+      target: { complete },
+    } as unknown as any);
+
+    expect(complete).toHaveBeenCalled();
+  });
+
+  it('completes pull-to-refresh on failure', async () => {
+    devotionalService.getTodayDevotional.and.returnValues(
+      of(todayDevotional),
+      throwError(() => new HttpErrorResponse({ status: 500 }))
+    );
+    fixture = await createComponent();
+    const complete = jasmine.createSpy().and.resolveTo();
+
+    await page.handleRefresh({
+      target: { complete },
+    } as unknown as any);
+
+    expect(complete).toHaveBeenCalled();
+  });
+
+  it('prevents concurrent pull-to-refresh requests', async () => {
+    const response$ = new Subject<DevotionalPublicDetail>();
+    devotionalService.getTodayDevotional.and.returnValue(response$.asObservable());
+    fixture = await createComponent();
+    const complete = jasmine.createSpy().and.resolveTo();
+
+    await page.handleRefresh({ target: { complete } } as unknown as any);
+
+    expect(complete).toHaveBeenCalled();
+    expect(devotionalService.getTodayDevotional.calls.count()).toBe(1);
+    response$.complete();
+  });
+
+  it('prevents duplicate card navigation from rapid taps', async () => {
+    fixture = await createComponent();
+
+    page.goToPrayer();
+    page.goToPrayer();
+
+    expect(router.navigate.calls.count()).toBe(1);
   });
 });

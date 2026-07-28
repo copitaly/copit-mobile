@@ -1,5 +1,11 @@
-﻿<ion-page>
+<ion-page>
   <ion-content fullscreen class="home-content">
+    <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+      <ion-refresher-content pullingText="Pull to refresh" refreshingSpinner="crescent"></ion-refresher-content>
+    </ion-refresher>
+
+    <p class="sr-only" aria-live="polite">{{ liveStatusMessage }}</p>
+
     <div class="home-header-wrap">
       <div class="home-wordmark" aria-hidden="true">C.O.P. ITALY</div>
       <app-page-header
@@ -15,18 +21,31 @@
     </div>
 
     <section
-      *ngIf="todayDevotionalLoading || hasTodayDevotional || todayDevotionalError"
+      *ngIf="hasHomeStatusCard"
       class="today-devotional-section"
       aria-label="Today's devotional"
     >
       <p class="today-devotional-section__label">TODAY'S DEVOTIONAL</p>
 
-      <div *ngIf="todayDevotionalLoading && !hasTodayDevotional" class="feature-card today-devotional-card today-devotional-card--loading" data-testid="today-devotional-loading">
+      <div
+        *ngIf="todayDevotionalLoading && !hasTodayDevotional"
+        class="feature-card today-devotional-card today-devotional-card--loading"
+        data-testid="today-devotional-loading"
+      >
         <div class="today-devotional-card__skeleton today-devotional-card__skeleton--image"></div>
         <div class="today-devotional-card__skeleton today-devotional-card__skeleton--title"></div>
         <div class="today-devotional-card__skeleton today-devotional-card__skeleton--meta"></div>
         <div class="today-devotional-card__skeleton today-devotional-card__skeleton--body"></div>
       </div>
+
+      <p
+        *ngIf="hasTodayDevotionalRefreshMessage"
+        class="today-devotional-section__status"
+        data-testid="today-devotional-refresh-message"
+        aria-live="polite"
+      >
+        {{ todayDevotionalStatusMessage }}
+      </p>
 
       <button
         *ngIf="hasTodayDevotional && todayDevotional"
@@ -34,6 +53,7 @@
         class="feature-card today-devotional-card today-devotional-card--button ion-activatable"
         data-testid="today-devotional-card"
         [attr.aria-label]="buildTodayDevotionalAriaLabel()"
+        [disabled]="todayDevotionalRefreshing"
         (click)="openTodayDevotional()"
       >
         <div *ngIf="shouldShowTodayDevotionalImage(); else devotionalImageFallback" class="today-devotional-card__image" data-testid="today-devotional-image">
@@ -51,7 +71,7 @@
         </ng-template>
 
         <div class="today-devotional-card__copy">
-          <h3 data-testid="today-devotional-title">{{ todayDevotional.title }}</h3>
+          <h3 data-testid="today-devotional-title">{{ getTodayDevotionalTitle() }}</h3>
           <p *ngIf="hasTodayScriptureReference()" class="today-devotional-card__reference" data-testid="today-devotional-scripture">
             {{ todayDevotional.scripture_reference }}
           </p>
@@ -64,8 +84,13 @@
         <ion-ripple-effect></ion-ripple-effect>
       </button>
 
-      <div *ngIf="todayDevotionalError && !hasTodayDevotional" class="feature-card today-devotional-card today-devotional-card--error" data-testid="today-devotional-error">
-        <p>Today's devotional could not be loaded.</p>
+      <div
+        *ngIf="todayDevotionalError && !hasTodayDevotional"
+        class="feature-card today-devotional-card today-devotional-card--error"
+        data-testid="today-devotional-error"
+        aria-live="polite"
+      >
+        <p>{{ todayDevotionalStatusMessage }}</p>
         <button
           type="button"
           class="today-devotional-card__retry"
@@ -76,6 +101,25 @@
           Retry
         </button>
       </div>
+
+      <div
+        *ngIf="todayDevotionalEmpty && !todayDevotionalLoading"
+        class="feature-card today-devotional-card today-devotional-card--empty"
+        data-testid="today-devotional-empty"
+        [attr.aria-label]="getEmptyDevotionalAriaLabel()"
+        aria-live="polite"
+      >
+        <p>No devotional is available right now. Check back later today.</p>
+        <button
+          type="button"
+          class="today-devotional-card__retry"
+          data-testid="today-devotional-browse"
+          aria-label="Browse devotionals"
+          (click)="goToDevotionals()"
+        >
+          Browse devotionals
+        </button>
+      </div>
     </section>
 
     <section class="quick-actions-section">
@@ -83,7 +127,7 @@
         <button
           type="button"
           class="feature-card feature-card--button feature-card--grid feature-card--give ion-activatable"
-          aria-label="Open Give"
+          aria-label="Open Give, Tithes and Offerings"
           (click)="goToGive()"
         >
           <div class="feature-icon">
@@ -99,7 +143,7 @@
         <button
           type="button"
           class="feature-card feature-card--button feature-card--grid feature-card--prayer ion-activatable"
-          aria-label="Open Prayer Requests"
+          aria-label="Open Prayer Requests, Share and Pray"
           (click)="goToPrayer()"
         >
           <div class="feature-icon">
@@ -115,7 +159,7 @@
         <button
           type="button"
           class="feature-card feature-card--button feature-card--grid feature-card--bible-study ion-activatable"
-          aria-label="Open Bible Study"
+          aria-label="Open Bible Study, Weekly manuals"
           (click)="goToBibleStudy()"
         >
           <div class="feature-icon">
@@ -131,7 +175,7 @@
         <button
           type="button"
           class="feature-card feature-card--button feature-card--grid feature-card--devotionals ion-activatable"
-          aria-label="Open Devotionals"
+          aria-label="Open Devotionals, Daily encouragement"
           (click)="goToDevotionals()"
         >
           <div class="feature-icon">
@@ -150,18 +194,18 @@
       *ngIf="selectedBranchName"
       type="button"
       class="branch-card branch-card__content ion-activatable"
-      aria-label="Open My Branch"
+      [attr.aria-label]="'Open My Branch, ' + selectedBranchName"
       (click)="goToBranches()"
     >
-        <div class="branch-card__icon" aria-hidden="true">
-          <ion-icon name="location-outline"></ion-icon>
-        </div>
-        <div class="branch-card__copy">
-          <h3>My Branch</h3>
-          <p>{{ selectedBranchName }}</p>
-        </div>
-        <ion-icon name="chevron-forward" class="branch-card__chevron" aria-hidden="true"></ion-icon>
-        <ion-ripple-effect></ion-ripple-effect>
+      <div class="branch-card__icon" aria-hidden="true">
+        <ion-icon name="location-outline"></ion-icon>
+      </div>
+      <div class="branch-card__copy">
+        <h3>My Branch</h3>
+        <p>{{ selectedBranchName }}</p>
+      </div>
+      <ion-icon name="chevron-forward" class="branch-card__chevron" aria-hidden="true"></ion-icon>
+      <ion-ripple-effect></ion-ripple-effect>
     </button>
 
     <div *ngIf="showBuildSafetyLabel" class="build-safety-label-row">
