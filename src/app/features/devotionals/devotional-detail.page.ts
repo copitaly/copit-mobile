@@ -22,7 +22,7 @@ export class DevotionalDetailPage implements OnInit {
   private readonly devotionalService = inject(DevotionalService);
   private readonly publicationDateFormatter = new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
-    month: 'short',
+    month: 'long',
     year: 'numeric',
   });
 
@@ -118,6 +118,18 @@ export class DevotionalDetailPage implements OnInit {
   getCoverImageAlt(): string {
     const title = this.devotional?.title?.trim();
     return title ? `${title} cover image` : 'Devotional cover preview';
+  }
+
+  getParagraphs(value: string | null | undefined): string[] {
+    const normalized = value?.replace(/\r\n/g, '\n').trim() ?? '';
+    if (!normalized) {
+      return [];
+    }
+
+    return normalized
+      .split(/\n{2,}/)
+      .map((paragraph) => paragraph.trim())
+      .filter((paragraph) => paragraph.length > 0);
   }
 
   private getValidatedSlug(): string | null {

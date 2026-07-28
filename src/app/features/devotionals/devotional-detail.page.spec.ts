@@ -24,12 +24,12 @@ describe('DevotionalDetailPage', () => {
     slug: 'trusting-god-in-uncertain-times',
     scripture_reference: 'Proverbs 3:5-6',
     scripture_text: 'Trust in the Lord with all your heart.\nLean not on your own understanding.',
-    content: 'When uncertainty rises,\nremember that God remains steady.',
-    reflection_question: 'What worry do you need to surrender today?',
-    prayer: 'Lord, keep my heart steady.\nTeach me to trust you fully.',
+    content: 'When uncertainty rises,\nremember that God remains steady.\n\nGod is present in every unsettled hour.',
+    reflection_question: 'What worry do you need to surrender today?\n\nWhere have you seen God\'s faithfulness already?',
+    prayer: 'Lord, keep my heart steady.\nTeach me to trust you fully.\n\nGive me peace today.',
     author_name: 'admin admin',
     cover_image: 'https://example.com/cover.jpg',
-    publication_date: '2026-07-27',
+    publication_date: '2026-07-28',
   };
 
   async function createComponent(routeSlug = devotional.slug): Promise<void> {
@@ -81,7 +81,7 @@ describe('DevotionalDetailPage', () => {
 
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('Trusting God in Uncertain Times');
-    expect(text).toContain('27 Jul 2026');
+    expect(text).toContain('28 July 2026');
     expect(text).toContain('Proverbs 3:5-6');
     expect(text).toContain('Trust in the Lord with all your heart.');
     expect(text).toContain('When uncertainty rises,');
@@ -96,9 +96,9 @@ describe('DevotionalDetailPage', () => {
     await createComponent();
 
     expect(fixture.nativeElement.querySelector('[data-testid="scripture-text"]')?.className).toContain('preserve-lines');
-    expect(fixture.nativeElement.querySelector('[data-testid="content"]')?.className).toContain('preserve-lines');
-    expect(fixture.nativeElement.querySelector('[data-testid="reflection-question"]')?.className).toContain('preserve-lines');
-    expect(fixture.nativeElement.querySelector('[data-testid="prayer"]')?.className).toContain('preserve-lines');
+    expect(fixture.nativeElement.querySelectorAll('[data-testid="content"] .reading-paragraph').length).toBe(2);
+    expect(fixture.nativeElement.querySelectorAll('[data-testid="reflection-question"] .reading-paragraph').length).toBe(2);
+    expect(fixture.nativeElement.querySelectorAll('[data-testid="prayer"] .reading-paragraph').length).toBe(2);
   });
 
   it('hides optional sections when their values are blank', async () => {
@@ -125,9 +125,41 @@ describe('DevotionalDetailPage', () => {
 
     await createComponent();
 
+    const cover = fixture.nativeElement.querySelector('[data-testid="cover-image"]') as HTMLElement | null;
     const image = fixture.nativeElement.querySelector('[data-testid="cover-image"] img') as HTMLImageElement | null;
+    expect(cover?.className).toContain('detail-card--cover-landscape');
     expect(image?.getAttribute('src')).toBe('https://example.com/cover.jpg');
     expect(image?.getAttribute('alt')).toBe('Trusting God in Uncertain Times cover image');
+  });
+
+  it('removes the devotional badge and redundant devotional content heading', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('.detail-card__eyebrow')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="content-section"] h3')).toBeNull();
+  });
+
+  it('keeps scripture, reflection, and prayer headings when populated', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="scripture-heading"]')?.textContent).toContain('Scripture');
+    expect(fixture.nativeElement.querySelector('[data-testid="reflection-heading"]')?.textContent).toContain('Reflection');
+    expect(fixture.nativeElement.querySelector('[data-testid="prayer-heading"]')?.textContent).toContain('Prayer');
+  });
+
+  it('renders the author as a quiet attribution without an author card heading', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="author-attribution"]')?.textContent).toContain(
+      'Written by admin admin'
+    );
+    expect(fixture.nativeElement.textContent).not.toContain('Author');
   });
 
   it('hides a broken cover image safely', async () => {
@@ -207,6 +239,17 @@ describe('DevotionalDetailPage', () => {
     expect(text).not.toContain('created_by');
     expect(text).not.toContain('draft');
     expect(text).not.toContain('archived');
+  });
+
+  it('uses the neutral content background on the scrolling container instead of the header blue', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+
+    await createComponent();
+
+    const ionContent = fixture.nativeElement.querySelector('ion-content.devotional-detail-content') as HTMLElement | null;
+    expect(ionContent).not.toBeNull();
+    expect(ionContent?.className).toContain('feature-page-content');
+    expect(ionContent?.className).toContain('devotional-detail-content');
   });
 
   it('rejects a blank slug without calling the API', async () => {

@@ -9,7 +9,6 @@
       <div *ngIf="loading" class="skeleton-stack" aria-live="polite" data-testid="loading-state">
         <div class="detail-card skeleton detail-card--hero">
           <div class="detail-card__cover-skeleton"></div>
-          <span class="skeleton-line skeleton-line--eyebrow"></span>
           <span class="skeleton-line skeleton-line--title"></span>
           <span class="skeleton-line skeleton-line--meta short"></span>
           <span class="skeleton-line skeleton-line--meta shorter"></span>
@@ -43,7 +42,7 @@
       <article *ngIf="!loading && !notFound && !errorMessage && devotional" class="devotional-detail" data-testid="devotional-detail">
         <div
           *ngIf="shouldShowCoverImage()"
-          class="detail-card detail-card--cover"
+          class="detail-card detail-card--cover detail-card--cover-landscape"
           data-testid="cover-image"
         >
           <img
@@ -54,7 +53,6 @@
         </div>
 
         <section class="detail-card detail-card--hero">
-          <span class="detail-card__eyebrow">Devotional</span>
           <h2 data-testid="devotional-title">{{ devotional.title }}</h2>
           <p class="detail-card__meta" data-testid="publication-date">
             {{ formatPublicationDate(devotional.publication_date) }}
@@ -65,7 +63,7 @@
         </section>
 
         <section *ngIf="hasText(devotional.scripture_text) || hasText(devotional.scripture_reference)" class="detail-card detail-card--scripture">
-          <h3>Scripture</h3>
+          <h3 data-testid="scripture-heading">Scripture</h3>
           <p *ngIf="hasText(devotional.scripture_reference)" class="detail-card__reference detail-card__reference--section">
             {{ devotional.scripture_reference }}
           </p>
@@ -78,31 +76,35 @@
           </div>
         </section>
 
-        <section class="detail-card">
-          <h3>Devotional</h3>
-          <div class="detail-card__body preserve-lines" data-testid="content">
-            {{ devotional.content }}
+        <section class="detail-card detail-card--reading" data-testid="content-section">
+          <div class="reading-copy" data-testid="content">
+            <p *ngFor="let paragraph of getParagraphs(devotional.content)" class="reading-paragraph preserve-lines">
+              {{ paragraph }}
+            </p>
           </div>
         </section>
 
         <section *ngIf="hasText(devotional.reflection_question)" class="detail-card" data-testid="reflection-section">
-          <h3>Reflection</h3>
-          <div class="detail-card__body preserve-lines" data-testid="reflection-question">
-            {{ devotional.reflection_question }}
+          <h3 data-testid="reflection-heading">Reflection</h3>
+          <div class="reading-copy" data-testid="reflection-question">
+            <p *ngFor="let paragraph of getParagraphs(devotional.reflection_question)" class="reading-paragraph preserve-lines">
+              {{ paragraph }}
+            </p>
           </div>
         </section>
 
         <section *ngIf="hasText(devotional.prayer)" class="detail-card" data-testid="prayer-section">
-          <h3>Prayer</h3>
-          <div class="detail-card__body preserve-lines" data-testid="prayer">
-            {{ devotional.prayer }}
+          <h3 data-testid="prayer-heading">Prayer</h3>
+          <div class="reading-copy" data-testid="prayer">
+            <p *ngFor="let paragraph of getParagraphs(devotional.prayer)" class="reading-paragraph preserve-lines">
+              {{ paragraph }}
+            </p>
           </div>
         </section>
 
-        <section *ngIf="hasText(devotional.author_name)" class="detail-card detail-card--author" data-testid="author-section">
-          <h3>Author</h3>
-          <p class="detail-card__body detail-card__body--author" data-testid="author-name">{{ devotional.author_name }}</p>
-        </section>
+        <p *ngIf="hasText(devotional.author_name)" class="devotional-attribution" data-testid="author-attribution">
+          Written by {{ devotional.author_name }}
+        </p>
       </article>
     </app-feature-page-shell>
   </ion-content>
