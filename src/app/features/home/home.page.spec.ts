@@ -98,6 +98,12 @@ describe('HomePage', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/bible-study']);
   });
 
+  it('navigates the home Devotionals entry to the Devotionals page', () => {
+    page.goToDevotionals();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/devotionals']);
+  });
+
   it('keeps branch navigation unchanged', () => {
     page.goToBranches();
 

@@ -1,0 +1,104 @@
+<ion-page>
+  <ion-content fullscreen class="devotionals-content">
+    <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
+      <ion-refresher-content pullingIcon="chevron-down-circle-outline"></ion-refresher-content>
+    </ion-refresher>
+
+    <app-feature-page-shell
+      title="Devotionals"
+      subtitle="Browse published devotionals."
+      backFallbackRoute="/home"
+    >
+      <div *ngIf="loading" class="skeleton-stack" aria-live="polite" data-testid="loading-state">
+        <div class="devotional-card skeleton" *ngFor="let item of skeletonItems">
+          <div class="devotional-card__body">
+            <div class="devotional-card__cover-skeleton"></div>
+            <div class="devotional-card__copy">
+              <span class="skeleton-line skeleton-line--title"></span>
+              <span class="skeleton-line skeleton-line--meta"></span>
+              <span class="skeleton-line skeleton-line--meta short"></span>
+              <span class="skeleton-line skeleton-line--meta shorter"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!loading && errorMessage" class="state-card error-state" data-testid="error-state">
+        <div class="state-copy">
+          <h2>We couldn't load devotionals right now.</h2>
+          <p>{{ errorMessage }}</p>
+        </div>
+        <ion-button expand="block" class="state-button" (click)="retryLoad()">Try Again</ion-button>
+      </div>
+
+      <div *ngIf="!loading && !errorMessage && devotionals.length === 0" class="state-card empty-state" data-testid="empty-state">
+        <div class="state-copy">
+          <h2>No devotionals have been published yet.</h2>
+          <p>Check back soon for daily encouragement from published devotionals.</p>
+        </div>
+        <ion-button expand="block" fill="outline" class="state-button state-button--secondary" (click)="retryLoad()">
+          Refresh
+        </ion-button>
+      </div>
+
+      <section *ngIf="!loading && !errorMessage && devotionals.length > 0" class="devotional-feed" aria-label="Published devotionals">
+        <button
+          *ngFor="let devotional of devotionals; trackBy: trackByDevotional"
+          type="button"
+          class="devotional-card devotional-card--button"
+          data-testid="devotional-card"
+          [attr.aria-label]="buildCardAriaLabel(devotional)"
+          (click)="openDevotional(devotional)"
+        >
+          <div class="devotional-card__body">
+            <div class="devotional-card__cover" [class.devotional-card__cover--placeholder]="!shouldShowCoverImage(devotional)">
+              <img
+                *ngIf="shouldShowCoverImage(devotional); else coverFallback"
+                [src]="devotional.cover_image!"
+                [alt]="getCoverImageAlt(devotional)"
+                (error)="handleCoverImageError(devotional.id)"
+              />
+              <ng-template #coverFallback>
+                <ion-icon name="sunny-outline" aria-hidden="true"></ion-icon>
+              </ng-template>
+            </div>
+
+            <div class="devotional-card__copy">
+              <div class="devotional-card__top">
+                <h2 data-testid="devotional-title">{{ devotional.title }}</h2>
+                <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
+              </div>
+              <p *ngIf="hasScriptureReference(devotional)" class="devotional-card__meta" data-testid="devotional-scripture">
+                {{ devotional.scripture_reference }}
+              </p>
+              <p *ngIf="hasAuthor(devotional)" class="devotional-card__detail" data-testid="devotional-author">
+                {{ devotional.author_name }}
+              </p>
+              <p class="devotional-card__detail" data-testid="devotional-publication-date">
+                {{ formatPublicationDate(devotional.publication_date) }}
+              </p>
+            </div>
+          </div>
+          <ion-ripple-effect></ion-ripple-effect>
+        </button>
+
+        <div *ngIf="loadMoreErrorMessage" class="load-more-error" data-testid="load-more-error">
+          <p>{{ loadMoreErrorMessage }}</p>
+          <ion-button fill="outline" class="state-button state-button--secondary" (click)="loadMore()">Try Again</ion-button>
+        </div>
+
+        <ion-button
+          *ngIf="nextPageUrl"
+          expand="block"
+          fill="outline"
+          class="state-button state-button--secondary"
+          [disabled]="loadingMore"
+          (click)="loadMore()"
+        >
+          <ion-spinner *ngIf="loadingMore" slot="start" name="crescent"></ion-spinner>
+          <span>{{ loadingMore ? 'Loading more...' : 'Load more' }}</span>
+        </ion-button>
+      </section>
+    </app-feature-page-shell>
+  </ion-content>
+</ion-page>

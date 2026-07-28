@@ -123,7 +123,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   goToDevotionals(): void {
-    // Placeholder until the mobile devotionals route is available.
+    void this.router.navigate(['/devotionals']);
   }
 
   goToAccount(isAuthenticated: boolean | null): void {

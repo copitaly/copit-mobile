@@ -1,0 +1,109 @@
+<ion-page>
+  <ion-content fullscreen class="feature-page-content devotional-detail-content">
+    <app-feature-page-shell
+      title="Devotional"
+      subtitle="Read published devotional details."
+      backFallbackRoute="/devotionals"
+      backAriaLabel="Back to devotionals"
+    >
+      <div *ngIf="loading" class="skeleton-stack" aria-live="polite" data-testid="loading-state">
+        <div class="detail-card skeleton detail-card--hero">
+          <div class="detail-card__cover-skeleton"></div>
+          <span class="skeleton-line skeleton-line--eyebrow"></span>
+          <span class="skeleton-line skeleton-line--title"></span>
+          <span class="skeleton-line skeleton-line--meta short"></span>
+          <span class="skeleton-line skeleton-line--meta shorter"></span>
+        </div>
+
+        <div class="detail-card skeleton" *ngFor="let item of skeletonItems">
+          <span class="skeleton-line skeleton-line--body"></span>
+          <span class="skeleton-line skeleton-line--body"></span>
+          <span class="skeleton-line skeleton-line--body short"></span>
+        </div>
+      </div>
+
+      <div *ngIf="!loading && notFound" class="state-card empty-state" data-testid="not-found-state">
+        <div class="state-copy">
+          <h2>Devotional unavailable</h2>
+          <p>This devotional is no longer available.</p>
+        </div>
+        <ion-button expand="block" class="state-button" routerLink="/devotionals">
+          Back to devotionals
+        </ion-button>
+      </div>
+
+      <div *ngIf="!loading && !notFound && errorMessage" class="state-card error-state" data-testid="error-state">
+        <div class="state-copy">
+          <h2>We couldn't load this devotional</h2>
+          <p>{{ errorMessage }}</p>
+        </div>
+        <ion-button expand="block" class="state-button" (click)="retryLoad()">Try Again</ion-button>
+      </div>
+
+      <article *ngIf="!loading && !notFound && !errorMessage && devotional" class="devotional-detail" data-testid="devotional-detail">
+        <div
+          *ngIf="shouldShowCoverImage()"
+          class="detail-card detail-card--cover"
+          data-testid="cover-image"
+        >
+          <img
+            [src]="devotional.cover_image!"
+            [alt]="getCoverImageAlt()"
+            (error)="handleCoverImageError()"
+          />
+        </div>
+
+        <section class="detail-card detail-card--hero">
+          <span class="detail-card__eyebrow">Devotional</span>
+          <h2 data-testid="devotional-title">{{ devotional.title }}</h2>
+          <p class="detail-card__meta" data-testid="publication-date">
+            {{ formatPublicationDate(devotional.publication_date) }}
+          </p>
+          <p *ngIf="hasText(devotional.scripture_reference)" class="detail-card__reference" data-testid="scripture-reference">
+            {{ devotional.scripture_reference }}
+          </p>
+        </section>
+
+        <section *ngIf="hasText(devotional.scripture_text) || hasText(devotional.scripture_reference)" class="detail-card detail-card--scripture">
+          <h3>Scripture</h3>
+          <p *ngIf="hasText(devotional.scripture_reference)" class="detail-card__reference detail-card__reference--section">
+            {{ devotional.scripture_reference }}
+          </p>
+          <div
+            *ngIf="hasText(devotional.scripture_text)"
+            class="scripture-block preserve-lines"
+            data-testid="scripture-text"
+          >
+            {{ devotional.scripture_text }}
+          </div>
+        </section>
+
+        <section class="detail-card">
+          <h3>Devotional</h3>
+          <div class="detail-card__body preserve-lines" data-testid="content">
+            {{ devotional.content }}
+          </div>
+        </section>
+
+        <section *ngIf="hasText(devotional.reflection_question)" class="detail-card" data-testid="reflection-section">
+          <h3>Reflection</h3>
+          <div class="detail-card__body preserve-lines" data-testid="reflection-question">
+            {{ devotional.reflection_question }}
+          </div>
+        </section>
+
+        <section *ngIf="hasText(devotional.prayer)" class="detail-card" data-testid="prayer-section">
+          <h3>Prayer</h3>
+          <div class="detail-card__body preserve-lines" data-testid="prayer">
+            {{ devotional.prayer }}
+          </div>
+        </section>
+
+        <section *ngIf="hasText(devotional.author_name)" class="detail-card detail-card--author" data-testid="author-section">
+          <h3>Author</h3>
+          <p class="detail-card__body detail-card__body--author" data-testid="author-name">{{ devotional.author_name }}</p>
+        </section>
+      </article>
+    </app-feature-page-shell>
+  </ion-content>
+</ion-page>

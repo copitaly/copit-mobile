@@ -1,0 +1,196 @@
+:host {
+  display: block;
+}
+
+.devotional-detail-content {
+  --background: linear-gradient(180deg, #0b1d73 0%, #112a8f 28%, #f4f7ff 28%, #f8fbff 100%);
+}
+
+.skeleton-stack,
+.devotional-detail {
+  display: grid;
+  gap: 1rem;
+}
+
+.detail-card,
+.state-card {
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 20px 48px rgba(10, 24, 78, 0.12);
+}
+
+.detail-card {
+  padding: 1.25rem;
+}
+
+.detail-card--hero {
+  gap: 0.75rem;
+}
+
+.detail-card--cover {
+  padding: 0;
+  overflow: hidden;
+}
+
+.detail-card--cover img {
+  display: block;
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  background: #dfe7ff;
+}
+
+.detail-card__eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(17, 42, 143, 0.08);
+  color: #112a8f;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.detail-card h2,
+.detail-card h3,
+.state-copy h2 {
+  margin: 0;
+  color: #102153;
+}
+
+.detail-card h2 {
+  font-size: 1.7rem;
+  line-height: 1.18;
+}
+
+.detail-card h3 {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.detail-card__meta,
+.detail-card__reference,
+.state-copy p {
+  margin: 0;
+  color: #586887;
+}
+
+.detail-card__meta {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.detail-card__reference {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #20366d;
+}
+
+.detail-card__reference--section {
+  margin-bottom: 0.75rem;
+}
+
+.scripture-block {
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(17, 42, 143, 0.08) 0%, rgba(17, 42, 143, 0.04) 100%);
+  border: 1px solid rgba(17, 42, 143, 0.08);
+  padding: 1rem;
+  color: #1d2f61;
+}
+
+.detail-card__body {
+  color: #24314f;
+  line-height: 1.7;
+}
+
+.detail-card__body--author {
+  font-weight: 600;
+}
+
+.preserve-lines {
+  white-space: pre-line;
+}
+
+.state-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+  text-align: left;
+}
+
+.state-copy {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.state-button {
+  --border-radius: 16px;
+  min-height: 48px;
+  font-weight: 600;
+}
+
+.skeleton {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.detail-card__cover-skeleton {
+  min-height: 180px;
+  border-radius: 20px;
+  background: linear-gradient(90deg, rgba(226, 233, 250, 0.85), rgba(240, 244, 255, 0.98), rgba(226, 233, 250, 0.85));
+}
+
+.skeleton-line {
+  display: block;
+  min-height: 0.9rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(226, 233, 250, 0.85), rgba(240, 244, 255, 0.98), rgba(226, 233, 250, 0.85));
+}
+
+.skeleton-line--eyebrow {
+  width: 6rem;
+  min-height: 0.75rem;
+}
+
+.skeleton-line--title {
+  width: 78%;
+  min-height: 1.8rem;
+}
+
+.skeleton-line--meta {
+  width: 58%;
+}
+
+.skeleton-line--body {
+  width: 100%;
+}
+
+.short {
+  width: 68%;
+}
+
+.shorter {
+  width: 44%;
+}
+
+@media (max-width: 480px) {
+  .detail-card,
+  .state-card {
+    border-radius: 20px;
+  }
+
+  .detail-card {
+    padding: 1rem;
+  }
+
+  .detail-card--cover img {
+    max-height: 200px;
+  }
+
+  .detail-card h2 {
+    font-size: 1.45rem;
+  }
+}

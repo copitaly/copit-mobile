@@ -136,7 +136,7 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
   );
 };
 
-const routes: Routes = [
+export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('./features/splash/splash.page').then(m => m.SplashPage)
@@ -214,6 +214,14 @@ const routes: Routes = [
   {
     path: 'bible-study',
     loadComponent: () => import('./features/bible-study/bible-study.page').then(m => m.BibleStudyPage)
+  },
+  {
+    path: 'devotionals',
+    loadComponent: () => import('./features/devotionals/devotionals.page').then(m => m.DevotionalsPage)
+  },
+  {
+    path: 'devotionals/:slug',
+    loadComponent: () => import('./features/devotionals/devotional-detail.page').then(m => m.DevotionalDetailPage)
   },
   {
     path: 'bible-study/:id/read',
