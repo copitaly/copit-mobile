@@ -182,7 +182,7 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
       }
 
       ion-content.auth-content {
-        --background: #0b1d73;
+        --background: #f4f7ff;
         --keyboard-offset: 0px;
         height: 100%;
         display: flex;
@@ -194,6 +194,7 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
         min-height: 100%;
         display: flex;
         flex-direction: column;
+        background: #f4f7ff;
       }
 
       .auth-content {
@@ -205,11 +206,14 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
       .auth-hero {
         width: 100%;
         padding-bottom: 1.75rem;
+        background: #0b1d73;
       }
 
       .auth-surface {
+        flex: 1;
         margin-top: -0.08rem;
         padding-top: 1.25rem;
+        background: #f4f7ff;
         box-shadow: 0 -6px 22px rgba(2, 18, 54, 0.08);
         border-radius: 24px 24px 0 0;
       }
