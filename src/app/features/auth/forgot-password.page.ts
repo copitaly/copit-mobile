@@ -1,12 +1,19 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
 import { AuthService } from '../../core/services/auth.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
+import {
+  emailFormatValidator,
+  extractErrorDetail,
+  extractFirstFieldError,
+  getAuthNetworkMessage,
+  trimmedRequiredValidator,
+} from './auth-form.utils';
 
 @Component({
   standalone: true,
@@ -28,7 +35,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
           <div class="surface__content auth-surface__content">
             <div class="auth-card">
               <ng-container *ngIf="!submitted; else submittedState">
-                <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+                <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form" novalidate>
                   <div class="field-group">
                     <label class="auth-label" for="forgot-email">Email</label>
                     <ion-item fill="solid" class="auth-field">
@@ -39,13 +46,17 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                         placeholder="you@example.com"
                         autocomplete="email"
                         inputmode="email"
+                        autocapitalize="off"
+                        autocorrect="off"
+                        spellcheck="false"
+                        enterkeyhint="done"
                         (ionInput)="clearMessage()"
                       ></ion-input>
                     </ion-item>
-                    <p class="field-error" *ngIf="showEmailError">{{ emailErrorMessage }}</p>
+                    <p class="field-error" *ngIf="showEmailError" aria-live="polite">{{ emailErrorMessage }}</p>
                   </div>
 
-                  <div class="auth-feedback" [class.auth-feedback--visible]="!!message">
+                  <div class="auth-feedback" [class.auth-feedback--visible]="!!message" aria-live="polite">
                     <ion-text [color]="messageTone" *ngIf="message" class="auth-message">
                       {{ message }}
                     </ion-text>
@@ -62,7 +73,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                 <div class="status-copy">
                   <h2>Check your email</h2>
                   <p>
-                    If an account exists for this email, we sent password reset instructions.
+                    If an account exists for this email, password reset instructions have been sent.
                   </p>
                 </div>
               </ng-template>
@@ -99,6 +110,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         min-height: 100%;
         display: flex;
         flex-direction: column;
+        background: #0b1d73;
       }
 
       .auth-content {
@@ -110,11 +122,14 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
       .auth-hero {
         width: 100%;
         padding-bottom: 1.75rem;
+        background: #0b1d73;
       }
 
       .auth-surface {
+        flex: 1;
         margin-top: -0.08rem;
         padding-top: 1.25rem;
+        background: #f4f7ff;
         box-shadow: 0 -6px 22px rgba(2, 18, 54, 0.08);
         border-radius: 24px 24px 0 0;
       }
@@ -253,7 +268,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 })
 export class ForgotPasswordPage {
   readonly form = this.formBuilder.nonNullable.group({
-    email: ['', [Validators.required, Validators.email]],
+    email: ['', [trimmedRequiredValidator, emailFormatValidator]],
   });
 
   loading = false;
@@ -273,7 +288,7 @@ export class ForgotPasswordPage {
 
   get showEmailError(): boolean {
     const control = this.form.controls.email;
-    return control.touched && (control.hasError('required') || (!!control.value.trim() && control.hasError('email')));
+    return control.touched && (control.hasError('required') || control.hasError('email'));
   }
 
   get emailErrorMessage(): string {
@@ -300,6 +315,11 @@ export class ForgotPasswordPage {
           this.submitted = true;
         },
         error: (error: unknown) => {
+          if (this.shouldRespondNeutrally(error)) {
+            this.submitted = true;
+            this.loading = false;
+            return;
+          }
           this.messageTone = 'danger';
           this.message = this.getErrorMessage(error);
           this.loading = false;
@@ -323,6 +343,27 @@ export class ForgotPasswordPage {
       return 'Enter a valid email address.';
     }
 
-    return 'We could not send reset instructions right now. Please try again.';
+    return getAuthNetworkMessage('send reset instructions', error);
+  }
+
+  private shouldRespondNeutrally(error: unknown): boolean {
+    if (!(error instanceof HttpErrorResponse)) {
+      return false;
+    }
+
+    const detail = extractErrorDetail(error).toLowerCase();
+    const emailError = extractFirstFieldError(error.error, 'email').toLowerCase();
+    const combined = `${detail} ${emailError}`;
+
+    return (
+      (error.status === 404 || error.status === 400) &&
+      (
+        combined.includes('not found') ||
+        combined.includes('no account') ||
+        combined.includes('no user') ||
+        combined.includes('unknown email') ||
+        combined.includes('does not exist')
+      )
+    );
   }
 }

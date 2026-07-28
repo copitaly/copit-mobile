@@ -76,6 +76,7 @@ describe('AuthService', () => {
     service.getMemberDonations().subscribe((response) => {
       responseBody = response;
     });
+    flushMicrotasks();
 
     const initialRequest = httpMock.expectOne('http://localhost:8000/api/members/me/donations/');
     expect(initialRequest.request.headers.get('Authorization')).toBe('Bearer expired-token');
@@ -104,6 +105,7 @@ describe('AuthService', () => {
     service.getCurrentUser().subscribe((value) => {
       resolvedValue = value;
     });
+    flushMicrotasks();
 
     const meRequest = httpMock.expectOne('http://localhost:8000/api/members/me/');
     meRequest.flush({ detail: 'expired' }, { status: 401, statusText: 'Unauthorized' });
@@ -130,6 +132,7 @@ describe('AuthService', () => {
         receivedError = error;
       },
     });
+    flushMicrotasks();
 
     const request = httpMock.expectOne('http://localhost:8000/api/members/me/donations/');
     request.flush({ detail: 'forbidden' }, { status: 403, statusText: 'Forbidden' });
@@ -149,6 +152,7 @@ describe('AuthService', () => {
     service.forgotPassword({ email: 'member@example.com' }).subscribe((response) => {
       responseBody = response;
     });
+    flushMicrotasks();
 
     const request = httpMock.expectOne('http://localhost:8000/api/auth/forgot-password/');
     expect(request.request.method).toBe('POST');
@@ -166,6 +170,7 @@ describe('AuthService', () => {
     service.validatePasswordResetToken('uid-token', 'reset-token').subscribe((response) => {
       responseBody = response;
     });
+    flushMicrotasks();
 
     const request = httpMock.expectOne(
       'http://localhost:8000/api/auth/reset-password/uid-token/reset-token/validate/'
@@ -197,6 +202,7 @@ describe('AuthService', () => {
       .subscribe((response) => {
         responseBody = response;
       });
+    flushMicrotasks();
 
     const request = httpMock.expectOne(
       'http://localhost:8000/api/auth/reset-password/uid-token/reset-token/confirm/'

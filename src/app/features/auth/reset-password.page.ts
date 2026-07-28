@@ -1,13 +1,21 @@
 import { CommonModule, formatDate } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
-import { AuthService } from '../../core/services/auth.service';
 import { PasswordResetValidateResponse } from '../../core/models/user.model';
+import { AuthService } from '../../core/services/auth.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
+import {
+  AUTH_PASSWORD_MIN_LENGTH,
+  extractErrorDetail,
+  extractFirstFieldError,
+  getAuthNetworkMessage,
+  passwordStrengthValidator,
+  trimmedRequiredValidator,
+} from './auth-form.utils';
 
 type ResetViewState = 'loading' | 'valid' | 'invalid' | 'expired' | 'success';
 
@@ -71,7 +79,7 @@ type ResetViewState = 'loading' | 'valid' | 'invalid' | 'expired' | 'success';
                   </ion-button>
                 </div>
 
-                <form *ngSwitchCase="'valid'" [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+                <form *ngSwitchCase="'valid'" [formGroup]="form" (ngSubmit)="submit()" class="auth-form" novalidate>
                   <div class="status-copy status-copy--inline">
                     <p *ngIf="maskedRecipient">
                       Resetting password for <strong>{{ maskedRecipient }}</strong>
@@ -88,18 +96,25 @@ type ResetViewState = 'loading' | 'valid' | 'invalid' | 'expired' | 'success';
                         [type]="showNewPassword ? 'text' : 'password'"
                         placeholder="Enter your new password"
                         autocomplete="new-password"
+                        autocapitalize="off"
+                        autocorrect="off"
+                        spellcheck="false"
+                        enterkeyhint="next"
                         (ionInput)="clearInlineMessage()"
                       ></ion-input>
                       <button
                         type="button"
                         class="password-toggle"
-                        aria-label="Toggle new password visibility"
+                        [attr.aria-label]="newPasswordToggleLabel"
                         (click)="showNewPassword = !showNewPassword"
                       >
                         <ion-icon [name]="showNewPassword ? 'eye-off-outline' : 'eye-outline'" aria-hidden="true"></ion-icon>
                       </button>
                     </ion-item>
-                    <p class="field-error" *ngIf="showNewPasswordRequiredError">Enter a new password.</p>
+                    <p class="field-error" *ngIf="showNewPasswordRequiredError" aria-live="polite">Enter a new password.</p>
+                    <p class="field-error" *ngIf="showNewPasswordLengthError" aria-live="polite">
+                      Use at least {{ passwordMinLength }} characters.
+                    </p>
                   </div>
 
                   <div class="field-group">
@@ -111,22 +126,26 @@ type ResetViewState = 'loading' | 'valid' | 'invalid' | 'expired' | 'success';
                         [type]="showConfirmPassword ? 'text' : 'password'"
                         placeholder="Confirm your new password"
                         autocomplete="new-password"
+                        autocapitalize="off"
+                        autocorrect="off"
+                        spellcheck="false"
+                        enterkeyhint="done"
                         (ionInput)="clearInlineMessage()"
                       ></ion-input>
                       <button
                         type="button"
                         class="password-toggle"
-                        aria-label="Toggle confirm password visibility"
+                        [attr.aria-label]="confirmPasswordToggleLabel"
                         (click)="showConfirmPassword = !showConfirmPassword"
                       >
                         <ion-icon [name]="showConfirmPassword ? 'eye-off-outline' : 'eye-outline'" aria-hidden="true"></ion-icon>
                       </button>
                     </ion-item>
-                    <p class="field-error" *ngIf="showConfirmRequiredError">Confirm your new password.</p>
-                    <p class="field-error" *ngIf="showPasswordMismatchError">Your passwords do not match.</p>
+                    <p class="field-error" *ngIf="showConfirmRequiredError" aria-live="polite">Confirm your new password.</p>
+                    <p class="field-error" *ngIf="showPasswordMismatchError" aria-live="polite">Your passwords do not match.</p>
                   </div>
 
-                  <div class="auth-feedback" [class.auth-feedback--visible]="!!inlineMessage">
+                  <div class="auth-feedback" [class.auth-feedback--visible]="!!inlineMessage" aria-live="polite">
                     <ion-text [color]="inlineMessageTone" *ngIf="inlineMessage" class="auth-message">
                       {{ inlineMessage }}
                     </ion-text>
@@ -167,6 +186,7 @@ type ResetViewState = 'loading' | 'valid' | 'invalid' | 'expired' | 'success';
         min-height: 100%;
         display: flex;
         flex-direction: column;
+        background: #0b1d73;
       }
 
       .auth-content {
@@ -178,11 +198,14 @@ type ResetViewState = 'loading' | 'valid' | 'invalid' | 'expired' | 'success';
       .auth-hero {
         width: 100%;
         padding-bottom: 1.75rem;
+        background: #0b1d73;
       }
 
       .auth-surface {
+        flex: 1;
         margin-top: -0.08rem;
         padding-top: 1.25rem;
+        background: #f4f7ff;
         box-shadow: 0 -6px 22px rgba(2, 18, 54, 0.08);
         border-radius: 24px 24px 0 0;
       }
@@ -358,19 +381,15 @@ type ResetViewState = 'loading' | 'valid' | 'invalid' | 'expired' | 'success';
   ],
 })
 export class ResetPasswordPage implements OnInit {
+  readonly passwordMinLength = AUTH_PASSWORD_MIN_LENGTH;
+
   readonly form = this.formBuilder.nonNullable.group(
     {
-      new_password: ['', Validators.required],
-      confirm_password: ['', Validators.required],
+      new_password: ['', [trimmedRequiredValidator, passwordStrengthValidator]],
+      confirm_password: ['', [trimmedRequiredValidator]],
     },
     {
-      validators: (group) => {
-        const newPassword = group.get('new_password')?.value ?? '';
-        const confirmPassword = group.get('confirm_password')?.value ?? '';
-        return newPassword && confirmPassword && newPassword !== confirmPassword
-          ? { passwordMismatch: true }
-          : null;
-      },
+      validators: [ResetPasswordPage.passwordMatchValidator],
     }
   );
 
@@ -415,6 +434,11 @@ export class ResetPasswordPage implements OnInit {
     return control.touched && control.hasError('required');
   }
 
+  get showNewPasswordLengthError(): boolean {
+    const control = this.form.controls.new_password;
+    return control.touched && control.hasError('minlength');
+  }
+
   get showConfirmRequiredError(): boolean {
     const control = this.form.controls.confirm_password;
     return control.touched && control.hasError('required');
@@ -423,6 +447,14 @@ export class ResetPasswordPage implements OnInit {
   get showPasswordMismatchError(): boolean {
     const control = this.form.controls.confirm_password;
     return control.touched && this.form.hasError('passwordMismatch') && !control.hasError('required');
+  }
+
+  get newPasswordToggleLabel(): string {
+    return this.showNewPassword ? 'Hide password' : 'Show password';
+  }
+
+  get confirmPasswordToggleLabel(): string {
+    return this.showConfirmPassword ? 'Hide password' : 'Show password';
   }
 
   ngOnInit(): void {
@@ -489,7 +521,7 @@ export class ResetPasswordPage implements OnInit {
   }
 
   private applyLinkError(error: unknown): void {
-    const detail = this.getErrorDetail(error);
+    const detail = extractErrorDetail(error);
     const normalized = detail.toLowerCase();
 
     if (normalized.includes('expired') && !normalized.includes('invalid')) {
@@ -503,16 +535,10 @@ export class ResetPasswordPage implements OnInit {
   }
 
   private applySubmitError(error: unknown): void {
-    if (!(error instanceof HttpErrorResponse)) {
-      this.inlineMessageTone = 'danger';
-      this.inlineMessage = 'We could not reset your password right now. Please try again.';
-      return;
-    }
-
-    if (error.status === 400) {
-      const confirmPasswordError = this.extractFirstFieldError(error.error, 'confirm_password');
-      const newPasswordError = this.extractFirstFieldError(error.error, 'new_password');
-      const detail = this.getErrorDetail(error);
+    if (error instanceof HttpErrorResponse && error.status === 400) {
+      const confirmPasswordError = extractFirstFieldError(error.error, 'confirm_password');
+      const newPasswordError = extractFirstFieldError(error.error, 'new_password');
+      const detail = extractErrorDetail(error);
 
       if (confirmPasswordError) {
         this.inlineMessageTone = 'danger';
@@ -537,34 +563,14 @@ export class ResetPasswordPage implements OnInit {
     }
 
     this.inlineMessageTone = 'danger';
-    this.inlineMessage = 'We could not reset your password right now. Please try again.';
+    this.inlineMessage = getAuthNetworkMessage('reset your password', error);
   }
 
-  private getErrorDetail(error: unknown): string {
-    if (!(error instanceof HttpErrorResponse)) {
-      return '';
-    }
-
-    const detail = error.error?.detail;
-    if (typeof detail === 'string') {
-      return detail;
-    }
-
-    return '';
-  }
-
-  private extractFirstFieldError(errorBody: unknown, field: string): string {
-    if (!errorBody || typeof errorBody !== 'object' || !(field in (errorBody as Record<string, unknown>))) {
-      return '';
-    }
-
-    const value = (errorBody as Record<string, unknown>)[field];
-    if (Array.isArray(value) && value.length > 0) {
-      return String(value[0]);
-    }
-    if (typeof value === 'string') {
-      return value;
-    }
-    return '';
+  private static passwordMatchValidator(group: AbstractControl): ValidationErrors | null {
+    const newPassword = group.get('new_password')?.value ?? '';
+    const confirmPassword = group.get('confirm_password')?.value ?? '';
+    return newPassword && confirmPassword && newPassword !== confirmPassword
+      ? { passwordMismatch: true }
+      : null;
   }
 }

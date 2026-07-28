@@ -2,7 +2,7 @@ import { DOCUMENT } from '@angular/common';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Inject, Injectable, Injector } from '@angular/core';
 import { BehaviorSubject, EMPTY, Observable, firstValueFrom, from, of, throwError } from 'rxjs';
-import { catchError, finalize, map, switchMap, tap } from 'rxjs/operators';
+import { catchError, finalize, map, switchMap, tap, timeout } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 import {
@@ -26,6 +26,7 @@ import { SentryTelemetryService } from './sentry-telemetry.service';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private static readonly csrfCookieName = 'csrftoken';
+  private static readonly authRequestTimeoutMs = 15000;
 
   private readonly currentUserSubject = new BehaviorSubject<MemberProfile | null>(null);
   private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
@@ -88,6 +89,7 @@ export class AuthService {
             withCredentials: true,
           })
           .pipe(
+            timeout(AuthService.authRequestTimeoutMs),
             map((response) => this.extractAccessToken(response)),
             tap((token) => this.storeAccessToken(token)),
             switchMap((token) => this.fetchCurrentUser(token)),
@@ -118,6 +120,7 @@ export class AuthService {
             withCredentials: true,
           })
           .pipe(
+            timeout(AuthService.authRequestTimeoutMs),
             tap((response) => this.storeAccessToken(this.extractAccessToken(response))),
             map((response) => this.toMemberProfileFromAuthResponse(response)),
             tap((profile) => this.setAuthenticatedProfile(profile)),
@@ -145,7 +148,9 @@ export class AuthService {
   forgotPassword(payload: ForgotPasswordRequest): Observable<ForgotPasswordResponse> {
     return from(this.initializationPromise).pipe(
       switchMap(() =>
-        this.http.post<ForgotPasswordResponse>(this.buildUrl('auth/forgot-password'), payload)
+        this.http
+          .post<ForgotPasswordResponse>(this.buildUrl('auth/forgot-password'), payload)
+          .pipe(timeout(AuthService.authRequestTimeoutMs))
       )
     );
   }
@@ -153,7 +158,9 @@ export class AuthService {
   validatePasswordResetToken(uid: string, token: string): Observable<PasswordResetValidateResponse> {
     return from(this.initializationPromise).pipe(
       switchMap(() =>
-        this.http.get<PasswordResetValidateResponse>(this.buildUrl(`auth/reset-password/${uid}/${token}/validate`))
+        this.http
+          .get<PasswordResetValidateResponse>(this.buildUrl(`auth/reset-password/${uid}/${token}/validate`))
+          .pipe(timeout(AuthService.authRequestTimeoutMs))
       )
     );
   }
@@ -168,7 +175,7 @@ export class AuthService {
         this.http.post<PasswordResetConfirmResponse>(
           this.buildUrl(`auth/reset-password/${uid}/${token}/confirm`),
           payload
-        )
+        ).pipe(timeout(AuthService.authRequestTimeoutMs))
       )
     );
   }

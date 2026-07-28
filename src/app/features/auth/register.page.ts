@@ -1,12 +1,20 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy } from '@angular/core';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
 import { AuthService } from '../../core/services/auth.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
+import {
+  AUTH_PASSWORD_MIN_LENGTH,
+  extractFirstFieldError,
+  getAuthNetworkMessage,
+  passwordStrengthValidator,
+  trimmedRequiredValidator,
+  emailFormatValidator,
+} from './auth-form.utils';
 
 function optionalPhoneValidator(control: AbstractControl): ValidationErrors | null {
   const value = `${control.value ?? ''}`.trim();
@@ -36,7 +44,7 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
         <div class="surface auth-surface">
           <div class="surface__content auth-surface__content">
             <div class="auth-card">
-              <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+              <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form" novalidate>
                 <div class="name-grid">
                   <div class="field-group">
                     <label class="auth-label" for="register-first-name">First name</label>
@@ -46,10 +54,13 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
                         formControlName="first_name"
                         placeholder="Kwame"
                         autocomplete="given-name"
+                        enterkeyhint="next"
                         (ionInput)="clearErrorMessage()"
                       ></ion-input>
                     </ion-item>
-                    <p class="field-error" *ngIf="showControlError('first_name')">Enter your first name.</p>
+                    <p class="field-error" *ngIf="showControlError('first_name')" aria-live="polite">
+                      Enter your first name.
+                    </p>
                   </div>
 
                   <div class="field-group">
@@ -60,10 +71,13 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
                         formControlName="last_name"
                         placeholder="Asante"
                         autocomplete="family-name"
+                        enterkeyhint="next"
                         (ionInput)="clearErrorMessage()"
                       ></ion-input>
                     </ion-item>
-                    <p class="field-error" *ngIf="showControlError('last_name')">Enter your last name.</p>
+                    <p class="field-error" *ngIf="showControlError('last_name')" aria-live="polite">
+                      Enter your last name.
+                    </p>
                   </div>
                 </div>
 
@@ -77,10 +91,14 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
                       placeholder="you@example.com"
                       autocomplete="email"
                       inputmode="email"
+                      autocapitalize="off"
+                      autocorrect="off"
+                      spellcheck="false"
+                      enterkeyhint="next"
                       (ionInput)="clearErrorMessage()"
                     ></ion-input>
                   </ion-item>
-                  <p class="field-error" *ngIf="showEmailError">{{ emailErrorMessage }}</p>
+                  <p class="field-error" *ngIf="showEmailError" aria-live="polite">{{ emailErrorMessage }}</p>
                 </div>
 
                 <div class="field-group">
@@ -92,10 +110,11 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
                       placeholder="+39 333 123 4567"
                       autocomplete="tel"
                       inputmode="tel"
+                      enterkeyhint="next"
                       (ionInput)="clearErrorMessage()"
                     ></ion-input>
                   </ion-item>
-                  <p class="field-error" *ngIf="showPhoneError">{{ phoneErrorMessage }}</p>
+                  <p class="field-error" *ngIf="showPhoneError" aria-live="polite">{{ phoneErrorMessage }}</p>
                 </div>
 
                 <div class="field-group">
@@ -107,18 +126,22 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
                       [type]="showPassword ? 'text' : 'password'"
                       placeholder="At least 6 characters"
                       autocomplete="new-password"
+                      autocapitalize="off"
+                      autocorrect="off"
+                      spellcheck="false"
+                      enterkeyhint="next"
                       (ionInput)="clearErrorMessage()"
                     ></ion-input>
                     <button
                       type="button"
                       class="password-toggle"
-                      aria-label="Toggle password visibility"
+                      [attr.aria-label]="passwordToggleLabel"
                       (click)="togglePasswordVisibility()"
                     >
                       <ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'" aria-hidden="true"></ion-icon>
                     </button>
                   </ion-item>
-                  <p class="field-error" *ngIf="showControlError('password')">Enter a password to continue.</p>
+                  <p class="field-error" *ngIf="showPasswordError" aria-live="polite">{{ passwordErrorMessage }}</p>
                 </div>
 
                 <div class="field-group">
@@ -130,22 +153,26 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
                       [type]="showConfirmPassword ? 'text' : 'password'"
                       placeholder="Re-enter password"
                       autocomplete="new-password"
+                      autocapitalize="off"
+                      autocorrect="off"
+                      spellcheck="false"
+                      enterkeyhint="done"
                       (ionInput)="clearErrorMessage()"
                     ></ion-input>
                     <button
                       type="button"
                       class="password-toggle"
-                      aria-label="Toggle confirm password visibility"
+                      [attr.aria-label]="confirmPasswordToggleLabel"
                       (click)="toggleConfirmPasswordVisibility()"
                     >
                       <ion-icon [name]="showConfirmPassword ? 'eye-off-outline' : 'eye-outline'" aria-hidden="true"></ion-icon>
                     </button>
                   </ion-item>
-                  <p class="field-error" *ngIf="showConfirmRequiredError">Confirm your password.</p>
-                  <p class="field-error" *ngIf="showPasswordMismatchError">Your passwords do not match.</p>
+                  <p class="field-error" *ngIf="showConfirmRequiredError" aria-live="polite">Confirm your password.</p>
+                  <p class="field-error" *ngIf="showPasswordMismatchError" aria-live="polite">Your passwords do not match.</p>
                 </div>
 
-                <div class="auth-feedback" [class.auth-feedback--visible]="!!errorMessage">
+                <div class="auth-feedback" [class.auth-feedback--visible]="!!errorMessage" aria-live="polite">
                   <ion-text color="danger" *ngIf="errorMessage" class="auth-error">
                     {{ errorMessage }}
                   </ion-text>
@@ -395,12 +422,12 @@ export class RegisterPage implements OnDestroy {
 
   readonly form = this.formBuilder.nonNullable.group(
     {
-      first_name: ['', Validators.required],
-      last_name: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
+      first_name: ['', [trimmedRequiredValidator]],
+      last_name: ['', [trimmedRequiredValidator]],
+      email: ['', [trimmedRequiredValidator, emailFormatValidator]],
       phone_number: ['', [optionalPhoneValidator]],
-      password: ['', Validators.required],
-      confirm_password: ['', Validators.required],
+      password: ['', [trimmedRequiredValidator, passwordStrengthValidator]],
+      confirm_password: ['', [trimmedRequiredValidator]],
     },
     { validators: [RegisterPage.passwordMatchValidator] }
   );
@@ -427,7 +454,7 @@ export class RegisterPage implements OnDestroy {
 
   get showEmailError(): boolean {
     const control = this.form.controls.email;
-    return control.touched && (control.hasError('required') || (!!control.value.trim() && control.hasError('email')));
+    return control.touched && (control.hasError('required') || control.hasError('email'));
   }
 
   get emailErrorMessage(): string {
@@ -448,6 +475,20 @@ export class RegisterPage implements OnDestroy {
     return 'Enter a valid phone number.';
   }
 
+  get showPasswordError(): boolean {
+    const control = this.form.controls.password;
+    return control.touched && (control.hasError('required') || control.hasError('minlength'));
+  }
+
+  get passwordErrorMessage(): string {
+    const control = this.form.controls.password;
+    if (control.hasError('required')) {
+      return 'Enter a password to continue.';
+    }
+
+    return `Use at least ${AUTH_PASSWORD_MIN_LENGTH} characters.`;
+  }
+
   get showConfirmRequiredError(): boolean {
     const control = this.form.controls.confirm_password;
     return control.touched && control.hasError('required');
@@ -458,11 +499,19 @@ export class RegisterPage implements OnDestroy {
     return control.touched && this.form.hasError('passwordMismatch') && !control.hasError('required');
   }
 
+  get passwordToggleLabel(): string {
+    return this.showPassword ? 'Hide password' : 'Show password';
+  }
+
+  get confirmPasswordToggleLabel(): string {
+    return this.showConfirmPassword ? 'Hide password' : 'Show password';
+  }
+
   ngOnDestroy(): void {
     this.clearErrorDismissTimer();
   }
 
-  showControlError(controlName: 'first_name' | 'last_name' | 'password'): boolean {
+  showControlError(controlName: 'first_name' | 'last_name'): boolean {
     const control = this.form.controls[controlName];
     return control.touched && control.hasError('required');
   }
@@ -520,31 +569,30 @@ export class RegisterPage implements OnDestroy {
   }
 
   private getRegisterErrorMessage(error: unknown): string {
-    if (!(error instanceof HttpErrorResponse)) {
-      return 'Something went wrong. Please try again.';
-    }
-
-    if (error.status === 400) {
-      if (this.hasFieldError(error, 'phone_number')) {
-        return 'That phone number is already in use.';
+    if (error instanceof HttpErrorResponse && error.status === 400) {
+      const phoneError = extractFirstFieldError(error.error, 'phone_number');
+      if (phoneError) {
+        return phoneError || 'Enter a valid phone number.';
       }
 
-      if (this.hasFieldError(error, 'email')) {
-        return 'That email address is already in use or invalid.';
+      const emailError = extractFirstFieldError(error.error, 'email');
+      if (emailError) {
+        return emailError.toLowerCase().includes('exist')
+          ? 'An account already exists for this email.'
+          : emailError;
       }
 
-      if (this.hasFieldError(error, 'password') || this.hasFieldError(error, 'confirm_password')) {
-        return 'Please review your password details and try again.';
+      const passwordError =
+        extractFirstFieldError(error.error, 'password') ||
+        extractFirstFieldError(error.error, 'confirm_password');
+      if (passwordError) {
+        return passwordError;
       }
 
       return 'Please review your details and try again.';
     }
 
-    return 'Something went wrong. Please try again.';
-  }
-
-  private hasFieldError(error: HttpErrorResponse, field: string): boolean {
-    return typeof error.error === 'object' && error.error !== null && field in error.error;
+    return getAuthNetworkMessage('create your account', error);
   }
 
   private setErrorMessage(message: string): void {

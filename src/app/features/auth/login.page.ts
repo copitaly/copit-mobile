@@ -1,12 +1,13 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, ViewChild } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { IonicModule, IonInput } from '@ionic/angular';
+import { IonInput, IonicModule } from '@ionic/angular';
 
 import { AuthService } from '../../core/services/auth.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
+import { getAuthNetworkMessage, trimmedRequiredValidator } from './auth-form.utils';
 
 @Component({
   standalone: true,
@@ -26,38 +27,59 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
         <div class="surface auth-surface">
           <div class="surface__content auth-surface__content">
-            <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
-              <label class="auth-label" for="login-identifier">Email or phone number</label>
-              <ion-item fill="solid" class="auth-field">
-                <ion-input
-                  id="login-identifier"
-                  formControlName="identifier"
-                  placeholder="you@example.com"
-                  autocomplete="username"
-                  (ionInput)="clearErrorMessage()"
-                ></ion-input>
-              </ion-item>
+            <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form" novalidate>
+              <div class="field-group">
+                <label class="auth-label" for="login-identifier">Email or phone number</label>
+                <ion-item fill="solid" class="auth-field">
+                  <ion-input
+                    #identifierInput
+                    id="login-identifier"
+                    formControlName="identifier"
+                    placeholder="you@example.com"
+                    autocomplete="username"
+                    autocapitalize="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                    enterkeyhint="next"
+                    (keydown.enter)="focusPasswordField()"
+                    (ionInput)="clearErrorMessage()"
+                  ></ion-input>
+                </ion-item>
+                <p class="field-error" *ngIf="showIdentifierError" aria-live="polite">
+                  Enter your email or phone number.
+                </p>
+              </div>
 
-              <label class="auth-label" for="login-password">Password</label>
-              <ion-item fill="solid" class="auth-field">
-                <ion-input
-                  #passwordInput
-                  id="login-password"
-                  formControlName="password"
-                  [type]="showPassword ? 'text' : 'password'"
-                  placeholder="Password"
-                  autocomplete="current-password"
-                  (ionInput)="clearErrorMessage()"
-                ></ion-input>
-                <button
-                  type="button"
-                  class="password-toggle"
-                  aria-label="Toggle password visibility"
-                  (click)="togglePasswordVisibility()"
-                >
-                  <ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'" aria-hidden="true"></ion-icon>
-                </button>
-              </ion-item>
+              <div class="field-group">
+                <label class="auth-label" for="login-password">Password</label>
+                <ion-item fill="solid" class="auth-field">
+                  <ion-input
+                    #passwordInput
+                    id="login-password"
+                    formControlName="password"
+                    [type]="showPassword ? 'text' : 'password'"
+                    placeholder="Password"
+                    autocomplete="current-password"
+                    autocapitalize="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                    enterkeyhint="done"
+                    (keydown.enter)="submit()"
+                    (ionInput)="clearErrorMessage()"
+                  ></ion-input>
+                  <button
+                    type="button"
+                    class="password-toggle"
+                    [attr.aria-label]="passwordToggleLabel"
+                    (click)="togglePasswordVisibility()"
+                  >
+                    <ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'" aria-hidden="true"></ion-icon>
+                  </button>
+                </ion-item>
+                <p class="field-error" *ngIf="showPasswordError" aria-live="polite">
+                  Enter your password.
+                </p>
+              </div>
 
               <div class="forgot-row">
                 <button type="button" class="forgot-link" (click)="onForgotPassword()">
@@ -65,7 +87,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                 </button>
               </div>
 
-              <div class="auth-feedback" [class.auth-feedback--visible]="!!errorMessage">
+              <div class="auth-feedback" [class.auth-feedback--visible]="!!errorMessage" aria-live="polite">
                 <ion-text color="danger" *ngIf="errorMessage" class="auth-error">
                   {{ errorMessage }}
                 </ion-text>
@@ -146,10 +168,10 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         padding-bottom: calc(1.1rem + env(safe-area-inset-bottom));
       }
 
-      .auth-form {
+      .auth-form,
+      .field-group {
         display: flex;
         flex-direction: column;
-        gap: 0;
       }
 
       .auth-label {
@@ -168,7 +190,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         --inner-padding-end: 0.35rem;
         --inner-padding-top: 0.42rem;
         --inner-padding-bottom: 0.42rem;
-        margin-bottom: 0.95rem;
+        margin-bottom: 0.35rem;
         border: 1px solid rgba(47, 66, 107, 0.12);
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
         transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
@@ -181,6 +203,13 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         --background: #f7f9ff;
         border-color: rgba(32, 59, 144, 0.48);
         box-shadow: 0 0 0 3px rgba(32, 59, 144, 0.12);
+      }
+
+      .field-error {
+        margin: 0 0 0.85rem;
+        color: #c63d47;
+        font-size: 0.84rem;
+        line-height: 1.35;
       }
 
       .forgot-row {
@@ -296,11 +325,12 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 export class LoginPage implements OnDestroy {
   private static readonly errorDismissDelayMs = 3500;
 
+  @ViewChild('identifierInput', { read: IonInput }) identifierInput?: IonInput;
   @ViewChild('passwordInput', { read: IonInput }) passwordInput?: IonInput;
 
   readonly form = this.formBuilder.nonNullable.group({
-    identifier: ['', Validators.required],
-    password: ['', Validators.required],
+    identifier: ['', [trimmedRequiredValidator]],
+    password: ['', [trimmedRequiredValidator]],
   });
 
   loading = false;
@@ -323,6 +353,20 @@ export class LoginPage implements OnDestroy {
     return !!identifier.trim() && !!password.trim() && !this.loading;
   }
 
+  get showIdentifierError(): boolean {
+    const control = this.form.controls.identifier;
+    return control.touched && control.hasError('required');
+  }
+
+  get showPasswordError(): boolean {
+    const control = this.form.controls.password;
+    return control.touched && control.hasError('required');
+  }
+
+  get passwordToggleLabel(): string {
+    return this.showPassword ? 'Hide password' : 'Show password';
+  }
+
   ngOnDestroy(): void {
     this.clearErrorDismissTimer();
   }
@@ -340,10 +384,8 @@ export class LoginPage implements OnDestroy {
         void this.router.navigateByUrl('/profile', { replaceUrl: true });
       },
       error: (error: unknown) => {
-        const isCredentialError = this.isCredentialError(error);
         this.setErrorMessage(this.getLoginErrorMessage(error));
-        if (isCredentialError) {
-          this.form.controls.password.setValue('');
+        if (this.isCredentialError(error)) {
           void this.focusPasswordField();
         }
         this.loading = false;
@@ -371,25 +413,34 @@ export class LoginPage implements OnDestroy {
     void this.router.navigate(['/forgot-password']);
   }
 
+  async focusIdentifierField(): Promise<void> {
+    await Promise.resolve();
+    try {
+      await this.identifierInput?.setFocus();
+    } catch {
+      // IonInput focus can be unavailable in tests or during teardown.
+    }
+  }
+
+  async focusPasswordField(): Promise<void> {
+    await Promise.resolve();
+    try {
+      await this.passwordInput?.setFocus();
+    } catch {
+      // IonInput focus can be unavailable in tests or during teardown.
+    }
+  }
+
   private isCredentialError(error: unknown): boolean {
     return error instanceof HttpErrorResponse && (error.status === 400 || error.status === 401);
   }
 
   private getLoginErrorMessage(error: unknown): string {
-    if (!(error instanceof HttpErrorResponse)) {
-      return 'Something went wrong. Please try again.';
-    }
-
     if (this.isCredentialError(error)) {
-      return 'We couldn’t sign you in. Check your email/phone and password.';
+      return 'Incorrect email or password.';
     }
 
-    return 'Something went wrong. Please try again.';
-  }
-
-  private async focusPasswordField(): Promise<void> {
-    await Promise.resolve();
-    await this.passwordInput?.setFocus();
+    return getAuthNetworkMessage('sign you in', error);
   }
 
   private setErrorMessage(message: string): void {
