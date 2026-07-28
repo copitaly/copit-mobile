@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, CUSTOM_ELEMENTS_SCHEMA, Input } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, Input, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { AuthService } from '../core/services/auth.service';
@@ -26,22 +26,35 @@ import { StackNavigationService } from '../core/services/stack-navigation.servic
         <h1 class="app-header__title">{{ title }}</h1>
         <p *ngIf="subtitle" class="app-header__subtitle">{{ subtitle }}</p>
       </div>
+
+      <button
+        *ngIf="actionIcon && actionAriaLabel"
+        class="app-header__back app-header__action"
+        type="button"
+        [attr.aria-label]="actionAriaLabel"
+        [disabled]="actionDisabled"
+        (click)="handleAction()"
+      >
+        <ion-icon class="app-back-icon" [name]="actionIcon" aria-hidden="true"></ion-icon>
+      </button>
     </div>
   `,
 })
 export class MobileHeaderComponent {
+  private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
+  private readonly stackNavigation = inject(StackNavigationService);
+
   @Input({ required: true }) title = '';
   @Input() subtitle = '';
   @Input() showBack = true;
   @Input() backAriaLabel = 'Go back';
   @Input() centerCopy = false;
   @Input() fallbackRoute = '/home';
-
-  constructor(
-    private readonly router: Router,
-    private readonly authService: AuthService,
-    private readonly stackNavigation: StackNavigationService
-  ) {}
+  @Input() actionIcon: string | null = null;
+  @Input() actionAriaLabel = '';
+  @Input() actionDisabled = false;
+  @Input() action: (() => void | Promise<void>) | null = null;
 
   goBack(): void {
     if (this.authService.isAuthenticatedSnapshot && this.router.url === '/profile') {
@@ -50,5 +63,13 @@ export class MobileHeaderComponent {
     }
 
     void this.stackNavigation.backWithFallback(this.fallbackRoute);
+  }
+
+  handleAction(): void {
+    if (this.actionDisabled || !this.action) {
+      return;
+    }
+
+    void this.action();
   }
 }

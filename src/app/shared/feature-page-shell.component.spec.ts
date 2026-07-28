@@ -19,6 +19,28 @@ import { MobileHeaderComponent } from './mobile-header.component';
 })
 class TestHostComponent {}
 
+@Component({
+  standalone: true,
+  imports: [FeaturePageShellComponent],
+  template: `
+    <app-feature-page-shell
+      title="Devotional"
+      subtitle="Read details."
+      [actionIcon]="'share-social-outline'"
+      actionAriaLabel="Share devotional"
+      [action]="handleShare"
+    >
+      <div class="projected-content">Body content</div>
+    </app-feature-page-shell>
+  `,
+})
+class TestHostWithActionComponent {
+  shareCount = 0;
+  readonly handleShare = (): void => {
+    this.shareCount += 1;
+  };
+}
+
 describe('FeaturePageShellComponent', () => {
   let fixture: ComponentFixture<TestHostComponent>;
   let router: jasmine.SpyObj<Router>;
@@ -50,5 +72,27 @@ describe('FeaturePageShellComponent', () => {
     expect(mobileHeader.fallbackRoute).toBe('/home');
     expect(fixture.nativeElement.querySelector('[data-testid="feature-page-surface"]')).not.toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Body content');
+  });
+
+  it('passes an optional header action through to the mobile header', async () => {
+    await TestBed.resetTestingModule().configureTestingModule({
+      imports: [TestHostWithActionComponent],
+      providers: [
+        { provide: Router, useValue: router },
+        { provide: StackNavigationService, useValue: stackNavigationService },
+        { provide: AuthService, useValue: { isAuthenticatedSnapshot: false } },
+      ],
+    }).compileComponents();
+
+    const actionFixture = TestBed.createComponent(TestHostWithActionComponent);
+    actionFixture.detectChanges();
+
+    const actionButton = actionFixture.nativeElement.querySelector('.app-header__action') as HTMLButtonElement | null;
+    expect(actionButton?.getAttribute('aria-label')).toBe('Share devotional');
+
+    actionButton?.click();
+    actionFixture.detectChanges();
+
+    expect(actionFixture.componentInstance.shareCount).toBe(1);
   });
 });

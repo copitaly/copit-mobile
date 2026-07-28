@@ -18,6 +18,10 @@ import { MobileHeaderComponent } from './mobile-header.component';
           [backAriaLabel]="backAriaLabel"
           [centerCopy]="centerCopy"
           [fallbackRoute]="backFallbackRoute"
+          [actionIcon]="actionIcon"
+          [actionAriaLabel]="actionAriaLabel"
+          [actionDisabled]="actionDisabled"
+          [action]="action"
         ></app-mobile-header>
       </div>
 
@@ -73,4 +77,8 @@ export class FeaturePageShellComponent {
   @Input() centerCopy = false;
   @Input() backFallbackRoute = '/home';
   @Input() contentMaxWidth = '520px';
+  @Input() actionIcon: string | null = null;
+  @Input() actionAriaLabel = '';
+  @Input() actionDisabled = false;
+  @Input() action: (() => void | Promise<void>) | null = null;
 }

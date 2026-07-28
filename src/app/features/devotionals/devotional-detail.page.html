@@ -5,6 +5,10 @@
       subtitle="Read published devotional details."
       backFallbackRoute="/devotionals"
       backAriaLabel="Back to devotionals"
+      actionIcon="share-social-outline"
+      actionAriaLabel="Share devotional"
+      [actionDisabled]="!canShareDevotional()"
+      [action]="shareDevotionalFromHeader"
     >
       <div *ngIf="loading" class="skeleton-stack" aria-live="polite" data-testid="loading-state">
         <div class="detail-card skeleton detail-card--hero">

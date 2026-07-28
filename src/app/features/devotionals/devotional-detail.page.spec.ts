@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { ToastController } from '@ionic/angular';
 import { of, Subject, throwError } from 'rxjs';
 
 import { DevotionalPublicDetail } from '../../core/models/devotional.model';
@@ -17,6 +18,8 @@ describe('DevotionalDetailPage', () => {
   let page: DevotionalDetailPage;
   let devotionalService: jasmine.SpyObj<DevotionalService>;
   let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
+  let toastController: jasmine.SpyObj<ToastController>;
+  let toastElement: { present: jasmine.Spy<() => Promise<void>> };
 
   const devotional: DevotionalPublicDetail = {
     id: 1,
@@ -38,6 +41,7 @@ describe('DevotionalDetailPage', () => {
       providers: [
         { provide: DevotionalService, useValue: devotionalService },
         { provide: StackNavigationService, useValue: stackNavigationService },
+        { provide: ToastController, useValue: toastController },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -61,6 +65,11 @@ describe('DevotionalDetailPage', () => {
     devotionalService = jasmine.createSpyObj<DevotionalService>('DevotionalService', ['getDevotionals', 'getDevotionalBySlug']);
     stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
     stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
+    toastElement = {
+      present: jasmine.createSpy().and.returnValue(Promise.resolve()),
+    };
+    toastController = jasmine.createSpyObj<ToastController>('ToastController', ['create']);
+    toastController.create.and.returnValue(Promise.resolve(toastElement as never));
   });
 
   it('renders the loading state before the first response resolves', async () => {
@@ -227,6 +236,161 @@ describe('DevotionalDetailPage', () => {
     expect(header.subtitle).toBe('Read published devotional details.');
     expect(header.fallbackRoute).toBe('/devotionals');
     expect(header.backAriaLabel).toBe('Back to devotionals');
+    expect(header.actionIcon).toBe('share-social-outline');
+    expect(header.actionAriaLabel).toBe('Share devotional');
+  });
+
+  it('keeps the share button unavailable while the devotional is loading', async () => {
+    const response$ = new Subject<DevotionalPublicDetail>();
+    devotionalService.getDevotionalBySlug.and.returnValue(response$.asObservable());
+
+    await createComponent();
+
+    const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
+    expect(header.actionDisabled).toBeTrue();
+    response$.complete();
+  });
+
+  it('builds share text with title, scripture reference, scripture text, and app copy only', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+
+    await createComponent();
+
+    const shareText = page.buildShareText();
+    expect(shareText).toContain('Trusting God in Uncertain Times');
+    expect(shareText).toContain('Proverbs 3:5-6');
+    expect(shareText).toContain('Trust in the Lord with all your heart. Lean not on your own understanding.');
+    expect(shareText).toContain('Read more daily devotionals in the COP Italy app.');
+    expect(shareText).not.toContain('When uncertainty rises,');
+    expect(shareText).not.toContain('What worry do you need to surrender today?');
+    expect(shareText).not.toContain('Lord, keep my heart steady.');
+    expect(shareText).not.toContain('trusting-god-in-uncertain-times');
+  });
+
+  it('omits blank scripture reference and scripture text from share text cleanly', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of({
+      ...devotional,
+      scripture_reference: '   ',
+      scripture_text: '',
+    }));
+
+    await createComponent();
+
+    const shareText = page.buildShareText();
+    expect(shareText).toBe(
+      'Trusting God in Uncertain Times\n\nRead more daily devotionals in the COP Italy app.'
+    );
+  });
+
+  it('invokes Capacitor Share on native platforms', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+    await createComponent();
+    spyOn<any>(page, 'isNativePlatform').and.returnValue(true);
+    spyOn<any>(page, 'canNativeShare').and.resolveTo(true);
+    const shareSpy = spyOn<any>(page, 'nativeShare').and.resolveTo();
+    await page.shareDevotional();
+
+    expect(shareSpy).toHaveBeenCalledWith({
+      title: 'Trusting God in Uncertain Times',
+      text: page.buildShareText(),
+      dialogTitle: 'Share devotional',
+    });
+  });
+
+  it('does not treat a cancelled native share as an error', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+    await createComponent();
+    spyOn<any>(page, 'isNativePlatform').and.returnValue(true);
+    spyOn<any>(page, 'canNativeShare').and.resolveTo(true);
+    spyOn<any>(page, 'nativeShare').and.rejectWith(new Error('Share canceled'));
+    await page.shareDevotional();
+
+    expect(toastController.create).not.toHaveBeenCalled();
+  });
+
+  it('prevents duplicate share taps while sharing is already in progress', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+    const sharePromise = new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+    await createComponent();
+    spyOn<any>(page, 'isNativePlatform').and.returnValue(true);
+    spyOn<any>(page, 'canNativeShare').and.resolveTo(true);
+    const shareSpy = spyOn<any>(page, 'nativeShare').and.returnValue(sharePromise);
+    void page.shareDevotional();
+    await page.shareDevotional();
+
+    expect(shareSpy.calls.count()).toBe(1);
+  });
+
+  it('uses navigator.share in supported browsers', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+    const navigatorShare = jasmine.createSpy().and.resolveTo();
+    Object.defineProperty(window.navigator, 'share', {
+      configurable: true,
+      value: navigatorShare,
+    });
+
+    await createComponent();
+    spyOn<any>(page, 'isNativePlatform').and.returnValue(false);
+    await page.shareDevotional();
+
+    expect(navigatorShare).toHaveBeenCalledWith({
+      title: 'Trusting God in Uncertain Times',
+      text: page.buildShareText(),
+    });
+  });
+
+  it('uses the clipboard fallback when Web Share is unavailable', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+    Object.defineProperty(window.navigator, 'share', {
+      configurable: true,
+      value: undefined,
+    });
+    const clipboardWriteText = jasmine.createSpy().and.resolveTo();
+    Object.defineProperty(window.navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: clipboardWriteText,
+      },
+    });
+
+    await createComponent();
+    spyOn<any>(page, 'isNativePlatform').and.returnValue(false);
+    await page.shareDevotional();
+
+    expect(clipboardWriteText).toHaveBeenCalledWith(page.buildShareText());
+    expect(toastController.create).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        message: 'Devotional copied to clipboard',
+        cssClass: 'branch-save-toast',
+      })
+    );
+  });
+
+  it('shows a friendly error when browser sharing and clipboard both fail', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+    Object.defineProperty(window.navigator, 'share', {
+      configurable: true,
+      value: undefined,
+    });
+    Object.defineProperty(window.navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: jasmine.createSpy().and.rejectWith(new Error('clipboard failed')),
+      },
+    });
+
+    await createComponent();
+    spyOn<any>(page, 'isNativePlatform').and.returnValue(false);
+    await page.shareDevotional();
+
+    expect(toastController.create).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        message: "Sharing isn't available right now.",
+        cssClass: 'branch-save-toast',
+      })
+    );
   });
 
   it('does not display internal or admin-only fields', async () => {
