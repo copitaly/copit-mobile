@@ -248,10 +248,29 @@ describe('DevotionalDetailPage', () => {
 
     const ionContent = fixture.nativeElement.querySelector('ion-content.devotional-detail-content') as HTMLElement | null;
     const surface = fixture.nativeElement.querySelector('[data-testid="feature-page-surface"]') as HTMLElement | null;
+    const hero = fixture.nativeElement.querySelector('.feature-page-shell__hero') as HTMLElement | null;
     expect(ionContent).not.toBeNull();
     expect(surface).not.toBeNull();
+    expect(hero).not.toBeNull();
     expect(ionContent?.className).toContain('feature-page-content');
     expect(ionContent?.className).toContain('devotional-detail-content');
+  });
+
+  it('keeps devotional cards inside the shared rounded content surface beneath the blue header shell', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+
+    await createComponent();
+
+    const hero = fixture.nativeElement.querySelector('.feature-page-shell__hero') as HTMLElement | null;
+    const surface = fixture.nativeElement.querySelector('[data-testid="feature-page-surface"]') as HTMLElement | null;
+    const article = fixture.nativeElement.querySelector('[data-testid="devotional-detail"]') as HTMLElement | null;
+
+    expect(hero).not.toBeNull();
+    expect(surface).not.toBeNull();
+    expect(article).not.toBeNull();
+    expect(surface?.contains(article as Node)).toBeTrue();
+    expect(getComputedStyle(hero as Element).backgroundImage).not.toBe('none');
+    expect(getComputedStyle(surface as Element).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
   });
 
   it('rejects a blank slug without calling the API', async () => {

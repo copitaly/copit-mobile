@@ -50,8 +50,8 @@ import { MobileHeaderComponent } from './mobile-header.component';
       }
 
       .feature-page-shell__surface {
-        flex: 1;
-        min-height: 0;
+        flex: 1 0 auto;
+        min-height: 100%;
         margin-top: var(--feature-shell-sheet-overlap);
         padding-top: var(--feature-shell-sheet-top-padding);
         border-radius: var(--feature-shell-sheet-radius) var(--feature-shell-sheet-radius) 0 0;
