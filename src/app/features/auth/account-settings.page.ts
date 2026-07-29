@@ -257,6 +257,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 export class AccountSettingsPage implements OnInit {
   profile: MemberProfile | null = null;
   loading = true;
+  private navigationPending = false;
 
   constructor(
     private readonly authService: AuthService,
@@ -265,7 +266,6 @@ export class AccountSettingsPage implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    console.log('[account-settings] init');
     const wasAuthenticated =
       this.authService.isAuthenticatedSnapshot || !!this.authService.accessTokenSnapshot;
 
@@ -274,21 +274,12 @@ export class AccountSettingsPage implements OnInit {
         const memberProfileLoaded = !!profile?.id;
         const allowed = memberProfileLoaded;
 
-        console.log('[account-settings] page result', {
-          memberProfileLoaded,
-          memberProfileId: profile?.id ?? null,
-          role: profile?.role ?? null,
-          allowed,
-          redirectReason: null,
-        });
-
         if (!allowed) {
           const redirectReason = wasAuthenticated ? 'missing-member-profile' : 'unauthenticated';
           this.sentryTelemetry.addFeatureBreadcrumb('profile', 'Account settings page redirected', {
             reason: redirectReason,
           }, 'warning');
-          console.log('[account-settings] redirect reason=' + redirectReason);
-          void this.router.navigateByUrl(wasAuthenticated ? '/profile' : '/login', { replaceUrl: true });
+          void this.navigateByUrl(wasAuthenticated ? '/profile' : '/login', { replaceUrl: true });
           return;
         }
 
@@ -308,15 +299,7 @@ export class AccountSettingsPage implements OnInit {
           status: httpError?.status ?? null,
         }, redirectReason === 'profile-load-error' ? 'error' : 'warning');
 
-        console.log('[account-settings] page result', {
-          memberProfileLoaded: false,
-          memberProfileId: null,
-          role: null,
-          allowed: false,
-          redirectReason,
-        });
-        console.log('[account-settings] redirect reason=' + redirectReason);
-        void this.router.navigateByUrl(
+        void this.navigateByUrl(
           redirectReason === 'unauthenticated' ? '/login' : '/profile',
           { replaceUrl: true }
         );
@@ -325,10 +308,23 @@ export class AccountSettingsPage implements OnInit {
   }
 
   goToDeleteAccount(): void {
-    void this.router.navigateByUrl('/profile/account-settings/delete-account');
+    void this.navigateByUrl('/profile/account-settings/delete-account');
   }
 
   goToEditProfile(): void {
-    void this.router.navigateByUrl('/profile/account-settings/edit-profile');
+    void this.navigateByUrl('/profile/account-settings/edit-profile');
+  }
+
+  private async navigateByUrl(url: string, extras?: { replaceUrl?: boolean }): Promise<void> {
+    if (this.navigationPending) {
+      return;
+    }
+
+    this.navigationPending = true;
+    try {
+      await this.router.navigateByUrl(url, extras);
+    } finally {
+      this.navigationPending = false;
+    }
   }
 }

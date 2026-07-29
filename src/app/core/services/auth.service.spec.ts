@@ -5,6 +5,7 @@ import { provideHttpClientTesting, HttpTestingController } from '@angular/common
 import { TestBed, fakeAsync, flushMicrotasks } from '@angular/core/testing';
 
 import { MemberProfile } from '../models/user.model';
+import { environment } from 'src/environments/environment';
 import { AuthStorageService } from './auth-storage.service';
 import { AuthService } from './auth.service';
 import { SentryTelemetryService } from './sentry-telemetry.service';
@@ -28,6 +29,8 @@ describe('AuthService', () => {
   let httpMock: HttpTestingController;
   let documentRef: Document;
   let storage: MockAuthStorageService;
+  const apiUrl = environment.apiBaseUrl.replace(/\/+$/, '');
+  const api = (path: string) => `${apiUrl}/${path.replace(/^\/*/, '').replace(/\/+$/, '')}/`;
 
   const profile: MemberProfile = {
     id: 7,
@@ -78,16 +81,16 @@ describe('AuthService', () => {
     });
     flushMicrotasks();
 
-    const initialRequest = httpMock.expectOne('http://localhost:8000/api/members/me/donations/');
+    const initialRequest = httpMock.expectOne(api('members/me/donations'));
     expect(initialRequest.request.headers.get('Authorization')).toBe('Bearer expired-token');
     initialRequest.flush({ detail: 'expired' }, { status: 401, statusText: 'Unauthorized' });
 
-    const refreshRequest = httpMock.expectOne('http://localhost:8000/api/auth/token/refresh/');
+    const refreshRequest = httpMock.expectOne(api('auth/token/refresh'));
     expect(refreshRequest.request.method).toBe('POST');
     expect(refreshRequest.request.headers.get('X-CSRFToken')).toBe('test-csrf-token');
     refreshRequest.flush({ access: 'fresh-token' });
 
-    const retryRequest = httpMock.expectOne('http://localhost:8000/api/members/me/donations/');
+    const retryRequest = httpMock.expectOne(api('members/me/donations'));
     expect(retryRequest.request.headers.get('Authorization')).toBe('Bearer fresh-token');
     retryRequest.flush({ count: 0, next: null, previous: null, results: [] });
 
@@ -107,10 +110,10 @@ describe('AuthService', () => {
     });
     flushMicrotasks();
 
-    const meRequest = httpMock.expectOne('http://localhost:8000/api/members/me/');
+    const meRequest = httpMock.expectOne(api('members/me'));
     meRequest.flush({ detail: 'expired' }, { status: 401, statusText: 'Unauthorized' });
 
-    const refreshRequest = httpMock.expectOne('http://localhost:8000/api/auth/token/refresh/');
+    const refreshRequest = httpMock.expectOne(api('auth/token/refresh'));
     refreshRequest.flush({ detail: 'invalid refresh' }, { status: 401, statusText: 'Unauthorized' });
 
     flushMicrotasks();
@@ -134,12 +137,12 @@ describe('AuthService', () => {
     });
     flushMicrotasks();
 
-    const request = httpMock.expectOne('http://localhost:8000/api/members/me/donations/');
+    const request = httpMock.expectOne(api('members/me/donations'));
     request.flush({ detail: 'forbidden' }, { status: 403, statusText: 'Forbidden' });
 
     flushMicrotasks();
 
-    httpMock.expectNone('http://localhost:8000/api/auth/token/refresh/');
+    httpMock.expectNone(api('auth/token/refresh'));
     expect(receivedError).toEqual(jasmine.any(HttpErrorResponse));
     expect((receivedError as unknown as HttpErrorResponse).status).toBe(403);
     expect(service.accessTokenSnapshot).toBe('active-token');
@@ -154,7 +157,7 @@ describe('AuthService', () => {
     });
     flushMicrotasks();
 
-    const request = httpMock.expectOne('http://localhost:8000/api/auth/forgot-password/');
+    const request = httpMock.expectOne(api('auth/forgot-password'));
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({ email: 'member@example.com' });
     request.flush({ success: true });
@@ -173,7 +176,7 @@ describe('AuthService', () => {
     flushMicrotasks();
 
     const request = httpMock.expectOne(
-      'http://localhost:8000/api/auth/reset-password/uid-token/reset-token/validate/'
+      api('auth/reset-password/uid-token/reset-token/validate')
     );
     expect(request.request.method).toBe('GET');
     request.flush({
@@ -205,7 +208,7 @@ describe('AuthService', () => {
     flushMicrotasks();
 
     const request = httpMock.expectOne(
-      'http://localhost:8000/api/auth/reset-password/uid-token/reset-token/confirm/'
+      api('auth/reset-password/uid-token/reset-token/confirm')
     );
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({

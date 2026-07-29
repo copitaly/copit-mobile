@@ -435,8 +435,12 @@ type QuickAction = {
 export class ProfilePage implements OnInit, OnDestroy {
   profile: MemberProfile | null = null;
   loading = true;
+  refreshing = false;
   errorMessage = '';
   private currentUserSubscription?: Subscription;
+  private profileRequestInFlight = false;
+  private pendingNavigation = false;
+  private loggingOut = false;
 
   readonly quickActions: QuickAction[] = [
     {
@@ -517,6 +521,7 @@ export class ProfilePage implements OnInit, OnDestroy {
       this.profile = user;
       if (user) {
         this.loading = false;
+        this.refreshing = false;
         this.errorMessage = '';
       }
     });
@@ -524,22 +529,39 @@ export class ProfilePage implements OnInit, OnDestroy {
     this.loadProfile();
   }
 
+  ionViewWillEnter(): void {
+    this.loadProfile({ preserveCurrent: !!this.profile });
+  }
+
   ngOnDestroy(): void {
     this.currentUserSubscription?.unsubscribe();
   }
 
-  loadProfile(): void {
-    this.loading = true;
+  loadProfile(options?: { preserveCurrent?: boolean }): void {
+    if (this.profileRequestInFlight) {
+      return;
+    }
+
+    const preserveCurrent = !!options?.preserveCurrent && !!this.profile;
+    this.profileRequestInFlight = true;
+    this.loading = !preserveCurrent;
+    this.refreshing = preserveCurrent;
     this.errorMessage = '';
 
     this.authService.getCurrentUser().subscribe({
       next: profile => {
         this.profile = profile;
         this.loading = false;
+        this.refreshing = false;
+        this.profileRequestInFlight = false;
       },
       error: () => {
         this.loading = false;
-        this.errorMessage = 'Please check your connection and try again.';
+        this.refreshing = false;
+        this.profileRequestInFlight = false;
+        if (!preserveCurrent || !this.profile) {
+          this.errorMessage = 'Please check your connection and try again.';
+        }
         this.sentryTelemetry.addFeatureBreadcrumb('profile', 'Profile load failed', {
           route: '/profile',
         }, 'error');
@@ -548,25 +570,31 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
   openQuickAction(action: QuickAction): void {
-    if (action.route) {
-      void this.router.navigateByUrl(action.route);
+    if (!action.route) {
       return;
     }
 
-    console.info(`[ProfilePage] ${action.title} is not implemented yet.`);
+    void this.navigateByUrl(action.route);
   }
 
   logout(): void {
+    if (this.loggingOut) {
+      return;
+    }
+
+    this.loggingOut = true;
     this.authService.logout();
-    void this.router.navigateByUrl('/login', { replaceUrl: true });
+    void this.router.navigateByUrl('/login', { replaceUrl: true }).finally(() => {
+      this.loggingOut = false;
+    });
   }
 
   goToDonationFlow(): void {
-    void this.router.navigate(['/branches']);
+    void this.navigate(['/branches']);
   }
 
   goToAccountSettings(): void {
-    void this.router.navigateByUrl('/profile/account-settings');
+    void this.navigateByUrl('/profile/account-settings');
   }
 
   goHome(): void {
@@ -574,10 +602,36 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
   goToLogin(): void {
-    void this.router.navigate(['/login']);
+    void this.navigate(['/login']);
   }
 
   private normalizeRole(role: string | null | undefined): string | null {
     return typeof role === 'string' && role.trim() ? role.trim().toLowerCase() : null;
+  }
+
+  private async navigate(commands: readonly unknown[]): Promise<void> {
+    if (this.pendingNavigation) {
+      return;
+    }
+
+    this.pendingNavigation = true;
+    try {
+      await this.router.navigate(commands);
+    } finally {
+      this.pendingNavigation = false;
+    }
+  }
+
+  private async navigateByUrl(url: string): Promise<void> {
+    if (this.pendingNavigation) {
+      return;
+    }
+
+    this.pendingNavigation = true;
+    try {
+      await this.router.navigateByUrl(url);
+    } finally {
+      this.pendingNavigation = false;
+    }
   }
 }

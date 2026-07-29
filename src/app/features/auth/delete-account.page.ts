@@ -253,6 +253,7 @@ export class DeleteAccountPage implements OnInit {
   submitting = false;
   confirmationValue = '';
   errorMessage = '';
+  private navigationPending = false;
 
   constructor(
     private readonly authService: AuthService,
@@ -269,24 +270,16 @@ export class DeleteAccountPage implements OnInit {
   }
 
   ngOnInit(): void {
-    console.log('[delete-account] init');
     const wasAuthenticated =
       this.authService.isAuthenticatedSnapshot || !!this.authService.accessTokenSnapshot;
 
     this.authService.getCurrentUser().subscribe({
       next: (profile) => {
         const memberProfileLoaded = !!profile?.id;
-        console.log('[delete-account] memberProfileLoaded', {
-          memberProfileLoaded,
-          memberProfileId: profile?.id ?? null,
-          role: profile?.role ?? null,
-          allowed: memberProfileLoaded,
-        });
 
         if (!memberProfileLoaded) {
           const redirectReason = wasAuthenticated ? 'missing-member-profile' : 'unauthenticated';
-          console.log('[delete-account] redirect reason=' + redirectReason);
-          void this.router.navigateByUrl(wasAuthenticated ? '/profile' : '/login', { replaceUrl: true });
+          void this.navigateByUrl(wasAuthenticated ? '/profile' : '/login', { replaceUrl: true });
           return;
         }
 
@@ -301,14 +294,7 @@ export class DeleteAccountPage implements OnInit {
             : httpError?.status === 403 || httpError?.status === 404
               ? 'member-profile-denied'
               : 'profile-load-error';
-        console.log('[delete-account] memberProfileLoaded', {
-          memberProfileLoaded: false,
-          memberProfileId: null,
-          role: null,
-          allowed: false,
-        });
-        console.log('[delete-account] redirect reason=' + redirectReason);
-        void this.router.navigateByUrl(
+        void this.navigateByUrl(
           redirectReason === 'unauthenticated' ? '/login' : '/profile',
           { replaceUrl: true }
         );
@@ -322,7 +308,6 @@ export class DeleteAccountPage implements OnInit {
     }
 
     this.sentryTelemetry.addFeatureBreadcrumb('profile', 'Delete account started');
-    console.log('[delete-account] delete clicked');
     this.submitting = true;
     this.errorMessage = '';
 
@@ -374,5 +359,18 @@ export class DeleteAccountPage implements OnInit {
         this.submitting = false;
       },
     });
+  }
+
+  private async navigateByUrl(url: string, extras?: { replaceUrl?: boolean }): Promise<void> {
+    if (this.navigationPending) {
+      return;
+    }
+
+    this.navigationPending = true;
+    try {
+      await this.router.navigateByUrl(url, extras);
+    } finally {
+      this.navigationPending = false;
+    }
   }
 }

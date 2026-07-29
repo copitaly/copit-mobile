@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonicModule, ToastController } from '@ionic/angular';
@@ -37,42 +37,59 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
             </div>
 
             <form *ngIf="!loading" [formGroup]="form" (ngSubmit)="save()" class="profile-form">
+              <div *ngIf="loadErrorMessage" class="state-card" aria-live="polite">
+                <div class="state-copy">
+                  <h2>We couldn't load your profile</h2>
+                  <p>{{ loadErrorMessage }}</p>
+                </div>
+                <ion-button expand="block" class="state-button" (click)="loadProfile()">Try again</ion-button>
+              </div>
+
               <div class="form-card">
                 <div class="field-group">
                   <label class="form-label" for="edit-first-name">First name</label>
                   <ion-item fill="solid" class="form-field">
                     <ion-input
+                      #firstNameInput
                       id="edit-first-name"
                       formControlName="first_name"
                       placeholder="First name"
+                      maxlength="150"
+                      aria-describedby="edit-first-name-error"
                     ></ion-input>
                   </ion-item>
-                  <p class="field-error" *ngIf="showControlError('first_name')">Enter your first name.</p>
+                  <p id="edit-first-name-error" class="field-error" *ngIf="showControlError('first_name')">Enter your first name.</p>
                 </div>
 
                 <div class="field-group">
                   <label class="form-label" for="edit-last-name">Last name</label>
                   <ion-item fill="solid" class="form-field">
                     <ion-input
+                      #lastNameInput
                       id="edit-last-name"
                       formControlName="last_name"
                       placeholder="Last name"
+                      maxlength="150"
+                      aria-describedby="edit-last-name-error"
                     ></ion-input>
                   </ion-item>
-                  <p class="field-error" *ngIf="showControlError('last_name')">Enter your last name.</p>
+                  <p id="edit-last-name-error" class="field-error" *ngIf="showControlError('last_name')">Enter your last name.</p>
                 </div>
 
                 <div class="field-group">
                   <label class="form-label" for="edit-phone-number">Phone number</label>
                   <ion-item fill="solid" class="form-field">
                     <ion-input
+                      #phoneNumberInput
                       id="edit-phone-number"
                       formControlName="phone_number"
                       placeholder="+39 333 123 4567"
                       inputmode="tel"
+                      maxlength="20"
+                      aria-describedby="edit-phone-number-error"
                     ></ion-input>
                   </ion-item>
-                  <p class="field-error" *ngIf="showControlError('phone_number')">
+                  <p id="edit-phone-number-error" class="field-error" *ngIf="showControlError('phone_number')">
                     {{ phoneErrorMessage }}
                   </p>
                 </div>
@@ -264,10 +281,17 @@ export class EditProfilePage implements OnInit {
   loading = true;
   saving = false;
   errorMessage = '';
+  loadErrorMessage = '';
+  private loadRequestInFlight = false;
+  private navigationPending = false;
+
+  @ViewChild('firstNameInput', { read: ElementRef }) private readonly firstNameInput?: ElementRef<HTMLElement>;
+  @ViewChild('lastNameInput', { read: ElementRef }) private readonly lastNameInput?: ElementRef<HTMLElement>;
+  @ViewChild('phoneNumberInput', { read: ElementRef }) private readonly phoneNumberInput?: ElementRef<HTMLElement>;
 
   readonly form = this.fb.group({
-    first_name: ['', [Validators.required]],
-    last_name: ['', [Validators.required]],
+    first_name: ['', [Validators.required, Validators.maxLength(150), this.trimmedRequiredValidator]],
+    last_name: ['', [Validators.required, Validators.maxLength(150), this.trimmedRequiredValidator]],
     phone_number: ['', [Validators.required, this.phoneValidator]],
     preferred_language: [''],
   });
@@ -281,7 +305,7 @@ export class EditProfilePage implements OnInit {
   ) {}
 
   get canSubmit(): boolean {
-    return !this.saving && this.form.valid;
+    return !this.loading && !this.saving && !this.loadErrorMessage && this.form.valid;
   }
 
   get phoneErrorMessage(): string {
@@ -296,6 +320,18 @@ export class EditProfilePage implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadProfile();
+  }
+
+  loadProfile(): void {
+    if (this.loadRequestInFlight) {
+      return;
+    }
+
+    this.loadRequestInFlight = true;
+    this.loading = true;
+    this.loadErrorMessage = '';
+    this.errorMessage = '';
     const wasAuthenticated =
       this.authService.isAuthenticatedSnapshot || !!this.authService.accessTokenSnapshot;
 
@@ -303,7 +339,8 @@ export class EditProfilePage implements OnInit {
       next: (profile) => {
         const memberProfileLoaded = !!profile?.id;
         if (!memberProfileLoaded) {
-          void this.router.navigateByUrl(wasAuthenticated ? '/profile' : '/login', { replaceUrl: true });
+          this.loadRequestInFlight = false;
+          void this.navigateByUrl(wasAuthenticated ? '/profile' : '/login', { replaceUrl: true });
           return;
         }
 
@@ -315,12 +352,23 @@ export class EditProfilePage implements OnInit {
           preferred_language: this.normalizeLanguage(profile.language),
         });
         this.loading = false;
+        this.loadRequestInFlight = false;
       },
       error: (error: unknown) => {
         const httpError = error as HttpErrorResponse;
-        const redirectRoute =
-          httpError?.status === 401 ? '/login' : '/profile';
-        void this.router.navigateByUrl(redirectRoute, { replaceUrl: true });
+        this.loadRequestInFlight = false;
+        this.loading = false;
+        if (httpError?.status === 401) {
+          void this.navigateByUrl('/login', { replaceUrl: true });
+          return;
+        }
+
+        if (httpError?.status === 403 || httpError?.status === 404) {
+          void this.navigateByUrl('/profile', { replaceUrl: true });
+          return;
+        }
+
+        this.loadErrorMessage = 'Unable to load your profile right now. Please try again.';
       },
     });
   }
@@ -333,6 +381,7 @@ export class EditProfilePage implements OnInit {
   async save(): Promise<void> {
     if (!this.canSubmit) {
       this.form.markAllAsTouched();
+      this.focusFirstInvalidControl();
       return;
     }
 
@@ -348,6 +397,10 @@ export class EditProfilePage implements OnInit {
 
     this.authService.updateMemberProfile(payload).subscribe({
       next: async () => {
+        this.authService.getCurrentUser().subscribe({
+          next: () => undefined,
+          error: () => undefined,
+        });
         try {
           const toast = await this.toastController.create({
             message: 'Profile updated',
@@ -361,7 +414,7 @@ export class EditProfilePage implements OnInit {
           // ignore toast errors
         }
 
-        await this.router.navigateByUrl('/profile/account-settings', { replaceUrl: true });
+        await this.navigateByUrl('/profile/account-settings', { replaceUrl: true });
       },
       error: (error: unknown) => {
         this.saving = false;
@@ -374,6 +427,7 @@ export class EditProfilePage implements OnInit {
           this.extractFirstFieldError(body)
           || (typeof body?.['detail'] === 'string' ? body['detail'] : '')
           || 'Unable to update your profile right now. Please try again.';
+        this.focusFirstInvalidControl(body);
       },
       complete: () => {
         this.saving = false;
@@ -396,6 +450,27 @@ export class EditProfilePage implements OnInit {
     return null;
   }
 
+  private focusFirstInvalidControl(body?: Record<string, unknown>): void {
+    const orderedFields: Array<'first_name' | 'last_name' | 'phone_number'> = ['first_name', 'last_name', 'phone_number'];
+    const serverField = orderedFields.find((field) => Array.isArray(body?.[field]) || typeof body?.[field] === 'string');
+    const invalidField = serverField ?? orderedFields.find((field) => this.form.controls[field].invalid) ?? null;
+    const target =
+      invalidField === 'first_name'
+        ? this.firstNameInput?.nativeElement
+        : invalidField === 'last_name'
+          ? this.lastNameInput?.nativeElement
+          : invalidField === 'phone_number'
+            ? this.phoneNumberInput?.nativeElement
+            : null;
+
+    target?.focus();
+  }
+
+  private trimmedRequiredValidator(control: AbstractControl): ValidationErrors | null {
+    const value = `${control.value ?? ''}`.trim();
+    return value ? null : { required: true };
+  }
+
   private phoneValidator(control: AbstractControl): ValidationErrors | null {
     const value = `${control.value ?? ''}`.trim();
     if (!value) {
@@ -407,5 +482,18 @@ export class EditProfilePage implements OnInit {
   private normalizeLanguage(value: unknown): string {
     const normalized = `${value ?? ''}`.trim().toLowerCase();
     return this.languageOptions.some((option) => option.value === normalized) ? normalized : '';
+  }
+
+  private async navigateByUrl(url: string, extras?: { replaceUrl?: boolean }): Promise<void> {
+    if (this.navigationPending) {
+      return;
+    }
+
+    this.navigationPending = true;
+    try {
+      await this.router.navigateByUrl(url, extras);
+    } finally {
+      this.navigationPending = false;
+    }
   }
 }

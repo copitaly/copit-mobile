@@ -37,6 +37,7 @@ export class AuthService {
   private readonly accountDeleteUrl = this.buildUrl('account/me');
   private readonly initializationPromise: Promise<void>;
   private accessToken: string | null = null;
+  private logoutInFlight = false;
 
   readonly currentUser$ = this.currentUserSubject.asObservable();
   readonly isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
@@ -212,10 +213,20 @@ export class AuthService {
   }
 
   logout(): void {
+    if (this.logoutInFlight) {
+      return;
+    }
+
+    this.logoutInFlight = true;
     this.sentryTelemetry.addFeatureBreadcrumb('auth', 'Logout');
     this.clearSession();
     this.sendCookieBackedAuthRequest<void>(this.logoutUrl, 'POST', {})
-      .pipe(catchError(() => EMPTY))
+      .pipe(
+        catchError(() => EMPTY),
+        finalize(() => {
+          this.logoutInFlight = false;
+        })
+      )
       .subscribe();
   }
 
@@ -237,7 +248,7 @@ export class AuthService {
   }
 
   private setAuthenticatedProfile(profile: MemberProfile): void {
-    this.setCurrentUser(profile);
+    this.setCurrentUser(this.normalizeMemberProfile(profile));
     this.isAuthenticatedSubject.next(true);
   }
 
@@ -274,7 +285,7 @@ export class AuthService {
     ]);
 
     this.accessToken = token;
-    this.currentUserSubject.next(profile);
+    this.currentUserSubject.next(this.normalizeStoredMemberProfile(profile));
     this.isAuthenticatedSubject.next(!!token);
 
     if (!token && !profile) {
@@ -344,7 +355,10 @@ export class AuthService {
         headers: this.buildAuthHeaders(token),
         withCredentials: true,
       })
-      .pipe(tap((profile) => this.setAuthenticatedProfile(profile)));
+      .pipe(
+        map((profile) => this.normalizeMemberProfile(profile)),
+        tap((profile) => this.setAuthenticatedProfile(profile))
+      );
   }
 
   private fetchMemberDonations(
@@ -387,6 +401,7 @@ export class AuthService {
       headers: this.buildAuthHeaders(token),
       withCredentials: true,
     }).pipe(
+      map((profile) => this.normalizeMemberProfile(profile)),
       tap((profile) => this.setAuthenticatedProfile(profile))
     );
   }
@@ -539,7 +554,7 @@ export class AuthService {
   }
 
   private toMemberProfileFromAuthResponse(response: AuthTokenResponse): MemberProfile {
-    return {
+    return this.normalizeMemberProfile({
       ...response.user,
       phone: response.user.phone_number ?? response.user.phone ?? '',
       phone_number: response.user.phone_number ?? response.user.phone ?? '',
@@ -551,7 +566,59 @@ export class AuthService {
         last_donation_at: null,
       },
       recent_donations: [],
+    });
+  }
+
+  private normalizeMemberProfile(profile: MemberProfile): MemberProfile {
+    const id = typeof profile.id === 'number' && Number.isInteger(profile.id) && profile.id > 0 ? profile.id : 0;
+    const firstName = this.normalizeText(profile.first_name);
+    const lastName = this.normalizeText(profile.last_name);
+    const phoneNumber = this.normalizeText(profile.phone_number ?? profile.phone);
+    const fullName = this.normalizeText(profile.full_name);
+    const language = this.normalizeText(profile.language);
+    const email = this.normalizeNullableText(profile.email);
+    const role = this.normalizeText(profile.role);
+
+    return {
+      ...profile,
+      id,
+      email,
+      first_name: firstName,
+      last_name: lastName,
+      full_name: fullName || undefined,
+      role,
+      phone: phoneNumber || undefined,
+      phone_number: phoneNumber || undefined,
+      language: language || undefined,
+      date_joined: this.normalizeText(profile.date_joined),
+      donation_summary: {
+        total_paid_amount: this.normalizeText(profile.donation_summary?.total_paid_amount) || '0.00',
+        total_paid_count:
+          typeof profile.donation_summary?.total_paid_count === 'number' && Number.isFinite(profile.donation_summary.total_paid_count)
+            ? profile.donation_summary.total_paid_count
+            : 0,
+        currency: this.normalizeText(profile.donation_summary?.currency) || 'eur',
+        last_donation_at: this.normalizeNullableText(profile.donation_summary?.last_donation_at),
+      },
+      recent_donations: Array.isArray(profile.recent_donations) ? profile.recent_donations : [],
     };
+  }
+
+  private normalizeText(value: unknown): string {
+    return typeof value === 'string' ? value.trim() : '';
+  }
+
+  private normalizeNullableText(value: unknown): string | null {
+    const normalized = this.normalizeText(value);
+    return normalized || null;
+  }
+
+  private normalizeStoredMemberProfile(profile: MemberProfile | null | undefined): MemberProfile | null {
+    if (!profile || typeof profile !== 'object') {
+      return null;
+    }
+
+    return this.normalizeMemberProfile(profile);
   }
 
   private get sentryTelemetry(): SentryTelemetryService {
