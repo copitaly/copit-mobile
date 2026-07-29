@@ -54,6 +54,9 @@ export class PrayerService {
   private readonly publicChurchesEndpoint = 'public/churches/';
   private readonly myPrayerRequestsEndpoint = 'members/me/prayer-requests/';
   private readonly hierarchyPageSize = 100;
+  private readonly supportedScopes = new Set<PrayerScope>(['global', 'area', 'district', 'local']);
+  private readonly supportedVisibilities = new Set<PrayerVisibility>(['private', 'public']);
+  private readonly supportedStatuses = new Set<PrayerStatus>(['pending', 'approved', 'rejected', 'resolved']);
 
   readonly hierarchyDependency: PrayerHierarchyDependency = {
     available: true,
@@ -106,12 +109,7 @@ export class PrayerService {
     return this.api.get<PaginatedResponse<CommunityPrayerRequest>>(pathOrUrl, params).pipe(
       map((response) => ({
         ...response,
-        results: response.results.map((prayer) => ({
-          ...prayer,
-          church: prayer.church ?? null,
-          title: prayer.title ?? '',
-          display_name: prayer.display_name ?? 'Anonymous',
-        })),
+        results: this.normalizeCommunityPrayerResults(response.results),
       })),
       tap((response) => {
         this.sentryTelemetry.addFeatureBreadcrumb('app', 'Community prayers load succeeded', {
@@ -168,7 +166,7 @@ export class PrayerService {
     ).pipe(
       map((response) => ({
         ...response,
-        results: response.results.map((prayer) => this.normalizeMemberPrayerRequest(prayer)),
+        results: this.normalizeMemberPrayerResults(response.results),
       })),
       tap((response) => {
         this.sentryTelemetry.addFeatureBreadcrumb('app', 'Member prayer requests load succeeded', {
@@ -271,9 +269,47 @@ export class PrayerService {
   private normalizeMemberPrayerRequest(prayer: MemberPrayerRequest): MemberPrayerRequest {
     return {
       ...prayer,
+      id: Number(prayer.id),
+      scope: this.supportedScopes.has(prayer.scope) ? prayer.scope : 'unknown',
       church: prayer.church ?? null,
-      title: prayer.title ?? '',
-      resolved_at: prayer.resolved_at ?? null,
+      title: typeof prayer.title === 'string' ? prayer.title : '',
+      request_text: typeof prayer.request_text === 'string' ? prayer.request_text : '',
+      visibility: this.supportedVisibilities.has(prayer.visibility) ? prayer.visibility : 'unknown',
+      status: this.supportedStatuses.has(prayer.status) ? prayer.status : 'unknown',
+      is_anonymous_publicly: !!prayer.is_anonymous_publicly,
+      resolved_at: typeof prayer.resolved_at === 'string' ? prayer.resolved_at : null,
+      created_at: typeof prayer.created_at === 'string' ? prayer.created_at : '',
+      updated_at: typeof prayer.updated_at === 'string' ? prayer.updated_at : '',
+    };
+  }
+
+  private normalizeCommunityPrayerResults(results: CommunityPrayerRequest[] | null | undefined): CommunityPrayerRequest[] {
+    return (results ?? [])
+      .map((prayer) => this.normalizeCommunityPrayerRequest(prayer))
+      .filter((prayer): prayer is CommunityPrayerRequest => prayer !== null);
+  }
+
+  private normalizeMemberPrayerResults(results: MemberPrayerRequest[] | null | undefined): MemberPrayerRequest[] {
+    return (results ?? [])
+      .map((prayer) => this.normalizeMemberPrayerRequest(prayer))
+      .filter((prayer) => Number.isFinite(prayer.id));
+  }
+
+  private normalizeCommunityPrayerRequest(prayer: CommunityPrayerRequest | null | undefined): CommunityPrayerRequest | null {
+    const id = Number(prayer?.id);
+    if (!Number.isFinite(id)) {
+      return null;
+    }
+
+    return {
+      ...(prayer as CommunityPrayerRequest),
+      id,
+      scope: this.supportedScopes.has(prayer?.scope as PrayerScope) ? (prayer?.scope as PrayerScope) : 'unknown',
+      church: prayer?.church ?? null,
+      title: typeof prayer?.title === 'string' ? prayer.title : '',
+      request_text: typeof prayer?.request_text === 'string' ? prayer.request_text : '',
+      display_name: typeof prayer?.display_name === 'string' && prayer.display_name.trim() ? prayer.display_name : 'Anonymous',
+      created_at: typeof prayer?.created_at === 'string' ? prayer.created_at : '',
     };
   }
 

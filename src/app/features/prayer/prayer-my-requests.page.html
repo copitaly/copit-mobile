@@ -1,5 +1,9 @@
 <ion-page>
   <ion-content fullscreen class="my-prayers-content">
+    <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
+      <ion-refresher-content></ion-refresher-content>
+    </ion-refresher>
+
     <div class="my-prayers-hero app-header app-header--inner">
       <app-mobile-header
         title="My Requests"
@@ -111,7 +115,7 @@
         </div>
 
         <section *ngIf="!loading && !errorMessage && prayers.length > 0" class="my-prayers-feed" aria-label="My prayer requests">
-          <article class="my-prayer-card" *ngFor="let prayer of prayers" data-testid="my-prayer-card">
+          <article class="my-prayer-card" *ngFor="let prayer of prayers; trackBy: trackByPrayerId" data-testid="my-prayer-card">
             <button
               type="button"
               class="my-prayer-card__action"
@@ -120,7 +124,9 @@
               (click)="openPrayerDetails(prayer)"
             >
               <div class="my-prayer-card__top">
-                <span class="status-chip" [ngClass]="statusClass(prayer.status)">{{ formatStatusLabel(prayer.status) }}</span>
+                <span class="status-chip" [ngClass]="statusClass(prayer.status)" [attr.aria-label]="'Prayer status ' + formatStatusLabel(prayer.status)">
+                  {{ formatStatusLabel(prayer.status) }}
+                </span>
                 <span class="my-prayer-card__date">{{ formatDate(prayer.created_at) }}</span>
               </div>
 
@@ -189,7 +195,7 @@
           <ion-button expand="block" class="state-button" (click)="retryDetailLoad()">Try Again</ion-button>
         </div>
 
-        <section *ngIf="selectedPrayerDetail" class="detail-card" data-testid="detail-card">
+        <section *ngIf="!detailLoading && !detailErrorMessage && selectedPrayerDetail" class="detail-card" data-testid="detail-card">
           <p class="detail-card__eyebrow">{{ formatStatusLabel(selectedPrayerDetail.status) }}</p>
           <h2 *ngIf="selectedPrayerDetail.title" class="detail-card__title">{{ selectedPrayerDetail.title }}</h2>
           <p class="detail-card__body">{{ selectedPrayerDetail.request_text }}</p>

@@ -15,16 +15,17 @@ class MockAuthService {
   });
 }
 
-class MockSentryTelemetryService {
-  addFeatureBreadcrumb(): void {}
-  captureFeatureError(): void {}
-}
-
 describe('PrayerService', () => {
   let service: PrayerService;
   let httpMock: HttpTestingController;
+  let sentryTelemetry: jasmine.SpyObj<SentryTelemetryService>;
 
   beforeEach(async () => {
+    sentryTelemetry = jasmine.createSpyObj<SentryTelemetryService>('SentryTelemetryService', [
+      'addFeatureBreadcrumb',
+      'captureFeatureError',
+    ]);
+
     await TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -32,7 +33,7 @@ describe('PrayerService', () => {
         ApiService,
         PrayerService,
         { provide: AuthService, useClass: MockAuthService },
-        { provide: SentryTelemetryService, useClass: MockSentryTelemetryService },
+        { provide: SentryTelemetryService, useValue: sentryTelemetry },
       ],
     }).compileComponents();
 
@@ -57,6 +58,37 @@ describe('PrayerService', () => {
     request.flush({ count: 0, next: null, previous: null, results: [] });
 
     expect(responseBody).toEqual({ count: 0, next: null, previous: null, results: [] });
+  });
+
+  it('does not include prayer request text in submission telemetry breadcrumbs', () => {
+    service
+      .submitPrayerRequest({
+        scope: 'global',
+        category: 'personal',
+        request_text: 'Please pray for my family.',
+        visibility: 'private',
+        is_anonymous_publicly: true,
+      })
+      .subscribe();
+
+    const request = httpMock.expectOne((req) => req.url.endsWith('/api/public/prayer-requests/submit/'));
+    request.flush({
+      id: 1,
+      scope: 'global',
+      church: null,
+      category: 'personal',
+      title: '',
+      request_text: 'Please pray for my family.',
+      visibility: 'private',
+      status: 'pending',
+      is_anonymous_publicly: true,
+      submitter_name: null,
+      created_at: '2026-07-29T10:00:00Z',
+    });
+
+    expect(sentryTelemetry.addFeatureBreadcrumb).toHaveBeenCalled();
+    const breadcrumbPayload = sentryTelemetry.addFeatureBreadcrumb.calls.first().args[2] as Record<string, unknown>;
+    expect(breadcrumbPayload['request_text']).toBeUndefined();
   });
 
   it('sends category and scope query parameters to the backend', () => {
@@ -223,6 +255,61 @@ describe('PrayerService', () => {
       resolved_at: null,
       created_at: '2026-07-22T10:00:00Z',
       updated_at: '2026-07-22T10:00:00Z',
+    });
+  });
+
+  it('normalizes malformed member prayer values to safe fallbacks', () => {
+    let responseBody: unknown;
+    const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authService.accessTokenSnapshot = 'member-token';
+
+    service.getMyPrayerRequests().subscribe((response) => {
+      responseBody = response;
+    });
+
+    const request = httpMock.expectOne((req) => req.url.endsWith('/api/members/me/prayer-requests/'));
+    request.flush({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: 55,
+          scope: 'unexpected',
+          church: null,
+          category: 'health',
+          title: null,
+          request_text: null,
+          visibility: 'hidden',
+          status: 'archived',
+          is_anonymous_publicly: 0,
+          resolved_at: null,
+          created_at: null,
+          updated_at: null,
+        },
+      ],
+    });
+
+    expect(responseBody).toEqual({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: 55,
+          scope: 'unknown',
+          church: null,
+          category: 'health',
+          title: '',
+          request_text: '',
+          visibility: 'unknown',
+          status: 'unknown',
+          is_anonymous_publicly: false,
+          resolved_at: null,
+          created_at: '',
+          updated_at: '',
+        },
+      ],
     });
   });
 

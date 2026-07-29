@@ -22,10 +22,18 @@
                   autoGrow="true"
                   rows="5"
                   placeholder="Write your prayer request here"
+                  aria-label="Prayer request text"
+                  aria-describedby="prayer-request-text-error"
                   (ionInput)="onFieldInput('request_text')"
                 ></ion-textarea>
               </ion-item>
-              <ion-text color="danger" *ngIf="controlError('request_text')" class="prayer-error">
+              <ion-text
+                color="danger"
+                *ngIf="controlError('request_text')"
+                class="prayer-error"
+                id="prayer-request-text-error"
+                role="alert"
+              >
                 {{ controlError('request_text') }}
               </ion-text>
             </section>
@@ -37,9 +45,14 @@
                   id="prayer-title"
                   formControlName="title"
                   placeholder="Short title for your request"
+                  aria-label="Prayer request title"
+                  [maxlength]="maxTitleLength"
                   (ionInput)="onFieldInput('title')"
                 ></ion-input>
               </ion-item>
+              <ion-text color="danger" *ngIf="controlError('title')" class="prayer-error" role="alert">
+                {{ controlError('title') }}
+              </ion-text>
             </section>
 
             <section class="prayer-form-card">
@@ -50,6 +63,7 @@
                   interface="action-sheet"
                   formControlName="category"
                   placeholder="Choose a category"
+                  aria-label="Prayer request category"
                   (ionChange)="onFieldInput('category')"
                 >
                   <ion-select-option *ngFor="let category of categoryOptions" [value]="category.value">
@@ -57,7 +71,7 @@
                   </ion-select-option>
                 </ion-select>
               </ion-item>
-              <ion-text color="danger" *ngIf="controlError('category')" class="prayer-error">
+              <ion-text color="danger" *ngIf="controlError('category')" class="prayer-error" role="alert">
                 {{ controlError('category') }}
               </ion-text>
             </section>
@@ -71,6 +85,7 @@
                   interface="action-sheet"
                   formControlName="scope"
                   placeholder="Choose a scope"
+                  aria-label="Prayer request scope"
                   (ionChange)="onFieldInput('scope')"
                 >
                   <ion-select-option *ngFor="let scope of scopeOptions" [value]="scope.value">
@@ -78,7 +93,7 @@
                   </ion-select-option>
                 </ion-select>
               </ion-item>
-              <ion-text color="danger" *ngIf="controlError('scope')" class="prayer-error">
+              <ion-text color="danger" *ngIf="controlError('scope')" class="prayer-error" role="alert">
                 {{ controlError('scope') }}
               </ion-text>
               <div class="scope-list">
@@ -96,6 +111,7 @@
                   interface="action-sheet"
                   formControlName="selected_area_id"
                   placeholder="Choose an Area"
+                  aria-label="Prayer request area"
                   [disabled]="isAreasLoading || areas.length === 0"
                   (ionChange)="onAreaSelectionChanged($any($event.detail).value)"
                 >
@@ -112,7 +128,7 @@
               <p *ngIf="!isAreasLoading && !areaLoadError && areas.length === 0" class="prayer-inline-state">
                 No Areas are available right now.
               </p>
-              <ion-text color="danger" *ngIf="controlError('selected_area_id')" class="prayer-error">
+              <ion-text color="danger" *ngIf="controlError('selected_area_id')" class="prayer-error" role="alert">
                 {{ controlError('selected_area_id') }}
               </ion-text>
             </section>
@@ -124,6 +140,7 @@
                   interface="action-sheet"
                   formControlName="selected_district_id"
                   placeholder="Choose a District"
+                  aria-label="Prayer request district"
                   [disabled]="!selectedAreaId || isDistrictsLoading || districts.length === 0"
                   (ionChange)="onDistrictSelectionChanged($any($event.detail).value)"
                 >
@@ -141,7 +158,7 @@
               <p *ngIf="selectedAreaId && !isDistrictsLoading && !districtLoadError && districts.length === 0" class="prayer-inline-state">
                 No districts are available for this Area.
               </p>
-              <ion-text color="danger" *ngIf="controlError('selected_district_id')" class="prayer-error">
+              <ion-text color="danger" *ngIf="controlError('selected_district_id')" class="prayer-error" role="alert">
                 {{ controlError('selected_district_id') }}
               </ion-text>
             </section>
@@ -153,6 +170,7 @@
                   interface="action-sheet"
                   formControlName="selected_local_church_id"
                   placeholder="Choose a Local Church"
+                  aria-label="Prayer request local church"
                   [disabled]="!selectedDistrictId || isLocalChurchesLoading || localChurches.length === 0"
                   (ionChange)="onLocalChurchSelectionChanged($any($event.detail).value)"
                 >
@@ -170,7 +188,7 @@
               <p *ngIf="selectedDistrictId && !isLocalChurchesLoading && !localChurchLoadError && localChurches.length === 0" class="prayer-inline-state">
                 No local churches are available for this District.
               </p>
-              <ion-text color="danger" *ngIf="controlError('selected_local_church_id')" class="prayer-error">
+              <ion-text color="danger" *ngIf="controlError('selected_local_church_id')" class="prayer-error" role="alert">
                 {{ controlError('selected_local_church_id') }}
               </ion-text>
             </section>
@@ -183,6 +201,8 @@
                   type="button"
                   class="choice-card"
                   [class.choice-card--selected]="form.controls.visibility.value === option.value"
+                  [attr.aria-pressed]="form.controls.visibility.value === option.value"
+                  [attr.aria-label]="'Prayer visibility ' + option.label"
                   (click)="form.controls.visibility.setValue(option.value); onFieldInput('visibility')"
                 >
                   <span class="choice-card__copy">
@@ -200,6 +220,8 @@
                   type="button"
                   class="choice-card"
                   [class.choice-card--selected]="form.controls.is_anonymous_publicly.value"
+                  [attr.aria-pressed]="form.controls.is_anonymous_publicly.value"
+                  aria-label="Submit prayer request anonymously"
                   (click)="form.controls.is_anonymous_publicly.setValue(true); onFieldInput('is_anonymous_publicly')"
                 >
                   <span class="choice-card__copy">
@@ -212,6 +234,8 @@
                   type="button"
                   class="choice-card"
                   [class.choice-card--selected]="!form.controls.is_anonymous_publicly.value"
+                  [attr.aria-pressed]="!form.controls.is_anonymous_publicly.value"
+                  aria-label="Share my name with this prayer request"
                   (click)="form.controls.is_anonymous_publicly.setValue(false); onFieldInput('is_anonymous_publicly')"
                 >
                   <span class="choice-card__copy">
@@ -229,10 +253,12 @@
                     id="prayer-submitter-name"
                     formControlName="submitter_name"
                     placeholder="Enter the name to display"
+                    aria-label="Submitter name"
+                    [maxlength]="maxSubmitterNameLength"
                     (ionInput)="onFieldInput('submitter_name')"
                   ></ion-input>
                 </ion-item>
-                <ion-text color="danger" *ngIf="controlError('submitter_name')" class="prayer-error">
+                <ion-text color="danger" *ngIf="controlError('submitter_name')" class="prayer-error" role="alert">
                   {{ controlError('submitter_name') }}
                 </ion-text>
               </div>

@@ -388,6 +388,17 @@ describe('PrayerMyRequestsPage', () => {
     expect(text).toContain('Public');
   });
 
+  it('renders a neutral label for an unknown backend status', async () => {
+    prayerService.getMyPrayerRequests.and.returnValue(
+      of(buildResponse([{ ...basePrayer, status: 'unknown' as MemberPrayerRequest['status'] }]))
+    );
+    prayerService.getMyPrayerRequest.and.returnValue(of(basePrayer));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.textContent).toContain('Status unavailable');
+  });
+
   it('renders the status, visibility, and scope filters', async () => {
     prayerService.getMyPrayerRequests.and.returnValue(of(buildResponse([basePrayer])));
     prayerService.getMyPrayerRequest.and.returnValue(of(basePrayer));
@@ -504,6 +515,20 @@ describe('PrayerMyRequestsPage', () => {
     nextPage$.complete();
   });
 
+  it('deduplicates repeated prayer requests when loading another page', async () => {
+    prayerService.getMyPrayerRequests.and.returnValues(
+      of(buildResponse([basePrayer], 'https://copit-api-staging.up.railway.app/api/members/me/prayer-requests/?page=2')),
+      of(buildResponse([{ ...basePrayer }]))
+    );
+    prayerService.getMyPrayerRequest.and.returnValue(of(basePrayer));
+
+    await createComponent();
+
+    page.loadMore();
+
+    expect(page.prayers.map((item) => item.id)).toEqual([11]);
+  });
+
   it('stops pagination when next is null', async () => {
     prayerService.getMyPrayerRequests.and.returnValue(of(buildResponse([basePrayer], null)));
     prayerService.getMyPrayerRequest.and.returnValue(of(basePrayer));
@@ -596,6 +621,25 @@ describe('PrayerMyRequestsPage', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="load-more-error"]')?.textContent).toContain(
       "We couldn't load more prayer requests right now."
     );
+  });
+
+  it('keeps loaded prayers visible if pull-to-refresh fails', async () => {
+    const complete = jasmine.createSpy('complete');
+    prayerService.getMyPrayerRequests.and.returnValues(
+      of(buildResponse([basePrayer])),
+      throwError(() => new Error('network'))
+    );
+    prayerService.getMyPrayerRequest.and.returnValue(of(basePrayer));
+
+    await createComponent();
+
+    page.refresh({ detail: { complete } } as unknown as CustomEvent<{ complete: () => void }>);
+    fixture.detectChanges();
+
+    expect(page.prayers.length).toBe(1);
+    expect(page.errorMessage).toBe('');
+    expect(page.loadMoreErrorMessage).toContain("couldn't refresh your prayer requests");
+    expect(complete).toHaveBeenCalled();
   });
 
   it('navigates the empty-state submit action to /prayer/submit', async () => {

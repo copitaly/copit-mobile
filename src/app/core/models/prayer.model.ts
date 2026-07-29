@@ -1,4 +1,4 @@
-export type PrayerScope = 'global' | 'area' | 'district' | 'local';
+export type PrayerScope = 'global' | 'area' | 'district' | 'local' | 'unknown';
 
 export type PrayerCategory =
   | 'personal'
@@ -9,8 +9,8 @@ export type PrayerCategory =
   | 'thanksgiving'
   | 'other';
 
-export type PrayerVisibility = 'private' | 'public';
-export type PrayerStatus = 'pending' | 'approved' | 'rejected' | 'resolved';
+export type PrayerVisibility = 'private' | 'public' | 'unknown';
+export type PrayerStatus = 'pending' | 'approved' | 'rejected' | 'resolved' | 'unknown';
 
 export interface PrayerChurchSummary {
   id: number;

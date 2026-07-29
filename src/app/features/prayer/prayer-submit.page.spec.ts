@@ -7,6 +7,7 @@ import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { PrayerRequestSubmissionResponse, PublicChurchHierarchy } from '../../core/models/prayer.model';
 import { PrayerService } from '../../core/services/prayer.service';
+import { StackNavigationService } from '../../core/services/stack-navigation.service';
 import { PrayerSubmitPage } from './prayer-submit.page';
 
 describe('PrayerSubmitPage', () => {
@@ -16,6 +17,7 @@ describe('PrayerSubmitPage', () => {
   let authState$: BehaviorSubject<boolean>;
   let currentUser$: BehaviorSubject<any>;
   let authServiceValue: any;
+  let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
   let areaChurch: PublicChurchHierarchy;
   let districtChurch: PublicChurchHierarchy;
   let localChurch: PublicChurchHierarchy;
@@ -100,9 +102,12 @@ describe('PrayerSubmitPage', () => {
     authServiceValue = {
       isAuthenticated$: authState$.asObservable(),
       currentUser$: currentUser$.asObservable(),
+      isAuthenticatedSnapshot: false,
       currentUserSnapshot: null,
       updateMemberProfile: jasmine.createSpy('updateMemberProfile'),
     };
+    stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
+    stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
 
     TestBed.configureTestingModule({
       imports: [PrayerSubmitPage],
@@ -110,6 +115,7 @@ describe('PrayerSubmitPage', () => {
         { provide: PrayerService, useValue: prayerService },
         { provide: Router, useValue: router },
         { provide: AuthService, useValue: authServiceValue },
+        { provide: StackNavigationService, useValue: stackNavigationService },
       ],
     });
 
@@ -131,6 +137,20 @@ describe('PrayerSubmitPage', () => {
     page.submit();
 
     expect(page.controlError('request_text')).toBe('Prayer request text is required.');
+    expect(prayerService.submitPrayerRequest).not.toHaveBeenCalled();
+  });
+
+  it('rejects titles longer than the backend-supported limit', () => {
+    page.form.patchValue({
+      request_text: 'Please pray for wisdom.',
+      title: 'a'.repeat(256),
+      category: 'personal',
+      scope: 'global',
+    });
+
+    page.submit();
+
+    expect(page.controlError('title')).toBe('Keep the title to 255 characters or fewer.');
     expect(prayerService.submitPrayerRequest).not.toHaveBeenCalled();
   });
 
@@ -717,17 +737,22 @@ describe('PrayerSubmitPage', () => {
   });
 
   it('keeps the submit button disabled while submitting and prevents double submit', () => {
-    prayerService.submitPrayerRequest.and.returnValue(of(successResponse));
+    const submit$ = new Subject<PrayerRequestSubmissionResponse>();
+    prayerService.submitPrayerRequest.and.returnValue(submit$.asObservable());
     page.form.patchValue({
       request_text: 'Please pray for peace.',
       category: 'personal',
       scope: 'global',
     });
 
-    page.isSubmitting = true;
+    page.submit();
     page.submit();
 
-    expect(prayerService.submitPrayerRequest).not.toHaveBeenCalled();
+    expect(prayerService.submitPrayerRequest.calls.count()).toBe(1);
+
+    submit$.next(successResponse);
+    submit$.complete();
+    expect(page.isSubmitting).toBeFalse();
   });
 
   it('preserves form values after a failed submission and surfaces backend field errors', () => {
@@ -753,6 +778,62 @@ describe('PrayerSubmitPage', () => {
     expect(page.form.controls.request_text.value).toBe('Please pray for peace.');
     expect(page.controlError('submitter_name')).toBe('submitter_name is required for non-anonymous guest submissions.');
     expect(page.showSuccessState).toBeFalse();
+  });
+
+  it('shows a timeout message and preserves entered text after a submission timeout', () => {
+    prayerService.submitPrayerRequest.and.returnValue(
+      throwError(() => {
+        const error = new Error('Timed out');
+        error.name = 'TimeoutError';
+        return error;
+      })
+    );
+    page.form.patchValue({
+      request_text: 'Please pray for peace.',
+      category: 'personal',
+      scope: 'global',
+    });
+
+    page.submit();
+
+    expect(page.genericErrorMessage).toBe('Submitting your prayer request timed out. Please try again.');
+    expect(page.form.controls.request_text.value).toBe('Please pray for peace.');
+    expect(page.isSubmitting).toBeFalse();
+  });
+
+  it('shows a neutral reauthentication message for authentication failures', () => {
+    prayerService.submitPrayerRequest.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 401, error: { detail: 'Unauthorized' } }))
+    );
+    page.form.patchValue({
+      request_text: 'Please pray for peace.',
+      category: 'personal',
+      scope: 'global',
+    });
+
+    page.submit();
+
+    expect(page.genericErrorMessage).toBe('Please sign in again before submitting your prayer request.');
+    expect(page.form.controls.request_text.value).toBe('Please pray for peace.');
+  });
+
+  it('clears the form only after a confirmed successful submission when resetting for another request', () => {
+    page.form.patchValue({
+      request_text: 'Please pray for peace.',
+      category: 'personal',
+      scope: 'global',
+      visibility: 'public',
+    });
+
+    page.submit();
+    expect(page.showSuccessState).toBeTrue();
+
+    page.resetForAnotherRequest();
+
+    expect(page.showSuccessState).toBeFalse();
+    expect(page.form.controls.request_text.value).toBe('');
+    expect(page.form.controls.category.value).toBe('');
+    expect(page.form.controls.scope.value).toBe('');
   });
 
   it('does not redirect guests or members away from the submit page', () => {

@@ -31,10 +31,12 @@ export class PrayerCommunityPage implements OnInit {
 
   prayers: CommunityPrayerRequest[] = [];
   loading = true;
+  refreshing = false;
   loadingMore = false;
   errorMessage = '';
   loadMoreErrorMessage = '';
   nextPageUrl: string | null = null;
+  private listRequestId = 0;
 
   selectedCategory: CommunityPrayerCategoryFilter = 'all';
   selectedScope: CommunityPrayerScopeFilter = 'all';
@@ -66,22 +68,46 @@ export class PrayerCommunityPage implements OnInit {
     return this.selectedCategory !== 'all' || this.selectedScope !== 'all';
   }
 
-  loadInitialPrayers(): void {
-    this.loading = true;
+  loadInitialPrayers(options?: { preserveExisting?: boolean; complete?: () => void }): void {
+    const preserveExisting = !!options?.preserveExisting && this.prayers.length > 0;
+    const requestId = ++this.listRequestId;
+    this.loading = !preserveExisting;
+    this.refreshing = preserveExisting;
     this.errorMessage = '';
     this.loadMoreErrorMessage = '';
-    this.prayers = [];
-    this.nextPageUrl = null;
+    this.loadingMore = false;
+    if (!preserveExisting) {
+      this.prayers = [];
+      this.nextPageUrl = null;
+    }
 
     this.prayerService.getCommunityPrayers(this.buildFilters()).subscribe({
       next: (response) => {
-        this.prayers = response.results;
+        if (requestId !== this.listRequestId) {
+          options?.complete?.();
+          return;
+        }
+
+        this.prayers = this.mergeUniquePrayers([], response.results);
         this.nextPageUrl = response.next;
         this.loading = false;
+        this.refreshing = false;
+        options?.complete?.();
       },
       error: () => {
+        if (requestId !== this.listRequestId) {
+          options?.complete?.();
+          return;
+        }
+
         this.loading = false;
-        this.errorMessage = "We couldn't load community prayers right now.";
+        this.refreshing = false;
+        if (preserveExisting) {
+          this.loadMoreErrorMessage = "We couldn't refresh community prayers right now. Please try again.";
+        } else {
+          this.errorMessage = "We couldn't load community prayers right now.";
+        }
+        options?.complete?.();
       },
     });
   }
@@ -116,21 +142,39 @@ export class PrayerCommunityPage implements OnInit {
     this.loadInitialPrayers();
   }
 
+  refresh(event: CustomEvent<{ complete: () => void }>): void {
+    if (this.refreshing) {
+      event.detail.complete();
+      return;
+    }
+
+    this.loadInitialPrayers({ preserveExisting: true, complete: () => event.detail.complete() });
+  }
+
   loadMore(): void {
     if (!this.nextPageUrl || this.loading || this.loadingMore) {
       return;
     }
 
+    const requestId = this.listRequestId;
     this.loadingMore = true;
     this.loadMoreErrorMessage = '';
 
     this.prayerService.getCommunityPrayers(undefined, this.nextPageUrl).subscribe({
       next: (response) => {
-        this.prayers = [...this.prayers, ...response.results];
+        if (requestId !== this.listRequestId) {
+          return;
+        }
+
+        this.prayers = this.mergeUniquePrayers(this.prayers, response.results);
         this.nextPageUrl = response.next;
         this.loadingMore = false;
       },
       error: () => {
+        if (requestId !== this.listRequestId) {
+          return;
+        }
+
         this.loadingMore = false;
         this.loadMoreErrorMessage = "We couldn't load more community prayers right now. Please try again.";
       },
@@ -172,6 +216,8 @@ export class PrayerCommunityPage implements OnInit {
         }
         return parts.join(' - ') || 'Local Church';
       }
+      case 'unknown':
+        return 'Prayer scope unavailable';
       default:
         return 'COP Italy';
     }
@@ -180,7 +226,7 @@ export class PrayerCommunityPage implements OnInit {
   formatDate(value: string): string {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
-      return value;
+      return 'Date unavailable';
     }
 
     return new Intl.DateTimeFormat('en-GB', {
@@ -188,6 +234,28 @@ export class PrayerCommunityPage implements OnInit {
       month: 'short',
       year: 'numeric',
     }).format(date);
+  }
+
+  formatDateLabel(value: string): string {
+    const formatted = this.formatDate(value);
+    return formatted === 'Date unavailable' ? formatted : `Shared on ${formatted}`;
+  }
+
+  requestPreview(requestText: string, limit = 240): string {
+    const normalized = String(requestText ?? '').trim();
+    if (!normalized) {
+      return 'Prayer details are unavailable right now.';
+    }
+
+    if (normalized.length <= limit) {
+      return normalized;
+    }
+
+    return `${normalized.slice(0, limit).replace(/\s+$/, '')}...`;
+  }
+
+  trackByPrayerId(_: number, prayer: CommunityPrayerRequest): number {
+    return prayer.id;
   }
 
   private buildFilters(): CommunityPrayerFilters {
@@ -210,5 +278,17 @@ export class PrayerCommunityPage implements OnInit {
 
   private isPrayerScope(value: string | null): value is CommunityPrayerScopeFilter {
     return !!value && this.scopeOptions.some((option) => option.value === value);
+  }
+
+  private mergeUniquePrayers(
+    existing: CommunityPrayerRequest[],
+    incoming: CommunityPrayerRequest[]
+  ): CommunityPrayerRequest[] {
+    const prayersById = new Map<number, CommunityPrayerRequest>();
+    for (const prayer of [...existing, ...incoming]) {
+      prayersById.set(prayer.id, prayer);
+    }
+
+    return Array.from(prayersById.values());
   }
 }

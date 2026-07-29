@@ -155,6 +155,18 @@ describe('PrayerCommunityPage', () => {
     expect(text).toContain('Efua');
   });
 
+  it('uses a safe preview for long prayer text', async () => {
+    prayerService.getCommunityPrayers.and.returnValue(
+      of(buildResponse([{ ...firstPrayer, request_text: `${'Long prayer text '.repeat(30)}ending` }]))
+    );
+
+    await createComponent();
+
+    const body = fixture.nativeElement.querySelector('.community-card__body')?.textContent ?? '';
+    expect(body.length).toBeLessThan(260);
+    expect(body.endsWith('...')).toBeTrue();
+  });
+
   it('renders Anonymous exactly as returned by the backend', async () => {
     prayerService.getCommunityPrayers.and.returnValue(
       of(buildResponse([{ ...firstPrayer, display_name: 'Anonymous' }]))
@@ -318,6 +330,19 @@ describe('PrayerCommunityPage', () => {
     nextPage$.complete();
   });
 
+  it('deduplicates repeated prayers when loading another page', async () => {
+    prayerService.getCommunityPrayers.and.returnValues(
+      of(buildResponse([firstPrayer], 'http://localhost:8000/api/public/prayer-requests/?page=2')),
+      of(buildResponse([{ ...firstPrayer }]))
+    );
+
+    await createComponent();
+
+    page.loadMore();
+
+    expect(page.prayers.map((item) => item.id)).toEqual([11]);
+  });
+
   it('renders the empty state when there are no community prayers', async () => {
     prayerService.getCommunityPrayers.and.returnValue(of(buildResponse([])));
 
@@ -415,5 +440,23 @@ describe('PrayerCommunityPage', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="load-more-error"]')?.textContent).toContain(
       "We couldn't load more community prayers right now."
     );
+  });
+
+  it('keeps loaded prayers visible if pull-to-refresh fails', async () => {
+    const complete = jasmine.createSpy('complete');
+    prayerService.getCommunityPrayers.and.returnValues(
+      of(buildResponse([firstPrayer])),
+      throwError(() => new Error('network'))
+    );
+
+    await createComponent();
+
+    page.refresh({ detail: { complete } } as unknown as CustomEvent<{ complete: () => void }>);
+    fixture.detectChanges();
+
+    expect(page.prayers.length).toBe(1);
+    expect(page.errorMessage).toBe('');
+    expect(page.loadMoreErrorMessage).toContain("couldn't refresh community prayers");
+    expect(complete).toHaveBeenCalled();
   });
 });

@@ -1,5 +1,9 @@
 <ion-page>
   <ion-content fullscreen class="community-content">
+    <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
+      <ion-refresher-content></ion-refresher-content>
+    </ion-refresher>
+
     <div class="community-page">
       <div class="community-hero app-header app-header--inner">
         <app-mobile-header
@@ -101,15 +105,21 @@
           </div>
 
           <section *ngIf="!loading && !errorMessage && prayers.length > 0" class="community-feed" aria-label="Community prayers feed">
-            <article class="community-card" *ngFor="let prayer of prayers" data-testid="community-card">
+            <article
+              class="community-card"
+              *ngFor="let prayer of prayers; trackBy: trackByPrayerId"
+              data-testid="community-card"
+            >
               <div class="community-card__top">
                 <span class="category-chip">{{ formatCategoryLabel(prayer.category) }}</span>
-                <span class="community-card__date">{{ formatDate(prayer.created_at) }}</span>
+                <span class="community-card__date" [attr.aria-label]="formatDateLabel(prayer.created_at)">
+                  {{ formatDate(prayer.created_at) }}
+                </span>
               </div>
 
               <h2 *ngIf="prayer.title" class="community-card__title" data-testid="prayer-title">{{ prayer.title }}</h2>
 
-              <p class="community-card__body">{{ prayer.request_text }}</p>
+              <p class="community-card__body">{{ requestPreview(prayer.request_text) }}</p>
 
               <div class="community-card__meta">
                 <div class="meta-row">

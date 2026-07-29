@@ -30,6 +30,7 @@ export class PrayerMyRequestsPage implements OnInit {
 
   prayers: MemberPrayerRequest[] = [];
   loading = true;
+  refreshing = false;
   loadingMore = false;
   errorMessage = '';
   loadMoreErrorMessage = '';
@@ -78,35 +79,49 @@ export class PrayerMyRequestsPage implements OnInit {
   }
 
   loadInitialPrayers(refreshComplete?: () => void): void {
+    this.loadPrayerList({ complete: refreshComplete });
+  }
+
+  loadPrayerList(options?: { preserveExisting?: boolean; complete?: () => void }): void {
+    const preserveExisting = !!options?.preserveExisting && this.prayers.length > 0;
     const requestId = ++this.listRequestId;
-    this.loading = true;
+    this.loading = !preserveExisting;
+    this.refreshing = preserveExisting;
     this.errorMessage = '';
     this.loadMoreErrorMessage = '';
     this.loadingMore = false;
-    this.prayers = [];
-    this.nextPageUrl = null;
+    if (!preserveExisting) {
+      this.prayers = [];
+      this.nextPageUrl = null;
+    }
 
     this.prayerService.getMyPrayerRequests(this.buildFilters()).subscribe({
       next: (response) => {
         if (requestId !== this.listRequestId) {
-          refreshComplete?.();
+          options?.complete?.();
           return;
         }
 
-        this.prayers = response.results;
+        this.prayers = this.mergeUniquePrayers([], response.results);
         this.nextPageUrl = response.next;
         this.loading = false;
-        refreshComplete?.();
+        this.refreshing = false;
+        options?.complete?.();
       },
       error: () => {
         if (requestId !== this.listRequestId) {
-          refreshComplete?.();
+          options?.complete?.();
           return;
         }
 
         this.loading = false;
-        this.errorMessage = "We couldn't load your prayer requests right now.";
-        refreshComplete?.();
+        this.refreshing = false;
+        if (preserveExisting) {
+          this.loadMoreErrorMessage = "We couldn't refresh your prayer requests right now. Please try again.";
+        } else {
+          this.errorMessage = "We couldn't load your prayer requests right now.";
+        }
+        options?.complete?.();
       },
     });
   }
@@ -153,7 +168,12 @@ export class PrayerMyRequestsPage implements OnInit {
   }
 
   refresh(event: CustomEvent<{ complete: () => void }>): void {
-    this.loadInitialPrayers(() => event.detail.complete());
+    if (this.refreshing) {
+      event.detail.complete();
+      return;
+    }
+
+    this.loadPrayerList({ preserveExisting: true, complete: () => event.detail.complete() });
   }
 
   loadMore(): void {
@@ -171,7 +191,7 @@ export class PrayerMyRequestsPage implements OnInit {
           return;
         }
 
-        this.prayers = [...this.prayers, ...response.results];
+        this.prayers = this.mergeUniquePrayers(this.prayers, response.results);
         this.nextPageUrl = response.next;
         this.loadingMore = false;
       },
@@ -195,6 +215,10 @@ export class PrayerMyRequestsPage implements OnInit {
   }
 
   openPrayerDetails(prayer: MemberPrayerRequest): void {
+    if (this.detailLoading && this.selectedPrayerDetailId === prayer.id) {
+      return;
+    }
+
     this.isDetailOpen = true;
     this.selectedPrayerDetailId = prayer.id;
     this.selectedPrayerDetail = prayer;
@@ -244,23 +268,39 @@ export class PrayerMyRequestsPage implements OnInit {
         return 'Not Approved';
       case 'resolved':
         return 'Resolved';
+      case 'unknown':
+        return 'Status unavailable';
       default:
-        return 'Pending Review';
+        return 'Status unavailable';
     }
   }
 
   statusClass(status: PrayerStatus): string {
-    return `status-chip--${status}`;
+    return ['pending', 'approved', 'rejected', 'resolved'].includes(status) ? `status-chip--${status}` : 'status-chip--unknown';
   }
 
   formatVisibilityLabel(visibility: PrayerVisibility): string {
-    return visibility === 'public' ? 'Public' : 'Private';
+    if (visibility === 'public') {
+      return 'Public';
+    }
+
+    if (visibility === 'private') {
+      return 'Private';
+    }
+
+    return 'Visibility unavailable';
   }
 
   formatVisibilityHelper(visibility: PrayerVisibility): string {
-    return visibility === 'public'
-      ? 'May appear in Community Prayers after approval.'
-      : 'Visible only to authorized prayer administrators.';
+    if (visibility === 'public') {
+      return 'May appear in Community Prayers after approval.';
+    }
+
+    if (visibility === 'private') {
+      return 'Visible only to authorized prayer administrators.';
+    }
+
+    return 'Visibility information is unavailable right now.';
   }
 
   formatScopeContext(prayer: Pick<MemberPrayerRequest, 'scope' | 'church'>): string {
@@ -286,6 +326,8 @@ export class PrayerMyRequestsPage implements OnInit {
         }
         return parts.join(' - ') || 'Local Church';
       }
+      case 'unknown':
+        return 'Prayer scope unavailable';
       default:
         return 'COP Italy';
     }
@@ -293,12 +335,12 @@ export class PrayerMyRequestsPage implements OnInit {
 
   formatDate(value: string | null): string {
     if (!value) {
-      return '';
+      return 'Date unavailable';
     }
 
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
-      return value;
+      return 'Date unavailable';
     }
 
     return new Intl.DateTimeFormat('en-GB', {
@@ -309,7 +351,11 @@ export class PrayerMyRequestsPage implements OnInit {
   }
 
   requestPreview(requestText: string, limit = 165): string {
-    const normalized = requestText.trim();
+    const normalized = String(requestText ?? '').trim();
+    if (!normalized) {
+      return 'Prayer details are unavailable right now.';
+    }
+
     if (normalized.length <= limit) {
       return normalized;
     }
@@ -370,5 +416,18 @@ export class PrayerMyRequestsPage implements OnInit {
 
   private isPrayerScopeFilter(value: string | null): value is PrayerScopeFilter {
     return !!value && this.scopeOptions.some((option) => option.value === value);
+  }
+
+  trackByPrayerId(_: number, prayer: MemberPrayerRequest): number {
+    return prayer.id;
+  }
+
+  private mergeUniquePrayers(existing: MemberPrayerRequest[], incoming: MemberPrayerRequest[]): MemberPrayerRequest[] {
+    const prayersById = new Map<number, MemberPrayerRequest>();
+    for (const prayer of [...existing, ...incoming]) {
+      prayersById.set(prayer.id, prayer);
+    }
+
+    return Array.from(prayersById.values());
   }
 }

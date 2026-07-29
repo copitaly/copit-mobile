@@ -5,7 +5,7 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidatorFn, Validat
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { Subject, combineLatest } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntil, timeout } from 'rxjs/operators';
 
 import {
   PublicChurchHierarchy,
@@ -26,7 +26,20 @@ function requiredTrimmedValidator(): ValidatorFn {
   };
 }
 
+function trimmedMaxLengthValidator(maxLength: number): ValidatorFn {
+  return (control: AbstractControl) => {
+    const value = String(control.value ?? '').trim();
+    return value.length > maxLength
+      ? { maxlength: { requiredLength: maxLength, actualLength: value.length } }
+      : null;
+  };
+}
+
 type FieldErrorMap = Record<string, string[]>;
+
+const MAX_TITLE_LENGTH = 255;
+const MAX_SUBMITTER_NAME_LENGTH = 255;
+const SUBMISSION_TIMEOUT_MS = 15000;
 
 @Component({
   standalone: true,
@@ -72,9 +85,12 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
     },
   ];
 
+  readonly maxTitleLength = MAX_TITLE_LENGTH;
+  readonly maxSubmitterNameLength = MAX_SUBMITTER_NAME_LENGTH;
+
   readonly form = this.formBuilder.group({
     request_text: ['', [requiredTrimmedValidator()]],
-    title: [''],
+    title: ['', [trimmedMaxLengthValidator(MAX_TITLE_LENGTH)]],
     category: ['', [Validators.required]],
     scope: ['', [Validators.required]],
     selected_area_id: [null as number | null],
@@ -82,7 +98,7 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
     selected_local_church_id: [null as number | null],
     visibility: ['private' as PrayerVisibility, [Validators.required]],
     is_anonymous_publicly: [true],
-    submitter_name: [''],
+    submitter_name: ['', [trimmedMaxLengthValidator(MAX_SUBMITTER_NAME_LENGTH)]],
   });
 
   isSubmitting = false;
@@ -188,8 +204,8 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
 
   onFieldInput(field: string): void {
     delete this.fieldErrors[field];
-    if (field === 'request_text' || field === 'submitter_name') {
-      this.form.controls[field as 'request_text' | 'submitter_name'].updateValueAndValidity({ emitEvent: false });
+    if (field === 'request_text' || field === 'submitter_name' || field === 'title') {
+      this.form.controls[field as 'request_text' | 'submitter_name' | 'title'].updateValueAndValidity({ emitEvent: false });
     }
     if (field === 'scope') {
       delete this.fieldErrors['selected_area_id'];
@@ -310,13 +326,17 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
 
     if (this.form.invalid) {
       this.genericErrorMessage = 'Please complete the required prayer request fields.';
+      this.focusFirstInvalidField();
       return;
     }
 
     this.isSubmitting = true;
     const payload = this.buildSubmissionPayload();
 
-    this.prayerService.submitPrayerRequest(payload).subscribe({
+    this.prayerService
+      .submitPrayerRequest(payload)
+      .pipe(timeout(SUBMISSION_TIMEOUT_MS))
+      .subscribe({
       next: () => {
         this.isSubmitting = false;
         this.lastSubmittedVisibility = payload.visibility;
@@ -326,7 +346,7 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
         this.isSubmitting = false;
         this.applySubmissionError(error);
       },
-    });
+      });
   }
 
   resetForAnotherRequest(): void {
@@ -393,6 +413,8 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
           return 'Please choose a prayer scope.';
         case 'submitter_name':
           return 'Your name is required when you choose to share it.';
+        case 'title':
+          return `Keep the title to ${MAX_TITLE_LENGTH} characters or fewer.`;
         case 'selected_area_id':
           return 'Please select an Area.';
         case 'selected_district_id':
@@ -401,6 +423,16 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
           return 'Please select a Local Church.';
         default:
           return 'This field is required.';
+      }
+    }
+
+    if (control.errors['maxlength']) {
+      if (controlName === 'title') {
+        return `Keep the title to ${MAX_TITLE_LENGTH} characters or fewer.`;
+      }
+
+      if (controlName === 'submitter_name') {
+        return `Keep your name to ${MAX_SUBMITTER_NAME_LENGTH} characters or fewer.`;
       }
     }
 
@@ -529,9 +561,10 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
   private configureSubmitterValidators(): void {
     const submitterControl = this.form.controls.submitter_name;
     submitterControl.clearValidators();
+    submitterControl.setValidators([trimmedMaxLengthValidator(MAX_SUBMITTER_NAME_LENGTH)]);
 
     if (this.isNamedSubmission) {
-      submitterControl.setValidators([requiredTrimmedValidator()]);
+      submitterControl.addValidators([requiredTrimmedValidator()]);
       if (this.isAuthenticatedMember && !submitterControl.value && this.memberDisplayName) {
         submitterControl.setValue(this.memberDisplayName, { emitEvent: false });
       }
@@ -554,9 +587,19 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
   }
 
   private applySubmissionError(error: unknown): void {
+    if (this.isTimeoutError(error)) {
+      this.genericErrorMessage = 'Submitting your prayer request timed out. Please try again.';
+      return;
+    }
+
     if (error instanceof HttpErrorResponse) {
       if (error.status === 0) {
         this.genericErrorMessage = 'You appear to be offline. Check your connection and try again.';
+        return;
+      }
+
+      if (error.status === 401 || error.status === 403) {
+        this.genericErrorMessage = 'Please sign in again before submitting your prayer request.';
         return;
       }
 
@@ -612,5 +655,45 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
     }
 
     return '';
+  }
+
+  private focusFirstInvalidField(): void {
+    const controlOrder: Array<keyof typeof this.form.controls> = [
+      'request_text',
+      'title',
+      'category',
+      'scope',
+      'selected_area_id',
+      'selected_district_id',
+      'selected_local_church_id',
+      'submitter_name',
+    ];
+
+    const targetIdMap: Partial<Record<keyof typeof this.form.controls, string>> = {
+      request_text: 'prayer-request-text',
+      title: 'prayer-title',
+      category: 'prayer-category',
+      scope: 'prayer-scope',
+      submitter_name: 'prayer-submitter-name',
+    };
+
+    const firstInvalid = controlOrder.find((name) => this.form.controls[name].invalid);
+    const targetId = firstInvalid ? targetIdMap[firstInvalid] : null;
+    if (!targetId) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      const focusTarget = document.getElementById(targetId) as { setFocus?: () => Promise<void> | void; focus?: () => void } | null;
+      if (focusTarget?.setFocus) {
+        void focusTarget.setFocus();
+        return;
+      }
+      focusTarget?.focus?.();
+    });
+  }
+
+  private isTimeoutError(error: unknown): boolean {
+    return error instanceof Error && error.name === 'TimeoutError';
   }
 }
