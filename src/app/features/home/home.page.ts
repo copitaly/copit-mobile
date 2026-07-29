@@ -7,21 +7,22 @@ import { firstValueFrom, forkJoin, Observable, of, Subject } from 'rxjs';
 import { catchError, distinctUntilChanged, takeUntil, timeout } from 'rxjs/operators';
 
 import { AnalyticsService } from '../../core/services/analytics.service';
+import { BibleStudyManualListItem } from '../../core/models/bible-study.model';
 import { PublicBranch } from '../../core/models/branch.model';
 import { DevotionalPublicDetail } from '../../core/models/devotional.model';
-import { MemberProfile, MemberRecentDonation, SavedChurch } from '../../core/models/user.model';
+import { MemberRecentDonation, SavedChurch } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
+import { BibleStudyService } from '../../core/services/bible-study.service';
 import { DevotionalService } from '../../core/services/devotional.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import {
   BuildSafetyLabelComponent,
   shouldShowBuildSafetyLabel,
 } from '../../shared/components/build-safety-label.component';
-import { PageHeaderComponent } from '../../shared/page-header.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, BuildSafetyLabelComponent, PageHeaderComponent],
+  imports: [CommonModule, IonicModule, BuildSafetyLabelComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-home',
   templateUrl: './home.page.html',
@@ -31,6 +32,7 @@ export class HomePage implements OnInit, OnDestroy {
   private static readonly requestTimeoutMs = 15000;
 
   private readonly authService = inject(AuthService);
+  private readonly bibleStudyService = inject(BibleStudyService);
   private readonly devotionalService = inject(DevotionalService);
   private readonly selectedBranchService = inject(SelectedBranchService);
   private readonly router = inject(Router);
@@ -39,21 +41,27 @@ export class HomePage implements OnInit, OnDestroy {
   readonly isAuthenticated$: Observable<boolean>;
   readonly showBuildSafetyLabel = shouldShowBuildSafetyLabel();
   readonly devotionalPreviewMaxLength = 140;
+  readonly scriptureSnippetMaxLength = 92;
   private readonly destroy$ = new Subject<void>();
   private savedChurches: SavedChurch[] = [];
   private defaultBranch: PublicBranch | null = null;
   private personalizationRequestId = 0;
   private todayDevotionalRequestId = 0;
+  private featuredManualRequestId = 0;
   private todayDevotionalRequestInFlight = false;
   private personalizationRequestInFlight = false;
+  private featuredManualRequestInFlight = false;
   private todayDevotionalImageFailed = false;
   private navigationPending = false;
   private homeRefreshInFlight = false;
 
   todayDevotional: DevotionalPublicDetail | null = null;
+  featuredManual: BibleStudyManualListItem | null = null;
   todayDevotionalLoading = true;
+  featuredManualLoading = true;
   todayDevotionalRefreshing = false;
   todayDevotionalError = false;
+  featuredManualError = false;
   todayDevotionalEmpty = false;
   hasTodayDevotional = false;
   todayDevotionalStatusMessage = '';
@@ -64,6 +72,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    void this.loadFeaturedManual();
     void this.loadTodayDevotional();
 
     this.isAuthenticated$
@@ -85,6 +94,7 @@ export class HomePage implements OnInit, OnDestroy {
       void this.loadPersonalization({ preserveCurrent: true });
     }
 
+    void this.loadFeaturedManual({ preserveCurrent: !!this.featuredManual });
     void this.loadTodayDevotional({ preserveCurrent: this.hasTodayDevotional });
   }
 
@@ -94,37 +104,120 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   get greeting(): string {
+    const hour = new Date().getHours();
+    if (hour < 12) {
+      return 'Good Morning';
+    }
+    if (hour < 18) {
+      return 'Good Afternoon';
+    }
+    return 'Good Evening';
+  }
+
+  get greetingSupportText(): string {
     const firstName = this.normalizeText(this.authService.currentUserSnapshot?.first_name);
     if (!firstName) {
-      return 'Welcome';
+      return 'Find today\'s reading, prayer, and church updates in one place.';
     }
 
-    const shortenedName = firstName.length > 24 ? `${firstName.slice(0, 24).trim()}…` : firstName;
-    return `Welcome back, ${shortenedName}`;
+    const shortenedName = firstName.length > 24 ? `${firstName.slice(0, 24).trim()}...` : firstName;
+    return `Peace be with you, ${shortenedName}.`;
   }
 
   get selectedBranchName(): string | null {
     return this.defaultBranch?.name?.trim() || null;
   }
 
-  get profileIcon(): string {
-    return this.authService.isAuthenticatedSnapshot ? 'person-circle' : 'person-outline';
+  get accountActionLabel(): string {
+    return this.authService.isAuthenticatedSnapshot ? 'Open profile' : 'Open account';
   }
 
-  get hasHomeStatusCard(): boolean {
-    return this.todayDevotionalLoading || this.hasTodayDevotional || this.todayDevotionalError || this.todayDevotionalEmpty;
+  get accountIconName(): string {
+    return this.authService.isAuthenticatedSnapshot ? 'person-circle-outline' : 'person-outline';
   }
 
   get hasTodayDevotionalRefreshMessage(): boolean {
     return this.todayDevotionalError && this.hasTodayDevotional && !!this.todayDevotionalStatusMessage;
   }
 
-  readonly openAccountFromHeader = (): void => {
-    this.goToAccount(this.authService.isAuthenticatedSnapshot);
-  };
+  get featuredHeroEyebrow(): string {
+    return this.featuredManual ? 'Latest Bible Study' : 'Bible Study';
+  }
+
+  get featuredHeroTitle(): string {
+    return this.featuredManual?.title || 'Bible Study manuals';
+  }
+
+  get featuredHeroMeta(): string {
+    if (!this.featuredManual) {
+      return 'Read the latest published Bible Study manual from COP Italy.';
+    }
+
+    const details = [
+      this.featuredManual.year > 0 ? `${this.featuredManual.year}` : '',
+      this.normalizeText(this.featuredManual.language_display),
+      this.formatWeekRange(this.featuredManual),
+    ].filter(Boolean);
+
+    return details.join(' • ');
+  }
+
+  get featuredHeroActionLabel(): string {
+    return 'Start Reading';
+  }
+
+  get featuredHeroImageAlt(): string {
+    return this.featuredManual?.title ? `${this.featuredManual.title} cover image` : 'Bible Study cover image';
+  }
+
+  get featuredHeroAriaLabel(): string {
+    if (this.featuredManual?.title) {
+      return `Open Bible Study manual ${this.featuredManual.title}`;
+    }
+
+    return 'Open Bible Study manuals';
+  }
+
+  get todayDevotionalDateLabel(): string | null {
+    const rawDate = this.normalizeText(this.todayDevotional?.publication_date);
+    if (!rawDate) {
+      return null;
+    }
+
+    const parsed = new Date(rawDate);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+
+    return new Intl.DateTimeFormat('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }).format(parsed);
+  }
+
+  get todayDevotionalScriptureSnippet(): string | null {
+    const snippet = this.normalizeText(this.todayDevotional?.scripture_text);
+    if (!snippet) {
+      return null;
+    }
+
+    return snippet.length > this.scriptureSnippetMaxLength
+      ? `${snippet.slice(0, this.scriptureSnippetMaxLength).trim()}...`
+      : snippet;
+  }
+
+  get showUpcomingServiceCard(): boolean {
+    return false;
+  }
 
   async handleRefresh(event: RefresherCustomEvent): Promise<void> {
-    if (this.homeRefreshInFlight || this.todayDevotionalRequestInFlight || this.personalizationRequestInFlight) {
+    if (
+      this.homeRefreshInFlight ||
+      this.todayDevotionalRequestInFlight ||
+      this.personalizationRequestInFlight ||
+      this.featuredManualRequestInFlight
+    ) {
       await event.target.complete();
       return;
     }
@@ -134,6 +227,7 @@ export class HomePage implements OnInit, OnDestroy {
 
     try {
       await Promise.all([
+        this.loadFeaturedManual({ preserveCurrent: !!this.featuredManual }),
         this.loadTodayDevotional({
           preserveCurrent: this.hasTodayDevotional,
           isRefresh: true,
@@ -146,6 +240,10 @@ export class HomePage implements OnInit, OnDestroy {
       await event.target.complete();
       this.homeRefreshInFlight = false;
     }
+  }
+
+  openAccount(): void {
+    this.goToAccount(this.authService.isAuthenticatedSnapshot);
   }
 
   handlePrimaryCta(): void {
@@ -181,6 +279,10 @@ export class HomePage implements OnInit, OnDestroy {
     void this.navigateTo(['/branches']);
   }
 
+  goToCommunity(): void {
+    void this.navigateTo(['/prayer/community']);
+  }
+
   goToGive(): void {
     this.handlePrimaryCta();
   }
@@ -195,6 +297,15 @@ export class HomePage implements OnInit, OnDestroy {
 
   goToDevotionals(): void {
     void this.navigateTo(['/devotionals']);
+  }
+
+  openFeaturedManual(): void {
+    if (this.featuredManual?.id) {
+      void this.navigateTo(`/bible-study/${this.featuredManual.id}`, true);
+      return;
+    }
+
+    void this.navigateTo(['/bible-study']);
   }
 
   async openTodayDevotional(): Promise<void> {
@@ -219,14 +330,14 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   getTodayDevotionalTitle(): string {
-    return this.normalizeText(this.todayDevotional?.title) || "Today's devotional";
+    return this.normalizeText(this.todayDevotional?.title) || 'Today\'s devotional';
   }
 
   getTodayDevotionalPreview(): string {
     const content = this.normalizeText(this.todayDevotional?.content).replace(/\s+/g, ' ');
 
     if (!content) {
-      return 'Read today’s devotional for encouragement and scripture reflection.';
+      return 'Read today\'s devotional for encouragement and scripture reflection.';
     }
 
     if (content.length <= this.devotionalPreviewMaxLength) {
@@ -238,15 +349,15 @@ export class HomePage implements OnInit, OnDestroy {
     const safePreview = (
       lastSpace > 0 ? clipped.slice(0, lastSpace) : clipped.slice(0, this.devotionalPreviewMaxLength)
     ).trim();
-    return `${safePreview}…`;
+    return `${safePreview}...`;
   }
 
   buildTodayDevotionalAriaLabel(): string {
     if (!this.todayDevotional) {
-      return "Read today's devotional";
+      return 'Read today\'s devotional';
     }
 
-    const parts = ["Read today's devotional", this.getTodayDevotionalTitle()];
+    const parts = ['Read today\'s devotional', this.getTodayDevotionalTitle()];
     if (this.hasTodayScriptureReference()) {
       parts.push(this.normalizeText(this.todayDevotional?.scripture_reference));
     }
@@ -314,6 +425,50 @@ export class HomePage implements OnInit, OnDestroy {
     } finally {
       if (requestId === this.personalizationRequestId) {
         this.personalizationRequestInFlight = false;
+      }
+    }
+  }
+
+  private async loadFeaturedManual(options?: { preserveCurrent?: boolean }): Promise<void> {
+    if (this.featuredManualRequestInFlight) {
+      return;
+    }
+
+    const requestId = ++this.featuredManualRequestId;
+    const preserveCurrent = !!options?.preserveCurrent && !!this.featuredManual;
+
+    this.featuredManualRequestInFlight = true;
+    this.featuredManualLoading = !preserveCurrent;
+    this.featuredManualError = false;
+
+    if (!preserveCurrent) {
+      this.featuredManual = null;
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.bibleStudyService.getPublishedManuals().pipe(timeout(HomePage.requestTimeoutMs))
+      );
+
+      if (requestId !== this.featuredManualRequestId) {
+        return;
+      }
+
+      this.featuredManual = Array.isArray(response.results) && response.results.length > 0 ? response.results[0] : null;
+      this.featuredManualError = false;
+    } catch {
+      if (requestId !== this.featuredManualRequestId) {
+        return;
+      }
+
+      if (!preserveCurrent) {
+        this.featuredManual = null;
+      }
+      this.featuredManualError = !preserveCurrent;
+    } finally {
+      if (requestId === this.featuredManualRequestId) {
+        this.featuredManualLoading = false;
+        this.featuredManualRequestInFlight = false;
       }
     }
   }
@@ -404,14 +559,14 @@ export class HomePage implements OnInit, OnDestroy {
 
   private getTodayDevotionalFailureMessage(error: unknown): string {
     if (this.isTimeoutError(error)) {
-      return "Today's devotional is taking too long to load. Please try again.";
+      return 'Today\'s devotional is taking too long to load. Please try again.';
     }
 
     if (error instanceof HttpErrorResponse && error.status === 0) {
-      return "You're offline. Check your connection and try again.";
+      return 'You\'re offline. Check your connection and try again.';
     }
 
-    return "Today's devotional could not be loaded.";
+    return 'Today\'s devotional could not be loaded.';
   }
 
   private isTimeoutError(error: unknown): boolean {
@@ -495,6 +650,14 @@ export class HomePage implements OnInit, OnDestroy {
 
   private normalizeText(value: string | null | undefined): string {
     return typeof value === 'string' ? value.trim() : '';
+  }
+
+  private formatWeekRange(manual: Pick<BibleStudyManualListItem, 'start_week' | 'end_week'>): string {
+    if (manual.start_week === null || manual.end_week === null) {
+      return 'Full year';
+    }
+
+    return `Weeks ${manual.start_week}-${manual.end_week}`;
   }
 
   private async navigateTo(target: string | readonly unknown[], byUrl = false): Promise<void> {
