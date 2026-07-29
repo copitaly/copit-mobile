@@ -96,4 +96,65 @@ describe('BibleStudyService', () => {
       pdf_url: 'https://example.com/manual.pdf',
     });
   });
+
+  it('normalizes malformed manual list records safely', () => {
+    let responseBody: unknown;
+
+    service.getPublishedManuals().subscribe((response) => {
+      responseBody = response;
+    });
+
+    const request = httpMock.expectOne((req) => req.url.endsWith('/api/public/bible-study/manuals/'));
+    request.flush({
+      count: 2,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: 7,
+          title: null,
+          year: null,
+          language: null,
+          language_display: null,
+          volume: null,
+          start_week: 'x',
+          end_week: -2,
+          cover_image_url: ' ',
+          pdf_url: 'javascript:alert(1)',
+        },
+        {
+          id: null,
+          title: 'Broken',
+        },
+      ],
+    });
+
+    expect(responseBody).toEqual({
+      count: 2,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: 7,
+          title: 'Bible Study Manual',
+          year: 0,
+          language: 'manual',
+          language_display: 'Manual',
+          volume: '',
+          start_week: null,
+          end_week: null,
+          cover_image_url: null,
+          pdf_url: null,
+        },
+      ],
+    });
+  });
+
+  it('accepts only https or local http document urls', () => {
+    expect(service.normalizeDocumentUrl('https://example.com/manual.pdf')).toBe('https://example.com/manual.pdf');
+    expect(service.normalizeDocumentUrl('http://localhost:8000/manual.pdf')).toBe('http://localhost:8000/manual.pdf');
+    expect(service.normalizeDocumentUrl('javascript:alert(1)')).toBeNull();
+    expect(service.normalizeDocumentUrl('data:text/plain,test')).toBeNull();
+    expect(service.normalizeDocumentUrl('file:///manual.pdf')).toBeNull();
+  });
 });

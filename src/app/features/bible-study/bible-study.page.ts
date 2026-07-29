@@ -18,10 +18,14 @@ import { FeaturePageShellComponent } from '../../shared/feature-page-shell.compo
 export class BibleStudyPage implements OnInit {
   private readonly bibleStudyService = inject(BibleStudyService);
   private readonly router = inject(Router);
+  private loadRequestId = 0;
+  private pendingManualId: number | null = null;
 
   manuals: BibleStudyManualListItem[] = [];
   loading = true;
+  refreshing = false;
   errorMessage = '';
+  loadMoreErrorMessage = '';
 
   readonly skeletonItems = [1, 2, 3];
 
@@ -29,19 +33,43 @@ export class BibleStudyPage implements OnInit {
     this.loadManuals();
   }
 
-  loadManuals(): void {
-    this.loading = true;
+  loadManuals(options?: { preserveExisting?: boolean; complete?: () => void }): void {
+    const preserveExisting = !!options?.preserveExisting && this.manuals.length > 0;
+    const requestId = ++this.loadRequestId;
+    this.loading = !preserveExisting;
+    this.refreshing = preserveExisting;
     this.errorMessage = '';
-    this.manuals = [];
+    this.loadMoreErrorMessage = '';
+    if (!preserveExisting) {
+      this.manuals = [];
+    }
 
     this.bibleStudyService.getPublishedManuals().subscribe({
       next: (response) => {
-        this.manuals = response.results;
+        if (requestId !== this.loadRequestId) {
+          options?.complete?.();
+          return;
+        }
+
+        this.manuals = this.mergeUniqueManuals(response.results);
         this.loading = false;
+        this.refreshing = false;
+        options?.complete?.();
       },
       error: () => {
+        if (requestId !== this.loadRequestId) {
+          options?.complete?.();
+          return;
+        }
+
         this.loading = false;
-        this.errorMessage = "We couldn't load Bible Study manuals right now.";
+        this.refreshing = false;
+        if (preserveExisting) {
+          this.loadMoreErrorMessage = "We couldn't refresh Bible Study manuals right now. Please try again.";
+        } else {
+          this.errorMessage = "We couldn't load Bible Study manuals right now.";
+        }
+        options?.complete?.();
       },
     });
   }
@@ -50,8 +78,24 @@ export class BibleStudyPage implements OnInit {
     this.loadManuals();
   }
 
+  refresh(event: CustomEvent<{ complete: () => void }>): void {
+    if (this.refreshing) {
+      event.detail.complete();
+      return;
+    }
+
+    this.loadManuals({ preserveExisting: true, complete: () => event.detail.complete() });
+  }
+
   openManual(manual: BibleStudyManualListItem): void {
-    void this.router.navigateByUrl(`/bible-study/${manual.id}`);
+    if (!manual?.id || this.pendingManualId === manual.id) {
+      return;
+    }
+
+    this.pendingManualId = manual.id;
+    void this.router.navigateByUrl(`/bible-study/${manual.id}`).finally(() => {
+      this.pendingManualId = null;
+    });
   }
 
   formatWeekRange(manual: BibleStudyManualListItem): string {
@@ -68,5 +112,18 @@ export class BibleStudyPage implements OnInit {
     }
 
     return /^volume\b/i.test(trimmed) ? trimmed : `Volume ${trimmed}`;
+  }
+
+  trackByManualId(_: number, manual: BibleStudyManualListItem): number {
+    return manual.id;
+  }
+
+  private mergeUniqueManuals(incoming: BibleStudyManualListItem[]): BibleStudyManualListItem[] {
+    const manualMap = new Map<number, BibleStudyManualListItem>();
+    for (const manual of incoming) {
+      manualMap.set(manual.id, manual);
+    }
+
+    return Array.from(manualMap.values());
   }
 }

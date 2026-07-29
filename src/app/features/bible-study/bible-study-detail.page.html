@@ -1,5 +1,9 @@
 <ion-page>
   <ion-content fullscreen class="feature-page-content bible-study-detail-content">
+    <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
+      <ion-refresher-content></ion-refresher-content>
+    </ion-refresher>
+
     <app-feature-page-shell
       title="Bible Study"
       subtitle="Read published manual details."
@@ -124,6 +128,12 @@
             download a copy for offline reading.
           </p>
         </section>
+
+        <div *ngIf="!loading && !errorMessage && refreshErrorMessage" class="state-card error-state" data-testid="refresh-error-state">
+          <div class="state-copy">
+            <p>{{ refreshErrorMessage }}</p>
+          </div>
+        </div>
     </app-feature-page-shell>
   </ion-content>
 </ion-page>

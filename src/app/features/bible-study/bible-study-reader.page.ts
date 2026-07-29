@@ -35,7 +35,6 @@ export class BibleStudyReaderPage implements OnDestroy {
   private static readonly VIEWER_LAYOUT_MAX_ATTEMPTS = 12;
   private static readonly VIEWPORT_RESIZE_DEBOUNCE_MS = 140;
   private static readonly VIEWPORT_SIZE_THRESHOLD_PX = 12;
-  private static readonly DEV_DIAGNOSTICS = typeof ngDevMode !== 'undefined' && !!ngDevMode;
   private static readonly DEFAULT_ZOOM: ZoomPreset = 'page-width';
 
   private readonly route = inject(ActivatedRoute);
@@ -83,23 +82,19 @@ export class BibleStudyReaderPage implements OnDestroy {
 
   ionViewWillEnter(): void {
     this.isViewActive = true;
-    this.logDiagnostics('ionViewWillEnter', {});
     this.loadManual();
   }
 
   ionViewDidEnter(): void {
     this.isViewActive = true;
-    this.logDiagnostics('ionViewDidEnter', {});
     this.scheduleViewerActivation();
   }
 
   ionViewWillLeave(): void {
-    this.logDiagnostics('ionViewWillLeave', {});
     this.teardownActiveSession();
   }
 
   ionViewDidLeave(): void {
-    this.logDiagnostics('ionViewDidLeave', {});
     this.teardownActiveSession();
   }
 
@@ -172,7 +167,7 @@ export class BibleStudyReaderPage implements OnDestroy {
           this.notFound = error instanceof HttpErrorResponse && error.status === 404;
           this.errorMessage = this.notFound
             ? ''
-            : "We couldn't load this Bible Study manual right now.";
+            : this.resolveManualLoadErrorMessage(error);
           this.setReaderState('error', { notFound: this.notFound });
         },
       });
@@ -217,7 +212,6 @@ export class BibleStudyReaderPage implements OnDestroy {
   handlePdfLoaded(event: PdfLoadedEvent): void {
     this.totalPages = event.pagesCount;
     this.pdfErrorMessage = '';
-    this.logDiagnostics('pdfLoaded', { pagesCount: event.pagesCount });
   }
 
   handlePageRendered(event: PageRenderedEvent): void {
@@ -421,7 +415,6 @@ export class BibleStudyReaderPage implements OnDestroy {
       this.viewerSurface?.nativeElement ??
       (this.host.nativeElement.querySelector('.reader-viewer') as HTMLElement | null);
     const { width, height } = surface?.getBoundingClientRect() ?? { width: 0, height: 0 };
-    this.logDiagnostics('viewer container', { width, height, attempt });
     if (width > 0 && height > 0) {
       this.viewerVisible = false;
       queueMicrotask(() => {
@@ -529,12 +522,7 @@ export class BibleStudyReaderPage implements OnDestroy {
     }
 
     this.viewerPage = this.currentPage;
-    this.logDiagnostics('viewport stabilized', {
-      reason,
-      width: this.lastViewportWidth,
-      height: this.lastViewportHeight,
-      page: this.currentPage,
-    });
+    void reason;
   }
 
   private captureViewportDimensions(): void {
@@ -576,16 +564,14 @@ export class BibleStudyReaderPage implements OnDestroy {
   }
 
   private normalizePdfSourceUrl(value: string | null): string | null {
-    if (typeof value !== 'string') {
-      return null;
-    }
-
-    const trimmedValue = value.trim();
-    return trimmedValue ? trimmedValue : null;
+    return this.bibleStudyService.normalizeDocumentUrl(value);
   }
 
   private resolvePdfErrorMessage(error: Error): string {
     const message = String(error?.message ?? '').toLowerCase();
+    if (message.includes('invalid') || message.includes('unsupported') || message.includes('malformed')) {
+      return 'This PDF link is invalid or unsupported. Return to the manual and try again later.';
+    }
     if (message.includes('403') || message.includes('401') || message.includes('expired') || message.includes('unauthorized')) {
       return 'This PDF link may have expired. Retry to request a fresh signed copy.';
     }
@@ -596,16 +582,27 @@ export class BibleStudyReaderPage implements OnDestroy {
     return "We couldn't render this PDF right now. Retry to request a fresh signed copy.";
   }
 
-  private setReaderState(nextState: ReaderState, context: Record<string, unknown>): void {
-    this.readerState = nextState;
-    this.logDiagnostics('state', { state: nextState, ...context });
-  }
+  private resolveManualLoadErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      if (error.status === 0) {
+        return 'You appear to be offline. Check your connection and try again.';
+      }
 
-  private logDiagnostics(event: string, payload: Record<string, unknown>): void {
-    if (!BibleStudyReaderPage.DEV_DIAGNOSTICS) {
-      return;
+      if (error.status === 401 || error.status === 403) {
+        return 'This manual is not available right now. Please try again shortly.';
+      }
     }
 
-    console.debug('[BibleStudyReader]', event, payload);
+    const message = String((error as { message?: string } | undefined)?.message ?? '').toLowerCase();
+    if (message.includes('timeout')) {
+      return 'Loading this manual timed out. Please try again.';
+    }
+
+    return "We couldn't load this Bible Study manual right now.";
+  }
+
+  private setReaderState(nextState: ReaderState, context: Record<string, unknown>): void {
+    this.readerState = nextState;
+    void context;
   }
 }

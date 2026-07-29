@@ -13,32 +13,33 @@ export interface BibleStudyDownloadResult {
 @Injectable({ providedIn: 'root' })
 export class BibleStudyDownloadService {
   private static readonly DOWNLOAD_DIRECTORY = 'COP/BibleStudy';
-  private static readonly DEV_DIAGNOSTICS = typeof ngDevMode !== 'undefined' && !!ngDevMode;
 
   async downloadPdf(pdfUrl: string, fileName: string): Promise<BibleStudyDownloadResult> {
-    if (Capacitor.isNativePlatform()) {
-      return this.downloadNative(pdfUrl, fileName);
+    const normalizedUrl = this.normalizeDocumentUrl(pdfUrl);
+    if (!normalizedUrl) {
+      throw new Error('Invalid PDF URL');
     }
 
-    return this.downloadInBrowser(pdfUrl, fileName);
+    const safeFileName = this.buildSafeFileName(fileName);
+    if (Capacitor.isNativePlatform()) {
+      return this.downloadNative(normalizedUrl, safeFileName);
+    }
+
+    return this.downloadInBrowser(normalizedUrl, safeFileName);
   }
 
   private async downloadNative(pdfUrl: string, fileName: string): Promise<BibleStudyDownloadResult> {
     const platform = Capacitor.getPlatform();
     const path = `${BibleStudyDownloadService.DOWNLOAD_DIRECTORY}/${fileName}`;
     const response = await fetch(pdfUrl);
-    this.logDiagnostics('download fetch', {
-      platform,
-      ok: response.ok,
-      status: response.status,
-    });
     if (!response.ok) {
       throw new Error(`Download failed with status ${response.status}`);
     }
 
+    this.ensureSupportedContentType(response.headers.get('Content-Type'));
+
     const arrayBuffer = await response.arrayBuffer();
     const byteLength = arrayBuffer.byteLength;
-    this.logDiagnostics('download bytes', { byteLength });
     if (!byteLength) {
       throw new Error('Downloaded PDF was empty');
     }
@@ -48,8 +49,6 @@ export class BibleStudyDownloadService {
 
     const shared = await this.shareNativeFile(uri, fileName);
     if (shared) {
-      this.logDiagnostics('share invoke', { shared: true });
-
       return {
         fileName,
         uri,
@@ -70,11 +69,11 @@ export class BibleStudyDownloadService {
 
   private async downloadInBrowser(pdfUrl: string, fileName: string): Promise<BibleStudyDownloadResult> {
     const response = await fetch(pdfUrl);
-    this.logDiagnostics('browser fetch', { ok: response.ok, status: response.status });
     if (!response.ok) {
       throw new Error(`Download failed with status ${response.status}`);
     }
 
+    this.ensureSupportedContentType(response.headers.get('Content-Type'));
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
 
@@ -115,23 +114,13 @@ export class BibleStudyDownloadService {
       directory: Directory.Cache,
       recursive: true,
     });
-    this.logDiagnostics('filesystem write', { path, directory: Directory.Cache });
 
     const uri = await Filesystem.getUri({
       path,
       directory: Directory.Cache,
     });
-    this.logDiagnostics('filesystem uri', { hasUri: !!uri.uri });
 
     return uri.uri;
-  }
-
-  private logDiagnostics(event: string, payload: Record<string, unknown>): void {
-    if (!BibleStudyDownloadService.DEV_DIAGNOSTICS) {
-      return;
-    }
-
-    console.debug('[BibleStudyDownload]', event, payload);
   }
 
   private async shareNativeFile(uri: string, fileName: string): Promise<boolean> {
@@ -147,5 +136,61 @@ export class BibleStudyDownloadService {
       dialogTitle: 'Open or save PDF',
     });
     return true;
+  }
+
+  private normalizeDocumentUrl(value: string | null | undefined): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(trimmed);
+    } catch {
+      return null;
+    }
+
+    const protocol = parsedUrl.protocol.toLowerCase();
+    if (protocol === 'https:') {
+      return parsedUrl.toString();
+    }
+
+    const isLocalHttp =
+      protocol === 'http:' &&
+      ['localhost', '127.0.0.1'].includes(parsedUrl.hostname.toLowerCase());
+
+    return isLocalHttp ? parsedUrl.toString() : null;
+  }
+
+  private ensureSupportedContentType(contentType: string | null): void {
+    const normalized = (contentType ?? '').toLowerCase();
+    if (!normalized) {
+      return;
+    }
+
+    if (
+      normalized.includes('application/pdf') ||
+      normalized.includes('application/octet-stream') ||
+      normalized.includes('binary/octet-stream')
+    ) {
+      return;
+    }
+
+    throw new Error('Unsupported PDF content type');
+  }
+
+  private buildSafeFileName(fileName: string): string {
+    const normalized = (fileName ?? '')
+      .replace(/[\\/:*?"<>|]+/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const ensuredPdf = normalized.toLowerCase().endsWith('.pdf') ? normalized : `${normalized || 'manual'}.pdf`;
+    return ensuredPdf.slice(0, 120);
   }
 }

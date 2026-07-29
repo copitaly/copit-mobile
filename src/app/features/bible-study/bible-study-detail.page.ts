@@ -19,19 +19,21 @@ import { FeaturePageShellComponent } from '../../shared/feature-page-shell.compo
   styleUrls: ['./bible-study-detail.page.scss'],
 })
 export class BibleStudyDetailPage implements OnInit {
-  private static readonly DEV_DIAGNOSTICS = typeof ngDevMode !== 'undefined' && !!ngDevMode;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly bibleStudyService = inject(BibleStudyService);
   private readonly bibleStudyDownloadService = inject(BibleStudyDownloadService);
   private readonly toastController = inject(ToastController);
+  private loadRequestId = 0;
 
   manual: BibleStudyManualDetail | null = null;
   loading = true;
+  refreshing = false;
   openingReader = false;
   downloadingPdf = false;
   notFound = false;
   errorMessage = '';
+  refreshErrorMessage = '';
 
   readonly skeletonItems = [1, 2, 3];
 
@@ -39,41 +41,71 @@ export class BibleStudyDetailPage implements OnInit {
     this.loadManual();
   }
 
-  loadManual(): void {
+  loadManual(options?: { preserveExisting?: boolean; complete?: () => void }): void {
     const rawId = Number(this.route.snapshot.paramMap.get('id'));
     if (!Number.isInteger(rawId) || rawId <= 0) {
       this.loading = false;
+      this.refreshing = false;
       this.notFound = false;
       this.errorMessage = 'Invalid Bible Study manual ID.';
       this.manual = null;
       return;
     }
 
-    this.loading = true;
+    const preserveExisting = !!options?.preserveExisting && !!this.manual;
+    const requestId = ++this.loadRequestId;
+    this.loading = !preserveExisting;
+    this.refreshing = preserveExisting;
     this.openingReader = false;
     this.downloadingPdf = false;
     this.notFound = false;
     this.errorMessage = '';
-    this.manual = null;
+    this.refreshErrorMessage = '';
+    if (!preserveExisting) {
+      this.manual = null;
+    }
 
     this.bibleStudyService.getPublishedManualDetail(rawId).subscribe({
       next: (manual) => {
+        if (requestId !== this.loadRequestId) {
+          options?.complete?.();
+          return;
+        }
+
         this.manual = manual;
         this.loading = false;
+        this.refreshing = false;
+        options?.complete?.();
       },
       error: (error: unknown) => {
+        if (requestId !== this.loadRequestId) {
+          options?.complete?.();
+          return;
+        }
+
         this.loading = false;
-        this.manual = null;
-        this.notFound = error instanceof HttpErrorResponse && error.status === 404;
-        this.errorMessage = this.notFound
-          ? ''
-          : "We couldn't load this Bible Study manual right now.";
+        this.refreshing = false;
+        const notFound = error instanceof HttpErrorResponse && error.status === 404;
+        if (preserveExisting) {
+          this.refreshErrorMessage = this.resolveDetailLoadErrorMessage(error);
+        } else {
+          this.manual = null;
+          this.notFound = notFound;
+          this.errorMessage = notFound ? '' : this.resolveDetailLoadErrorMessage(error);
+        }
+        options?.complete?.();
       },
     });
   }
 
   async openReader(): Promise<void> {
-    if (!this.manual?.pdf_url || this.openingReader) {
+    if (!this.manual?.id || this.openingReader) {
+      return;
+    }
+
+    const pdfUrl = this.bibleStudyService.normalizeDocumentUrl(this.manual.pdf_url);
+    if (!pdfUrl) {
+      await this.presentToast('This manual does not currently have a readable PDF link.', 'alert-circle-outline');
       return;
     }
 
@@ -96,7 +128,6 @@ export class BibleStudyDetailPage implements OnInit {
     try {
       const freshManual = await firstValueFrom(this.bibleStudyService.getPublishedManualDetail(this.manual.id));
       this.manual = freshManual;
-      this.logDiagnostics('download fresh manual', { manualId: freshManual.id, hasPdfUrl: !!freshManual.pdf_url });
       await this.downloadFromManual(freshManual, false);
     } catch (error) {
       await this.presentToast(this.resolveDownloadErrorMessage(error), 'alert-circle-outline');
@@ -107,6 +138,15 @@ export class BibleStudyDetailPage implements OnInit {
 
   retryLoad(): void {
     this.loadManual();
+  }
+
+  refresh(event: CustomEvent<{ complete: () => void }>): void {
+    if (this.refreshing) {
+      event.detail.complete();
+      return;
+    }
+
+    this.loadManual({ preserveExisting: true, complete: () => event.detail.complete() });
   }
 
   formatWeekRange(manual: Pick<BibleStudyManualDetail, 'start_week' | 'end_week'>): string {
@@ -132,7 +172,7 @@ export class BibleStudyDetailPage implements OnInit {
   }
 
   private async downloadFromManual(manual: BibleStudyManualDetail, hasRetried: boolean): Promise<void> {
-    const pdfUrl = this.normalizePdfUrl(manual.pdf_url);
+    const pdfUrl = this.bibleStudyService.normalizeDocumentUrl(manual.pdf_url);
     if (!pdfUrl) {
       await this.presentToast('This manual does not currently have a readable PDF link.', 'alert-circle-outline');
       return;
@@ -150,21 +190,12 @@ export class BibleStudyDetailPage implements OnInit {
       if (!hasRetried && this.shouldRetryExpiredLink(error)) {
         const refreshedManual = await firstValueFrom(this.bibleStudyService.getPublishedManualDetail(manual.id));
         this.manual = refreshedManual;
-        this.logDiagnostics('download retry fresh manual', {
-          manualId: refreshedManual.id,
-          hasPdfUrl: !!refreshedManual.pdf_url,
-        });
         await this.downloadFromManual(refreshedManual, true);
         return;
       }
 
       throw error;
     }
-  }
-
-  private normalizePdfUrl(value: string | null | undefined): string | null {
-    const trimmed = value?.trim() ?? '';
-    return trimmed || null;
   }
 
   private buildDownloadFileName(manual: BibleStudyManualDetail): string {
@@ -202,7 +233,42 @@ export class BibleStudyDetailPage implements OnInit {
       return 'Storage permission is required to download this PDF.';
     }
 
+    if (message.includes('unauthorized') || message.includes('401') || message.includes('403') || message.includes('expired')) {
+      return 'This PDF link expired. Please try again to fetch a fresh copy.';
+    }
+
+    if (message.includes('timeout')) {
+      return 'Downloading this manual timed out. Please try again.';
+    }
+
+    if (message.includes('offline') || message.includes('network')) {
+      return 'You appear to be offline. Check your connection and try again.';
+    }
+
+    if (message.includes('invalid') || message.includes('unsupported')) {
+      return 'This PDF link is invalid or unsupported.';
+    }
+
     return 'We could not download this manual right now. Please try again.';
+  }
+
+  private resolveDetailLoadErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      if (error.status === 0) {
+        return 'You appear to be offline. Check your connection and try again.';
+      }
+
+      if (error.status === 401 || error.status === 403) {
+        return 'This manual is not available right now. Please try again shortly.';
+      }
+    }
+
+    const message = String((error as { message?: string } | undefined)?.message ?? '').toLowerCase();
+    if (message.includes('timeout')) {
+      return 'Loading this manual timed out. Please try again.';
+    }
+
+    return "We couldn't load this Bible Study manual right now.";
   }
 
   private async presentToast(message: string, icon: string): Promise<void> {
@@ -220,11 +286,4 @@ export class BibleStudyDetailPage implements OnInit {
     }
   }
 
-  private logDiagnostics(event: string, payload: Record<string, unknown>): void {
-    if (!BibleStudyDetailPage.DEV_DIAGNOSTICS) {
-      return;
-    }
-
-    console.debug('[BibleStudyDetail]', event, payload);
-  }
 }

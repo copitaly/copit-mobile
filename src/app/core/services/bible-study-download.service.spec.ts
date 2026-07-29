@@ -39,6 +39,10 @@ describe('BibleStudyDownloadService', () => {
     expect(result.locationLabel).toBe('your browser downloads');
   });
 
+  it('rejects malformed or unsafe document urls before downloading', async () => {
+    await expectAsync(service.downloadPdf('javascript:alert(1)', 'manual.pdf')).toBeRejectedWithError('Invalid PDF URL');
+  });
+
   it('writes binary PDF data to the filesystem cache and invokes Share on native platforms', async () => {
     const payload = new Uint8Array([1, 2, 3, 4]).buffer;
     spyOn(Capacitor, 'isNativePlatform').and.returnValue(true);
@@ -60,5 +64,19 @@ describe('BibleStudyDownloadService', () => {
     );
     expect(shareSpy).toHaveBeenCalledWith(jasmine.stringMatching(/manual\.pdf$/), 'manual.pdf');
     expect(result.shared).toBeTrue();
+  });
+
+  it('rejects unsupported content types', async () => {
+    spyOn(Capacitor, 'isNativePlatform').and.returnValue(false);
+    spyOn(window, 'fetch').and.resolveTo(
+      new Response('bad', {
+        status: 200,
+        headers: { 'Content-Type': 'text/html' },
+      })
+    );
+
+    await expectAsync(service.downloadPdf('https://example.com/manual.pdf', 'manual.pdf')).toBeRejectedWithError(
+      'Unsupported PDF content type'
+    );
   });
 });

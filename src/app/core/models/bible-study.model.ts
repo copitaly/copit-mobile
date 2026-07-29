@@ -11,6 +11,8 @@ export interface BibleStudyManualListItem {
   pdf_url: string | null;
 }
 
+export type BibleStudyPublicationStatus = 'draft' | 'published' | 'archived' | 'unknown';
+
 export interface BibleStudyManualDetail {
   id: number;
   title: string;
@@ -20,7 +22,7 @@ export interface BibleStudyManualDetail {
   volume: string;
   start_week: number | null;
   end_week: number | null;
-  publication_status: string;
+  publication_status: BibleStudyPublicationStatus;
   published_at: string | null;
   cover_image_url: string | null;
   pdf_url: string | null;

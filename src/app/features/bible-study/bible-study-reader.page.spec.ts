@@ -98,7 +98,31 @@ describe('BibleStudyReaderPage', () => {
   }
 
   beforeEach(() => {
-    bibleStudyService = jasmine.createSpyObj<BibleStudyService>('BibleStudyService', ['getPublishedManualDetail']);
+    bibleStudyService = jasmine.createSpyObj<BibleStudyService>('BibleStudyService', [
+      'getPublishedManualDetail',
+      'normalizeDocumentUrl',
+    ]);
+    bibleStudyService.normalizeDocumentUrl.and.callFake((value: string | null | undefined) => {
+      const candidate = (value ?? '').trim();
+      if (!candidate) {
+        return null;
+      }
+
+      try {
+        const url = new URL(candidate);
+        if (url.protocol === 'https:') {
+          return url.toString();
+        }
+
+        if (url.protocol === 'http:' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1')) {
+          return url.toString();
+        }
+      } catch {
+        return null;
+      }
+
+      return null;
+    });
     stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
     stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
     spyOn(window, 'requestAnimationFrame').and.callFake((callback: FrameRequestCallback): number => {
@@ -143,6 +167,16 @@ describe('BibleStudyReaderPage', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="reader-no-pdf-state"]')).not.toBeNull();
   });
 
+  it('rejects unsafe pdf urls before creating the viewer', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of({ ...manual, pdf_url: 'javascript:alert(1)' }));
+
+    await createComponent();
+
+    expect(page.pdfSourceUrl).toBeNull();
+    expect(fixture.debugElement.query(By.directive(MockBibleStudyPdfViewerComponent))).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="reader-no-pdf-state"]')).not.toBeNull();
+  });
+
   it('shows the loading state before the manual arrives', async () => {
     const manual$ = new Subject<BibleStudyManualDetail>();
     bibleStudyService.getPublishedManualDetail.and.returnValue(manual$.asObservable());
@@ -183,6 +217,16 @@ describe('BibleStudyReaderPage', () => {
     fixture.detectChanges();
 
     expect(bibleStudyService.getPublishedManualDetail.calls.count()).toBe(2);
+  });
+
+  it('shows an offline reader error message when the manual request fails with status 0', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 0 }))
+    );
+
+    await createComponent();
+
+    expect(page.errorMessage).toBe('You appear to be offline. Check your connection and try again.');
   });
 
   it('shows a friendly 404 state', async () => {

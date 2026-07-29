@@ -151,6 +151,43 @@ describe('BibleStudyPage', () => {
     expect(bibleStudyService.getPublishedManuals.calls.count()).toBe(2);
   });
 
+  it('keeps loaded manuals visible if pull-to-refresh fails', async () => {
+    const complete = jasmine.createSpy('complete');
+    bibleStudyService.getPublishedManuals.and.returnValues(
+      of(buildResponse([firstManual])),
+      throwError(() => new Error('network'))
+    );
+
+    await createComponent();
+
+    page.refresh({ detail: { complete } } as unknown as CustomEvent<{ complete: () => void }>);
+    fixture.detectChanges();
+
+    expect(page.manuals.length).toBe(1);
+    expect(page.errorMessage).toBe('');
+    expect(page.loadMoreErrorMessage).toContain("couldn't refresh Bible Study manuals");
+    expect(complete).toHaveBeenCalled();
+  });
+
+  it('prevents duplicate concurrent manual opens', async () => {
+    bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
+    let resolveNavigation: ((value: boolean) => void) | undefined;
+    router.navigateByUrl.and.returnValue(
+      new Promise<boolean>((resolve) => {
+        resolveNavigation = resolve;
+      })
+    );
+
+    await createComponent();
+
+    page.openManual(firstManual);
+    page.openManual(firstManual);
+    resolveNavigation?.(true);
+    await fixture.whenStable();
+
+    expect(router.navigateByUrl.calls.count()).toBe(1);
+  });
+
   it('navigates to the placeholder detail route when a manual is tapped', async () => {
     bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
 

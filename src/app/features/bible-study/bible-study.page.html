@@ -1,5 +1,9 @@
 <ion-page>
   <ion-content fullscreen class="branch-content bible-study-content">
+    <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
+      <ion-refresher-content></ion-refresher-content>
+    </ion-refresher>
+
     <app-feature-page-shell
       title="Bible Study"
       subtitle="Browse published Bible Study manuals."
@@ -36,7 +40,7 @@
 
       <section *ngIf="!loading && !errorMessage && manuals.length > 0" class="manual-feed" aria-label="Bible Study manuals">
         <button
-          *ngFor="let manual of manuals"
+          *ngFor="let manual of manuals; trackBy: trackByManualId"
           type="button"
           class="manual-card manual-card--button"
           [attr.aria-label]="'Open Bible Study manual ' + manual.title"
@@ -63,6 +67,12 @@
           </div>
         </button>
       </section>
+
+      <div *ngIf="!loading && !errorMessage && loadMoreErrorMessage" class="state-card error-state" data-testid="refresh-error-state">
+        <div class="state-copy">
+          <p>{{ loadMoreErrorMessage }}</p>
+        </div>
+      </div>
     </app-feature-page-shell>
   </ion-content>
 </ion-page>

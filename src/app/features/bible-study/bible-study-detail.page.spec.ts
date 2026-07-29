@@ -68,7 +68,31 @@ describe('BibleStudyDetailPage', () => {
   }
 
   beforeEach(() => {
-    bibleStudyService = jasmine.createSpyObj<BibleStudyService>('BibleStudyService', ['getPublishedManualDetail']);
+    bibleStudyService = jasmine.createSpyObj<BibleStudyService>('BibleStudyService', [
+      'getPublishedManualDetail',
+      'normalizeDocumentUrl',
+    ]);
+    bibleStudyService.normalizeDocumentUrl.and.callFake((value: string | null | undefined) => {
+      const candidate = (value ?? '').trim();
+      if (!candidate) {
+        return null;
+      }
+
+      try {
+        const url = new URL(candidate);
+        if (url.protocol === 'https:') {
+          return url.toString();
+        }
+
+        if (url.protocol === 'http:' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1')) {
+          return url.toString();
+        }
+      } catch {
+        return null;
+      }
+
+      return null;
+    });
     downloadService = jasmine.createSpyObj<BibleStudyDownloadService>('BibleStudyDownloadService', ['downloadPdf']);
     router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl'], { events: of() });
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
@@ -319,5 +343,40 @@ describe('BibleStudyDetailPage', () => {
 
     expect(bibleStudyService.getPublishedManualDetail).not.toHaveBeenCalled();
     expect(page.errorMessage).toBe('Invalid Bible Study manual ID.');
+  });
+
+  it('keeps the current manual visible if pull-to-refresh fails', async () => {
+    const complete = jasmine.createSpy('complete');
+    bibleStudyService.getPublishedManualDetail.and.returnValues(
+      of(manual),
+      throwError(() => new Error('network'))
+    );
+
+    await createComponent();
+
+    page.refresh({ detail: { complete } } as unknown as CustomEvent<{ complete: () => void }>);
+    fixture.detectChanges();
+
+    expect(page.manual?.id).toBe(14);
+    expect(page.errorMessage).toBe('');
+    expect(page.refreshErrorMessage).toContain("couldn't load this Bible Study manual");
+    expect(complete).toHaveBeenCalled();
+  });
+
+  it('rejects unsafe pdf urls for both read and download actions', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of({ ...manual, pdf_url: 'javascript:alert(1)' }));
+
+    await createComponent();
+    await page.openReader();
+    await page.downloadPdf();
+
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(downloadService.downloadPdf).not.toHaveBeenCalled();
+    expect(toastController.create).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        message: 'This manual does not currently have a readable PDF link.',
+        icon: 'alert-circle-outline',
+      })
+    );
   });
 });
