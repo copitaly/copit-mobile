@@ -19,9 +19,6 @@ export class StripePaymentService {
   ): Promise<{ status: PaymentSheetOutcome; errorMessage?: string }> {
     try {
       this.sentryTelemetry.addFeatureBreadcrumb('donations', 'PaymentSheet init started', { flow });
-      if (!environment.production) {
-        console.log('[StripePaymentService] presentPaymentSheet start', { flow });
-      }
       await this.init();
       this.sentryTelemetry.addFeatureBreadcrumb('donations', 'PaymentSheet init succeeded', { flow });
       await Stripe.createPaymentSheet({
@@ -37,9 +34,6 @@ export class StripePaymentService {
       });
       this.sentryTelemetry.addFeatureBreadcrumb('donations', 'PaymentSheet opened', { flow });
       const { paymentResult } = await Stripe.presentPaymentSheet();
-      if (!environment.production) {
-        console.log('[StripePaymentService] PaymentSheet result', { flow, paymentResult });
-      }
       const status = this.mapResult(paymentResult);
       this.sentryTelemetry.addFeatureBreadcrumb(
         'donations',
@@ -55,9 +49,6 @@ export class StripePaymentService {
         errorMessage: paymentResult === PaymentSheetEventsEnum.Failed ? 'Payment failed. Please try again.' : undefined,
       };
     } catch (error) {
-      if (!environment.production) {
-        console.error('[StripePaymentService] PaymentSheet error', error);
-      }
       this.sentryTelemetry.captureFeatureError('donations', 'PaymentSheet failed', error, { flow });
       return { status: 'failed', errorMessage: 'Payment sheet failed to open.' };
     }
@@ -71,9 +62,6 @@ export class StripePaymentService {
       publishableKey: environment.stripePublishableKey,
     });
     this.initialized = true;
-    if (!environment.production) {
-      console.log('[StripePaymentService] Stripe initialized');
-    }
   }
 
   private mapResult(result: PaymentSheetEventsEnum): PaymentSheetOutcome {

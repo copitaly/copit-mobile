@@ -106,29 +106,12 @@ export class DonationsService {
       amount: payload.amount,
       interval: payload.interval,
     });
-    if (!environment.production) {
-      console.log('[DonationsService] recurring create requested', {
-        endpoint: 'donations/recurring/create/',
-        isLoggedIn: this.authService.isAuthenticatedSnapshot,
-        hasAccessToken: !!this.authService.accessTokenSnapshot,
-      });
-    }
     return this.withAuth((token) => this.postRecurringCheckout(token, payload));
   }
 
   createRecurringDonation(
     payload: RecurringDonationCreateRequest
   ): Observable<RecurringDonationCreateResponse> {
-    if (!environment.production) {
-      console.log('[DonationsService] createRecurringDonation called', {
-        endpoint: 'donations/recurring/create/',
-        amount: payload.amount,
-        category: payload.category,
-        categoryId: payload.category_id,
-        churchId: payload.church_id,
-        interval: payload.interval,
-      });
-    }
     return this.createRecurringCheckout(payload);
   }
 
@@ -178,13 +161,6 @@ export class DonationsService {
     payload: RecurringDonationCreateRequest
   ): Observable<RecurringDonationCreateResponse> {
     const url = this.buildUrl('donations/recurring/create/');
-    const tokenAttached = !!token;
-    if (!environment.production) {
-      console.log('[DonationsService] recurring create request headers', {
-        endpoint: 'donations/recurring/create/',
-        tokenAttached,
-      });
-    }
     return this.http
       .post<RecurringDonationCreateResponse>(url, payload, {
         headers: this.buildAuthHeaders(token),
@@ -255,19 +231,11 @@ export class DonationsService {
             return throwError(() => error);
           }
 
-          if (!environment.production) {
-            console.log('[DonationsService] auth request unauthorized, attempting refresh');
-          }
           return this.authService.getCurrentUser().pipe(
             switchMap(() => {
               const refreshedToken = this.authService.accessTokenSnapshot;
               if (!refreshedToken) {
                 return throwError(() => error);
-              }
-              if (!environment.production) {
-                console.log('[DonationsService] auth refresh succeeded, retrying request once', {
-                  hasAccessToken: !!refreshedToken,
-                });
               }
               return requestFactory(refreshedToken);
             })
@@ -276,19 +244,11 @@ export class DonationsService {
       );
     }
 
-    if (!environment.production) {
-      console.log('[DonationsService] no access token available, attempting auth refresh before request');
-    }
     return this.authService.getCurrentUser().pipe(
       switchMap(() => {
         const refreshedToken = this.authService.accessTokenSnapshot;
         if (!refreshedToken) {
           return throwError(() => new Error('Authentication required.'));
-        }
-        if (!environment.production) {
-          console.log('[DonationsService] auth refresh provided token, sending request', {
-            hasAccessToken: !!refreshedToken,
-          });
         }
         return requestFactory(refreshedToken);
       })

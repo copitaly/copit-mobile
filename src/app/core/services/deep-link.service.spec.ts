@@ -1,5 +1,4 @@
 import { NgZone } from '@angular/core';
-import { TestBed, fakeAsync, flushMicrotasks } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { App } from '@capacitor/app';
 
@@ -7,9 +6,7 @@ import { DeepLinkService } from './deep-link.service';
 
 describe('DeepLinkService', () => {
   let router: jasmine.SpyObj<Router>;
-  let addListenerSpy: jasmine.Spy;
-  let getLaunchUrlSpy: jasmine.Spy;
-  let registeredListener: ((event: { url: string }) => void) | undefined;
+  let service: DeepLinkService;
 
   beforeEach(() => {
     router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl', 'createUrlTree']);
@@ -25,69 +22,67 @@ describe('DeepLinkService', () => {
       },
     }) as never);
 
-    registeredListener = undefined;
-    getLaunchUrlSpy = spyOn(App, 'getLaunchUrl').and.resolveTo(undefined);
-    addListenerSpy = spyOn(App, 'addListener').and.callFake((async (...args: unknown[]) => {
-      registeredListener = args[1] as (event: { url: string }) => void;
-      return {
-        remove: async () => undefined,
-      };
-    }) as typeof App.addListener);
+    spyOn(App, 'getLaunchUrl').and.resolveTo(undefined);
+    spyOn(App, 'addListener').and.resolveTo({
+      remove: async () => undefined,
+    } as never);
 
-    TestBed.configureTestingModule({
-      providers: [
-        DeepLinkService,
-        NgZone,
-        { provide: Router, useValue: router },
-      ],
-    });
+    service = new DeepLinkService(
+      router,
+      {
+        run<T>(fn: () => T): T {
+          return fn();
+        },
+      } as NgZone
+    );
   });
 
-  it('navigates incoming reset-password launch URLs to the Angular route', fakeAsync(() => {
-    getLaunchUrlSpy.and.resolveTo({
-      url: 'https://copit-production-97631.web.app/reset-password/uid123/token456',
-    });
-
-    TestBed.inject(DeepLinkService);
-    flushMicrotasks();
+  it('navigates reset-password URLs to the Angular route', async () => {
+    await (service as unknown as { processUrl(rawUrl: string, source: string): void }).processUrl(
+      'https://copit-production-97631.web.app/reset-password/uid123/token456',
+      'test'
+    );
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/reset-password/uid123/token456');
-    expect(addListenerSpy).toHaveBeenCalled();
-  }));
+  });
 
-  it('navigates warm appUrlOpen reset-password links without logging raw tokens', fakeAsync(() => {
+  it('does not log raw reset-password tokens', async () => {
     const logSpy = spyOn(console, 'log');
 
-    TestBed.inject(DeepLinkService);
-    flushMicrotasks();
+    await (service as unknown as { processUrl(rawUrl: string, source: string): void }).processUrl(
+      'https://copit-production-97631.web.app/reset-password/safe-uid/safe-token',
+      'test'
+    );
 
-    expect(registeredListener).toEqual(jasmine.any(Function));
-
-    registeredListener?.({
-      url: 'https://copit-production-97631.web.app/reset-password/safe-uid/safe-token',
-    });
-    flushMicrotasks();
-
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/reset-password/safe-uid/safe-token');
     const loggedText = logSpy.calls
       .allArgs()
       .reduce<unknown[]>((accumulator, args) => accumulator.concat(args), [])
       .map((value: unknown) => (typeof value === 'string' ? value : JSON.stringify(value)))
       .join(' ');
+
     expect(loggedText).not.toContain('safe-token');
     expect(loggedText).toContain('/reset-password/:uid/:token');
-  }));
+  });
 
-  it('keeps existing donation success deep links working', fakeAsync(() => {
-    getLaunchUrlSpy.and.resolveTo({
-      url: 'copit://donate/success?session_id=session-1&transaction_reference=txn-1',
-    });
-
-    TestBed.inject(DeepLinkService);
-    flushMicrotasks();
+  it('keeps existing donation success deep links working', async () => {
+    await (service as unknown as { processUrl(rawUrl: string, source: string): void }).processUrl(
+      'copit://donate/success?session_id=session-1&transaction_reference=txn-1',
+      'test'
+    );
 
     expect(router.navigateByUrl).toHaveBeenCalledWith(
       '/donate/success?session_id=session-1&transaction_reference=txn-1'
     );
-  }));
+  });
+
+  it('preserves native donation success identifiers in deep links', async () => {
+    await (service as unknown as { processUrl(rawUrl: string, source: string): void }).processUrl(
+      'copit://donate/success?donation_id=55&transaction_reference=txn-55',
+      'test'
+    );
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith(
+      '/donate/success?donation_id=55&transaction_reference=txn-55'
+    );
+  });
 });

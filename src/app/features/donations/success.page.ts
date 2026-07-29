@@ -40,6 +40,8 @@ interface VerifyMobilePaymentResponse {
   status?: string;
 }
 
+type DonationVerificationState = 'verifying' | 'confirmed' | 'pending';
+
 @Component({
   standalone: true,
   imports: [CommonModule, IonicModule],
@@ -49,15 +51,15 @@ interface VerifyMobilePaymentResponse {
     <ion-page>
       <ion-content fullscreen class="success-content">
         <div class="success-hero">
-          <ion-icon name="checkmark-circle" class="success-icon" aria-hidden="true"></ion-icon>
-          <h1>Thank you</h1>
-          <p class="hero-subtitle">Your gift has been received</p>
+          <ion-icon [name]="heroIcon" class="success-icon" aria-hidden="true"></ion-icon>
+          <h1>{{ heroTitle }}</h1>
+          <p class="hero-subtitle">{{ heroSubtitle }}</p>
         </div>
 
         <div class="success-body">
-          <p class="primary-copy">We appreciate your generous support for the local church.</p>
-          <p class="fallback-note" *ngIf="!summary">
-            We couldn't display the donation details right now, but your gift has been processed.
+          <p class="primary-copy">{{ primaryCopy }}</p>
+          <p class="fallback-note" *ngIf="verificationMessage">
+            {{ verificationMessage }}
           </p>
 
           <div class="summary-card" *ngIf="summary">
@@ -73,12 +75,36 @@ interface VerifyMobilePaymentResponse {
             <p class="summary-value" *ngIf="summary.transactionReference">{{ summary.transactionReference }}</p>
           </div>
 
-          <p class="confirmation-note">
+          <p class="confirmation-note" *ngIf="verificationState === 'confirmed'">
             A confirmation email has been sent if provided.
           </p>
 
           <div class="actions">
-            <ion-button expand="block" class="cta" (click)="goToBranches()">Give again</ion-button>
+            <ion-button
+              *ngIf="verificationState === 'pending' && canRetryVerification"
+              expand="block"
+              class="cta"
+              (click)="retryVerification()"
+            >
+              Check status
+            </ion-button>
+            <ion-button
+              *ngIf="verificationState === 'confirmed'"
+              expand="block"
+              class="cta"
+              (click)="goToBranches()"
+            >
+              Give again
+            </ion-button>
+            <ion-button
+              *ngIf="verificationState !== 'confirmed'"
+              expand="block"
+              fill="outline"
+              class="secondary"
+              (click)="goToDonationHistory()"
+            >
+              View donation history
+            </ion-button>
             <ion-button expand="block" fill="outline" class="secondary" (click)="goHome()">Back home</ion-button>
           </div>
         </div>
@@ -250,8 +276,14 @@ interface VerifyMobilePaymentResponse {
 })
 export class DonateSuccessPage implements OnInit, OnDestroy {
   summary: DonationCheckoutSummary | null = null;
+  verificationState: DonationVerificationState = 'verifying';
+  verificationMessage = '';
   private isVerifying = false;
   private verifySub?: Subscription;
+  private pendingVerification:
+    | { type: 'hosted'; sessionId: string }
+    | { type: 'mobile'; donationId: number; transactionReference: string }
+    | null = null;
 
   constructor(
     private readonly api: ApiService,
@@ -272,7 +304,9 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
       return;
     }
     if (recurringDonationIdParam) {
-      this.applyStoredSummary('session_storage', recurringDonationIdParam);
+      this.applyPendingStoredSummary(
+        'Your monthly donation is being confirmed. Please check recurring donations shortly.'
+      );
       return;
     }
     if (donationIdParam) {
@@ -286,7 +320,7 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
         return;
       }
     }
-    this.applyStoredSummary();
+    this.applyPendingStoredSummary('No donation confirmation is available right now.');
   }
 
   ngOnDestroy(): void {
@@ -294,15 +328,20 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
   }
 
   private verifyHosted(sessionId: string): void {
+    this.pendingVerification = { type: 'hosted', sessionId };
     this.verifySub = this.api
       .get<VerifyCheckoutSessionResponse>('donations/verify-checkout-session/', {
         session_id: sessionId,
       })
-      .pipe(tap(() => this.startVerification(sessionId)))
+      .pipe(tap(() => this.startVerification()))
       .subscribe({
         next: response => {
+          this.isVerifying = false;
           if (response.verified) {
             this.summary = this.mapVerificationResponse(response);
+            this.verificationState = 'confirmed';
+            this.verificationMessage = '';
+            this.pendingVerification = null;
             void this.analyticsService.trackDonationPaymentSuccess(
               this.resolveSuccessAnalyticsContext(this.summary, response),
               'backend'
@@ -310,34 +349,40 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
             this.donationAnalyticsContext.clearContext();
             this.donationFlowState.clear();
           } else {
-            this.applyStoredSummary('session_storage');
+            this.applyPendingStoredSummary('We could not confirm this donation yet. Please check again shortly.');
           }
         },
         error: error => {
+          this.isVerifying = false;
           this.sentryTelemetry.captureFeatureError('donations', 'Donation success verification failed', error, {
             flow: 'hosted',
           });
-          this.applyStoredSummary('session_storage');
+          this.applyPendingStoredSummary(this.resolvePendingMessage(error));
         },
       });
   }
 
   private verifyNative(donationId: number, transactionReference: string | null): void {
     if (!transactionReference) {
-      this.applyStoredSummary('session_storage');
+      this.applyPendingStoredSummary('We could not confirm this donation yet. Please check your donation history.');
       return;
     }
 
+    this.pendingVerification = { type: 'mobile', donationId, transactionReference };
     this.verifySub = this.api
       .get<VerifyMobilePaymentResponse>('donations/verify-mobile-payment/', {
         donation_id: donationId,
         transaction_reference: transactionReference,
       })
-      .pipe(tap(() => this.startVerification(`mobile:${donationId}`)))
+      .pipe(tap(() => this.startVerification()))
       .subscribe({
         next: response => {
+          this.isVerifying = false;
           if (response.verified) {
             this.summary = this.mapMobileResponse(response);
+            this.verificationState = 'confirmed';
+            this.verificationMessage = '';
+            this.pendingVerification = null;
             void this.analyticsService.trackDonationPaymentSuccess(
               this.resolveSuccessAnalyticsContext(this.summary, response),
               'backend'
@@ -345,44 +390,26 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
             this.donationAnalyticsContext.clearContext();
             this.donationFlowState.clear();
           } else {
-            this.applyStoredSummary('session_storage');
+            this.applyPendingStoredSummary('We could not confirm this donation yet. Please check again shortly.');
           }
         },
         error: error => {
+          this.isVerifying = false;
           this.sentryTelemetry.captureFeatureError('donations', 'Donation success verification failed', error, {
             flow: 'mobile',
             donation_id: donationId,
           });
-          this.applyStoredSummary('session_storage');
+          this.applyPendingStoredSummary(this.resolvePendingMessage(error));
         },
       });
   }
 
-  private applyStoredSummary(
-    verificationSource: 'session_storage' | 'generic' = 'session_storage',
-    recurringDonationIdParam?: string
-  ): void {
+  private applyPendingStoredSummary(message: string): void {
     const stored = this.donationFlowState.consumeStoredSummary();
-    if (stored) {
-      if (
-        recurringDonationIdParam &&
-        stored.recurringDonationId &&
-        String(stored.recurringDonationId) !== recurringDonationIdParam
-      ) {
-      }
-      this.summary = stored;
-      void this.analyticsService.trackDonationPaymentSuccess(
-        this.resolveSuccessAnalyticsContext(stored),
-        verificationSource
-      );
-      this.donationAnalyticsContext.clearContext();
-      return;
-    }
-    void this.analyticsService.trackDonationPaymentSuccess(
-      this.resolveSuccessAnalyticsContext(null),
-      'generic'
-    );
-    this.donationAnalyticsContext.clearContext();
+    this.summary = stored;
+    this.isVerifying = false;
+    this.verificationState = 'pending';
+    this.verificationMessage = message;
   }
 
   private mapVerificationResponse(response: VerifyCheckoutSessionResponse): DonationCheckoutSummary {
@@ -409,8 +436,25 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
     this.router.navigate(['/branches']);
   }
 
+  goToDonationHistory(): void {
+    this.router.navigate(['/my-donations']);
+  }
+
   goHome(): void {
     this.router.navigate(['/']);
+  }
+
+  retryVerification(): void {
+    if (this.isVerifying || !this.pendingVerification) {
+      return;
+    }
+
+    if (this.pendingVerification.type === 'hosted') {
+      this.verifyHosted(this.pendingVerification.sessionId);
+      return;
+    }
+
+    this.verifyNative(this.pendingVerification.donationId, this.pendingVerification.transactionReference);
   }
 
   formatAmount(amount: number): string {
@@ -421,8 +465,10 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
     return interval === 'monthly' ? 'Monthly' : 'One-time';
   }
 
-  private startVerification(sessionId: string): void {
+  private startVerification(): void {
     this.isVerifying = true;
+    this.verificationState = 'verifying';
+    this.verificationMessage = '';
   }
 
   private resolveSuccessAnalyticsContext(
@@ -446,5 +492,47 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
         (summary?.interval === 'monthly' ? 'monthly' : summary?.interval === 'one_time' ? 'one_time' : undefined),
       user_type: storedContext?.user_type ?? this.analyticsService.getUserType(),
     };
+  }
+
+  private resolvePendingMessage(error: unknown): string {
+    if (error && typeof error === 'object' && 'name' in error && (error as { name?: string }).name === 'TimeoutError') {
+      return 'We are still checking your donation status. Please try again shortly.';
+    }
+
+    return 'We could not confirm this donation yet. Please check your donation history before donating again.';
+  }
+
+  get heroIcon(): string {
+    return this.verificationState === 'confirmed' ? 'checkmark-circle' : 'time-outline';
+  }
+
+  get heroTitle(): string {
+    if (this.verificationState === 'confirmed') {
+      return 'Thank you';
+    }
+
+    return this.verificationState === 'verifying' ? 'Checking donation' : 'Donation pending';
+  }
+
+  get heroSubtitle(): string {
+    if (this.verificationState === 'confirmed') {
+      return 'Your gift has been received';
+    }
+
+    return this.verificationState === 'verifying'
+      ? 'We are confirming your payment securely.'
+      : 'Please wait for final confirmation.';
+  }
+
+  get primaryCopy(): string {
+    if (this.verificationState === 'confirmed') {
+      return 'We appreciate your generous support for the local church.';
+    }
+
+    return 'Do not submit another donation until the status check is complete.';
+  }
+
+  get canRetryVerification(): boolean {
+    return !!this.pendingVerification;
   }
 }

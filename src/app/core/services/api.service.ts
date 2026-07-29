@@ -7,6 +7,17 @@ export type QueryParams = Record<string, string | number | boolean | null | unde
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
+  private static readonly sensitiveQueryKeys = new Set([
+    'client_secret',
+    'token',
+    'transaction_reference',
+    'session_id',
+    'donation_id',
+    'recurring_donation_id',
+    'password',
+    'email',
+  ]);
+
   constructor(private readonly http: HttpClient) {}
 
   private get baseUrl(): string {
@@ -76,7 +87,7 @@ export class ApiService {
   get<T>(path: string, params?: QueryParams): Observable<T> {
     const url = this.buildUrl(path);
     if (!environment.production) {
-      console.log('[ApiService] GET', url);
+      console.log('[ApiService] GET', this.sanitizeLogUrl(url));
     }
     return this.http.get<T>(url, {
       params: this.buildParams(params),
@@ -89,5 +100,19 @@ export class ApiService {
 
   patch<T>(path: string, body: unknown): Observable<T> {
     return this.http.patch<T>(this.buildUrl(path), body);
+  }
+
+  private sanitizeLogUrl(url: string): string {
+    try {
+      const parsed = new URL(url);
+      parsed.searchParams.forEach((_, key) => {
+        if (ApiService.sensitiveQueryKeys.has(key.toLowerCase())) {
+          parsed.searchParams.set(key, '[redacted]');
+        }
+      });
+      return parsed.toString();
+    } catch {
+      return url;
+    }
   }
 }

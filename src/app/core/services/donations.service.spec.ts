@@ -59,7 +59,7 @@ describe('DonationsService', () => {
 
     const request = httpMock.expectOne((req) => {
       return (
-        req.url === 'http://localhost:8000/api/donations/verify-mobile-payment/' &&
+        req.url.endsWith('/api/donations/verify-mobile-payment/') &&
         req.params.get('donation_id') === '21' &&
         req.params.get('transaction_reference') === 'TRX-1001'
       );
@@ -91,7 +91,7 @@ describe('DonationsService', () => {
         },
       });
 
-    const request = httpMock.expectOne('http://localhost:8000/api/donations/recurring/create/');
+    const request = httpMock.expectOne((req) => req.url.endsWith('/api/donations/recurring/create/'));
     expect(request.request.headers.get('Authorization')).toBe('Bearer member-token');
     request.flush(
       { detail: 'You do not have permission to use monthly giving for this account.' },

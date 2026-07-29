@@ -87,17 +87,26 @@ export class DeepLinkService implements OnDestroy {
 
   private handleSuccessRoute(params: URLSearchParams): void {
     const sessionId = params.get('session_id');
+    const donationId = params.get('donation_id');
+    const recurringDonationId = params.get('recurring_donation_id');
     const transactionReference = params.get('transaction_reference');
+    const queryParams: Record<string, string> = {};
+
+    if (sessionId) {
+      queryParams['session_id'] = sessionId;
+    } else if (donationId) {
+      queryParams['donation_id'] = donationId;
+    } else if (recurringDonationId) {
+      queryParams['recurring_donation_id'] = recurringDonationId;
+    }
+
+    if (transactionReference) {
+      queryParams['transaction_reference'] = transactionReference;
+    }
+
     this.navigate(
       '/donate/success',
-      sessionId
-        ? {
-            session_id: sessionId,
-            ...(transactionReference ? { transaction_reference: transactionReference } : {}),
-          }
-        : transactionReference
-          ? { transaction_reference: transactionReference }
-          : undefined
+      Object.keys(queryParams).length ? queryParams : undefined
     );
   }
 

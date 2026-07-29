@@ -2,7 +2,7 @@ import { FormBuilder } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AlertController, ToastController } from '@ionic/angular';
-import { BehaviorSubject, of, throwError } from 'rxjs';
+import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
 
 import { PublicBranch } from '../../core/models/branch.model';
 import { DonationCategory } from '../../core/models/donation.model';
@@ -181,5 +181,92 @@ describe('DonatePage', () => {
         transaction_reference: 'TRX-2002',
       },
     });
+  });
+
+  it('rejects incomplete decimal amounts before payment initiation', () => {
+    page.form.patchValue({ amount: '12.' });
+    (page as unknown as { customAmountInputValue: string }).customAmountInputValue = '12.';
+    page.form.get('amount')?.markAsTouched();
+
+    page.startNativePayment();
+
+    expect(page.amountValidationMessage).toBe('Complete the amount before continuing');
+    expect(donationsService.createMobileCheckout).not.toHaveBeenCalled();
+  });
+
+  it('rejects malformed negative amounts before payment initiation', () => {
+    page.form.patchValue({ amount: '-5' });
+    (page as unknown as { customAmountInputValue: string }).customAmountInputValue = '-5';
+    page.form.get('amount')?.markAsTouched();
+
+    page.startNativePayment();
+
+    expect(page.amountValidationMessage).toBe('Enter a valid amount in euros');
+    expect(donationsService.createMobileCheckout).not.toHaveBeenCalled();
+  });
+
+  it('prevents duplicate native checkout requests while one is in flight', () => {
+    const response$ = new Subject<{ donation_id: number; transaction_reference: string; client_secret: string }>();
+    donationsService.createMobileCheckout.and.returnValue(response$.asObservable());
+
+    page.startNativePayment();
+    page.startNativePayment();
+
+    expect(donationsService.createMobileCheckout.calls.count()).toBe(1);
+  });
+
+  it('shows an offline message for native checkout failures', () => {
+    donationsService.createMobileCheckout.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 0 }))
+    );
+
+    page.startNativePayment();
+
+    expect(page.nativeError).toBe("You're offline. Check your connection and try again.");
+  });
+
+  it('shows a timeout message for native checkout failures', () => {
+    donationsService.createMobileCheckout.and.returnValue(
+      throwError(() => ({ name: 'TimeoutError' }))
+    );
+
+    page.startNativePayment();
+
+    expect(page.nativeError).toBe('The payment request timed out. Please try again.');
+  });
+
+  it('routes Stripe cancellations to the cancel page', async () => {
+    donationsService.createMobileCheckout.and.returnValue(
+      of({
+        donation_id: 55,
+        transaction_reference: 'TRX-2002',
+        client_secret: 'pi_secret_123',
+      })
+    );
+    stripePaymentService.presentPaymentSheet.and.resolveTo({ status: 'canceled' });
+
+    page.startNativePayment();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/donate/cancel']);
+  });
+
+  it('keeps the form recoverable after payment-sheet failure', async () => {
+    donationsService.createMobileCheckout.and.returnValue(
+      of({
+        donation_id: 55,
+        transaction_reference: 'TRX-2002',
+        client_secret: 'pi_secret_123',
+      })
+    );
+    stripePaymentService.presentPaymentSheet.and.resolveTo({ status: 'failed', errorMessage: 'Payment failed. Please try again.' });
+
+    page.startNativePayment();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(page.nativeError).toBe('Payment failed. Please try again.');
+    expect(page.nativeLoading).toBeFalse();
   });
 });
