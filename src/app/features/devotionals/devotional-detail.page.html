@@ -82,8 +82,11 @@
 
         <section class="detail-card detail-card--reading" data-testid="content-section">
           <div class="reading-copy" data-testid="content">
-            <p *ngFor="let paragraph of getParagraphs(devotional.content)" class="reading-paragraph preserve-lines">
+            <p *ngFor="let paragraph of contentParagraphs" class="reading-paragraph preserve-lines">
               {{ paragraph }}
+            </p>
+            <p *ngIf="contentParagraphs.length === 0" class="reading-paragraph preserve-lines">
+              {{ contentFallbackMessage }}
             </p>
           </div>
         </section>
@@ -91,7 +94,7 @@
         <section *ngIf="hasText(devotional.reflection_question)" class="detail-card" data-testid="reflection-section">
           <h3 data-testid="reflection-heading">Reflection</h3>
           <div class="reading-copy" data-testid="reflection-question">
-            <p *ngFor="let paragraph of getParagraphs(devotional.reflection_question)" class="reading-paragraph preserve-lines">
+            <p *ngFor="let paragraph of reflectionParagraphs" class="reading-paragraph preserve-lines">
               {{ paragraph }}
             </p>
           </div>
@@ -100,7 +103,7 @@
         <section *ngIf="hasText(devotional.prayer)" class="detail-card" data-testid="prayer-section">
           <h3 data-testid="prayer-heading">Prayer</h3>
           <div class="reading-copy" data-testid="prayer">
-            <p *ngFor="let paragraph of getParagraphs(devotional.prayer)" class="reading-paragraph preserve-lines">
+            <p *ngFor="let paragraph of prayerParagraphs" class="reading-paragraph preserve-lines">
               {{ paragraph }}
             </p>
           </div>

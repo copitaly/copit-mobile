@@ -99,6 +99,19 @@ describe('DevotionalDetailPage', () => {
     expect(text).toContain('admin admin');
   });
 
+  it('shows a graceful fallback when devotional content is blank', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of({
+      ...devotional,
+      content: '   ',
+    }));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="content"]')?.textContent).toContain(
+      'Content will be available soon.'
+    );
+  });
+
   it('preserves line breaks for scripture, content, reflection, and prayer blocks', async () => {
     devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
 
@@ -211,6 +224,26 @@ describe('DevotionalDetailPage', () => {
 
     expect(devotionalService.getDevotionalBySlug.calls.count()).toBe(2);
     expect(page.devotional?.id).toBe(1);
+  });
+
+  it('shows an offline-specific error message when the request fails with status 0', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 0 }))
+    );
+
+    await createComponent();
+
+    expect(page.errorMessage).toBe('You appear to be offline. Check your connection and try again.');
+  });
+
+  it('shows a timeout-specific error message when the request times out', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(
+      throwError(() => new Error('Timeout while loading devotional'))
+    );
+
+    await createComponent();
+
+    expect(page.errorMessage).toBe('Loading this devotional timed out. Please try again.');
   });
 
   it('prevents overlapping detail reload requests where practical', async () => {
@@ -444,5 +477,21 @@ describe('DevotionalDetailPage', () => {
 
     expect(devotionalService.getDevotionalBySlug).not.toHaveBeenCalled();
     expect(page.errorMessage).toBe('Invalid devotional link.');
+  });
+
+  it('formats yyyy-mm-dd publication dates without timezone drift', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+
+    await createComponent();
+
+    expect(page.formatPublicationDate('2026-07-29')).toBe('29 July 2026');
+  });
+
+  it('returns the raw publication date when it is malformed', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+
+    await createComponent();
+
+    expect(page.formatPublicationDate('2026-99-99')).toBe('2026-99-99');
   });
 });

@@ -137,4 +137,102 @@ describe('DevotionalService', () => {
       publication_date: '2026-07-28',
     });
   });
+
+  it('normalizes malformed devotional list payloads safely', () => {
+    let responseBody: unknown;
+
+    service.getDevotionals().subscribe((response) => {
+      responseBody = response;
+    });
+
+    const request = httpMock.expectOne(`${environment.apiBaseUrl}/public/devotionals/`);
+    request.flush({
+      count: 'bad-count',
+      next: '   ',
+      previous: null,
+      results: [
+        {
+          id: 1,
+          title: '   ',
+          slug: ' morning-grace ',
+          scripture_reference: null,
+          author_name: ' ',
+          cover_image: 'javascript:alert(1)',
+          publication_date: '2026-07-29',
+        },
+        {
+          id: 0,
+          title: 'Invalid id',
+          slug: 'invalid-id',
+          scripture_reference: 'Psalm 1',
+          author_name: 'Test',
+          cover_image: 'https://example.com/cover.jpg',
+          publication_date: '2026-07-28',
+        },
+      ],
+    });
+
+    expect(responseBody).toEqual({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: 1,
+          title: 'Devotional',
+          slug: 'morning-grace',
+          scripture_reference: '',
+          author_name: null,
+          cover_image: null,
+          publication_date: '2026-07-29',
+        },
+      ],
+    });
+  });
+
+  it('normalizes malformed devotional detail payloads safely', () => {
+    let responseBody: DevotionalPublicDetail | undefined;
+
+    service.getTodayDevotional().subscribe((response) => {
+      responseBody = response;
+    });
+
+    const request = httpMock.expectOne(`${environment.apiBaseUrl}/public/devotionals/today/`);
+    request.flush({
+      id: 'bad-id',
+      title: '   ',
+      slug: ' ',
+      scripture_reference: undefined,
+      scripture_text: ' ',
+      content: null,
+      reflection_question: undefined,
+      prayer: ' ',
+      author_name: '',
+      cover_image: 'http://evil.example.com/cover.jpg',
+      publication_date: ' ',
+    });
+
+    expect(responseBody).toEqual({
+      id: 0,
+      title: 'Devotional',
+      slug: '',
+      scripture_reference: '',
+      scripture_text: null,
+      content: '',
+      reflection_question: null,
+      prayer: null,
+      author_name: null,
+      cover_image: null,
+      publication_date: null,
+    });
+  });
+
+  it('accepts only https or local http cover image URLs', () => {
+    expect(service.normalizeImageUrl('https://example.com/cover.jpg')).toBe('https://example.com/cover.jpg');
+    expect(service.normalizeImageUrl('http://localhost:8100/assets/cover.jpg')).toBe('http://localhost:8100/assets/cover.jpg');
+    expect(service.normalizeImageUrl('http://127.0.0.1:8000/media/cover.jpg')).toBe('http://127.0.0.1:8000/media/cover.jpg');
+    expect(service.normalizeImageUrl('http://evil.example.com/cover.jpg')).toBeNull();
+    expect(service.normalizeImageUrl('javascript:alert(1)')).toBeNull();
+    expect(service.normalizeImageUrl('   ')).toBeNull();
+  });
 });

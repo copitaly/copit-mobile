@@ -35,6 +35,7 @@ export class DevotionalsPage implements OnInit {
   readonly skeletonItems = [1, 2, 3];
   private readonly brokenCoverIds = new Set<number>();
   private listRequestId = 0;
+  private pendingDetailRoute: string | null = null;
 
   ngOnInit(): void {
     this.loadInitialDevotionals();
@@ -63,13 +64,13 @@ export class DevotionalsPage implements OnInit {
           return;
         }
 
-        this.devotionals = response.results;
+        this.devotionals = this.mergeUniqueDevotionals([], response.results);
         this.nextPageUrl = response.next;
         this.loading = false;
         this.refreshing = false;
         options?.onComplete?.();
       },
-      error: () => {
+      error: (error: unknown) => {
         if (requestId !== this.listRequestId) {
           options?.onComplete?.();
           return;
@@ -78,9 +79,9 @@ export class DevotionalsPage implements OnInit {
         this.loading = false;
         this.refreshing = false;
         if (preserveList && this.devotionals.length > 0) {
-          this.loadMoreErrorMessage = "We couldn't refresh devotionals right now. Please try again.";
+          this.loadMoreErrorMessage = this.resolveRefreshErrorMessage(error);
         } else {
-          this.errorMessage = "We couldn't load devotionals right now.";
+          this.errorMessage = this.resolveLoadErrorMessage(error);
         }
         options?.onComplete?.();
       },
@@ -118,13 +119,13 @@ export class DevotionalsPage implements OnInit {
         this.nextPageUrl = response.next;
         this.loadingMore = false;
       },
-      error: () => {
+      error: (error: unknown) => {
         if (requestId !== this.listRequestId) {
           return;
         }
 
         this.loadingMore = false;
-        this.loadMoreErrorMessage = "We couldn't load more devotionals right now. Please try again.";
+        this.loadMoreErrorMessage = this.resolveLoadMoreErrorMessage(error);
       },
     });
   }
@@ -139,11 +140,17 @@ export class DevotionalsPage implements OnInit {
 
   async openDevotional(devotional: DevotionalPublicListItem): Promise<void> {
     const detailRoute = this.getDevotionalDetailRoute(devotional.slug);
-    if (!detailRoute) {
+    if (!detailRoute || this.pendingDetailRoute === detailRoute) {
       return;
     }
 
-    await this.router.navigateByUrl(detailRoute);
+    this.pendingDetailRoute = detailRoute;
+
+    try {
+      await this.router.navigateByUrl(detailRoute);
+    } finally {
+      this.pendingDetailRoute = null;
+    }
   }
 
   getDevotionalDetailRoute(slug: string | null | undefined): string | null {
@@ -180,8 +187,8 @@ export class DevotionalsPage implements OnInit {
       return 'Available now';
     }
 
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
+    const parsed = this.parsePublicationDate(value);
+    if (!parsed) {
       return value;
     }
 
@@ -199,6 +206,55 @@ export class DevotionalsPage implements OnInit {
   getCoverImageAlt(devotional: DevotionalPublicListItem): string {
     const title = devotional.title?.trim();
     return title ? `${title} cover image` : 'Devotional cover image';
+  }
+
+  private parsePublicationDate(value: string): Date | null {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) {
+      return null;
+    }
+
+    const [, yearValue, monthValue, dayValue] = match;
+    const year = Number(yearValue);
+    const month = Number(monthValue);
+    const day = Number(dayValue);
+    const parsed = new Date(year, month - 1, day);
+
+    if (
+      Number.isNaN(parsed.getTime()) ||
+      parsed.getFullYear() !== year ||
+      parsed.getMonth() !== month - 1 ||
+      parsed.getDate() !== day
+    ) {
+      return null;
+    }
+
+    return parsed;
+  }
+
+  private resolveLoadErrorMessage(error: unknown): string {
+    return this.resolveErrorMessage(error, "We couldn't load devotionals right now.");
+  }
+
+  private resolveRefreshErrorMessage(error: unknown): string {
+    return this.resolveErrorMessage(error, "We couldn't refresh devotionals right now. Please try again.");
+  }
+
+  private resolveLoadMoreErrorMessage(error: unknown): string {
+    return this.resolveErrorMessage(error, "We couldn't load more devotionals right now. Please try again.");
+  }
+
+  private resolveErrorMessage(error: unknown, fallback: string): string {
+    const message = String((error as { message?: string } | undefined)?.message ?? '').toLowerCase();
+    if (message.includes('timeout')) {
+      return 'Loading devotionals timed out. Please try again.';
+    }
+
+    if (message.includes('offline') || message.includes('network')) {
+      return 'You appear to be offline. Check your connection and try again.';
+    }
+
+    return fallback;
   }
 
   private mergeUniqueDevotionals(

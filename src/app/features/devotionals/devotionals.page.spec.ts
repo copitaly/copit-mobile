@@ -230,6 +230,24 @@ describe('DevotionalsPage', () => {
     nextPage$.complete();
   });
 
+  it('keeps already loaded devotionals visible when pull-to-refresh fails', async () => {
+    devotionalService.getDevotionals.and.returnValues(
+      of(buildResponse([firstDevotional])),
+      throwError(() => new Error('network down'))
+    );
+
+    await createComponent();
+
+    const complete = jasmine.createSpy('complete');
+    page.refresh({ detail: { complete } } as unknown as CustomEvent<{ complete: () => void }>);
+    fixture.detectChanges();
+
+    expect(page.devotionals.map((devotional) => devotional.id)).toEqual([11]);
+    expect(page.errorMessage).toBe('');
+    expect(page.loadMoreErrorMessage).toBe('You appear to be offline. Check your connection and try again.');
+    expect(complete).toHaveBeenCalled();
+  });
+
   it('preserves loaded items and shows a compact retry when a later page fails', async () => {
     devotionalService.getDevotionals.and.returnValues(
       of(buildResponse([firstDevotional], 'https://example.com/api/public/devotionals/?page=2')),
@@ -269,6 +287,42 @@ describe('DevotionalsPage', () => {
     await fixture.whenStable();
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/devotionals/morning-grace');
+  });
+
+  it('prevents duplicate devotional navigation from rapid taps', async () => {
+    let resolveNavigation: ((value: boolean) => void) | undefined;
+    router.navigateByUrl.and.returnValue(
+      new Promise<boolean>((resolve) => {
+        resolveNavigation = resolve;
+      })
+    );
+    devotionalService.getDevotionals.and.returnValue(of(buildResponse([firstDevotional])));
+
+    await createComponent();
+
+    void page.openDevotional(firstDevotional);
+    await page.openDevotional(firstDevotional);
+
+    expect(router.navigateByUrl.calls.count()).toBe(1);
+
+    resolveNavigation?.(true);
+    await fixture.whenStable();
+  });
+
+  it('formats yyyy-mm-dd publication dates without timezone drift', async () => {
+    devotionalService.getDevotionals.and.returnValue(of(buildResponse([firstDevotional])));
+
+    await createComponent();
+
+    expect(page.formatPublicationDate('2026-07-29')).toBe('29 Jul 2026');
+  });
+
+  it('returns the raw publication date when it is malformed', async () => {
+    devotionalService.getDevotionals.and.returnValue(of(buildResponse([firstDevotional])));
+
+    await createComponent();
+
+    expect(page.formatPublicationDate('2026-99-99')).toBe('2026-99-99');
   });
 
   it('encodes the slug safely when building the detail route', async () => {

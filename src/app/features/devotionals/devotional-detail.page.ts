@@ -34,6 +34,10 @@ export class DevotionalDetailPage implements OnInit {
   notFound = false;
   errorMessage = '';
   sharing = false;
+  contentParagraphs: string[] = [];
+  reflectionParagraphs: string[] = [];
+  prayerParagraphs: string[] = [];
+  contentFallbackMessage = 'Content will be available soon.';
 
   readonly skeletonItems = [1, 2, 3, 4];
   private coverImageFailed = false;
@@ -62,6 +66,9 @@ export class DevotionalDetailPage implements OnInit {
     this.notFound = false;
     this.errorMessage = '';
     this.devotional = null;
+    this.contentParagraphs = [];
+    this.reflectionParagraphs = [];
+    this.prayerParagraphs = [];
     this.coverImageFailed = false;
 
     this.devotionalService.getDevotionalBySlug(slug).subscribe({
@@ -70,7 +77,7 @@ export class DevotionalDetailPage implements OnInit {
           return;
         }
 
-        this.devotional = devotional;
+        this.applyDevotional(devotional);
         this.loading = false;
         this.requestInFlight = false;
       },
@@ -82,10 +89,13 @@ export class DevotionalDetailPage implements OnInit {
         this.loading = false;
         this.requestInFlight = false;
         this.devotional = null;
+        this.contentParagraphs = [];
+        this.reflectionParagraphs = [];
+        this.prayerParagraphs = [];
         this.notFound = error instanceof HttpErrorResponse && error.status === 404;
         this.errorMessage = this.notFound
           ? ''
-          : "We couldn't load this devotional right now.";
+          : this.resolveLoadErrorMessage(error);
       },
     });
   }
@@ -99,8 +109,8 @@ export class DevotionalDetailPage implements OnInit {
       return 'Available now';
     }
 
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
+    const parsed = this.parsePublicationDate(value);
+    if (!parsed) {
       return value;
     }
 
@@ -209,6 +219,37 @@ export class DevotionalDetailPage implements OnInit {
     return sections.join('\n\n');
   }
 
+  private applyDevotional(devotional: DevotionalPublicDetail): void {
+    this.devotional = devotional;
+    this.contentParagraphs = this.getParagraphs(devotional.content);
+    this.reflectionParagraphs = this.getParagraphs(devotional.reflection_question);
+    this.prayerParagraphs = this.getParagraphs(devotional.prayer);
+  }
+
+  private parsePublicationDate(value: string): Date | null {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) {
+      return null;
+    }
+
+    const [, yearValue, monthValue, dayValue] = match;
+    const year = Number(yearValue);
+    const month = Number(monthValue);
+    const day = Number(dayValue);
+    const parsed = new Date(year, month - 1, day);
+
+    if (
+      Number.isNaN(parsed.getTime()) ||
+      parsed.getFullYear() !== year ||
+      parsed.getMonth() !== month - 1 ||
+      parsed.getDate() !== day
+    ) {
+      return null;
+    }
+
+    return parsed;
+  }
+
   private isNativePlatform(): boolean {
     return Capacitor.isNativePlatform();
   }
@@ -282,6 +323,19 @@ export class DevotionalDetailPage implements OnInit {
         : '';
 
     return /cancel/i.test(message);
+  }
+
+  private resolveLoadErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse && error.status === 0) {
+      return 'You appear to be offline. Check your connection and try again.';
+    }
+
+    const message = String((error as { message?: string } | undefined)?.message ?? '').toLowerCase();
+    if (message.includes('timeout')) {
+      return 'Loading this devotional timed out. Please try again.';
+    }
+
+    return "We couldn't load this devotional right now.";
   }
 
   private async presentToast(message: string, icon: string): Promise<void> {
