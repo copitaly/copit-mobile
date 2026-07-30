@@ -305,6 +305,36 @@ describe('ProfilePage', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="register-form-shell"]')).toBeNull();
   });
 
+  it('renders embedded Forgot Password inside the Profile tab with no back button and no benefits card', async () => {
+    authService.isAuthenticatedSnapshot = false;
+    authService.accessTokenSnapshot = null;
+    queryParamMap$.next(convertToParamMap({ authMode: 'forgot-password' }));
+
+    await createComponent();
+
+    expect(page.authMode).toBe('forgot-password');
+    expect(fixture.nativeElement.querySelector('#profile-title')?.textContent).toContain('Forgot password');
+    expect(fixture.nativeElement.textContent).toContain("Enter your email and we'll send you a reset link.");
+    expect(fixture.nativeElement.textContent).not.toContain('Reset your password');
+    expect(fixture.nativeElement.querySelector('[data-testid="profile-forgot-password-card"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="forgot-password-form-shell"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="forgot-password-form-heading"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('ion-back-button')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="profile-benefits"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="tabs-shell"]')).toBeNull();
+  });
+
+  it('keeps the Profile tab route active during embedded Forgot Password', async () => {
+    authService.isAuthenticatedSnapshot = false;
+    authService.accessTokenSnapshot = null;
+    queryParamMap$.next(convertToParamMap({ authMode: 'forgot-password' }));
+
+    await createComponent();
+
+    expect(page.isTabsProfileRoute).toBeTrue();
+    expect(fixture.nativeElement.querySelector('#profile-title')?.textContent).not.toContain('Profile');
+  });
+
   it('keeps the Profile tab route active while signed out', async () => {
     authService.isAuthenticatedSnapshot = false;
     authService.accessTokenSnapshot = null;

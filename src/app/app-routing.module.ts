@@ -1,5 +1,5 @@
 import { inject, NgModule } from '@angular/core';
-import { CanMatchFn, PreloadAllModules, Router, RouterModule, Routes } from '@angular/router';
+import { CanActivateFn, CanMatchFn, PreloadAllModules, Router, RouterModule, Routes } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 import { AuthService } from './core/services/auth.service';
 import { FeatureArea, SentryTelemetryService } from './core/services/sentry-telemetry.service';
@@ -22,6 +22,11 @@ const redirectAuthenticatedAwayFromAuthPages: CanMatchFn = () => {
 
   return true;
 };
+
+const redirectForgotPasswordToProfileTab: CanActivateFn = () =>
+  inject(Router).createUrlTree(['/tabs/profile'], {
+    queryParams: { authMode: 'forgot-password' },
+  });
 
 const redirectUnauthenticatedToLogin = (router: Router, returnUrl: string) =>
   router.createUrlTree(['/login'], {
@@ -223,7 +228,7 @@ export const routes: Routes = [
   },
   {
     path: 'forgot-password',
-    canMatch: [redirectAuthenticatedAwayFromAuthPages],
+    canActivate: [redirectForgotPasswordToProfileTab],
     loadComponent: () => import('./features/auth/forgot-password.page').then(m => m.ForgotPasswordPage)
   },
   {

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { CanMatchFn, Router } from '@angular/router';
+import { CanActivateFn, CanMatchFn, Router } from '@angular/router';
 
 import { routes } from './app-routing.module';
 import { AuthService } from './core/services/auth.service';
@@ -77,5 +77,33 @@ describe('app routes', () => {
     const route = routes.find((item) => item.path === 'profile');
 
     expect(route?.redirectTo).toBe('tabs/profile');
+  });
+
+  it('redirects the legacy /forgot-password route into the embedded Profile recovery state', async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: Router,
+          useValue: {
+            createUrlTree: jasmine
+              .createSpy('createUrlTree')
+              .and.callFake((commands: unknown[], extras?: { queryParams?: Record<string, string> }) => ({
+                commands,
+                extras,
+              })),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const forgotPasswordRoute = routes.find((item) => item.path === 'forgot-password');
+    const guard = forgotPasswordRoute?.canActivate?.[0] as CanActivateFn;
+    const result = TestBed.runInInjectionContext(() => guard?.(forgotPasswordRoute as never, {} as never)) as unknown as {
+      commands: string[];
+      extras?: { queryParams?: Record<string, string> };
+    };
+
+    expect(result.commands).toEqual(['/tabs/profile']);
+    expect(result.extras?.queryParams).toEqual({ authMode: 'forgot-password' });
   });
 });

@@ -415,6 +415,13 @@ export class LoginFormComponent implements OnDestroy {
   }
 
   onForgotPassword(): void {
+    if (this.isEmbeddedProfileFlow) {
+      void this.router.navigate(['/tabs/profile'], {
+        queryParams: { authMode: 'forgot-password' },
+      });
+      return;
+    }
+
     void this.router.navigate(['/forgot-password'], {
       queryParams: this.sanitizedReturnUrl === AUTH_FALLBACK_RETURN_URL ? undefined : { returnUrl: this.sanitizedReturnUrl },
     });

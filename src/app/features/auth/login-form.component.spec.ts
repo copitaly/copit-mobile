@@ -120,6 +120,16 @@ describe('LoginFormComponent', () => {
 
     component.onForgotPassword();
 
+    expect(router.navigate).toHaveBeenCalledWith(['/tabs/profile'], {
+      queryParams: { authMode: 'forgot-password' },
+    });
+  });
+
+  it('preserves the standalone forgot-password route for non-embedded flows', async () => {
+    await createComponent({ returnUrl: '/tabs/profile' });
+
+    component.onForgotPassword();
+
     expect(router.navigate).toHaveBeenCalledWith(['/forgot-password'], {
       queryParams: { returnUrl: '/tabs/profile' },
     });
