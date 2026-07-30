@@ -177,7 +177,7 @@ describe('HomePage', () => {
       (node) => (node as HTMLElement).textContent?.trim() ?? ''
     );
 
-    expect(sectionLabels).toEqual(['Daily Devotional', 'Quick Access']);
+    expect(sectionLabels).toEqual(['Daily Devotional']);
     expect(fixture.nativeElement.textContent).toContain('Steady Grace for Today');
     expect(fixture.nativeElement.textContent).toContain('Isaiah 41:10');
     expect(
@@ -220,48 +220,34 @@ describe('HomePage', () => {
     );
   });
 
-  it('renders quick access buttons in the requested order', async () => {
+  it('does not render the old Home quick actions section', async () => {
     fixture = await createComponent();
 
-    const labels = Array.from(fixture.nativeElement.querySelectorAll('.qa__label')).map(
-      (node) => (node as HTMLElement).textContent?.trim() ?? ''
-    );
-
-    expect(labels).toEqual(['Prayer', 'Bible Study', 'Churches', 'Community']);
+    expect(fixture.nativeElement.textContent).not.toContain('Quick Actions');
+    expect(fixture.nativeElement.querySelector('[data-testid="qa-prayer"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="qa-profile"]')).toBeNull();
   });
 
-  it('keeps quick access navigation unchanged', async () => {
+  it('renders the Community and Prayer utility card with both actions', async () => {
     fixture = await createComponent();
+
+    expect(fixture.nativeElement.textContent).toContain('Community');
+    expect(fixture.nativeElement.textContent).toContain("You're not walking this journey alone.");
+    expect(fixture.nativeElement.textContent).toContain('Connect with your church family or share a prayer request.');
+    expect(fixture.nativeElement.querySelector('[data-testid="request-prayer-button"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="community-button"]')).not.toBeNull();
+  });
+
+  it('opens Prayer and Community from the utility card', async () => {
+    fixture = await createComponent();
+
     await page.goToPrayer();
-    await Promise.resolve();
-    await page.goToBibleStudy();
-    await Promise.resolve();
-    await page.goToBranches();
     await Promise.resolve();
     await page.goToCommunity();
     await Promise.resolve();
 
-    expect(router.navigate.calls.allArgs()).toContain([['/tabs/prayer']]);
-    expect(router.navigate.calls.allArgs()).toContain([['/tabs/bible-study']]);
-    expect(router.navigate.calls.allArgs()).toContain([['/branches']]);
-    expect(router.navigate.calls.allArgs()).toContain([['/tabs/community']]);
-  });
-
-  it('preserves giving access through the church utility card', async () => {
-    fixture = await createComponent();
-    spyOn(page, 'goToGive');
-
-    (fixture.nativeElement.querySelector('[data-testid="give-utility-button"]') as HTMLButtonElement).click();
-
-    expect(page.goToGive).toHaveBeenCalled();
-  });
-
-  it('removes the duplicate churches action from the support card', async () => {
-    fixture = await createComponent();
-    expect(fixture.nativeElement.querySelector('[data-testid="churches-utility-button"]')).toBeNull();
-    expect(fixture.nativeElement.textContent).toContain('Support the Ministry');
-    expect(fixture.nativeElement.textContent).toContain('Give securely');
-    expect(fixture.nativeElement.textContent).toContain('Give now');
+    expect(router.navigate.calls.allArgs()).toContain([['/prayer']]);
+    expect(router.navigate.calls.allArgs()).toContain([['/community']]);
   });
 
   it('keeps guest account navigation unchanged', async () => {
@@ -281,7 +267,7 @@ describe('HomePage', () => {
     expect(fixture.nativeElement.textContent).toContain('Peace be with you, Kojo.');
   });
 
-  it('keeps the support card copy focused on giving even when a branch is selected', async () => {
+  it('keeps the lower utility card focused on Prayer and Community even when a branch is selected', async () => {
     fixture = await createComponent();
     (page as unknown as { defaultBranch: unknown }).defaultBranch = {
       id: 9,
@@ -295,7 +281,8 @@ describe('HomePage', () => {
     };
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Give securely');
+    expect(fixture.nativeElement.textContent).toContain('Request Prayer');
+    expect(fixture.nativeElement.textContent).toContain('Community');
     expect(fixture.nativeElement.textContent).not.toContain('Rome Central Assembly');
   });
 
@@ -313,7 +300,7 @@ describe('HomePage', () => {
 
     expect(bibleStudyService.getPublishedManuals).toHaveBeenCalled();
     expect(devotionalService.getTodayDevotional).toHaveBeenCalled();
-    expect(fixture.nativeElement.textContent).toContain('Quick Access');
+    expect(fixture.nativeElement.textContent).toContain('Community');
     expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-loading"]')).not.toBeNull();
 
     devotionalResponse$.complete();

@@ -40,7 +40,7 @@ export class PrayerPage implements OnInit, OnDestroy {
       title: 'Community Prayers',
       description: 'Read approved prayer requests that have been shared with the wider community.',
       icon: 'people-outline',
-      route: '/tabs/community',
+      route: '/community',
       accentClass: 'prayer-action-card--secondary',
     },
   ];

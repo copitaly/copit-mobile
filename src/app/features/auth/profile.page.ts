@@ -29,7 +29,7 @@ type QuickAction = {
         <div class="profile-hero app-header app-header--inner">
           <app-mobile-header
             [title]="headerTitle"
-            [showBack]="!isTabsMoreRoute"
+            [showBack]="!isTabsProfileRoute"
             fallbackRoute="/tabs/home"
           ></app-mobile-header>
         </div>
@@ -185,6 +185,16 @@ type QuickAction = {
         display: flex;
         flex-direction: column;
         gap: 1rem;
+      }
+
+      ion-content.profile-content {
+        --background: #f7f8fa;
+      }
+
+      .profile-hero {
+        background: transparent;
+        box-shadow: none;
+        padding: calc(env(safe-area-inset-top, 0px) + 1rem) 1rem 0.9rem;
       }
 
       .profile-card,
@@ -448,10 +458,22 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   readonly quickActions: QuickAction[] = [
     {
-      title: 'Bible Study',
-      subtitle: 'Browse published Bible Study manuals',
-      icon: 'book-outline',
-      route: '/tabs/bible-study',
+      title: 'Prayer',
+      subtitle: 'Share a request or pray with the community',
+      icon: 'heart-outline',
+      route: '/prayer',
+    },
+    {
+      title: 'Community',
+      subtitle: 'Read approved public prayer requests',
+      icon: 'people-outline',
+      route: '/community',
+    },
+    {
+      title: 'Churches',
+      subtitle: 'Browse churches and choose where to give',
+      icon: 'location-outline',
+      route: '/branches',
     },
     {
       title: 'My Prayer Requests',
@@ -516,12 +538,12 @@ export class ProfilePage implements OnInit, OnDestroy {
     return this.quickActions.filter((action) => !action.membersOnly || this.resolvedRole === 'member');
   }
 
-  get isTabsMoreRoute(): boolean {
-    return this.router.url.startsWith('/tabs/more');
+  get isTabsProfileRoute(): boolean {
+    return this.router.url.startsWith('/tabs/profile');
   }
 
   get headerTitle(): string {
-    return this.isTabsMoreRoute ? 'More' : 'My Profile';
+    return this.isTabsProfileRoute ? 'Profile' : 'My Profile';
   }
 
   get resolvedRole(): string | null {

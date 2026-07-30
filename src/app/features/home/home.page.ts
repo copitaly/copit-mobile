@@ -280,7 +280,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   goToCommunity(): void {
-    void this.navigateTo(['/tabs/community']);
+    void this.navigateTo(['/community']);
   }
 
   goToGive(): void {
@@ -288,7 +288,11 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   goToPrayer(): void {
-    void this.navigateTo(['/tabs/prayer']);
+    void this.navigateTo(['/prayer']);
+  }
+
+  goToProfile(): void {
+    void this.navigateTo([this.authService.isAuthenticatedSnapshot ? '/tabs/more' : '/login']);
   }
 
   goToBibleStudy(): void {

@@ -59,7 +59,7 @@ describe('PrayerPage', () => {
     expect(page.showMemberAction).toBeFalse();
     expect(page.primaryActions.map((action) => action.route)).toEqual([
       '/prayer/submit',
-      '/tabs/community',
+      '/community',
     ]);
   });
 
@@ -88,9 +88,9 @@ describe('PrayerPage', () => {
   });
 
   it('navigates actions to their configured routes', () => {
-    page.openAction('/tabs/community');
+    page.openAction('/community');
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/community');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/community');
   });
 
   it('removes the stay connected in prayer intro card', () => {

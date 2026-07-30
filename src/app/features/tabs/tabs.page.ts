@@ -3,7 +3,7 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, inject } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
-type PrimaryTabKey = 'home' | 'bible-study' | 'prayer' | 'community' | 'more';
+type PrimaryTabKey = 'home' | 'bible-study' | 'devotionals' | 'donate' | 'profile';
 
 type PrimaryTab = {
   key: PrimaryTabKey;
@@ -20,35 +20,50 @@ type PrimaryTab = {
   imports: [CommonModule, IonicModule, RouterModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <ion-tabs class="app-tabs" data-testid="tabs-shell">
-      <ion-router-outlet></ion-router-outlet>
+    <ion-page>
+      <ion-tabs class="app-tabs" data-testid="tabs-shell">
+        <ion-router-outlet></ion-router-outlet>
 
-      <ion-tab-bar slot="bottom" class="app-tabs__bar" data-testid="tabs-bar">
-        <ion-tab-button
-          *ngFor="let tab of tabs"
-          class="app-tabs__button"
-          [class.app-tabs__button--active]="isActiveTab(tab.key)"
-          [tab]="tab.key"
-          [routerLink]="tab.route"
-          [attr.aria-current]="isActiveTab(tab.key) ? 'page' : null"
-          [attr.data-testid]="'tab-button-' + tab.key"
-        >
-          <ion-icon
-            class="app-tabs__icon"
-            [name]="isActiveTab(tab.key) ? tab.activeIcon : tab.inactiveIcon"
-            aria-hidden="true"
-          ></ion-icon>
-          <ion-label>{{ tab.label }}</ion-label>
-        </ion-tab-button>
-      </ion-tab-bar>
-    </ion-tabs>
+        <ion-tab-bar slot="bottom" class="app-tabs__bar" data-testid="tabs-bar">
+          <ion-tab-button
+            *ngFor="let tab of tabs"
+            class="app-tabs__button"
+            [class.app-tabs__button--active]="isActiveTab(tab.key)"
+            [tab]="tab.key"
+            [routerLink]="tab.route"
+            [attr.aria-current]="isActiveTab(tab.key) ? 'page' : null"
+            [attr.data-testid]="'tab-button-' + tab.key"
+          >
+            <ion-icon
+              class="app-tabs__icon"
+              [name]="isActiveTab(tab.key) ? tab.activeIcon : tab.inactiveIcon"
+              aria-hidden="true"
+            ></ion-icon>
+            <ion-label>{{ tab.label }}</ion-label>
+          </ion-tab-button>
+        </ion-tab-bar>
+      </ion-tabs>
+    </ion-page>
   `,
   styles: [
     `
       :host,
+      ion-page,
       .app-tabs {
-        display: block;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
         min-height: 100%;
+      }
+
+      ion-tabs.app-tabs {
+        height: 100%;
+        flex: 1 1 auto;
+      }
+
+      .app-tabs ion-router-outlet {
+        flex: 1 1 auto;
+        min-height: 0;
       }
 
       .app-tabs__bar {
@@ -100,35 +115,35 @@ export class TabsPage {
     },
     {
       key: 'bible-study',
-      label: 'Bible',
+      label: 'Bible Study',
       route: '/tabs/bible-study',
       activePrefix: '/tabs/bible-study',
       inactiveIcon: 'book-outline',
       activeIcon: 'book',
     },
     {
-      key: 'prayer',
-      label: 'Prayer',
-      route: '/tabs/prayer',
-      activePrefix: '/tabs/prayer',
-      inactiveIcon: 'heart-outline',
-      activeIcon: 'heart',
+      key: 'devotionals',
+      label: 'Devotionals',
+      route: '/tabs/devotionals',
+      activePrefix: '/tabs/devotionals',
+      inactiveIcon: 'reader-outline',
+      activeIcon: 'reader',
     },
     {
-      key: 'community',
-      label: 'Community',
-      route: '/tabs/community',
-      activePrefix: '/tabs/community',
-      inactiveIcon: 'people-outline',
-      activeIcon: 'people',
+      key: 'donate',
+      label: 'Donate',
+      route: '/tabs/donate',
+      activePrefix: '/tabs/donate',
+      inactiveIcon: 'gift-outline',
+      activeIcon: 'gift',
     },
     {
-      key: 'more',
-      label: 'More',
-      route: '/tabs/more',
-      activePrefix: '/tabs/more',
-      inactiveIcon: 'menu-outline',
-      activeIcon: 'menu',
+      key: 'profile',
+      label: 'Profile',
+      route: '/tabs/profile',
+      activePrefix: '/tabs/profile',
+      inactiveIcon: 'person-outline',
+      activeIcon: 'person',
     },
   ];
 

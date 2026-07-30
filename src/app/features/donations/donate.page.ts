@@ -73,7 +73,8 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
           title="Make a Donation"
           subtitle="Support your local church safely and securely."
           [centerCopy]="false"
-          fallbackRoute="/branches"
+          [showBack]="false"
+          fallbackRoute="/tabs/home"
         ></app-mobile-header>
       </div>
 

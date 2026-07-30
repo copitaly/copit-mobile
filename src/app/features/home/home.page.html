@@ -1,5 +1,5 @@
 <ion-page>
-  <ion-content fullscreen class="home-content">
+  <ion-content fullscreen class="home-content" [forceOverscroll]="true" scrollY="true">
     <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
       <ion-refresher-content pullingText="Pull to refresh" refreshingSpinner="crescent"></ion-refresher-content>
     </ion-refresher>
@@ -129,50 +129,26 @@
         </div>
       </section>
 
-      <section *ngIf="showUpcomingServiceCard" aria-label="Upcoming Service">
-        <div class="sec-head"><h2>Upcoming Service</h2></div>
-      </section>
-
-      <section aria-label="Quick Access">
-        <div class="sec-head"><h2>Quick Access</h2></div>
-        <div class="quick-grid">
-          <button type="button" class="qa ion-activatable" data-testid="qa-prayer" aria-label="Open Prayer" (click)="goToPrayer()">
-            <span class="qa__icon"><ion-icon name="heart-outline" aria-hidden="true"></ion-icon></span>
-            <span class="qa__label">Prayer</span>
-            <ion-ripple-effect></ion-ripple-effect>
-          </button>
-          <button type="button" class="qa ion-activatable" data-testid="qa-bible-study" aria-label="Open Bible Study" (click)="goToBibleStudy()">
-            <span class="qa__icon"><ion-icon name="book-outline" aria-hidden="true"></ion-icon></span>
-            <span class="qa__label">Bible Study</span>
-            <ion-ripple-effect></ion-ripple-effect>
-          </button>
-          <button type="button" class="qa ion-activatable" data-testid="qa-churches" aria-label="Open Churches" (click)="goToBranches()">
-            <span class="qa__icon"><ion-icon name="location-outline" aria-hidden="true"></ion-icon></span>
-            <span class="qa__label">Churches</span>
-            <ion-ripple-effect></ion-ripple-effect>
-          </button>
-          <button type="button" class="qa ion-activatable" data-testid="qa-community" aria-label="Open Community" (click)="goToCommunity()">
-            <span class="qa__icon"><ion-icon name="people-outline" aria-hidden="true"></ion-icon></span>
-            <span class="qa__label">Community</span>
-            <ion-ripple-effect></ion-ripple-effect>
-          </button>
+      <section class="utility" aria-label="Community and Prayer">
+        <div class="utility__head" style="display:flex;align-items:flex-start;gap:.85rem;flex-wrap:wrap">
+          <span class="utility__icon" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:14px;background:rgba(11,29,115,.08);color:#0b1d73;flex-shrink:0" aria-hidden="true"><ion-icon name="people-outline"></ion-icon></span>
+          <div>
+            <p class="gold-kicker">Community</p>
+            <h3>You're not walking this journey alone.</h3>
+            <p class="muted-copy">Connect with your church family or share a prayer request.</p>
+          </div>
+        </div>
+        <div class="utility__actions" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem">
+          <button type="button" class="utility__btn utility__btn--solid" data-testid="request-prayer-button" (click)="goToPrayer()">Request Prayer</button>
+          <button type="button" class="utility__btn utility__btn--outline" data-testid="community-button" (click)="goToCommunity()">Community</button>
         </div>
       </section>
 
-      <section class="utility" aria-label="Support the Ministry">
-        <div>
-          <p class="gold-kicker">Support the Ministry</p>
-          <h3>Give securely</h3>
-          <p class="muted-copy">Support the work of COP Italy through a one-time or recurring donation.</p>
-        </div>
-        <div class="utility__actions">
-          <button type="button" class="utility__btn utility__btn--solid" data-testid="give-utility-button" (click)="goToGive()">Give now</button>
-        </div>
-      </section>
-
-      <div *ngIf="showBuildSafetyLabel" class="build-safety-label-row">
+      <div *ngIf="showBuildSafetyLabel" style="display:flex;justify-content:center;padding:.2rem 0 calc(env(safe-area-inset-bottom,0px) + .2rem)">
         <app-build-safety-label></app-build-safety-label>
       </div>
+
+      <div class="home-scroll-spacer" aria-hidden="true"></div>
     </div>
   </ion-content>
 </ion-page>

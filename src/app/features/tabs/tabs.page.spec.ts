@@ -43,13 +43,37 @@ describe('TabsPage', () => {
       (node) => (node as HTMLElement).textContent?.trim() ?? ''
     );
 
-    expect(labels).toEqual(['Home', 'Bible', 'Prayer', 'Community', 'More']);
+    expect(labels).toEqual(['Home', 'Bible Study', 'Devotionals', 'Donate', 'Profile']);
   });
 
   it('marks the Bible tab active on the Bible Study tab route', async () => {
     await createComponent('/tabs/bible-study');
 
     expect(fixture.nativeElement.querySelector('[data-testid="tab-button-bible-study"]')?.className).toContain(
+      'app-tabs__button--active'
+    );
+  });
+
+  it('marks the Devotionals tab active on the Devotionals tab route', async () => {
+    await createComponent('/tabs/devotionals');
+
+    expect(fixture.nativeElement.querySelector('[data-testid="tab-button-devotionals"]')?.className).toContain(
+      'app-tabs__button--active'
+    );
+  });
+
+  it('marks the Donate tab active on the Donate tab route', async () => {
+    await createComponent('/tabs/donate');
+
+    expect(fixture.nativeElement.querySelector('[data-testid="tab-button-donate"]')?.className).toContain(
+      'app-tabs__button--active'
+    );
+  });
+
+  it('marks the Profile tab active on the Profile tab route', async () => {
+    await createComponent('/tabs/profile');
+
+    expect(fixture.nativeElement.querySelector('[data-testid="tab-button-profile"]')?.className).toContain(
       'app-tabs__button--active'
     );
   });
@@ -87,7 +111,7 @@ describe('Tabs routing', () => {
     const tabsRoute = router.config.find((item) => item.path === 'tabs');
     const childPaths = tabsRoute?.children?.map((child) => child.path);
 
-    expect(childPaths).toEqual(['home', 'bible-study', 'prayer', 'community', 'more', '']);
+    expect(childPaths).toEqual(['home', 'bible-study', 'prayer', 'devotionals', 'donate', 'community', 'more', 'profile', '']);
     expect(tabsRoute?.children?.find((child) => child.path === '')?.redirectTo).toBe('home');
   });
 
@@ -103,6 +127,41 @@ describe('Tabs routing', () => {
     const route = router.config.find((item) => item.path === 'bible-study');
 
     expect(route?.redirectTo).toBe('tabs/bible-study');
+  });
+
+  it('redirects the legacy /devotionals route to the canonical Devotionals tab route', async () => {
+    const router = await createRouter();
+    const route = router.config.find((item) => item.path === 'devotionals');
+
+    expect(route?.redirectTo).toBe('tabs/devotionals');
+  });
+
+  it('redirects the legacy /donate route to the canonical Donate tab route', async () => {
+    const router = await createRouter();
+    const donateRoutes = router.config.filter((item) => item.path === 'donate');
+
+    expect(donateRoutes.some((route) => route.redirectTo === 'tabs/donate')).toBeTrue();
+  });
+
+  it('redirects the legacy /profile and /tabs/more routes to the canonical Profile tab route', async () => {
+    const router = await createRouter();
+    const profileRoute = router.config.find((item) => item.path === 'profile');
+    const tabsRoute = router.config.find((item) => item.path === 'tabs');
+
+    expect(profileRoute?.redirectTo).toBe('tabs/profile');
+    expect(tabsRoute?.children?.find((child) => child.path === 'more')?.redirectTo).toBe('/tabs/profile');
+  });
+
+  it('keeps Prayer and Community as standalone pages outside the primary tab destinations', async () => {
+    const router = await createRouter();
+    const prayerRoute = router.config.find((item) => item.path === 'prayer');
+    const communityRoute = router.config.find((item) => item.path === 'community');
+    const tabsRoute = router.config.find((item) => item.path === 'tabs');
+
+    expect(prayerRoute?.loadComponent).toBeDefined();
+    expect(communityRoute?.loadComponent).toBeDefined();
+    expect(tabsRoute?.children?.find((child) => child.path === 'prayer')?.redirectTo).toBe('/prayer');
+    expect(tabsRoute?.children?.find((child) => child.path === 'community')?.redirectTo).toBe('/community');
   });
 
   it('keeps Bible Study detail and reader routes outside the tabs child route tree', async () => {

@@ -273,8 +273,8 @@ describe('DevotionalsPage', () => {
     const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
     expect(header.title).toBe('Devotionals');
     expect(header.subtitle).toBe('Browse published devotionals.');
-    expect(header.fallbackRoute).toBe('/home');
-    expect(header.showBack).toBeTrue();
+    expect(header.fallbackRoute).toBe('/tabs/home');
+    expect(header.showBack).toBeFalse();
   });
 
   it('navigates to the devotional detail route when a card is tapped', async () => {

@@ -7,7 +7,8 @@
     <app-feature-page-shell
       title="Devotionals"
       subtitle="Browse published devotionals."
-      backFallbackRoute="/home"
+      backFallbackRoute="/tabs/home"
+      [showBack]="false"
     >
       <div *ngIf="loading" class="skeleton-stack" aria-live="polite" data-testid="loading-state">
         <div class="devotional-card skeleton" *ngFor="let item of skeletonItems">
