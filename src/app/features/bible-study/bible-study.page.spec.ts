@@ -7,11 +7,11 @@ import { BibleStudyManualListItem } from '../../core/models/bible-study.model';
 import { AuthService } from '../../core/services/auth.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
-import { FeaturePageShellComponent } from '../../shared/feature-page-shell.component';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { BibleStudyPage } from './bible-study.page';
 
 describe('BibleStudyPage', () => {
+  const continueReadingStorageKey = 'copit.bible-study.progress';
   let fixture: ComponentFixture<BibleStudyPage>;
   let page: BibleStudyPage;
   let bibleStudyService: jasmine.SpyObj<BibleStudyService>;
@@ -55,6 +55,7 @@ describe('BibleStudyPage', () => {
   }
 
   beforeEach(() => {
+    sessionStorage.removeItem(continueReadingStorageKey);
     bibleStudyService = jasmine.createSpyObj<BibleStudyService>('BibleStudyService', [
       'getPublishedManuals',
       'getPublishedManualDetail',
@@ -81,6 +82,32 @@ describe('BibleStudyPage', () => {
     expect(fixture.nativeElement.querySelectorAll('[data-testid="manual-card"]').length).toBe(1);
   });
 
+  it('renders the featured fallback hero when there is no reading progress', async () => {
+    bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
+
+    await createComponent();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Featured Bible Study');
+    expect(text).toContain('Start Reading');
+    expect(text).toContain('Choose a manual to read or download.');
+  });
+
+  it('renders a Continue Reading hero when an existing session snapshot matches a manual', async () => {
+    sessionStorage.setItem(
+      continueReadingStorageKey,
+      JSON.stringify({ manualId: 11, currentPage: 7, totalPages: 20 })
+    );
+    bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
+
+    await createComponent();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Continue Reading');
+    expect(text).toContain('Resume Reading');
+    expect(text).toContain('Page 7 of 20');
+  });
+
   it('renders title, year, language, volume, and week range', async () => {
     bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
 
@@ -92,8 +119,6 @@ describe('BibleStudyPage', () => {
     expect(text).toContain('English');
     expect(text).toContain('Volume 1');
     expect(text).toContain('Weeks 1-4');
-    expect(text).not.toContain('PUBLISHED MANUALS');
-    expect(text).not.toContain('Choose a published manual to read or download.');
   });
 
   it('renders Full year when week range is missing', async () => {
@@ -128,7 +153,7 @@ describe('BibleStudyPage', () => {
     await createComponent();
 
     expect(fixture.nativeElement.querySelector('[data-testid="empty-state"]')?.textContent).toContain(
-      'No Bible Study manuals yet'
+      'No Bible Studies Available'
     );
   });
 
@@ -198,16 +223,28 @@ describe('BibleStudyPage', () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/11');
   });
 
+  it('navigates straight to the reader when Continue Reading is available', async () => {
+    sessionStorage.setItem(
+      continueReadingStorageKey,
+      JSON.stringify({ manualId: 11, currentPage: 7, totalPages: 20 })
+    );
+    bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
+
+    await createComponent();
+
+    page.openHero();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/11/read');
+  });
+
   it('configures the list header to fall back to the home screen when there is no history', async () => {
     bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
 
     await createComponent();
 
-    expect(fixture.debugElement.query(By.directive(FeaturePageShellComponent))).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="feature-page-surface"]')).not.toBeNull();
     const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
     expect(header.title).toBe('Bible Study');
-    expect(header.subtitle).toBe('Browse published Bible Study manuals.');
+    expect(header.subtitle).toBe("Grow in faith through God's Word");
     expect(header.fallbackRoute).toBe('/home');
     expect(header.showBack).toBeTrue();
   });

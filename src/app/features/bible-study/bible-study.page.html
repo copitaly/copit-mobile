@@ -1,26 +1,49 @@
 <ion-page>
-  <ion-content fullscreen class="branch-content bible-study-content">
+  <ion-content fullscreen class="bible-study-content">
     <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
       <ion-refresher-content></ion-refresher-content>
     </ion-refresher>
 
-    <app-feature-page-shell
-      title="Bible Study"
-      subtitle="Browse published Bible Study manuals."
-      backFallbackRoute="/home"
-    >
-      <div *ngIf="loading" class="skeleton-stack" aria-live="polite">
-        <div class="manual-card skeleton" *ngFor="let item of skeletonItems">
-          <div class="manual-card__body">
-            <div class="manual-card__cover-skeleton"></div>
-            <div class="manual-card__copy">
-              <span class="skeleton-line skeleton-line--title"></span>
-              <span class="skeleton-line skeleton-line--meta"></span>
-              <span class="skeleton-line skeleton-line--meta short"></span>
-              <span class="skeleton-line skeleton-line--meta shorter"></span>
+    <div class="bible-study-shell">
+      <header class="bible-study-header">
+        <app-mobile-header
+          title="Bible Study"
+          subtitle="Grow in faith through God's Word"
+          [showBack]="true"
+          fallbackRoute="/home"
+        ></app-mobile-header>
+      </header>
+
+      <div *ngIf="loading" class="bible-study-stack" aria-live="polite">
+        <section class="bible-study-section">
+          <app-mobile-section-header title="Featured Bible Study" subtitle="Start with the newest published manual available to read now."></app-mobile-section-header>
+          <div class="hero-skeleton">
+            <div class="hero-skeleton__media"></div>
+            <div class="hero-skeleton__body">
+              <span class="skeleton-line skeleton-line--hero-kicker"></span>
+              <span class="skeleton-line skeleton-line--hero-title"></span>
+              <span class="skeleton-line skeleton-line--hero-meta"></span>
+              <span class="skeleton-line skeleton-line--hero-detail"></span>
+              <span class="skeleton-line skeleton-line--hero-cta"></span>
             </div>
           </div>
-        </div>
+        </section>
+
+        <section class="bible-study-section">
+          <app-mobile-section-header title="Available Manuals" subtitle="Choose a manual to read or download."></app-mobile-section-header>
+          <div class="manual-list manual-list--skeleton">
+            <div *ngFor="let item of skeletonItems" class="manual-list__item">
+              <div class="row-skeleton">
+                <div class="row-skeleton__thumb"></div>
+                <div class="row-skeleton__copy">
+                  <span class="skeleton-line skeleton-line--row-title"></span>
+                  <span class="skeleton-line skeleton-line--row-meta"></span>
+                  <span class="skeleton-line skeleton-line--row-detail"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
       <div *ngIf="!loading && errorMessage" class="state-card error-state" data-testid="error-state">
@@ -32,47 +55,65 @@
       </div>
 
       <div *ngIf="!loading && !errorMessage && manuals.length === 0" class="state-card empty-state" data-testid="empty-state">
+        <div class="empty-icon" aria-hidden="true">
+          <ion-icon name="book-outline"></ion-icon>
+        </div>
         <div class="state-copy">
-          <h2>No Bible Study manuals yet</h2>
-          <p>Published Bible Study manuals will appear here when they become available.</p>
+          <h2>No Bible Studies Available</h2>
+          <p>New manuals will appear here when published.</p>
         </div>
       </div>
 
-      <section *ngIf="!loading && !errorMessage && manuals.length > 0" class="manual-feed" aria-label="Bible Study manuals">
-        <button
-          *ngFor="let manual of manuals; trackBy: trackByManualId"
-          type="button"
-          class="manual-card manual-card--button"
-          [attr.aria-label]="'Open Bible Study manual ' + manual.title"
-          data-testid="manual-card"
-          (click)="openManual(manual)"
-        >
-          <div class="manual-card__body">
-            <div class="manual-card__cover" [class.manual-card__cover--placeholder]="!manual.cover_image_url">
-              <img *ngIf="manual.cover_image_url; else coverPlaceholder" [src]="manual.cover_image_url" [alt]="manual.title + ' cover'" />
-              <ng-template #coverPlaceholder>
-                <ion-icon name="book-outline" aria-hidden="true"></ion-icon>
-              </ng-template>
-            </div>
+      <div *ngIf="!loading && !errorMessage && manuals.length > 0" class="bible-study-stack">
+        <section class="bible-study-section">
+          <app-mobile-section-header
+            [title]="heroSectionTitle"
+            [subtitle]="heroSectionSubtitle"
+          ></app-mobile-section-header>
 
-            <div class="manual-card__copy">
-              <div class="manual-card__top">
-                <h2>{{ manual.title }}</h2>
-                <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
-              </div>
-              <p class="manual-card__meta">{{ manual.year }} / {{ manual.language_display }}</p>
-              <p *ngIf="formatVolume(manual.volume)" class="manual-card__detail">{{ formatVolume(manual.volume) }}</p>
-              <p class="manual-card__detail">{{ formatWeekRange(manual) }}</p>
+          <app-mobile-hero-card
+            *ngIf="heroManual"
+            data-testid="hero-card"
+            [eyebrow]="heroEyebrow"
+            [title]="heroTitle"
+            [meta]="heroMeta"
+            [detail]="heroDetail"
+            [ctaLabel]="heroCtaLabel"
+            [imageSrc]="heroManual.cover_image_url"
+            [imageAlt]="heroTitle + ' cover'"
+            [ariaLabel]="heroAriaLabel"
+            [progressPercent]="heroProgressPercent"
+            [progressLabel]="heroProgressLabel"
+            [progressAriaLabel]="heroProgressLabel"
+            (cardClick)="openHero()"
+          ></app-mobile-hero-card>
+        </section>
+
+        <section class="bible-study-section" aria-label="Bible Study manuals">
+          <app-mobile-section-header
+            title="Available Manuals"
+            subtitle="Choose a manual to read or download."
+          ></app-mobile-section-header>
+
+          <div class="manual-list">
+            <div *ngFor="let manual of manuals; trackBy: trackByManualId" class="manual-list__item" data-testid="manual-card">
+              <app-mobile-content-row
+                [title]="manual.title"
+                [meta]="buildManualMeta(manual)"
+                [detail]="buildManualDetail(manual)"
+                [thumbnailSrc]="manual.cover_image_url"
+                [thumbnailAlt]="manual.title + ' cover'"
+                [ariaLabel]="'Open Bible Study manual ' + manual.title"
+                (rowClick)="openManual(manual)"
+              ></app-mobile-content-row>
             </div>
           </div>
-        </button>
-      </section>
+        </section>
 
-      <div *ngIf="!loading && !errorMessage && loadMoreErrorMessage" class="state-card error-state" data-testid="refresh-error-state">
-        <div class="state-copy">
-          <p>{{ loadMoreErrorMessage }}</p>
+        <div *ngIf="loadMoreErrorMessage" class="refresh-banner" data-testid="refresh-error-state" aria-live="polite">
+          {{ loadMoreErrorMessage }}
         </div>
       </div>
-    </app-feature-page-shell>
+    </div>
   </ion-content>
 </ion-page>
