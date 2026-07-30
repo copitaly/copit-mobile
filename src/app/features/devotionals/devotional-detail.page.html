@@ -1,28 +1,40 @@
 <ion-page>
-  <ion-content fullscreen class="feature-page-content devotional-detail-content">
-    <app-feature-page-shell
-      title="Devotional"
-      subtitle="Read published devotional details."
-      backFallbackRoute="/tabs/devotionals"
-      backAriaLabel="Back to devotionals"
-      actionIcon="share-social-outline"
-      actionAriaLabel="Share devotional"
-      [actionDisabled]="!canShareDevotional()"
-      [action]="shareDevotionalFromHeader"
-    >
-      <div *ngIf="loading" class="skeleton-stack" aria-live="polite" data-testid="loading-state">
-        <div class="detail-card skeleton detail-card--hero">
-          <div class="detail-card__cover-skeleton"></div>
-          <span class="skeleton-line skeleton-line--title"></span>
-          <span class="skeleton-line skeleton-line--meta short"></span>
-          <span class="skeleton-line skeleton-line--meta shorter"></span>
-        </div>
+  <ion-header class="devotional-reader-header" translucent="true">
+    <ion-toolbar>
+      <ion-buttons slot="start">
+        <ion-back-button defaultHref="/tabs/devotionals" text="" icon="chevron-back" aria-label="Back to devotionals"></ion-back-button>
+      </ion-buttons>
+      <ion-title>Devotional</ion-title>
+      <ion-buttons slot="end">
+        <ion-button
+          fill="clear"
+          color="dark"
+          [disabled]="!canShareDevotional()"
+          aria-label="Share devotional"
+          (click)="shareDevotionalFromHeader()"
+        >
+          <ion-icon slot="icon-only" name="share-social-outline" aria-hidden="true"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    </ion-toolbar>
+  </ion-header>
 
-        <div class="detail-card skeleton" *ngFor="let item of skeletonItems">
-          <span class="skeleton-line skeleton-line--body"></span>
-          <span class="skeleton-line skeleton-line--body"></span>
-          <span class="skeleton-line skeleton-line--body short"></span>
-        </div>
+  <ion-content fullscreen class="devotional-detail-content">
+    <div class="devotional-reader-shell">
+      <div *ngIf="loading" class="reader-loading" aria-live="polite" data-testid="loading-state">
+        <article class="reader-article skeleton">
+          <div class="reader-article__media detail-card__cover-skeleton"></div>
+          <div class="reader-article__section reader-article__section--header">
+            <span class="skeleton-line skeleton-line--title"></span>
+            <span class="skeleton-line skeleton-line--meta short"></span>
+            <span class="skeleton-line skeleton-line--meta shorter"></span>
+          </div>
+          <div class="reader-article__section">
+            <span class="skeleton-line skeleton-line--body"></span>
+            <span class="skeleton-line skeleton-line--body"></span>
+            <span class="skeleton-line skeleton-line--body short"></span>
+          </div>
+        </article>
       </div>
 
       <div *ngIf="!loading && notFound" class="state-card empty-state" data-testid="not-found-state">
@@ -43,44 +55,25 @@
         <ion-button expand="block" class="state-button" (click)="retryLoad()">Try Again</ion-button>
       </div>
 
-      <article *ngIf="!loading && !notFound && !errorMessage && devotional" class="devotional-detail" data-testid="devotional-detail">
-        <div
-          *ngIf="shouldShowCoverImage()"
-          class="detail-card detail-card--cover detail-card--cover-landscape"
-          data-testid="cover-image"
-        >
-          <img
-            [src]="devotional.cover_image!"
-            [alt]="getCoverImageAlt()"
-            (error)="handleCoverImageError()"
-          />
+      <article *ngIf="!loading && !notFound && !errorMessage && devotional" class="reader-article" data-testid="devotional-detail">
+        <div *ngIf="shouldShowCoverImage()" class="reader-article__media" data-testid="cover-image">
+          <img [src]="devotional.cover_image!" [alt]="getCoverImageAlt()" (error)="handleCoverImageError()" />
         </div>
 
-        <section class="detail-card detail-card--hero">
-          <h2 data-testid="devotional-title">{{ devotional.title }}</h2>
-          <p class="detail-card__meta" data-testid="publication-date">
-            {{ formatPublicationDate(devotional.publication_date) }}
-          </p>
-          <p *ngIf="hasText(devotional.scripture_reference)" class="detail-card__reference" data-testid="scripture-reference">
-            {{ devotional.scripture_reference }}
-          </p>
-        </section>
+        <header class="reader-article__section reader-article__section--header">
+          <h1 data-testid="devotional-title">{{ devotional.title }}</h1>
+          <p class="reader-article__date" data-testid="publication-date">{{ formatPublicationDate(devotional.publication_date) }}</p>
+          <p *ngIf="getHeaderMeta()" class="reader-article__meta" data-testid="scripture-reference">{{ getHeaderMeta() }}</p>
+        </header>
 
-        <section *ngIf="hasText(devotional.scripture_text) || hasText(devotional.scripture_reference)" class="detail-card detail-card--scripture">
-          <h3 data-testid="scripture-heading">Scripture</h3>
-          <p *ngIf="hasText(devotional.scripture_reference)" class="detail-card__reference detail-card__reference--section">
-            {{ devotional.scripture_reference }}
-          </p>
-          <div
-            *ngIf="hasText(devotional.scripture_text)"
-            class="scripture-block preserve-lines"
-            data-testid="scripture-text"
-          >
+        <section *ngIf="hasText(devotional.scripture_text) || hasText(devotional.scripture_reference)" class="reader-article__section" data-testid="scripture-section">
+          <h2 data-testid="scripture-heading">Scripture</h2>
+          <blockquote *ngIf="hasText(devotional.scripture_text)" class="scripture-block preserve-lines" data-testid="scripture-text">
             {{ devotional.scripture_text }}
-          </div>
+          </blockquote>
         </section>
 
-        <section class="detail-card detail-card--reading" data-testid="content-section">
+        <section class="reader-article__section" data-testid="content-section">
           <div class="reading-copy" data-testid="content">
             <p *ngFor="let paragraph of contentParagraphs" class="reading-paragraph preserve-lines">
               {{ paragraph }}
@@ -91,8 +84,8 @@
           </div>
         </section>
 
-        <section *ngIf="hasText(devotional.reflection_question)" class="detail-card" data-testid="reflection-section">
-          <h3 data-testid="reflection-heading">Reflection</h3>
+        <section *ngIf="hasText(devotional.reflection_question)" class="reader-article__section reader-article__section--inset" data-testid="reflection-section">
+          <h2 data-testid="reflection-heading">Reflection</h2>
           <div class="reading-copy" data-testid="reflection-question">
             <p *ngFor="let paragraph of reflectionParagraphs" class="reading-paragraph preserve-lines">
               {{ paragraph }}
@@ -100,8 +93,8 @@
           </div>
         </section>
 
-        <section *ngIf="hasText(devotional.prayer)" class="detail-card" data-testid="prayer-section">
-          <h3 data-testid="prayer-heading">Prayer</h3>
+        <section *ngIf="hasText(devotional.prayer)" class="reader-article__section reader-article__section--prayer" data-testid="prayer-section">
+          <h2 data-testid="prayer-heading">Prayer</h2>
           <div class="reading-copy" data-testid="prayer">
             <p *ngFor="let paragraph of prayerParagraphs" class="reading-paragraph preserve-lines">
               {{ paragraph }}
@@ -109,10 +102,10 @@
           </div>
         </section>
 
-        <p *ngIf="hasText(devotional.author_name)" class="devotional-attribution" data-testid="author-attribution">
-          Written by {{ devotional.author_name }}
-        </p>
+        <footer class="reader-article__footer" data-testid="author-attribution">
+          {{ getAttributionLabel() }}
+        </footer>
       </article>
-    </app-feature-page-shell>
+    </div>
   </ion-content>
 </ion-page>

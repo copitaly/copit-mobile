@@ -9,11 +9,10 @@ import { IonicModule, ToastController } from '@ionic/angular';
 
 import { DevotionalPublicDetail } from '../../core/models/devotional.model';
 import { DevotionalService } from '../../core/services/devotional.service';
-import { FeaturePageShellComponent } from '../../shared/feature-page-shell.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, RouterModule, IonicModule, FeaturePageShellComponent],
+  imports: [CommonModule, RouterModule, IonicModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-devotional-detail',
   templateUrl: './devotional-detail.page.html',
@@ -132,6 +131,27 @@ export class DevotionalDetailPage implements OnInit {
   getCoverImageAlt(): string {
     const title = this.devotional?.title?.trim();
     return title ? `${title} cover image` : 'Devotional cover preview';
+  }
+
+  getHeaderMeta(): string {
+    if (!this.devotional) {
+      return '';
+    }
+
+    const parts = [
+      this.hasText(this.devotional.scripture_reference) ? this.devotional.scripture_reference.trim() : '',
+      this.getPublisherLabel(),
+    ].filter(Boolean);
+
+    return parts.join(' · ');
+  }
+
+  getPublisherLabel(): string {
+    return this.devotional?.author_name?.trim() || 'COP Italy';
+  }
+
+  getAttributionLabel(): string {
+    return `Written by ${this.getPublisherLabel()}`;
   }
 
   getParagraphs(value: string | null | undefined): string[] {

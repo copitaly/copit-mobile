@@ -1,6 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { ToastController } from '@ionic/angular';
 import { of, Subject, throwError } from 'rxjs';
@@ -9,8 +8,6 @@ import { DevotionalPublicDetail } from '../../core/models/devotional.model';
 import { AuthService } from '../../core/services/auth.service';
 import { DevotionalService } from '../../core/services/devotional.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
-import { FeaturePageShellComponent } from '../../shared/feature-page-shell.component';
-import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { DevotionalDetailPage } from './devotional-detail.page';
 
 describe('DevotionalDetailPage', () => {
@@ -83,12 +80,13 @@ describe('DevotionalDetailPage', () => {
     response$.complete();
   });
 
-  it('loads and renders the devotional detail', async () => {
+  it('loads and renders the devotional detail in a single article surface', async () => {
     devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
 
     await createComponent();
 
     const text = fixture.nativeElement.textContent;
+    expect(fixture.nativeElement.querySelector('[data-testid="devotional-detail"]')).not.toBeNull();
     expect(text).toContain('Trusting God in Uncertain Times');
     expect(text).toContain('28 July 2026');
     expect(text).toContain('Proverbs 3:5-6');
@@ -96,14 +94,16 @@ describe('DevotionalDetailPage', () => {
     expect(text).toContain('When uncertainty rises,');
     expect(text).toContain('What worry do you need to surrender today?');
     expect(text).toContain('Lord, keep my heart steady.');
-    expect(text).toContain('admin admin');
+    expect(text).toContain('Written by admin admin');
   });
 
   it('shows a graceful fallback when devotional content is blank', async () => {
-    devotionalService.getDevotionalBySlug.and.returnValue(of({
-      ...devotional,
-      content: '   ',
-    }));
+    devotionalService.getDevotionalBySlug.and.returnValue(
+      of({
+        ...devotional,
+        content: '   ',
+      })
+    );
 
     await createComponent();
 
@@ -124,22 +124,26 @@ describe('DevotionalDetailPage', () => {
   });
 
   it('hides optional sections when their values are blank', async () => {
-    devotionalService.getDevotionalBySlug.and.returnValue(of({
-      ...devotional,
-      scripture_text: ' ',
-      reflection_question: '',
-      prayer: null,
-      author_name: ' ',
-      cover_image: null,
-    }));
+    devotionalService.getDevotionalBySlug.and.returnValue(
+      of({
+        ...devotional,
+        scripture_text: ' ',
+        reflection_question: '',
+        prayer: null,
+        author_name: ' ',
+        cover_image: null,
+      })
+    );
 
     await createComponent();
 
     expect(fixture.nativeElement.querySelector('[data-testid="scripture-text"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="reflection-section"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="prayer-section"]')).toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="author-section"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="cover-image"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="author-attribution"]')?.textContent).toContain(
+      'Written by COP Italy'
+    );
   });
 
   it('renders the cover image when present', async () => {
@@ -147,23 +151,46 @@ describe('DevotionalDetailPage', () => {
 
     await createComponent();
 
-    const cover = fixture.nativeElement.querySelector('[data-testid="cover-image"]') as HTMLElement | null;
     const image = fixture.nativeElement.querySelector('[data-testid="cover-image"] img') as HTMLImageElement | null;
-    expect(cover?.className).toContain('detail-card--cover-landscape');
     expect(image?.getAttribute('src')).toBe('https://example.com/cover.jpg');
     expect(image?.getAttribute('alt')).toBe('Trusting God in Uncertain Times cover image');
   });
 
-  it('removes the devotional badge and redundant devotional content heading', async () => {
+  it('renders a compact header with back and share actions and no blue hero shell', async () => {
     devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
 
     await createComponent();
 
-    expect(fixture.nativeElement.querySelector('.detail-card__eyebrow')).toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="content-section"] h3')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-feature-page-shell')).toBeNull();
+    expect(fixture.nativeElement.querySelector('ion-header.devotional-reader-header')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('ion-title')?.textContent).toContain('Devotional');
+    const backButton = fixture.nativeElement.querySelector('ion-back-button') as HTMLElement | null;
+    expect(backButton).not.toBeNull();
+    expect(backButton?.getAttribute('defaulthref')).toBe('/tabs/devotionals');
+    expect(backButton?.getAttribute('aria-label')).toBe('Back to devotionals');
+    expect(fixture.nativeElement.querySelector('ion-button[aria-label="Share devotional"]')).not.toBeNull();
   });
 
-  it('keeps scripture, reflection, and prayer headings when populated', async () => {
+  it('keeps tabs absent on the detail route', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('ion-tab-bar')).toBeNull();
+  });
+
+  it('does not duplicate the scripture reference as a separate scripture metadata row', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('.detail-card__reference')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="scripture-reference"]')?.textContent).toContain(
+      'Proverbs 3:5-6'
+    );
+  });
+
+  it('keeps scripture and prayer headings when populated', async () => {
     devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
 
     await createComponent();
@@ -171,17 +198,6 @@ describe('DevotionalDetailPage', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="scripture-heading"]')?.textContent).toContain('Scripture');
     expect(fixture.nativeElement.querySelector('[data-testid="reflection-heading"]')?.textContent).toContain('Reflection');
     expect(fixture.nativeElement.querySelector('[data-testid="prayer-heading"]')?.textContent).toContain('Prayer');
-  });
-
-  it('renders the author as a quiet attribution without an author card heading', async () => {
-    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
-
-    await createComponent();
-
-    expect(fixture.nativeElement.querySelector('[data-testid="author-attribution"]')?.textContent).toContain(
-      'Written by admin admin'
-    );
-    expect(fixture.nativeElement.textContent).not.toContain('Author');
   });
 
   it('hides a broken cover image safely', async () => {
@@ -208,10 +224,7 @@ describe('DevotionalDetailPage', () => {
   });
 
   it('shows a retryable error state for non-404 failures', async () => {
-    devotionalService.getDevotionalBySlug.and.returnValues(
-      throwError(() => new Error('network')),
-      of(devotional)
-    );
+    devotionalService.getDevotionalBySlug.and.returnValues(throwError(() => new Error('network')), of(devotional));
 
     await createComponent();
 
@@ -227,9 +240,7 @@ describe('DevotionalDetailPage', () => {
   });
 
   it('shows an offline-specific error message when the request fails with status 0', async () => {
-    devotionalService.getDevotionalBySlug.and.returnValue(
-      throwError(() => new HttpErrorResponse({ status: 0 }))
-    );
+    devotionalService.getDevotionalBySlug.and.returnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
 
     await createComponent();
 
@@ -237,9 +248,7 @@ describe('DevotionalDetailPage', () => {
   });
 
   it('shows a timeout-specific error message when the request times out', async () => {
-    devotionalService.getDevotionalBySlug.and.returnValue(
-      throwError(() => new Error('Timeout while loading devotional'))
-    );
+    devotionalService.getDevotionalBySlug.and.returnValue(throwError(() => new Error('Timeout while loading devotional')));
 
     await createComponent();
 
@@ -258,29 +267,14 @@ describe('DevotionalDetailPage', () => {
     response$.complete();
   });
 
-  it('configures the header back action to return to the devotionals list', async () => {
-    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
-
-    await createComponent();
-
-    expect(fixture.debugElement.query(By.directive(FeaturePageShellComponent))).not.toBeNull();
-    const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
-    expect(header.title).toBe('Devotional');
-    expect(header.subtitle).toBe('Read published devotional details.');
-    expect(header.fallbackRoute).toBe('/tabs/devotionals');
-    expect(header.backAriaLabel).toBe('Back to devotionals');
-    expect(header.actionIcon).toBe('share-social-outline');
-    expect(header.actionAriaLabel).toBe('Share devotional');
-  });
-
   it('keeps the share button unavailable while the devotional is loading', async () => {
     const response$ = new Subject<DevotionalPublicDetail>();
     devotionalService.getDevotionalBySlug.and.returnValue(response$.asObservable());
 
     await createComponent();
 
-    const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
-    expect(header.actionDisabled).toBeTrue();
+    const shareButton = fixture.nativeElement.querySelector('ion-button[aria-label="Share devotional"]') as HTMLButtonElement | null;
+    expect(shareButton?.disabled).toBeTrue();
     response$.complete();
   });
 
@@ -301,18 +295,18 @@ describe('DevotionalDetailPage', () => {
   });
 
   it('omits blank scripture reference and scripture text from share text cleanly', async () => {
-    devotionalService.getDevotionalBySlug.and.returnValue(of({
-      ...devotional,
-      scripture_reference: '   ',
-      scripture_text: '',
-    }));
+    devotionalService.getDevotionalBySlug.and.returnValue(
+      of({
+        ...devotional,
+        scripture_reference: '   ',
+        scripture_text: '',
+      })
+    );
 
     await createComponent();
 
     const shareText = page.buildShareText();
-    expect(shareText).toBe(
-      'Trusting God in Uncertain Times\n\nRead more daily devotionals in the COP Italy app.'
-    );
+    expect(shareText).toBe('Trusting God in Uncertain Times\n\nRead more daily devotionals in the COP Italy app.');
   });
 
   it('invokes Capacitor Share on native platforms', async () => {
@@ -436,38 +430,6 @@ describe('DevotionalDetailPage', () => {
     expect(text).not.toContain('created_by');
     expect(text).not.toContain('draft');
     expect(text).not.toContain('archived');
-  });
-
-  it('reuses the shared feature-page shell for the blue header and white rounded content surface', async () => {
-    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
-
-    await createComponent();
-
-    const ionContent = fixture.nativeElement.querySelector('ion-content.devotional-detail-content') as HTMLElement | null;
-    const surface = fixture.nativeElement.querySelector('[data-testid="feature-page-surface"]') as HTMLElement | null;
-    const hero = fixture.nativeElement.querySelector('.feature-page-shell__hero') as HTMLElement | null;
-    expect(ionContent).not.toBeNull();
-    expect(surface).not.toBeNull();
-    expect(hero).not.toBeNull();
-    expect(ionContent?.className).toContain('feature-page-content');
-    expect(ionContent?.className).toContain('devotional-detail-content');
-  });
-
-  it('keeps devotional cards inside the shared rounded content surface beneath the blue header shell', async () => {
-    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
-
-    await createComponent();
-
-    const hero = fixture.nativeElement.querySelector('.feature-page-shell__hero') as HTMLElement | null;
-    const surface = fixture.nativeElement.querySelector('[data-testid="feature-page-surface"]') as HTMLElement | null;
-    const article = fixture.nativeElement.querySelector('[data-testid="devotional-detail"]') as HTMLElement | null;
-
-    expect(hero).not.toBeNull();
-    expect(surface).not.toBeNull();
-    expect(article).not.toBeNull();
-    expect(surface?.contains(article as Node)).toBeTrue();
-    expect(getComputedStyle(hero as Element).backgroundImage).not.toBe('none');
-    expect(getComputedStyle(surface as Element).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
   });
 
   it('rejects a blank slug without calling the API', async () => {
