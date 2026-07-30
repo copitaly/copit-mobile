@@ -173,10 +173,28 @@ describe('HomePage', () => {
     devotionalService.getTodayDevotional.and.returnValue(of(todayDevotional));
 
     fixture = await createComponent();
+    const sectionLabels = Array.from(fixture.nativeElement.querySelectorAll('.sec-head h2')).map(
+      (node) => (node as HTMLElement).textContent?.trim() ?? ''
+    );
 
-    expect(fixture.nativeElement.textContent).toContain("Today's Devotional");
+    expect(sectionLabels).toEqual(['Daily Devotional', 'Quick Access']);
     expect(fixture.nativeElement.textContent).toContain('Steady Grace for Today');
     expect(fixture.nativeElement.textContent).toContain('Isaiah 41:10');
+    expect(
+      fixture.nativeElement.querySelector('[aria-label="Featured Bible Study"]')!.compareDocumentPosition(
+        fixture.nativeElement.querySelector('[aria-label="Daily Devotional"]')
+      ) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('uses the calm devotional card treatment with devotional CTA copy', async () => {
+    devotionalService.getTodayDevotional.and.returnValue(of(todayDevotional));
+
+    fixture = await createComponent();
+
+    expect(fixture.nativeElement.textContent).toContain('Daily Devotional');
+    expect(fixture.nativeElement.textContent).toContain('Read devotional');
+    expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-image"]')).toBeNull();
   });
 
   it('opens the devotional detail route from the devotional card', async () => {
@@ -238,13 +256,12 @@ describe('HomePage', () => {
     expect(page.goToGive).toHaveBeenCalled();
   });
 
-  it('preserves church browsing access through the church utility card', async () => {
+  it('removes the duplicate churches action from the support card', async () => {
     fixture = await createComponent();
-
-    (fixture.nativeElement.querySelector('[data-testid="churches-utility-button"]') as HTMLButtonElement).click();
-    await Promise.resolve();
-
-    expect(router.navigate).toHaveBeenCalledWith(['/branches']);
+    expect(fixture.nativeElement.querySelector('[data-testid="churches-utility-button"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Support the Ministry');
+    expect(fixture.nativeElement.textContent).toContain('Give securely');
+    expect(fixture.nativeElement.textContent).toContain('Give now');
   });
 
   it('keeps guest account navigation unchanged', async () => {
@@ -264,7 +281,7 @@ describe('HomePage', () => {
     expect(fixture.nativeElement.textContent).toContain('Peace be with you, Kojo.');
   });
 
-  it('shows the selected branch name inside the church utility card when available', async () => {
+  it('keeps the support card copy focused on giving even when a branch is selected', async () => {
     fixture = await createComponent();
     (page as unknown as { defaultBranch: unknown }).defaultBranch = {
       id: 9,
@@ -278,7 +295,8 @@ describe('HomePage', () => {
     };
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Rome Central Assembly');
+    expect(fixture.nativeElement.textContent).toContain('Give securely');
+    expect(fixture.nativeElement.textContent).not.toContain('Rome Central Assembly');
   });
 
   it('keeps the upcoming service card hidden when no schedule data exists', async () => {

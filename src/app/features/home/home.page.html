@@ -71,15 +71,15 @@
         </button>
       </section>
 
-      <section aria-label="Today's Devotional">
-        <div class="sec-head"><h2>Today's Devotional</h2></div>
+      <section aria-label="Daily Devotional">
+        <div class="sec-head"><h2>Daily Devotional</h2></div>
 
         <div *ngIf="todayDevotionalLoading && !hasTodayDevotional" class="mini mini--load" data-testid="today-devotional-loading">
-          <div class="mini__media mini__media--skel"></div>
           <div class="mini__body">
-            <div class="skel skel--lg" style="width:70%"></div>
-            <div class="skel" style="width:36%"></div>
-            <div class="skel" style="width:86%"></div>
+            <div class="skel skel--sm" style="width:34%"></div>
+            <div class="skel skel--lg" style="width:72%"></div>
+            <div class="skel" style="width:88%"></div>
+            <div class="skel" style="width:64%"></div>
           </div>
         </div>
 
@@ -90,34 +90,26 @@
         <button
           *ngIf="hasTodayDevotional && todayDevotional"
           type="button"
-          class="mini mini--btn ion-activatable"
+          class="mini mini--btn mini--devotional ion-activatable"
           data-testid="today-devotional-card"
           [attr.aria-label]="buildTodayDevotionalAriaLabel()"
           [disabled]="todayDevotionalRefreshing"
           (click)="openTodayDevotional()"
         >
-          <div *ngIf="shouldShowTodayDevotionalImage(); else devoFallback" class="mini__media" data-testid="today-devotional-image">
-            <img [src]="todayDevotional.cover_image!" [alt]="getTodayDevotionalImageAlt()" (error)="handleTodayDevotionalImageError()" />
-          </div>
-
-          <ng-template #devoFallback>
-            <div class="mini__media mini__media--fallback" data-testid="today-devotional-image-fallback" aria-hidden="true">
-              <ion-icon name="sunny-outline"></ion-icon>
-            </div>
-          </ng-template>
-
           <div class="mini__body">
             <div class="mini__top">
-              <div>
-                <p class="mini__eyebrow">Daily Encouragement</p>
-                <h3 class="mini__title" data-testid="today-devotional-title">{{ getTodayDevotionalTitle() }}</h3>
-              </div>
-              <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
+              <span class="mini__mark" aria-hidden="true"><ion-icon name="book-outline"></ion-icon></span>
+              <span class="mini__cta">Read devotional <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon></span>
             </div>
-            <p *ngIf="todayDevotionalDateLabel" class="mini__meta">{{ todayDevotionalDateLabel }}</p>
-            <p *ngIf="hasTodayScriptureReference()" class="mini__ref" data-testid="today-devotional-scripture">{{ todayDevotional.scripture_reference }}</p>
-            <p *ngIf="todayDevotionalScriptureSnippet" class="mini__meta mini__snippet">{{ todayDevotionalScriptureSnippet }}</p>
-            <p class="mini__meta mini__preview" data-testid="today-devotional-preview">{{ getTodayDevotionalPreview() }}</p>
+            <h3 class="mini__title" data-testid="today-devotional-title">{{ getTodayDevotionalTitle() }}</h3>
+            <p *ngIf="todayDevotionalScriptureSnippet; else devotionalPreview" class="mini__quote">{{ todayDevotionalScriptureSnippet }}</p>
+            <ng-template #devotionalPreview>
+              <p class="mini__quote" data-testid="today-devotional-preview">{{ getTodayDevotionalPreview() }}</p>
+            </ng-template>
+            <div class="mini__foot">
+              <p *ngIf="hasTodayScriptureReference()" class="mini__ref" data-testid="today-devotional-scripture">{{ todayDevotional.scripture_reference }}</p>
+              <p *ngIf="todayDevotionalDateLabel" class="mini__meta">{{ todayDevotionalDateLabel }}</p>
+            </div>
           </div>
           <ion-ripple-effect></ion-ripple-effect>
         </button>
@@ -167,17 +159,14 @@
         </div>
       </section>
 
-      <section class="utility" aria-label="Church and giving">
+      <section class="utility" aria-label="Support the Ministry">
         <div>
-          <p class="gold-kicker">{{ selectedBranchName ? 'Your Church' : 'Stay Connected' }}</p>
-          <h3>{{ selectedBranchName || 'Find a church and support ministry' }}</h3>
-          <p class="muted-copy">
-            {{ selectedBranchName ? 'Browse church details or continue giving to support the work.' : 'Browse churches across Italy or continue to the giving flow.' }}
-          </p>
+          <p class="gold-kicker">Support the Ministry</p>
+          <h3>Give securely</h3>
+          <p class="muted-copy">Support the work of COP Italy through a one-time or recurring donation.</p>
         </div>
         <div class="utility__actions">
-          <button type="button" class="utility__btn utility__btn--ghost" data-testid="churches-utility-button" (click)="goToBranches()">Churches</button>
-          <button type="button" class="utility__btn utility__btn--solid" data-testid="give-utility-button" (click)="goToGive()">Give</button>
+          <button type="button" class="utility__btn utility__btn--solid" data-testid="give-utility-button" (click)="goToGive()">Give now</button>
         </div>
       </section>
 
