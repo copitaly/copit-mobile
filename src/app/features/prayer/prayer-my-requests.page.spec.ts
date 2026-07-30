@@ -1,6 +1,7 @@
 import { Location } from '@angular/common';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, UrlTree } from '@angular/router';
+import { NavController } from '@ionic/angular';
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 
 import { AppRoutingModule } from '../../app-routing.module';
@@ -93,7 +94,7 @@ describe('PrayerMyRequestsPage routing', () => {
 
     const result = TestBed.runInInjectionContext(() => guard(route, [] as never[])) as UrlTree;
 
-    expect(router.serializeUrl(result)).toBe('/tabs/prayer');
+    expect(router.serializeUrl(result)).toBe('/prayer');
   });
 
   it('platform_admin is blocked by the existing guard', async () => {
@@ -107,7 +108,7 @@ describe('PrayerMyRequestsPage routing', () => {
 
     const result = TestBed.runInInjectionContext(() => guard(route, [] as never[])) as UrlTree;
 
-    expect(router.serializeUrl(result)).toBe('/tabs/prayer');
+    expect(router.serializeUrl(result)).toBe('/prayer');
   });
 });
 
@@ -175,6 +176,10 @@ describe('PrayerMyRequestsPage', () => {
         {
           provide: StackNavigationService,
           useValue: stackNavigationService,
+        },
+        {
+          provide: NavController,
+          useValue: jasmine.createSpyObj<NavController>('NavController', ['navigateBack']),
         },
       ],
     }).compileComponents();

@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
+import { NavController } from '@ionic/angular';
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 
 import { AuthService } from '../../core/services/auth.service';
@@ -116,6 +117,7 @@ describe('PrayerSubmitPage', () => {
         { provide: Router, useValue: router },
         { provide: AuthService, useValue: authServiceValue },
         { provide: StackNavigationService, useValue: stackNavigationService },
+        { provide: NavController, useValue: jasmine.createSpyObj<NavController>('NavController', ['navigateBack']) },
       ],
     });
 

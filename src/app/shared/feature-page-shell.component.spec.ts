@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { NavController } from '@ionic/angular';
 
 import { AuthService } from '../core/services/auth.service';
 import { StackNavigationService } from '../core/services/stack-navigation.service';
@@ -12,7 +13,7 @@ import { MobileHeaderComponent } from './mobile-header.component';
   standalone: true,
   imports: [FeaturePageShellComponent],
   template: `
-    <app-feature-page-shell title="Bible Study" subtitle="Browse manuals." backFallbackRoute="/home">
+    <app-feature-page-shell title="Bible Study" subtitle="Browse manuals." backFallbackRoute="/tabs/home">
       <div class="projected-content">Body content</div>
     </app-feature-page-shell>
   `,
@@ -45,12 +46,14 @@ describe('FeaturePageShellComponent', () => {
   let fixture: ComponentFixture<TestHostComponent>;
   let router: jasmine.SpyObj<Router>;
   let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
+  let navController: jasmine.SpyObj<NavController>;
 
   beforeEach(async () => {
     router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
     stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
     stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
+    navController = jasmine.createSpyObj<NavController>('NavController', ['navigateBack']);
 
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
@@ -58,6 +61,7 @@ describe('FeaturePageShellComponent', () => {
         { provide: Router, useValue: router },
         { provide: StackNavigationService, useValue: stackNavigationService },
         { provide: AuthService, useValue: { isAuthenticatedSnapshot: false } },
+        { provide: NavController, useValue: navController },
       ],
     }).compileComponents();
 
@@ -69,7 +73,7 @@ describe('FeaturePageShellComponent', () => {
     const mobileHeader = fixture.debugElement.query(By.directive(MobileHeaderComponent))
       ?.componentInstance as MobileHeaderComponent;
 
-    expect(mobileHeader.fallbackRoute).toBe('/home');
+    expect(mobileHeader.fallbackRoute).toBe('/tabs/home');
     expect(fixture.nativeElement.querySelector('[data-testid="feature-page-surface"]')).not.toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Body content');
   });
@@ -81,6 +85,7 @@ describe('FeaturePageShellComponent', () => {
         { provide: Router, useValue: router },
         { provide: StackNavigationService, useValue: stackNavigationService },
         { provide: AuthService, useValue: { isAuthenticatedSnapshot: false } },
+        { provide: NavController, useValue: navController },
       ],
     }).compileComponents();
 

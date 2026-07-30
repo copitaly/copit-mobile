@@ -1,6 +1,11 @@
 <ion-page>
   <ion-content fullscreen class="status-page">
     <div class="status-hero">
+      <app-mobile-header
+        title="Donation status"
+        subtitle="Review your donation outcome."
+        fallbackRoute="/tabs/donate"
+      ></app-mobile-header>
       <ion-icon name="remove-circle-outline" class="status-icon" aria-hidden="true"></ion-icon>
       <h1>Payment canceled</h1>
       <p class="hero-subtitle">No payment was taken.</p>

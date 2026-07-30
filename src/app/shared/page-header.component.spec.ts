@@ -37,13 +37,13 @@ describe('PageHeaderComponent', () => {
 
   it('delegates back navigation to the shared stack navigation service', async () => {
     await createComponent();
-    component.backFallbackRoute = '/home';
+    component.backFallbackRoute = '/tabs/home';
     fixture.detectChanges();
 
     const backButton = fixture.debugElement.query(By.css('.page-header__icon-button'));
     backButton.triggerEventHandler('click');
 
-    expect(stackNavigationService.backWithFallback).toHaveBeenCalledWith('/home');
+    expect(stackNavigationService.backWithFallback).toHaveBeenCalledWith('/tabs/home');
   });
 
   it('uses the compact variant by default', async () => {

@@ -37,7 +37,7 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
           <app-mobile-header
             title="Create account"
             subtitle="Start giving with your profile"
-            fallbackRoute="/home"
+            fallbackRoute="/tabs/home"
           ></app-mobile-header>
         </div>
 

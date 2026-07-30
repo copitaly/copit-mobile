@@ -11,6 +11,7 @@ import {
   DonationAnalyticsContext,
   DonationAnalyticsContextService,
 } from '../../core/services/donation-analytics-context.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 interface VerifyCheckoutSessionResponse {
   verified: boolean;
@@ -44,13 +45,18 @@ type DonationVerificationState = 'verifying' | 'confirmed' | 'pending';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-donate-success',
   template: `
     <ion-page>
       <ion-content fullscreen class="success-content">
         <div class="success-hero">
+          <app-mobile-header
+            title="Donation status"
+            subtitle="Review your donation outcome."
+            fallbackRoute="/tabs/donate"
+          ></app-mobile-header>
           <ion-icon [name]="heroIcon" class="success-icon" aria-hidden="true"></ion-icon>
           <h1>{{ heroTitle }}</h1>
           <p class="hero-subtitle">{{ heroSubtitle }}</p>

@@ -8,10 +8,11 @@ import {
   DonationAnalyticsContextService,
   DonationAnalyticsContext,
 } from '../../core/services/donation-analytics-context.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-donate-cancel',
   templateUrl: './cancel.page.html',

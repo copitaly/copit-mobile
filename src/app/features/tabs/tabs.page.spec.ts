@@ -128,6 +128,17 @@ describe('Tabs routing', () => {
     expect(tabsRoute?.children?.find((child) => child.path === '')?.redirectTo).toBe('home');
   });
 
+  it('keeps exactly five top-level tab destinations inside the tabs shell', async () => {
+    const router = await createRouter();
+    const tabsRoute = router.config.find((item) => item.path === 'tabs');
+    const topLevelTabChildren = tabsRoute?.children?.filter((child) =>
+      ['home', 'bible-study', 'devotionals', 'donate', 'profile'].includes(child.path ?? '')
+    );
+
+    expect(topLevelTabChildren?.length).toBe(5);
+    expect(topLevelTabChildren?.every((child) => !!child.loadComponent)).toBeTrue();
+  });
+
   it('redirects the legacy /home route to the canonical Home tab route', async () => {
     const router = await createRouter();
     const route = router.config.find((item) => item.path === 'home');

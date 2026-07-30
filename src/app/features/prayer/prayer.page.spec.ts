@@ -2,6 +2,7 @@ import { BehaviorSubject } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { Router } from '@angular/router';
+import { NavController } from '@ionic/angular';
 
 import { AuthService } from '../../core/services/auth.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
@@ -36,6 +37,7 @@ describe('PrayerPage', () => {
         },
         { provide: Router, useValue: router },
         { provide: StackNavigationService, useValue: stackNavigationService },
+        { provide: NavController, useValue: jasmine.createSpyObj<NavController>('NavController', ['navigateBack']) },
       ],
     });
     page = TestBed.runInInjectionContext(() => new PrayerPage());
@@ -122,7 +124,7 @@ describe('PrayerPage', () => {
     expect(element.textContent).toContain('My Prayer Requests');
   });
 
-  it('uses the shared feature page shell with the compact header fallback to home', () => {
+  it('uses the shared feature page shell with back navigation because Prayer is a secondary route', () => {
     const componentFixture = TestBed.createComponent(PrayerPage);
     componentFixture.detectChanges();
 
@@ -134,6 +136,6 @@ describe('PrayerPage', () => {
 
     expect(shell).not.toBeNull();
     expect(header.fallbackRoute).toBe('/tabs/home');
-    expect(header.showBack).toBeFalse();
+    expect(header.showBack).toBeTrue();
   });
 });

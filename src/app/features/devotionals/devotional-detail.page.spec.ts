@@ -267,7 +267,7 @@ describe('DevotionalDetailPage', () => {
     const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
     expect(header.title).toBe('Devotional');
     expect(header.subtitle).toBe('Read published devotional details.');
-    expect(header.fallbackRoute).toBe('/devotionals');
+    expect(header.fallbackRoute).toBe('/tabs/devotionals');
     expect(header.backAriaLabel).toBe('Back to devotionals');
     expect(header.actionIcon).toBe('share-social-outline');
     expect(header.actionAriaLabel).toBe('Share devotional');

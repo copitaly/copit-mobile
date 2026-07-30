@@ -1,10 +1,14 @@
 import { convertToParamMap, ActivatedRoute, Router } from '@angular/router';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { NavController } from '@ionic/angular';
 import { of } from 'rxjs';
 
 import { ApiService } from '../../core/services/api.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { DonationAnalyticsContextService } from '../../core/services/donation-analytics-context.service';
 import { DonationFlowStateService } from '../../core/services/donation-flow-state.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { DonateSuccessPage } from './success.page';
 
@@ -139,5 +143,66 @@ describe('DonateSuccessPage', () => {
     page.goToDonationHistory();
 
     expect(router.navigate).toHaveBeenCalledWith(['/my-donations']);
+  });
+
+  it('renders a standard back header with Donate as the fallback tab', async () => {
+    const api = jasmine.createSpyObj<ApiService>('ApiService', ['get']);
+    const router = jasmine.createSpyObj<Router>('Router', ['navigate']);
+    const donationFlowState = jasmine.createSpyObj<DonationFlowStateService>('DonationFlowStateService', [
+      'getStoredSummary',
+      'consumeStoredSummary',
+      'clear',
+    ]);
+    donationFlowState.getStoredSummary.and.returnValue(null);
+    donationFlowState.consumeStoredSummary.and.returnValue(null);
+
+    await TestBed.configureTestingModule({
+      imports: [DonateSuccessPage],
+      providers: [
+        { provide: ApiService, useValue: api },
+        { provide: Router, useValue: router },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: convertToParamMap({}),
+            },
+          },
+        },
+        { provide: DonationFlowStateService, useValue: donationFlowState },
+        {
+          provide: SentryTelemetryService,
+          useValue: { captureFeatureError: jasmine.createSpy('captureFeatureError') },
+        },
+        {
+          provide: AnalyticsService,
+          useValue: {
+            trackDonationPaymentSuccess: jasmine.createSpy().and.resolveTo(),
+            getAmountBucket: jasmine.createSpy().and.returnValue('0-99'),
+            getUserType: jasmine.createSpy().and.returnValue('guest'),
+          },
+        },
+        {
+          provide: DonationAnalyticsContextService,
+          useValue: {
+            clearContext: jasmine.createSpy('clearContext'),
+            peekContext: jasmine.createSpy('peekContext').and.returnValue(null),
+          },
+        },
+        {
+          provide: NavController,
+          useValue: jasmine.createSpyObj<NavController>('NavController', ['navigateBack']),
+        },
+      ],
+    }).compileComponents();
+
+    const fixture: ComponentFixture<DonateSuccessPage> = TestBed.createComponent(DonateSuccessPage);
+    fixture.detectChanges();
+
+    const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
+
+    expect(header.fallbackRoute).toBe('/tabs/donate');
+    expect(header.showBack).toBeTrue();
+    expect(fixture.nativeElement.querySelector('.app-header__back')).not.toBeNull();
   });
 });

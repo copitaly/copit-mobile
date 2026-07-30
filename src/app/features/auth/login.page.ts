@@ -21,7 +21,7 @@ import { getAuthNetworkMessage, trimmedRequiredValidator } from './auth-form.uti
           <app-mobile-header
             title="Welcome back"
             subtitle="Sign in to continue"
-            fallbackRoute="/home"
+            fallbackRoute="/tabs/home"
           ></app-mobile-header>
         </div>
 

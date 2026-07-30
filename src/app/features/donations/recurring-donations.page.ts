@@ -20,7 +20,7 @@ type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
     <ion-page>
       <ion-content fullscreen class="recurring-content">
         <div class="recurring-hero app-header app-header--inner">
-          <app-mobile-header title="Recurring Donations" fallbackRoute="/profile"></app-mobile-header>
+          <app-mobile-header title="Recurring Donations" fallbackRoute="/tabs/profile"></app-mobile-header>
         </div>
 
         <div class="surface recurring-surface">

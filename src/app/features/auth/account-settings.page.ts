@@ -21,7 +21,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
           <app-mobile-header
             title="Account Settings"
             subtitle="Manage your account and privacy"
-            fallbackRoute="/profile"
+            fallbackRoute="/tabs/profile"
           ></app-mobile-header>
         </div>
 

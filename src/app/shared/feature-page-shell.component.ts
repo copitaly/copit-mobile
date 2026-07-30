@@ -75,7 +75,7 @@ export class FeaturePageShellComponent {
   @Input() showBack = true;
   @Input() backAriaLabel = 'Go back';
   @Input() centerCopy = false;
-  @Input() backFallbackRoute = '/home';
+  @Input() backFallbackRoute = '/tabs/home';
   @Input() contentMaxWidth = '520px';
   @Input() actionIcon: string | null = null;
   @Input() actionAriaLabel = '';

@@ -56,7 +56,7 @@ interface SearchResultSection {
           <app-feature-page-shell style="flex:1;min-height:100%"
             title="Choose Church"
             [subtitle]="currentHelperText"
-            backFallbackRoute="/home"
+              backFallbackRoute="/tabs/donate"
           >
             <ion-searchbar
               [(ngModel)]="searchTerm"

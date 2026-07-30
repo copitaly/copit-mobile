@@ -16,7 +16,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
     <ion-page>
       <ion-content fullscreen class="donations-content">
         <div class="donations-hero app-header app-header--inner">
-          <app-mobile-header title="My Donations" fallbackRoute="/profile"></app-mobile-header>
+          <app-mobile-header title="My Donations" fallbackRoute="/tabs/profile"></app-mobile-header>
         </div>
 
         <div class="surface donations-surface">

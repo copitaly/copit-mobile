@@ -1,6 +1,8 @@
 import { Location } from '@angular/common';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { Router } from '@angular/router';
+import { NavController } from '@ionic/angular';
 import { of, Subject, throwError } from 'rxjs';
 
 import { AppRoutingModule } from '../../app-routing.module';
@@ -8,6 +10,7 @@ import { CommunityPrayerRequest } from '../../core/models/prayer.model';
 import { PrayerService } from '../../core/services/prayer.service';
 import { AuthService } from '../../core/services/auth.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { PrayerCommunityPage } from './prayer-community.page';
 
 describe('PrayerCommunityPage routing', () => {
@@ -87,6 +90,10 @@ describe('PrayerCommunityPage', () => {
         {
           provide: StackNavigationService,
           useValue: stackNavigationService,
+        },
+        {
+          provide: NavController,
+          useValue: jasmine.createSpyObj<NavController>('NavController', ['navigateBack']),
         },
       ],
     }).compileComponents();
@@ -402,6 +409,20 @@ describe('PrayerCommunityPage', () => {
     page.goToSubmit();
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/prayer/submit');
+  });
+
+  it('renders a standard back button because Community is a secondary route', async () => {
+    prayerService.getCommunityPrayers.and.returnValue(of(buildResponse([firstPrayer])));
+
+    await createComponent();
+
+    const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
+    const headerElement = fixture.nativeElement.querySelector('.app-header__back');
+
+    expect(header.fallbackRoute).toBe('/tabs/home');
+    expect(header.showBack).toBeTrue();
+    expect(headerElement).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Community');
   });
 
   it('does not intentionally render private or internal fields', async () => {

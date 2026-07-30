@@ -315,7 +315,7 @@ export class PageHeaderComponent {
   @Input() variant: 'hero' | 'compact' = 'compact';
   @Input() showBack = true;
   @Input() showProfile = false;
-  @Input() backFallbackRoute = '/home';
+  @Input() backFallbackRoute = '/tabs/home';
   @Input() profileAction: (() => void | Promise<void>) | null = null;
   @Input() profileIcon = 'person-circle-outline';
 
@@ -358,7 +358,7 @@ export class PageHeaderComponent {
         return;
       }
 
-      const profileRoute = this.authService.isAuthenticatedSnapshot ? '/tabs/more' : '/login';
+      const profileRoute = this.authService.isAuthenticatedSnapshot ? '/tabs/profile' : '/login';
       await this.router.navigateByUrl(profileRoute);
     } finally {
       this.navigationPending = false;

@@ -21,7 +21,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
     <ion-page>
       <ion-content fullscreen class="saved-content">
         <div class="saved-hero app-header app-header--inner">
-          <app-mobile-header title="Saved Churches" fallbackRoute="/profile"></app-mobile-header>
+          <app-mobile-header title="Saved Churches" fallbackRoute="/tabs/profile"></app-mobile-header>
         </div>
 
         <div class="surface saved-surface">
