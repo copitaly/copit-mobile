@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { CanMatchFn, Router, UrlTree } from '@angular/router';
+import { CanMatchFn, Router } from '@angular/router';
 
 import { routes } from './app-routing.module';
 import { AuthService } from './core/services/auth.service';
@@ -32,44 +32,16 @@ describe('app routes', () => {
     expect(loadedComponent).toBe(DevotionalDetailPage);
   });
 
-  it('redirects unauthenticated /tabs/profile access to login with a profile return URL', async () => {
-    await TestBed.configureTestingModule({
-      providers: [
-        {
-          provide: AuthService,
-          useValue: {
-            isAuthenticatedSnapshot: false,
-            accessTokenSnapshot: null,
-          },
-        },
-        {
-          provide: Router,
-          useValue: {
-            createUrlTree: jasmine.createSpy('createUrlTree').and.callFake((commands: unknown[], extras?: { queryParams?: Record<string, string> }) =>
-              ({ commands, queryParams: extras?.queryParams } as unknown as UrlTree)
-            ),
-          },
-        },
-        {
-          provide: SentryTelemetryService,
-          useValue: {
-            addFeatureBreadcrumb: jasmine.createSpy('addFeatureBreadcrumb'),
-          },
-        },
-      ],
-    }).compileComponents();
-
+  it('allows /tabs/profile to render directly without the standalone login guard', () => {
     const tabsRoute = routes.find((item) => item.path === 'tabs');
     const profileRoute = tabsRoute?.children?.find((child) => child.path === 'profile');
-    const guard = profileRoute?.canMatch?.[0] as CanMatchFn;
-    const result = TestBed.runInInjectionContext(() => guard?.(profileRoute as never, []));
 
-    const redirect = result as unknown as { commands: string[]; queryParams: Record<string, string> };
-    expect(redirect.commands).toEqual(['/login']);
-    expect(redirect.queryParams).toEqual({ returnUrl: '/tabs/profile' });
+    expect(profileRoute).toBeDefined();
+    expect(profileRoute?.loadComponent).toBeDefined();
+    expect(profileRoute?.canMatch).toBeUndefined();
   });
 
-  it('allows authenticated /tabs/profile access normally', async () => {
+  it('keeps the standalone /login route protected from authenticated users', async () => {
     await TestBed.configureTestingModule({
       providers: [
         {
@@ -82,7 +54,7 @@ describe('app routes', () => {
         {
           provide: Router,
           useValue: {
-            createUrlTree: jasmine.createSpy('createUrlTree'),
+            parseUrl: jasmine.createSpy('parseUrl').and.callFake((url: string) => ({ redirectedTo: url })),
           },
         },
         {
@@ -94,11 +66,16 @@ describe('app routes', () => {
       ],
     }).compileComponents();
 
-    const tabsRoute = routes.find((item) => item.path === 'tabs');
-    const profileRoute = tabsRoute?.children?.find((child) => child.path === 'profile');
-    const guard = profileRoute?.canMatch?.[0] as CanMatchFn;
-    const result = TestBed.runInInjectionContext(() => guard?.(profileRoute as never, []));
+    const loginRoute = routes.find((item) => item.path === 'login');
+    const guard = loginRoute?.canMatch?.[0] as CanMatchFn;
+    const result = TestBed.runInInjectionContext(() => guard?.(loginRoute as never, [])) as unknown as { redirectedTo: string };
 
-    expect(result).toBeTrue();
+    expect(result.redirectedTo).toBe('/tabs/profile');
+  });
+
+  it('preserves the legacy /profile redirect to the canonical Profile tab route', () => {
+    const route = routes.find((item) => item.path === 'profile');
+
+    expect(route?.redirectTo).toBe('tabs/profile');
   });
 });

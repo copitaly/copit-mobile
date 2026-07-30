@@ -1,19 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { NavController } from '@ionic/angular';
 import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
 
 import { MemberProfile } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
-import { StackNavigationService } from '../../core/services/stack-navigation.service';
 import { ProfilePage } from './profile.page';
 
 describe('ProfilePage', () => {
   let fixture: ComponentFixture<ProfilePage>;
   let page: ProfilePage;
   let router: jasmine.SpyObj<Router>;
-  let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
   let authService: {
     currentUser$: BehaviorSubject<MemberProfile | null>;
     currentUserSnapshot: MemberProfile | null;
@@ -21,6 +18,7 @@ describe('ProfilePage', () => {
     accessTokenSnapshot: string | null;
     getCurrentUser: jasmine.Spy;
     logout: jasmine.Spy;
+    login: jasmine.Spy;
   };
 
   const profile: MemberProfile = {
@@ -47,8 +45,6 @@ describe('ProfilePage', () => {
       providers: [
         { provide: AuthService, useValue: authService },
         { provide: Router, useValue: router },
-        { provide: StackNavigationService, useValue: stackNavigationService },
-        { provide: NavController, useValue: jasmine.createSpyObj<NavController>('NavController', ['navigateBack']) },
         {
           provide: SentryTelemetryService,
           useValue: {
@@ -71,9 +67,6 @@ describe('ProfilePage', () => {
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
     Object.defineProperty(router, 'url', { value: '/tabs/profile' });
 
-    stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
-    stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
-
     authService = {
       currentUser$: new BehaviorSubject<MemberProfile | null>(null),
       currentUserSnapshot: null,
@@ -81,6 +74,7 @@ describe('ProfilePage', () => {
       accessTokenSnapshot: 'token',
       getCurrentUser: jasmine.createSpy('getCurrentUser').and.returnValue(of(profile)),
       logout: jasmine.createSpy('logout'),
+      login: jasmine.createSpy('login'),
     };
   });
 
@@ -91,6 +85,7 @@ describe('ProfilePage', () => {
     await createComponent();
 
     expect(fixture.nativeElement.textContent).toContain('Loading profile');
+    response$.next(profile);
     response$.complete();
   });
 
@@ -201,16 +196,68 @@ describe('ProfilePage', () => {
     expect(fixture.nativeElement.textContent).toContain('Please check your connection and try again.');
   });
 
-  it('renders a signed-out state when no profile data is available', async () => {
-    authService.getCurrentUser.and.returnValue(of(null));
+  it('renders the embedded login state when the Profile tab is opened while signed out', async () => {
+    authService.isAuthenticatedSnapshot = false;
+    authService.accessTokenSnapshot = null;
+    authService.currentUserSnapshot = null;
 
     await createComponent();
 
-    expect(fixture.nativeElement.textContent).toContain('Sign in required');
-    expect(fixture.nativeElement.textContent).toContain('Go to Login');
+    expect(fixture.nativeElement.textContent).toContain('Profile');
+    expect(fixture.nativeElement.textContent).toContain('Sign in to access your account, giving history, and church connections.');
+    expect(fixture.nativeElement.textContent).not.toContain('Welcome back');
+    expect(fixture.nativeElement.querySelector('[data-testid="login-form-shell"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="login-form-heading"]')?.textContent).toContain('Sign in');
+    expect(fixture.nativeElement.querySelector('[data-testid="profile-benefits"]')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Why create an account?');
+    expect(fixture.nativeElement.textContent).toContain('View your giving history');
+    expect(fixture.nativeElement.textContent).toContain('Read Bible Study manuals');
+    expect(fixture.nativeElement.textContent).toContain('Save churches for quick access');
+    expect(fixture.nativeElement.textContent).toContain('Submit prayer requests');
+    expect(fixture.nativeElement.querySelector('[data-testid="auth-layout-shell"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('ion-back-button')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Sign in to continue');
   });
 
-  it('prevents duplicate logout requests and invokes the existing logout flow', async () => {
+  it('renders the signed-out subtitle only once above the embedded login card', async () => {
+    authService.isAuthenticatedSnapshot = false;
+    authService.accessTokenSnapshot = null;
+
+    await createComponent();
+
+    const text = fixture.nativeElement.textContent as string;
+    const matches = text.match(/Sign in to access your account, giving history, and church connections\./g) ?? [];
+
+    expect(matches.length).toBe(1);
+  });
+
+  it('keeps the Profile tab route active while signed out', async () => {
+    authService.isAuthenticatedSnapshot = false;
+    authService.accessTokenSnapshot = null;
+
+    await createComponent();
+
+    expect(page.isTabsProfileRoute).toBeTrue();
+    expect(router.navigateByUrl).not.toHaveBeenCalledWith('/login', jasmine.anything());
+  });
+
+  it('shows the authenticated Profile content after the shared login state resolves', async () => {
+    authService.isAuthenticatedSnapshot = false;
+    authService.accessTokenSnapshot = null;
+
+    await createComponent();
+
+    authService.currentUser$.next(profile);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Member User');
+    expect(fixture.nativeElement.querySelector('[data-testid="login-form-shell"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="profile-benefits"]')).toBeNull();
+  });
+
+  it('prevents duplicate logout requests and keeps the user inside the Profile tab', async () => {
     let resolveNavigation: ((value: boolean) => void) | undefined;
     router.navigateByUrl.and.returnValue(
       new Promise<boolean>((resolve) => {
@@ -225,7 +272,7 @@ describe('ProfilePage', () => {
     button?.click();
 
     expect(authService.logout.calls.count()).toBe(1);
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/login', { replaceUrl: true });
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/profile', { replaceUrl: true });
 
     resolveNavigation?.(true);
     await fixture.whenStable();

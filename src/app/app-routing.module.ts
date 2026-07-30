@@ -30,28 +30,6 @@ const redirectUnauthenticatedToLogin = (router: Router, returnUrl: string) =>
     },
   });
 
-const allowAuthenticatedUsersOnly: CanMatchFn = (route) => {
-  const authService = inject(AuthService);
-  const router = inject(Router);
-  const sentryTelemetry = inject(SentryTelemetryService);
-
-  if (authService.isAuthenticatedSnapshot || !!authService.accessTokenSnapshot) {
-    return true;
-  }
-
-  const deniedRoute = String(route.data?.['returnUrl'] ?? '/tabs/profile');
-  sentryTelemetry.addFeatureBreadcrumb(
-    'profile',
-    'Route guard redirected unauthenticated user',
-    {
-      route: deniedRoute,
-      reason: 'unauthenticated',
-    },
-    'warning'
-  );
-  return redirectUnauthenticatedToLogin(router, deniedRoute);
-};
-
 const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
   const authService = inject(AuthService);
   const router = inject(Router);
@@ -219,8 +197,6 @@ export const routes: Routes = [
       },
       {
         path: 'profile',
-        canMatch: [allowAuthenticatedUsersOnly],
-        data: { returnUrl: '/tabs/profile' },
         loadComponent: () => import('./features/auth/profile.page').then(m => m.ProfilePage)
       },
       {
@@ -253,6 +229,10 @@ export const routes: Routes = [
   {
     path: 'reset-password/:uid/:token',
     loadComponent: () => import('./features/auth/reset-password.page').then(m => m.ResetPasswordPage)
+  },
+  {
+    path: 'auth-layout-debug',
+    loadComponent: () => import('./features/auth/auth-layout-debug.page').then(m => m.AuthLayoutDebugPage)
   },
   {
     path: 'profile/account-settings/edit-profile',
