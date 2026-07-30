@@ -393,6 +393,13 @@ export class LoginFormComponent implements OnDestroy {
   }
 
   goToRegister(): void {
+    if (this.isEmbeddedProfileFlow) {
+      void this.router.navigate(['/tabs/profile'], {
+        queryParams: { authMode: 'register' },
+      });
+      return;
+    }
+
     void this.router.navigate(['/register'], {
       queryParams: this.sanitizedReturnUrl === AUTH_FALLBACK_RETURN_URL ? undefined : { returnUrl: this.sanitizedReturnUrl },
     });
@@ -433,6 +440,10 @@ export class LoginFormComponent implements OnDestroy {
 
   private get sanitizedReturnUrl(): string {
     return sanitizeAuthReturnUrl(this.returnUrl, AUTH_FALLBACK_RETURN_URL);
+  }
+
+  private get isEmbeddedProfileFlow(): boolean {
+    return this.appearance === 'embedded' && this.sanitizedReturnUrl === '/tabs/profile';
   }
 
   private isCredentialError(error: unknown): boolean {

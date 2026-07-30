@@ -105,6 +105,16 @@ describe('LoginFormComponent', () => {
     });
   });
 
+  it('switches to embedded Profile registration instead of the standalone route from the Profile tab login', async () => {
+    await createComponent({ returnUrl: '/tabs/profile', appearance: 'embedded' });
+
+    component.goToRegister();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/tabs/profile'], {
+      queryParams: { authMode: 'register' },
+    });
+  });
+
   it('preserves the return URL when opening Forgot Password from the embedded Profile login', async () => {
     await createComponent({ returnUrl: '/tabs/profile', appearance: 'embedded' });
 
@@ -204,9 +214,9 @@ describe('LoginFormComponent', () => {
   });
 
   it('renders the optional embedded form heading when provided', async () => {
-    await createComponent({ appearance: 'embedded', heading: 'Sign in' });
+    await createComponent({ appearance: 'embedded', heading: 'Sign in to your account' });
 
-    expect(fixture.nativeElement.querySelector('[data-testid="login-form-heading"]')?.textContent).toContain('Sign in');
+    expect(fixture.nativeElement.querySelector('[data-testid="login-form-heading"]')?.textContent).toContain('Sign in to your account');
   });
 
   it('keeps the form controls available in the rendered template', async () => {

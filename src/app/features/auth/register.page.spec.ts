@@ -1,21 +1,21 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
+import { By } from '@angular/platform-browser';
 import { NavController } from '@ionic/angular';
 import { Subject, of, throwError } from 'rxjs';
 
 import { MemberProfile } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
-import { StackNavigationService } from '../../core/services/stack-navigation.service';
+import { RegisterFormComponent } from './register-form.component';
 import { RegisterPage } from './register.page';
 
-describe('RegisterPage', () => {
-  let fixture: ComponentFixture<RegisterPage>;
-  let page: RegisterPage;
+describe('RegisterFormComponent', () => {
+  let fixture: ComponentFixture<RegisterFormComponent>;
+  let component: RegisterFormComponent;
   let authService: jasmine.SpyObj<AuthService>;
   let router: jasmine.SpyObj<Router>;
-  let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
-  let activatedRoute: { snapshot: { queryParamMap: ReturnType<typeof convertToParamMap> } };
+
   const authResponse = {
     id: 1,
     email: 'kojo@example.com',
@@ -32,61 +32,47 @@ describe('RegisterPage', () => {
     recent_donations: [],
   } as MemberProfile;
 
-  async function createComponent(): Promise<void> {
+  async function createForm(
+    inputs?: Partial<Pick<RegisterFormComponent, 'appearance' | 'returnUrl' | 'showFooter' | 'heading'>>
+  ): Promise<void> {
     await TestBed.configureTestingModule({
-      imports: [RegisterPage],
+      imports: [RegisterFormComponent],
       providers: [
         { provide: AuthService, useValue: authService },
         { provide: Router, useValue: router },
-        { provide: ActivatedRoute, useValue: activatedRoute },
-        { provide: StackNavigationService, useValue: stackNavigationService },
-        { provide: NavController, useValue: {} },
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(RegisterPage);
-    page = fixture.componentInstance;
+    fixture = TestBed.createComponent(RegisterFormComponent);
+    component = fixture.componentInstance;
+    Object.assign(component, inputs);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
   }
 
   beforeEach(() => {
-    authService = jasmine.createSpyObj<AuthService>(
-      'AuthService',
-      ['register'],
-      {
-        isAuthenticatedSnapshot: false,
-        accessTokenSnapshot: null,
-      }
-    );
+    authService = jasmine.createSpyObj<AuthService>('AuthService', ['register']);
     router = jasmine.createSpyObj<Router>('Router', ['navigate', 'navigateByUrl']);
     router.navigate.and.returnValue(Promise.resolve(true));
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
-    activatedRoute = {
-      snapshot: {
-        queryParamMap: convertToParamMap({}),
-      },
-    };
-    stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
-    stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
   });
 
   it('rejects invalid email formats inline', async () => {
-    await createComponent();
+    await createForm();
 
-    page.form.controls.email.setValue('invalid-email');
-    page.form.controls.email.markAsTouched();
+    component.form.controls.email.setValue('invalid-email');
+    component.form.controls.email.markAsTouched();
     fixture.detectChanges();
 
-    expect(page.showEmailError).toBeTrue();
-    expect(page.emailErrorMessage).toBe('Enter a valid email address.');
+    expect(component.showEmailError).toBeTrue();
+    expect(component.emailErrorMessage).toBe('Enter a valid email address.');
   });
 
   it('requires the expected registration fields', async () => {
-    await createComponent();
+    await createForm();
 
-    page.submit();
+    component.submit();
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Enter your first name.');
@@ -100,9 +86,9 @@ describe('RegisterPage', () => {
   it('keeps the submit button disabled while registration is running', async () => {
     const response$ = new Subject<any>();
     authService.register.and.returnValue(response$.asObservable());
-    await createComponent();
+    await createForm();
 
-    page.form.setValue({
+    component.form.setValue({
       first_name: 'Kojo',
       last_name: 'Mensah',
       email: 'kojo@example.com',
@@ -110,21 +96,20 @@ describe('RegisterPage', () => {
       password: 'secret123',
       confirm_password: 'secret123',
     });
-    page.submit();
-    page.submit();
+    component.submit();
+    component.submit();
 
     expect(authService.register.calls.count()).toBe(1);
-    expect(page.loading).toBeTrue();
-    expect(page.canSubmit).toBeFalse();
+    expect(component.loading).toBeTrue();
+    expect(component.canSubmit).toBeFalse();
     response$.complete();
   });
 
   it('navigates to the Profile tab after successful registration when a Profile return URL is provided', async () => {
-    activatedRoute.snapshot.queryParamMap = convertToParamMap({ returnUrl: '/tabs/profile' });
     authService.register.and.returnValue(of(authResponse));
-    await createComponent();
+    await createForm({ returnUrl: '/tabs/profile' });
 
-    page.form.setValue({
+    component.form.setValue({
       first_name: 'Kojo',
       last_name: 'Mensah',
       email: 'kojo@example.com',
@@ -132,7 +117,7 @@ describe('RegisterPage', () => {
       password: 'secret123',
       confirm_password: 'secret123',
     });
-    page.submit();
+    component.submit();
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/profile', { replaceUrl: true });
   });
@@ -146,9 +131,9 @@ describe('RegisterPage', () => {
         })
       )
     );
-    await createComponent();
+    await createForm();
 
-    page.form.setValue({
+    component.form.setValue({
       first_name: 'Kojo',
       last_name: 'Mensah',
       email: 'kojo@example.com',
@@ -156,13 +141,13 @@ describe('RegisterPage', () => {
       password: 'secret123',
       confirm_password: 'secret123',
     });
-    page.submit();
+    component.submit();
 
-    expect(page.errorMessage).toBe('An account already exists for this email.');
+    expect(component.errorMessage).toBe('An account already exists for this email.');
   });
 
   it('exposes password-manager autocomplete attributes for registration', async () => {
-    await createComponent();
+    await createForm();
 
     const inputs = fixture.nativeElement.querySelectorAll('ion-input');
     expect(inputs[0].getAttribute('autocomplete')).toBe('given-name');
@@ -173,20 +158,88 @@ describe('RegisterPage', () => {
     expect(inputs[5].getAttribute('autocomplete')).toBe('new-password');
   });
 
-  it('preserves the return URL when navigating back to Sign in', async () => {
-    activatedRoute.snapshot.queryParamMap = convertToParamMap({ returnUrl: '/tabs/profile' });
-    await createComponent();
+  it('preserves the return URL when navigating back to Sign in from standalone registration', async () => {
+    await createForm({ returnUrl: '/tabs/profile' });
 
-    page.goToLogin();
+    component.goToLogin();
 
     expect(router.navigate).toHaveBeenCalledWith(['/login'], {
       queryParams: { returnUrl: '/tabs/profile' },
     });
   });
 
-  it('does not render the tabs shell on the registration page', async () => {
-    await createComponent();
+  it('returns to the embedded Profile sign-in state from embedded registration', async () => {
+    await createForm({ appearance: 'embedded', returnUrl: '/tabs/profile' });
 
+    component.goToLogin();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/tabs/profile'], { replaceUrl: true });
+  });
+
+  it('renders the responsive first and last name structure in embedded mode', async () => {
+    await createForm({ appearance: 'embedded', heading: 'Create your account' });
+
+    expect(fixture.nativeElement.querySelector('[data-testid="register-name-grid"]')).not.toBeNull();
+    expect(fixture.debugElement.queryAll(By.css('ion-input')).length).toBe(6);
+    expect(fixture.nativeElement.querySelector('[data-testid="register-form-heading"]')?.textContent).toContain(
+      'Create your account'
+    );
+  });
+});
+
+describe('RegisterPage', () => {
+  let fixture: ComponentFixture<RegisterPage>;
+  let authService: jasmine.SpyObj<AuthService>;
+  let router: jasmine.SpyObj<Router>;
+  let activatedRoute: { snapshot: { queryParamMap: ReturnType<typeof convertToParamMap> } };
+
+  async function createPage(): Promise<void> {
+    await TestBed.configureTestingModule({
+      imports: [RegisterPage],
+      providers: [
+        { provide: AuthService, useValue: authService },
+        { provide: Router, useValue: router },
+        { provide: ActivatedRoute, useValue: activatedRoute },
+        { provide: NavController, useValue: {} },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(RegisterPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  beforeEach(() => {
+    authService = jasmine.createSpyObj<AuthService>('AuthService', ['register'], {
+      isAuthenticatedSnapshot: false,
+      accessTokenSnapshot: null,
+    });
+    router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
+    router.navigateByUrl.and.returnValue(Promise.resolve(true));
+    activatedRoute = {
+      snapshot: {
+        queryParamMap: convertToParamMap({}),
+      },
+    };
+  });
+
+  it('keeps the standalone registration route functional without tabs for deep-link compatibility', async () => {
+    await createPage();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="register-form-shell"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="tabs-shell"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Create account');
+  });
+
+  it('redirects authenticated users away from the standalone registration route', async () => {
+    authService = jasmine.createSpyObj<AuthService>('AuthService', ['register'], {
+      isAuthenticatedSnapshot: true,
+      accessTokenSnapshot: 'token',
+    });
+
+    await createPage();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/home', { replaceUrl: true });
   });
 });

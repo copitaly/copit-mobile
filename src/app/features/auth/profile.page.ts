@@ -1,6 +1,6 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 
@@ -8,6 +8,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { MemberProfile } from '../../core/models/user.model';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { LoginFormComponent } from './login-form.component';
+import { RegisterFormComponent } from './register-form.component';
 
 type ProfileAction = {
   title: string;
@@ -26,7 +27,7 @@ type ProfileActionSection = {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, LoginFormComponent],
+  imports: [CommonModule, IonicModule, LoginFormComponent, RegisterFormComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-profile',
   template: `
@@ -149,23 +150,43 @@ type ProfileActionSection = {
           </div>
 
           <ng-template #signedOutState>
-            <section *ngIf="!loading && !errorMessage && !profile" class="profile-login" aria-labelledby="profile-title">
-              <div class="profile-login__card">
+            <section
+              *ngIf="!loading && !errorMessage && !profile"
+              class="profile-login"
+              [class.profile-login--register]="authMode === 'register'"
+              aria-labelledby="profile-title"
+            >
+              <div class="profile-login__card" *ngIf="authMode === 'sign-in'; else registerMode">
                 <app-login-form
                   appearance="embedded"
                   [returnUrl]="profileTabRoute"
-                  heading="Sign in"
+                  heading="Sign in to your account"
                 ></app-login-form>
               </div>
 
-              <section class="profile-benefits" aria-labelledby="profile-benefits-title" data-testid="profile-benefits">
-                <p id="profile-benefits-title" class="profile-benefits__eyebrow">Why create an account?</p>
+              <ng-template #registerMode>
+                <div class="profile-login__card" data-testid="profile-register-card">
+                  <app-register-form
+                    appearance="embedded"
+                    [returnUrl]="profileTabRoute"
+                    heading="Create your account"
+                  ></app-register-form>
+                </div>
+              </ng-template>
+
+              <section
+                *ngIf="authMode === 'sign-in'"
+                class="profile-benefits"
+                aria-labelledby="profile-benefits-title"
+                data-testid="profile-benefits"
+              >
+                <h2 id="profile-benefits-title" class="profile-benefits__title">Why create an account?</h2>
 
                 <ul class="profile-benefits__list">
-                  <li>View your giving history</li>
-                  <li>Read Bible Study manuals</li>
-                  <li>Save churches for quick access</li>
-                  <li>Submit prayer requests</li>
+                  <li><span class="profile-benefits__check" aria-hidden="true">✓</span><span>View your giving history</span></li>
+                  <li><span class="profile-benefits__check" aria-hidden="true">✓</span><span>Read Bible Study manuals</span></li>
+                  <li><span class="profile-benefits__check" aria-hidden="true">✓</span><span>Save churches for quick access</span></li>
+                  <li><span class="profile-benefits__check" aria-hidden="true">✓</span><span>Submit prayer requests</span></li>
                 </ul>
               </section>
             </section>
@@ -185,7 +206,9 @@ export class ProfilePage implements OnInit, OnDestroy {
   loading = true;
   refreshing = false;
   errorMessage = '';
+  authMode: 'sign-in' | 'register' = 'sign-in';
   private currentUserSubscription?: Subscription;
+  private routeQueryParamsSubscription?: Subscription;
   private profileRequestInFlight = false;
   private pendingNavigation = false;
   private loggingOut = false;
@@ -278,6 +301,7 @@ export class ProfilePage implements OnInit, OnDestroy {
   constructor(
     private readonly authService: AuthService,
     private readonly router: Router,
+    private readonly route: ActivatedRoute,
     private readonly sentryTelemetry: SentryTelemetryService
   ) {}
 
@@ -322,6 +346,10 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   get profileHeaderSubtitle(): string {
     if (!this.profile) {
+      if (this.authMode === 'register') {
+        return 'Create your account to access your giving, Bible studies, churches, and prayer requests.';
+      }
+
       return 'Sign in to access your account, giving history, and church connections.';
     }
 
@@ -346,6 +374,10 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.routeQueryParamsSubscription = this.route.queryParamMap.subscribe((params) => {
+      this.authMode = params.get('authMode') === 'register' ? 'register' : 'sign-in';
+    });
+
     this.currentUserSubscription = this.authService.currentUser$.subscribe((user) => {
       this.profile = user;
       this.loading = false;
@@ -378,6 +410,7 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.currentUserSubscription?.unsubscribe();
+    this.routeQueryParamsSubscription?.unsubscribe();
   }
 
   actionTestId(action: ProfileAction): string {

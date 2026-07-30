@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
 
 import { MemberProfile } from '../../core/models/user.model';
@@ -11,6 +11,7 @@ describe('ProfilePage', () => {
   let fixture: ComponentFixture<ProfilePage>;
   let page: ProfilePage;
   let router: jasmine.SpyObj<Router>;
+  let queryParamMap$: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
   let authService: {
     currentUser$: BehaviorSubject<MemberProfile | null>;
     currentUserSnapshot: MemberProfile | null;
@@ -46,6 +47,12 @@ describe('ProfilePage', () => {
         { provide: AuthService, useValue: authService },
         { provide: Router, useValue: router },
         {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParamMap: queryParamMap$.asObservable(),
+          },
+        },
+        {
           provide: SentryTelemetryService,
           useValue: {
             addFeatureBreadcrumb: jasmine.createSpy('addFeatureBreadcrumb'),
@@ -66,6 +73,7 @@ describe('ProfilePage', () => {
     router.navigate.and.returnValue(Promise.resolve(true));
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
     Object.defineProperty(router, 'url', { value: '/tabs/profile' });
+    queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
 
     authService = {
       currentUser$: new BehaviorSubject<MemberProfile | null>(null),
@@ -207,16 +215,37 @@ describe('ProfilePage', () => {
     expect(fixture.nativeElement.textContent).toContain('Sign in to access your account, giving history, and church connections.');
     expect(fixture.nativeElement.textContent).not.toContain('Welcome back');
     expect(fixture.nativeElement.querySelector('[data-testid="login-form-shell"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="login-form-heading"]')?.textContent).toContain('Sign in');
+    expect(fixture.nativeElement.querySelector('[data-testid="login-form-heading"]')?.textContent).toContain('Sign in to your account');
     expect(fixture.nativeElement.querySelector('[data-testid="profile-benefits"]')).not.toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Why create an account?');
     expect(fixture.nativeElement.textContent).toContain('View your giving history');
     expect(fixture.nativeElement.textContent).toContain('Read Bible Study manuals');
     expect(fixture.nativeElement.textContent).toContain('Save churches for quick access');
     expect(fixture.nativeElement.textContent).toContain('Submit prayer requests');
+    expect(fixture.nativeElement.textContent).not.toContain('WHY CREATE AN ACCOUNT?');
     expect(fixture.nativeElement.querySelector('[data-testid="auth-layout-shell"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('ion-back-button')).toBeNull();
     expect(fixture.nativeElement.textContent).not.toContain('Sign in to continue');
+  });
+
+  it('keeps the benefits card only on the embedded sign-in state', async () => {
+    authService.isAuthenticatedSnapshot = false;
+    authService.accessTokenSnapshot = null;
+
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="profile-benefits"]')).not.toBeNull();
+  });
+
+  it('renders the benefits as informational rows rather than buttons or links', async () => {
+    authService.isAuthenticatedSnapshot = false;
+    authService.accessTokenSnapshot = null;
+
+    await createComponent();
+
+    const benefitsCard = fixture.nativeElement.querySelector('[data-testid="profile-benefits"]') as HTMLElement | null;
+    expect(benefitsCard?.querySelectorAll('button').length).toBe(0);
+    expect(benefitsCard?.querySelectorAll('a').length).toBe(0);
   });
 
   it('renders the signed-out subtitle only once above the embedded login card', async () => {
@@ -229,6 +258,51 @@ describe('ProfilePage', () => {
     const matches = text.match(/Sign in to access your account, giving history, and church connections\./g) ?? [];
 
     expect(matches.length).toBe(1);
+  });
+
+  it('defaults signed-out direct Profile access to the embedded sign-in mode', async () => {
+    authService.isAuthenticatedSnapshot = false;
+    authService.accessTokenSnapshot = null;
+
+    await createComponent();
+
+    expect(page.authMode).toBe('sign-in');
+    expect(fixture.nativeElement.querySelector('[data-testid="login-form-shell"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="register-form-shell"]')).toBeNull();
+  });
+
+  it('switches to embedded Create Account mode inside the Profile tab when authMode=register', async () => {
+    authService.isAuthenticatedSnapshot = false;
+    authService.accessTokenSnapshot = null;
+    queryParamMap$.next(convertToParamMap({ authMode: 'register' }));
+
+    await createComponent();
+
+    expect(page.authMode).toBe('register');
+    expect(fixture.nativeElement.textContent).toContain('Create your account to access your giving, Bible studies, churches, and prayer requests.');
+    expect(fixture.nativeElement.querySelector('[data-testid="profile-register-card"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="register-form-shell"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="login-form-shell"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="profile-benefits"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('ion-back-button')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Welcome back');
+  });
+
+  it('returns from embedded Create Account to embedded sign-in when the auth mode query param is cleared', async () => {
+    authService.isAuthenticatedSnapshot = false;
+    authService.accessTokenSnapshot = null;
+    queryParamMap$.next(convertToParamMap({ authMode: 'register' }));
+
+    await createComponent();
+
+    queryParamMap$.next(convertToParamMap({}));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(page.authMode).toBe('sign-in');
+    expect(fixture.nativeElement.querySelector('[data-testid="login-form-shell"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="register-form-shell"]')).toBeNull();
   });
 
   it('keeps the Profile tab route active while signed out', async () => {
@@ -254,6 +328,28 @@ describe('ProfilePage', () => {
 
     expect(fixture.nativeElement.textContent).toContain('Member User');
     expect(fixture.nativeElement.querySelector('[data-testid="login-form-shell"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="profile-benefits"]')).toBeNull();
+  });
+
+  it('does not render the embedded registration state once the user is authenticated', async () => {
+    authService.isAuthenticatedSnapshot = false;
+    authService.accessTokenSnapshot = null;
+    queryParamMap$.next(convertToParamMap({ authMode: 'register' }));
+
+    await createComponent();
+
+    authService.currentUser$.next(profile);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Member User');
+    expect(fixture.nativeElement.querySelector('[data-testid="register-form-shell"]')).toBeNull();
+  });
+
+  it('never renders the benefits card once the user is authenticated', async () => {
+    await createComponent();
+
     expect(fixture.nativeElement.querySelector('[data-testid="profile-benefits"]')).toBeNull();
   });
 
