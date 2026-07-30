@@ -5,11 +5,10 @@ import { IonicModule } from '@ionic/angular';
 
 import { DevotionalPublicListItem } from '../../core/models/devotional.model';
 import { DevotionalService } from '../../core/services/devotional.service';
-import { FeaturePageShellComponent } from '../../shared/feature-page-shell.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, FeaturePageShellComponent],
+  imports: [CommonModule, IonicModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-devotionals',
   templateUrl: './devotionals.page.html',
@@ -36,6 +35,18 @@ export class DevotionalsPage implements OnInit {
   private readonly brokenCoverIds = new Set<number>();
   private listRequestId = 0;
   private pendingDetailRoute: string | null = null;
+
+  get featuredDevotional(): DevotionalPublicListItem | null {
+    return this.devotionals[0] ?? null;
+  }
+
+  get recentDevotionals(): DevotionalPublicListItem[] {
+    return this.devotionals.slice(1);
+  }
+
+  get showCaughtUpState(): boolean {
+    return !!this.featuredDevotional && this.recentDevotionals.length === 0 && !this.nextPageUrl && !this.loadMoreErrorMessage;
+  }
 
   ngOnInit(): void {
     this.loadInitialDevotionals();
@@ -206,6 +217,19 @@ export class DevotionalsPage implements OnInit {
   getCoverImageAlt(devotional: DevotionalPublicListItem): string {
     const title = devotional.title?.trim();
     return title ? `${title} cover image` : 'Devotional cover image';
+  }
+
+  getCardMeta(devotional: DevotionalPublicListItem): string {
+    const parts = [
+      this.hasAuthor(devotional) ? devotional.author_name?.trim() ?? '' : '',
+      this.hasAuthor(devotional) ? 'COP Italy' : '',
+    ].filter(Boolean);
+
+    return parts.join(' • ');
+  }
+
+  getPublisherLabel(devotional: DevotionalPublicListItem): string {
+    return devotional.author_name?.trim() || 'COP Italy';
   }
 
   private parsePublicationDate(value: string): Date | null {

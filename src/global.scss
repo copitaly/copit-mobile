@@ -2199,3 +2199,332 @@ ion-toast.branch-save-toast::part(icon) {
   color: #d7a31a;
   font-size: 1rem;
 }
+
+.devotionals-shell,
+.devotionals-loading,
+.devotionals-editorial,
+.editorial-section,
+.recent-list,
+.state-copy,
+.featured-card,
+.featured-card__content,
+.recent-card__copy,
+.state-card,
+.caught-up-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.devotionals-shell {
+  gap: 1.15rem;
+  padding: calc(env(safe-area-inset-top, 0px) + 1rem) 1rem 0;
+}
+
+.devotionals-loading,
+.devotionals-editorial {
+  gap: 1.25rem;
+}
+
+.editorial-section,
+.state-card,
+.state-copy,
+.recent-card__copy,
+.caught-up-card {
+  gap: 0.75rem;
+}
+
+.devotionals-header__eyebrow,
+.section-label,
+.featured-card__eyebrow,
+.section-heading h3,
+.devotionals-header h1,
+.featured-card h2,
+.recent-card__top h4,
+.state-copy h2,
+.caught-up-card h3,
+.devotionals-header__subtitle,
+.featured-card__scripture,
+.featured-card__meta,
+.recent-card__meta,
+.recent-card__detail,
+.recent-card__scripture,
+.state-copy p,
+.caught-up-card p {
+  margin: 0;
+}
+
+.devotionals-header {
+  margin-bottom: 0.15rem;
+}
+
+.devotionals-header__eyebrow,
+.section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #d5a62f;
+}
+
+.devotionals-header h1 {
+  color: #05173d;
+  font-size: 2rem;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+}
+
+.devotionals-header__subtitle {
+  margin-top: 0.45rem;
+  max-width: 24rem;
+  color: rgba(5, 23, 61, 0.64);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.section-heading h3,
+.featured-card h2,
+.recent-card__top h4,
+.state-copy h2,
+.caught-up-card h3 {
+  color: #16214f;
+  font-weight: 700;
+}
+
+.section-heading h3 {
+  font-size: 1.26rem;
+}
+
+.featured-card h2 {
+  font-size: 1.42rem;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+}
+
+.recent-card__top h4,
+.caught-up-card h3 {
+  font-size: 1rem;
+  line-height: 1.28;
+}
+
+.featured-card__eyebrow,
+.featured-card__meta,
+.recent-card__meta,
+.recent-card__detail,
+.state-copy p,
+.caught-up-card p {
+  color: rgba(5, 23, 61, 0.64);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.featured-card__scripture,
+.recent-card__scripture {
+  color: #0b1d73;
+  font-size: 0.96rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.featured-card,
+.recent-card,
+.state-card,
+.caught-up-card {
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(10, 26, 82, 0.06);
+  border-radius: 22px;
+  box-shadow: 0 18px 44px rgba(11, 29, 115, 0.08);
+}
+
+.featured-card--button,
+.recent-card--button {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.featured-card--button:focus-visible,
+.recent-card--button:focus-visible {
+  outline: 2px solid rgba(11, 29, 115, 0.22);
+  outline-offset: 2px;
+}
+
+.featured-card__media,
+.devotional-card__cover-skeleton {
+  width: 100%;
+  aspect-ratio: 16 / 8;
+}
+
+.featured-card__media {
+  background: linear-gradient(145deg, rgba(11, 29, 115, 0.08), rgba(213, 166, 47, 0.18));
+}
+
+.featured-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 22%;
+  display: block;
+}
+
+.featured-card__media--placeholder,
+.featured-card__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.featured-card__placeholder {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background: rgba(11, 29, 115, 0.08);
+  color: #0b1d73;
+}
+
+.featured-card__placeholder ion-icon {
+  font-size: 1.7rem;
+}
+
+.featured-card__content {
+  gap: 0.6rem;
+  padding: 1rem 1.05rem 1.1rem;
+}
+
+.featured-card__cta,
+.state-button {
+  min-height: 42px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.featured-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: fit-content;
+  margin-top: 0.15rem;
+  padding: 0.75rem 0.95rem;
+  background: #0b1d73;
+  color: #fff;
+}
+
+.recent-list {
+  gap: 0.8rem;
+}
+
+.recent-card {
+  padding: 1rem;
+}
+
+.recent-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.recent-card__top ion-icon {
+  flex-shrink: 0;
+  color: #7a84a1;
+  margin-top: 0.12rem;
+}
+
+.state-card,
+.caught-up-card {
+  padding: 1.1rem;
+}
+
+.state-copy h2 {
+  font-size: 1.08rem;
+  line-height: 1.3;
+}
+
+.caught-up-card {
+  background: linear-gradient(180deg, #fff, #fcf8eb);
+}
+
+.state-button {
+  --background: #102b79;
+  --background-hover: #102b79;
+  --background-activated: #0a1f59;
+  --color: #fff;
+}
+
+.state-button--secondary {
+  --background: transparent;
+  --border-color: rgba(11, 29, 115, 0.16);
+  --border-style: solid;
+  --border-width: 1px;
+  --color: #0b1d73;
+}
+
+.load-more-error {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(199, 208, 232, 0.9);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.load-more-error p {
+  margin: 0;
+  color: #5f6b8a;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.skeleton-line,
+.devotional-card__cover-skeleton {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #edf1fa 0%, #f6f8fd 50%, #edf1fa 100%);
+  background-size: 200% 100%;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.devotional-card__cover-skeleton {
+  border-radius: 22px;
+}
+
+.skeleton-line--eyebrow {
+  width: 6rem;
+  height: 0.7rem;
+}
+
+.skeleton-line--title {
+  width: 78%;
+  height: 1.1rem;
+}
+
+.skeleton-line--body {
+  width: 100%;
+  height: 0.9rem;
+}
+
+.skeleton-line--meta {
+  width: 58%;
+  height: 0.8rem;
+}
+
+.skeleton-line.short {
+  width: 74%;
+}
+
+.devotionals-scroll-spacer {
+  height: calc(env(safe-area-inset-bottom, 0px) + 4.5rem);
+  flex-shrink: 0;
+}
+
+@media (max-width: 430px) {
+  .featured-card h2 {
+    font-size: 1.34rem;
+  }
+}
