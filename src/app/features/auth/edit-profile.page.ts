@@ -22,7 +22,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
           <app-mobile-header
             title="Edit Profile"
             subtitle="Update your member details"
-            fallbackRoute="/profile/account-settings"
+            fallbackRoute="/tabs/profile"
           ></app-mobile-header>
         </div>
 

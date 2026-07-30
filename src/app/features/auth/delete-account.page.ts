@@ -24,7 +24,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
           <app-mobile-header
             title="Delete Account"
             subtitle="Review this carefully before you continue"
-            fallbackRoute="/profile/account-settings"
+            fallbackRoute="/tabs/profile"
           ></app-mobile-header>
         </div>
 

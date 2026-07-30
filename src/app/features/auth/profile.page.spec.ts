@@ -48,7 +48,7 @@ describe('ProfilePage', () => {
         { provide: AuthService, useValue: authService },
         { provide: Router, useValue: router },
         { provide: StackNavigationService, useValue: stackNavigationService },
-        { provide: NavController, useValue: {} },
+        { provide: NavController, useValue: jasmine.createSpyObj<NavController>('NavController', ['navigateBack']) },
         {
           provide: SentryTelemetryService,
           useValue: {
@@ -70,8 +70,10 @@ describe('ProfilePage', () => {
     router.navigate.and.returnValue(Promise.resolve(true));
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
     Object.defineProperty(router, 'url', { value: '/tabs/profile' });
+
     stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
     stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
+
     authService = {
       currentUser$: new BehaviorSubject<MemberProfile | null>(null),
       currentUserSnapshot: null,
@@ -92,19 +94,93 @@ describe('ProfilePage', () => {
     response$.complete();
   });
 
-  it('renders the member profile when the request succeeds', async () => {
+  it('renders the premium account summary data', async () => {
     await createComponent();
 
-    expect(fixture.nativeElement.textContent).toContain('Member User');
-    expect(fixture.nativeElement.textContent).toContain('member@example.com');
-    expect(fixture.nativeElement.textContent).toContain('+39333111222');
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Profile');
+    expect(text).toContain('Member User');
+    expect(text).toContain('member@example.com');
+    expect(text).toContain('Member account');
+    expect(text).toContain('Member since 2026');
+    expect(text).toContain('Edit Profile');
+  });
+
+  it('renders compact membership metadata on one summary line', async () => {
+    await createComponent();
+
+    const summary = fixture.nativeElement.querySelector('.account-meta') as HTMLElement | null;
+    expect(summary?.textContent).toContain('Member account');
+    expect(summary?.textContent).toContain('Member since 2026');
+  });
+
+  it('renders the top-level Profile tab without a back button', async () => {
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('.app-header__back')).toBeNull();
+    expect(fixture.nativeElement.querySelector('ion-back-button')).toBeNull();
+  });
+
+  it('navigates to Edit Profile from the account summary card', async () => {
+    await createComponent();
+
+    page.goToEditProfile();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/profile/account-settings/edit-profile');
+  });
+
+  it('navigates to Account Settings from the personal section', async () => {
+    await createComponent();
+
+    const button = fixture.nativeElement.querySelector('[data-testid="account-settings"]') as HTMLButtonElement | null;
+    button?.click();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/profile/account-settings');
+  });
+
+  it('navigates to My Donations from the giving section', async () => {
+    await createComponent();
+
+    const button = fixture.nativeElement.querySelector('[data-testid="my-donations"]') as HTMLButtonElement | null;
+    button?.click();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/my-donations');
+  });
+
+  it('navigates to Recurring Donations from the giving section', async () => {
+    await createComponent();
+
+    const button = fixture.nativeElement.querySelector('[data-testid="recurring-donations"]') as HTMLButtonElement | null;
+    button?.click();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/profile/recurring-donations');
+  });
+
+  it('navigates to Saved Churches from the church section', async () => {
+    await createComponent();
+
+    const button = fixture.nativeElement.querySelector('[data-testid="saved-churches"]') as HTMLButtonElement | null;
+    button?.click();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/saved-churches');
+  });
+
+  it('keeps My Prayer Requests visible for members', async () => {
+    await createComponent();
+
+    expect(fixture.nativeElement.textContent).toContain('My Prayer Requests');
+  });
+
+  it('hides member-only prayer history when the resolved role is not member', async () => {
+    authService.getCurrentUser.and.returnValue(of({ ...profile, role: 'platform_admin' }));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.textContent).not.toContain('My Prayer Requests');
   });
 
   it('keeps visible profile content during a background refresh failure', async () => {
-    authService.getCurrentUser.and.returnValues(
-      of(profile),
-      throwError(() => new Error('network'))
-    );
+    authService.getCurrentUser.and.returnValues(of(profile), throwError(() => new Error('network')));
 
     await createComponent();
     page.ionViewWillEnter();
@@ -125,6 +201,57 @@ describe('ProfilePage', () => {
     expect(fixture.nativeElement.textContent).toContain('Please check your connection and try again.');
   });
 
+  it('renders a signed-out state when no profile data is available', async () => {
+    authService.getCurrentUser.and.returnValue(of(null));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.textContent).toContain('Sign in required');
+    expect(fixture.nativeElement.textContent).toContain('Go to Login');
+  });
+
+  it('prevents duplicate logout requests and invokes the existing logout flow', async () => {
+    let resolveNavigation: ((value: boolean) => void) | undefined;
+    router.navigateByUrl.and.returnValue(
+      new Promise<boolean>((resolve) => {
+        resolveNavigation = resolve;
+      })
+    );
+
+    await createComponent();
+
+    const button = fixture.nativeElement.querySelector('[data-testid="sign-out"]') as HTMLButtonElement | null;
+    button?.click();
+    button?.click();
+
+    expect(authService.logout.calls.count()).toBe(1);
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/login', { replaceUrl: true });
+
+    resolveNavigation?.(true);
+    await fixture.whenStable();
+  });
+
+  it('renders Sign Out as a standalone action outside the account rows card', async () => {
+    await createComponent();
+
+    const signOutButton = fixture.nativeElement.querySelector('.sign-out-row') as HTMLElement | null;
+    const accountCardText = Array.from<Element>(fixture.nativeElement.querySelectorAll('.profile-group .profile-group__card'))
+      .map((element) => element.textContent || '')
+      .join(' ');
+
+    expect(signOutButton?.textContent).toContain('Sign Out');
+    expect(accountCardText).not.toContain('Sign Out');
+  });
+
+  it('retains the destructive Delete Account navigation flow', async () => {
+    await createComponent();
+
+    const button = fixture.nativeElement.querySelector('[data-testid="delete-account"]') as HTMLButtonElement | null;
+    button?.click();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/profile/account-settings/delete-account');
+  });
+
   it('prevents duplicate quick-action navigation from rapid taps', async () => {
     let resolveNavigation: ((value: boolean) => void) | undefined;
     router.navigateByUrl.and.returnValue(
@@ -135,59 +262,12 @@ describe('ProfilePage', () => {
 
     await createComponent();
 
-    page.openQuickAction({
-      title: 'Prayer',
-      subtitle: 'Share a request or pray with the community',
-      icon: 'heart-outline',
-      route: '/prayer',
-    });
-    page.openQuickAction({
-      title: 'Prayer',
-      subtitle: 'Share a request or pray with the community',
-      icon: 'heart-outline',
-      route: '/prayer',
-    });
+    const prayerButton = fixture.nativeElement.querySelector('[data-testid="prayer"]') as HTMLButtonElement | null;
+    prayerButton?.click();
+    prayerButton?.click();
 
     expect(router.navigateByUrl.calls.count()).toBe(1);
     resolveNavigation?.(true);
     await fixture.whenStable();
-  });
-
-  it('prevents duplicate logout requests and navigates to login', async () => {
-    let resolveNavigation: ((value: boolean) => void) | undefined;
-    router.navigateByUrl.and.returnValue(
-      new Promise<boolean>((resolve) => {
-        resolveNavigation = resolve;
-      })
-    );
-
-    await createComponent();
-
-    page.logout();
-    page.logout();
-
-    expect(authService.logout.calls.count()).toBe(1);
-    expect(router.navigateByUrl.calls.count()).toBe(1);
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/login', { replaceUrl: true });
-
-    resolveNavigation?.(true);
-    await fixture.whenStable();
-  });
-
-  it('renders the Profile header without a back button on the top-level tabs route', async () => {
-    await createComponent();
-
-    expect(fixture.nativeElement.textContent).toContain('Profile');
-    expect(fixture.nativeElement.querySelector('.app-header__back')).toBeNull();
-  });
-
-  it('surfaces Prayer, Community, and Churches in Profile quick actions', async () => {
-    await createComponent();
-
-    const text = fixture.nativeElement.textContent;
-
-    expect(text).toContain('Prayer');
-    expect(text).toContain('Community');
-    expect(text).toContain('Churches');
   });
 });

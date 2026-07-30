@@ -7,442 +7,162 @@ import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { MemberProfile } from '../../core/models/user.model';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
-import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
-type QuickAction = {
+type ProfileAction = {
   title: string;
   subtitle: string;
   icon: string;
-  soon?: boolean;
   route?: string;
   membersOnly?: boolean;
+  destructive?: boolean;
+  action?: () => void;
+};
+
+type ProfileActionSection = {
+  title: string;
+  actions: ProfileAction[];
 };
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, IonicModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-profile',
   template: `
     <ion-page>
       <ion-content fullscreen class="profile-content">
-        <div class="profile-hero app-header app-header--inner">
-          <app-mobile-header
-            [title]="headerTitle"
-            [showBack]="!isTabsProfileRoute"
-            fallbackRoute="/tabs/home"
-          ></app-mobile-header>
-        </div>
+        <div class="profile-shell">
+          <header class="profile-header" aria-labelledby="profile-title">
+            <p class="profile-header__eyebrow">Account hub</p>
+            <div class="profile-header__copy">
+              <h1 id="profile-title">Profile</h1>
+              <p>Manage your details, giving history, and church connections in one place.</p>
+            </div>
+          </header>
 
-        <div class="surface profile-surface">
-          <div class="surface__content profile-surface__content">
-            <div *ngIf="loading" class="state-card loading-state" aria-live="polite">
-              <ion-spinner name="crescent"></ion-spinner>
-              <div class="state-copy">
-                <h2>Loading profile</h2>
-                <p>Fetching your member details.</p>
+          <div *ngIf="loading" class="state-card state-card--loading" aria-live="polite">
+            <div class="summary-skeleton">
+              <div class="summary-skeleton__avatar"></div>
+              <div class="summary-skeleton__copy">
+                <span></span>
+                <span></span>
+                <span></span>
               </div>
             </div>
 
-            <div *ngIf="!loading && errorMessage" class="state-card error-state">
-              <div class="state-copy">
-                <h2>We couldn't load your profile</h2>
-                <p>{{ errorMessage }}</p>
-              </div>
-              <ion-button expand="block" class="state-button" (click)="loadProfile()">Try again</ion-button>
+            <div class="state-copy">
+              <h2>Loading profile</h2>
+              <p>Fetching your member details.</p>
             </div>
-
-            <div *ngIf="!loading && !errorMessage && profile; else signedOutState" class="profile-stack">
-              <section class="profile-card">
-                <div class="profile-card__header">
-                  <div class="profile-avatar" aria-hidden="true">{{ initials }}</div>
-                  <div class="profile-identity">
-                    <h2>{{ profile.full_name || fullName }}</h2>
-                    <p>Member since {{ memberSinceYear }}</p>
-                  </div>
-                </div>
-
-                <div class="profile-divider"></div>
-
-                <div class="profile-detail">
-                  <div class="detail-icon">
-                    <ion-icon name="call-outline" aria-hidden="true"></ion-icon>
-                  </div>
-                  <div class="detail-copy">
-                    <span>Phone</span>
-                    <strong>{{ profile.phone_number || profile.phone || 'Not provided' }}</strong>
-                  </div>
-                </div>
-
-                <div class="profile-detail">
-                  <div class="detail-icon">
-                    <ion-icon name="mail-outline" aria-hidden="true"></ion-icon>
-                  </div>
-                  <div class="detail-copy">
-                    <span>Email</span>
-                    <strong>{{ profile.email || 'Not provided' }}</strong>
-                  </div>
-                </div>
-
-                <div class="profile-detail">
-                  <div class="detail-icon">
-                    <ion-icon name="language-outline" aria-hidden="true"></ion-icon>
-                  </div>
-                  <div class="detail-copy">
-                    <span>Language</span>
-                    <strong>{{ profile.language || 'Not provided' }}</strong>
-                  </div>
-                </div>
-              </section>
-
-              <section class="profile-section">
-                <h3 class="profile-section__title">Quick Actions</h3>
-
-                <div class="action-card">
-                  <button
-                    type="button"
-                    class="action-row"
-                    *ngFor="let action of visibleQuickActions; let last = last"
-                    [class.action-row--last]="last"
-                    (click)="openQuickAction(action)"
-                  >
-                    <span class="action-icon" aria-hidden="true">
-                      <ion-icon [name]="action.icon"></ion-icon>
-                    </span>
-
-                    <span class="action-copy">
-                      <strong>{{ action.title }}</strong>
-                      <small>{{ action.subtitle }}</small>
-                    </span>
-
-                    <span class="action-meta">
-                      <span *ngIf="action.soon" class="soon-badge">Soon</span>
-                      <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
-                    </span>
-                  </button>
-                </div>
-              </section>
-
-              <section class="profile-section">
-                <h3 class="profile-section__title">Account</h3>
-
-                <div class="action-card">
-                  <button
-                    type="button"
-                    class="action-row action-row--last"
-                    (click)="goToAccountSettings()"
-                  >
-                    <span class="action-icon" aria-hidden="true">
-                      <ion-icon name="settings-outline"></ion-icon>
-                    </span>
-
-                    <span class="action-copy">
-                      <strong>Account Settings</strong>
-                      <small>Manage your account and privacy</small>
-                    </span>
-
-                    <span class="action-meta">
-                      <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
-                    </span>
-                  </button>
-                </div>
-              </section>
-
-              <ion-button expand="block" class="give-now-button" (click)="goToDonationFlow()">
-                <ion-icon name="gift-outline" slot="start" aria-hidden="true"></ion-icon>
-                <span>Give now</span>
-              </ion-button>
-
-              <ion-button expand="block" fill="outline" class="logout-button" (click)="logout()">
-                <ion-icon name="log-out-outline" slot="start" aria-hidden="true"></ion-icon>
-                <span>Log out</span>
-              </ion-button>
-
-              <p class="profile-footer">The Church of Pentecost — Italy</p>
-            </div>
-
-            <ng-template #signedOutState>
-              <div *ngIf="!loading && !errorMessage && !profile" class="state-card signed-out-state">
-                <div class="state-copy">
-                  <h2>Sign in required</h2>
-                  <p>Log in to view your member profile.</p>
-                </div>
-                <ion-button expand="block" class="state-button" (click)="goToLogin()">Go to Login</ion-button>
-              </div>
-            </ng-template>
           </div>
+
+          <div *ngIf="!loading && errorMessage" class="state-card state-card--error">
+            <div class="state-copy">
+              <h2>We couldn't load your profile</h2>
+              <p>{{ errorMessage }}</p>
+            </div>
+            <ion-button expand="block" class="state-button" (click)="loadProfile()">Try again</ion-button>
+          </div>
+
+          <div *ngIf="!loading && !errorMessage && profile; else signedOutState" class="profile-stack">
+            <section class="account-card" aria-labelledby="account-summary-title">
+              <div class="account-card__identity">
+                <div class="account-avatar" aria-hidden="true">{{ initials }}</div>
+
+                <div class="account-copy">
+                  <h2 id="account-summary-title">{{ displayName }}</h2>
+                  <p class="account-copy__email">{{ profile.email || 'Not provided' }}</p>
+                  <p class="account-meta">{{ membershipLabel }} <span aria-hidden="true">•</span> Member since {{ memberSinceLabel }}</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                class="account-card__edit"
+                data-testid="edit-profile-summary"
+                (click)="goToEditProfile()"
+                aria-label="Edit Profile"
+              >
+                <span>Edit Profile</span>
+                <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
+              </button>
+            </section>
+
+            <section
+              class="profile-group"
+              *ngFor="let section of visibleSections"
+              [attr.aria-labelledby]="'profile-section-' + section.title"
+            >
+              <h2 class="profile-group__title" [id]="'profile-section-' + section.title">
+                {{ section.title }}
+              </h2>
+
+              <div class="profile-group__card">
+                <button
+                  type="button"
+                  class="action-row"
+                  *ngFor="let action of section.actions; let last = last"
+                  [class.action-row--last]="last"
+                  [class.action-row--destructive]="action.destructive"
+                  [attr.data-testid]="actionTestId(action)"
+                  (click)="openAction(action)"
+                >
+                  <span class="action-row__icon" aria-hidden="true">
+                    <ion-icon [name]="action.icon"></ion-icon>
+                  </span>
+
+                  <span class="action-row__copy">
+                    <strong>{{ action.title }}</strong>
+                    <small>{{ action.subtitle }}</small>
+                  </span>
+
+                  <span class="action-row__meta" aria-hidden="true">
+                    <ion-icon name="chevron-forward"></ion-icon>
+                  </span>
+                </button>
+              </div>
+            </section>
+
+            <div class="profile-group__card sign-out-card">
+              <button
+                type="button"
+                class="action-row action-row--last action-row--destructive sign-out-row"
+                data-testid="sign-out"
+                (click)="logout()"
+                aria-label="Sign Out"
+              >
+                <span class="action-row__icon" aria-hidden="true">
+                  <ion-icon name="log-out-outline"></ion-icon>
+                </span>
+
+                <span class="action-row__copy">
+                  <strong>Sign Out</strong>
+                  <small>Log out of your account on this device</small>
+                </span>
+
+                <span class="action-row__meta" aria-hidden="true">
+                  <ion-icon name="chevron-forward"></ion-icon>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <ng-template #signedOutState>
+            <div *ngIf="!loading && !errorMessage && !profile" class="state-card state-card--signed-out">
+              <div class="state-copy">
+                <h2>Sign in required</h2>
+                <p>Log in to view your member profile.</p>
+              </div>
+              <ion-button expand="block" class="state-button" (click)="goToLogin()">Go to Login</ion-button>
+            </div>
+          </ng-template>
         </div>
       </ion-content>
     </ion-page>
   `,
   styles: [
     `
-      :host {
-        display: block;
-      }
-
-      .profile-stack {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-      }
-
-      ion-content.profile-content {
-        --background: #f7f8fa;
-      }
-
-      .profile-hero {
-        background: transparent;
-        box-shadow: none;
-        padding: calc(env(safe-area-inset-top, 0px) + 1rem) 1rem 0.9rem;
-      }
-
-      .profile-card,
-      .action-card,
-      .state-card {
-        background: #ffffff;
-        border-radius: 22px;
-        box-shadow: 0 14px 36px rgba(6, 21, 74, 0.1);
-      }
-
-      .profile-card {
-        padding: 1.2rem;
-      }
-
-      .profile-card__header {
-        display: flex;
-        align-items: center;
-        gap: 0.95rem;
-      }
-
-      .profile-avatar {
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        background: linear-gradient(180deg, #f4c646, #e9ad13);
-        color: #0b1d73;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.15rem;
-        font-weight: 800;
-        box-shadow: 0 10px 24px rgba(233, 173, 19, 0.28);
-        flex-shrink: 0;
-      }
-
-      .profile-identity {
-        min-width: 0;
-      }
-
-      .profile-identity h2,
-      .profile-identity p {
-        margin: 0;
-      }
-
-      .profile-identity h2 {
-        color: #03173f;
-        font-size: 1.15rem;
-        font-weight: 700;
-        line-height: 1.2;
-      }
-
-      .profile-identity p {
-        margin-top: 0.28rem;
-        color: rgba(3, 23, 63, 0.62);
-        font-size: 0.9rem;
-      }
-
-      .profile-divider {
-        height: 1px;
-        background: rgba(3, 23, 63, 0.08);
-        margin: 1rem 0 0.4rem;
-      }
-
-      .profile-detail {
-        display: flex;
-        align-items: center;
-        gap: 0.8rem;
-        padding: 0.7rem 0;
-      }
-
-      .detail-icon {
-        width: 38px;
-        height: 38px;
-        border-radius: 14px;
-        background: #f3f5fb;
-        color: rgba(3, 23, 63, 0.68);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-
-      .detail-icon ion-icon {
-        font-size: 1.05rem;
-      }
-
-      .detail-copy {
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-      }
-
-      .detail-copy span {
-        color: rgba(3, 23, 63, 0.58);
-        font-size: 0.74rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-      }
-
-      .detail-copy strong {
-        margin-top: 0.2rem;
-        color: #03173f;
-        font-size: 1rem;
-        font-weight: 600;
-        line-height: 1.35;
-        overflow-wrap: anywhere;
-      }
-
-      .profile-section {
-        display: flex;
-        flex-direction: column;
-        gap: 0.7rem;
-      }
-
-      .profile-section__title {
-        margin: 0 0 0 0.15rem;
-        color: rgba(3, 23, 63, 0.68);
-        font-size: 0.92rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      .profile-debug-role {
-        margin: 0 0 0 0.15rem;
-        color: rgba(3, 23, 63, 0.56);
-        font-size: 0.82rem;
-        line-height: 1.35;
-      }
-
-      .action-card {
-        overflow: hidden;
-      }
-
-      .action-row {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        gap: 0.8rem;
-        padding: 1rem 1.05rem;
-        background: transparent;
-        border: 0;
-        border-bottom: 1px solid rgba(3, 23, 63, 0.08);
-        text-align: left;
-      }
-
-      .action-row--last {
-        border-bottom: 0;
-      }
-
-      .action-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 14px;
-        background: #eef2fd;
-        color: #425ea6;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-
-      .action-icon ion-icon {
-        font-size: 1.1rem;
-      }
-
-      .action-copy {
-        min-width: 0;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 0.18rem;
-      }
-
-      .action-copy strong {
-        color: #03173f;
-        font-size: 1rem;
-        font-weight: 600;
-        line-height: 1.25;
-      }
-
-      .action-copy small {
-        color: rgba(3, 23, 63, 0.55);
-        font-size: 0.86rem;
-        line-height: 1.35;
-      }
-
-      .action-meta {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.55rem;
-        color: rgba(3, 23, 63, 0.42);
-        flex-shrink: 0;
-      }
-
-      .action-meta ion-icon {
-        font-size: 1rem;
-      }
-
-      .soon-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 46px;
-        padding: 0.25rem 0.5rem;
-        border-radius: 999px;
-        background: #f4f5fa;
-        color: rgba(3, 23, 63, 0.4);
-        font-size: 0.68rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      .logout-button {
-        --border-color: rgba(220, 53, 69, 0.18);
-        --border-radius: 18px;
-        --color: #df3f4d;
-        --padding-top: 0.95rem;
-        --padding-bottom: 0.95rem;
-        margin-top: 0.2rem;
-      }
-
-      .give-now-button {
-        --background: #f5b628;
-        --background-hover: #f5b628;
-        --background-activated: #d79d1f;
-        --border-radius: 999px;
-        --box-shadow: 0 10px 22px rgba(245, 182, 40, 0.24);
-        --color: #0b1d73;
-        min-height: 52px;
-        font-weight: 700;
-        margin-top: 0.15rem;
-      }
-
-      .logout-button::part(native) {
-        box-shadow: none;
-        background: rgba(255, 255, 255, 0.7);
-      }
-
-      .profile-footer {
-        margin: 0.3rem 0 0;
-        text-align: center;
-        color: rgba(55, 73, 109, 0.76);
-        font-size: 0.9rem;
-        line-height: 1.45;
-      }
-
+      :host{display:block}ion-content.profile-content{--background:#f7f6f2}.profile-shell,.profile-stack,.profile-group,.state-card,.summary-skeleton,.summary-skeleton__copy,.action-row__copy{display:flex;flex-direction:column}.profile-shell{padding:calc(env(safe-area-inset-top,0px) + 1rem) 1rem calc(1.6rem + env(safe-area-inset-bottom,0px) + 78px);gap:1rem}.profile-header__eyebrow,.profile-header__copy h1,.profile-header__copy p,.account-copy h2,.account-copy__email,.profile-group__title,.state-copy h2,.state-copy p,.account-meta{margin:0}.profile-header__eyebrow,.profile-group__title{font-size:.7rem;font-weight:700;text-transform:uppercase}.profile-header__eyebrow{color:#a47a16}.profile-header__copy h1{color:#081f5c;font-size:2rem;line-height:1.05}.profile-header__copy p{margin-top:.45rem;max-width:24rem;color:rgba(8,31,92,.68);font-size:.98rem;line-height:1.45}.account-card,.profile-group__card,.state-card{background:#fff;border-radius:24px;box-shadow:0 12px 28px rgba(7,24,69,.08)}.account-card{padding:1.15rem 1.15rem .7rem;display:flex;flex-direction:column}.account-card__identity,.summary-skeleton,.action-row,.account-card__edit{display:flex;align-items:center}.account-card__identity{gap:.9rem;min-width:0;align-items:flex-start}.account-avatar,.summary-skeleton__avatar{width:60px;height:60px;border-radius:50%;flex-shrink:0}.account-avatar{display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#f5ce63 0%,#ebb225 100%);color:#08205d;font-size:1.12rem;font-weight:800}.account-copy,.action-row__copy{min-width:0;flex:1}.account-copy h2{color:#081f5c;font-size:1.38rem;line-height:1.14}.account-copy__email{margin-top:.22rem;color:rgba(8,31,92,.66);font-size:.94rem;line-height:1.4}.account-meta{margin-top:.42rem;color:rgba(8,31,92,.52);font-size:.82rem;line-height:1.45}.account-card__edit{width:calc(100% + 2.3rem);margin:.9rem -1.15rem 0;padding:.82rem 1.15rem 0;border:0;border-top:1px solid rgba(8,31,92,.08);background:transparent;justify-content:space-between;color:#08205d;font-size:.94rem;font-weight:700;text-align:left}.profile-group{margin-top:.55rem}.profile-group__title{padding:0 .25rem .08rem;color:rgba(8,31,92,.56)}.profile-group__card{overflow:hidden}.sign-out-card{margin-top:.7rem}.action-row{width:100%;min-height:68px;gap:.8rem;padding:.88rem 1rem;border:0;border-bottom:1px solid rgba(8,31,92,.08);background:transparent;text-align:left}.action-row--last{border-bottom:0}.action-row:focus-visible,.account-card__edit:focus-visible{outline:2px solid rgba(8,31,92,.22);outline-offset:-2px}.action-row__icon{width:38px;height:38px;border-radius:12px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:#f4f6fb;color:#4964a4}.action-row--destructive .action-row__icon{background:rgba(206,52,73,.06);color:#c93449}.action-row__copy strong{color:#081f5c;font-size:1rem;font-weight:650;line-height:1.3}.action-row--destructive .action-row__copy strong{color:#b82f42}.action-row__copy small{color:rgba(8,31,92,.56);font-size:.84rem;line-height:1.38}.action-row__meta{color:rgba(8,31,92,.3);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}.action-row__icon ion-icon,.action-row__meta ion-icon,.account-card__edit ion-icon{font-size:1rem}.state-card{padding:1.25rem;gap:1rem}.summary-skeleton{gap:.95rem}.summary-skeleton__avatar,.summary-skeleton__copy span{background:#eef2f9}.summary-skeleton__copy{gap:.5rem}.summary-skeleton__copy span{height:.9rem;border-radius:999px}.state-copy h2{color:#081f5c;font-size:1.08rem;line-height:1.3}.state-copy p{margin-top:.3rem;color:rgba(8,31,92,.64);font-size:.95rem;line-height:1.45}.state-button{--background:#102b79;--background-hover:#102b79;--background-activated:#0a1f59;--border-radius:18px;min-height:48px;font-weight:700}
     `,
   ],
 })
@@ -456,49 +176,87 @@ export class ProfilePage implements OnInit, OnDestroy {
   private pendingNavigation = false;
   private loggingOut = false;
 
-  readonly quickActions: QuickAction[] = [
+  readonly actionSections: ProfileActionSection[] = [
     {
-      title: 'Prayer',
-      subtitle: 'Share a request or pray with the community',
-      icon: 'heart-outline',
-      route: '/prayer',
+      title: 'Personal',
+      actions: [
+        {
+          title: 'Edit Profile',
+          subtitle: 'Update your name and member details',
+          icon: 'create-outline',
+          route: '/profile/account-settings/edit-profile',
+        },
+        {
+          title: 'Account Settings',
+          subtitle: 'Manage your account and privacy',
+          icon: 'settings-outline',
+          route: '/profile/account-settings',
+        },
+      ],
     },
     {
-      title: 'Community',
-      subtitle: 'Read approved public prayer requests',
-      icon: 'people-outline',
-      route: '/community',
+      title: 'Prayer & Care',
+      actions: [
+        {
+          title: 'Prayer',
+          subtitle: 'Share a request or pray with the community',
+          icon: 'heart-outline',
+          route: '/prayer',
+        },
+        {
+          title: 'Community',
+          subtitle: 'Read approved public prayer requests',
+          icon: 'people-outline',
+          route: '/community',
+        },
+        {
+          title: 'My Prayer Requests',
+          subtitle: 'Review your submitted prayer history',
+          icon: 'chatbubbles-outline',
+          route: '/prayer/my-requests',
+          membersOnly: true,
+        },
+      ],
     },
     {
-      title: 'Churches',
-      subtitle: 'Browse churches and choose where to give',
-      icon: 'location-outline',
-      route: '/branches',
+      title: 'Giving',
+      actions: [
+        {
+          title: 'My Donations',
+          subtitle: 'View your giving history',
+          icon: 'heart-outline',
+          route: '/my-donations',
+        },
+        {
+          title: 'Recurring Donations',
+          subtitle: 'Manage scheduled gifts',
+          icon: 'repeat-outline',
+          route: '/profile/recurring-donations',
+        },
+      ],
     },
     {
-      title: 'My Prayer Requests',
-      subtitle: 'Review your submitted prayer history',
-      icon: 'chatbubbles-outline',
-      route: '/prayer/my-requests',
-      membersOnly: true,
+      title: 'Church',
+      actions: [
+        {
+          title: 'Saved Churches',
+          subtitle: 'Quick access to your churches',
+          icon: 'bookmark-outline',
+          route: '/saved-churches',
+        },
+      ],
     },
     {
-      title: 'My Donations',
-      subtitle: 'View your giving history',
-      icon: 'heart-outline',
-      route: '/my-donations',
-    },
-    {
-      title: 'Recurring Donations',
-      subtitle: 'Manage scheduled gifts',
-      icon: 'repeat-outline',
-      route: '/profile/recurring-donations',
-    },
-    {
-      title: 'Saved Churches',
-      subtitle: 'Quick access to your churches',
-      icon: 'bookmark-outline',
-      route: '/saved-churches',
+      title: 'Account',
+      actions: [
+        {
+          title: 'Delete Account',
+          subtitle: 'Permanently close your member account',
+          icon: 'trash-outline',
+          route: '/profile/account-settings/delete-account',
+          destructive: true,
+        },
+      ],
     },
   ];
 
@@ -514,13 +272,18 @@ export class ProfilePage implements OnInit, OnDestroy {
     return `${first}${last}`.toUpperCase() || 'ME';
   }
 
-  get fullName(): string {
+  get displayName(): string {
+    const fullName = this.profile?.full_name?.trim();
+    if (fullName) {
+      return fullName;
+    }
+
     const firstName = this.profile?.first_name?.trim() ?? '';
     const lastName = this.profile?.last_name?.trim() ?? '';
     return `${firstName} ${lastName}`.trim() || 'Your account';
   }
 
-  get memberSinceYear(): string {
+  get memberSinceLabel(): string {
     const joinedAt = this.profile?.date_joined;
     if (!joinedAt) {
       return 'recently';
@@ -534,16 +297,25 @@ export class ProfilePage implements OnInit, OnDestroy {
     return joinedDate.getUTCFullYear().toString();
   }
 
-  get visibleQuickActions(): QuickAction[] {
-    return this.quickActions.filter((action) => !action.membersOnly || this.resolvedRole === 'member');
+  get membershipLabel(): string {
+    if (this.resolvedRole === 'member') {
+      return 'Member account';
+    }
+
+    return this.profile?.role?.trim() || 'Account active';
+  }
+
+  get visibleSections(): ProfileActionSection[] {
+    return this.actionSections
+      .map((section) => ({
+        ...section,
+        actions: section.actions.filter((action) => !action.membersOnly || this.resolvedRole === 'member'),
+      }))
+      .filter((section) => section.actions.length > 0);
   }
 
   get isTabsProfileRoute(): boolean {
     return this.router.url.startsWith('/tabs/profile');
-  }
-
-  get headerTitle(): string {
-    return this.isTabsProfileRoute ? 'Profile' : 'My Profile';
   }
 
   get resolvedRole(): string | null {
@@ -571,6 +343,10 @@ export class ProfilePage implements OnInit, OnDestroy {
     this.currentUserSubscription?.unsubscribe();
   }
 
+  actionTestId(action: ProfileAction): string {
+    return action.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  }
+
   loadProfile(options?: { preserveCurrent?: boolean }): void {
     if (this.profileRequestInFlight) {
       return;
@@ -583,7 +359,7 @@ export class ProfilePage implements OnInit, OnDestroy {
     this.errorMessage = '';
 
     this.authService.getCurrentUser().subscribe({
-      next: profile => {
+      next: (profile) => {
         this.profile = profile;
         this.loading = false;
         this.refreshing = false;
@@ -596,14 +372,24 @@ export class ProfilePage implements OnInit, OnDestroy {
         if (!preserveCurrent || !this.profile) {
           this.errorMessage = 'Please check your connection and try again.';
         }
-        this.sentryTelemetry.addFeatureBreadcrumb('profile', 'Profile load failed', {
-          route: '/profile',
-        }, 'error');
+        this.sentryTelemetry.addFeatureBreadcrumb(
+          'profile',
+          'Profile load failed',
+          {
+            route: '/tabs/profile',
+          },
+          'error'
+        );
       },
     });
   }
 
-  openQuickAction(action: QuickAction): void {
+  openAction(action: ProfileAction): void {
+    if (action.action) {
+      action.action();
+      return;
+    }
+
     if (!action.route) {
       return;
     }
@@ -623,16 +409,8 @@ export class ProfilePage implements OnInit, OnDestroy {
     });
   }
 
-  goToDonationFlow(): void {
-    void this.navigate(['/branches']);
-  }
-
-  goToAccountSettings(): void {
-    void this.navigateByUrl('/profile/account-settings');
-  }
-
-  goHome(): void {
-    void this.router.navigate(['/tabs/home']);
+  goToEditProfile(): void {
+    void this.navigateByUrl('/profile/account-settings/edit-profile');
   }
 
   goToLogin(): void {
