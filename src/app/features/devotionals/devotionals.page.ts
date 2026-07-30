@@ -170,7 +170,7 @@ export class DevotionalsPage implements OnInit {
       return null;
     }
 
-    return `/devotionals/${encodeURIComponent(normalizedSlug)}`;
+    return `/tabs/devotionals/${encodeURIComponent(normalizedSlug)}`;
   }
 
   buildCardAriaLabel(devotional: DevotionalPublicListItem): string {

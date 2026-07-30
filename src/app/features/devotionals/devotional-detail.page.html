@@ -4,7 +4,6 @@
       <ion-buttons slot="start">
         <ion-back-button defaultHref="/tabs/devotionals" text="" icon="chevron-back" aria-label="Back to devotionals"></ion-back-button>
       </ion-buttons>
-      <ion-title>Devotional</ion-title>
       <ion-buttons slot="end">
         <ion-button
           fill="clear"
@@ -60,20 +59,22 @@
           <img [src]="devotional.cover_image!" [alt]="getCoverImageAlt()" (error)="handleCoverImageError()" />
         </div>
 
-        <header class="reader-article__section reader-article__section--header">
+        <section class="reader-article__section reader-article__section--header" data-testid="content-section">
           <h1 data-testid="devotional-title">{{ devotional.title }}</h1>
-          <p class="reader-article__date" data-testid="publication-date">{{ formatPublicationDate(devotional.publication_date) }}</p>
-          <p *ngIf="getHeaderMeta()" class="reader-article__meta" data-testid="scripture-reference">{{ getHeaderMeta() }}</p>
-        </header>
+          <div class="reader-article__meta-group" *ngIf="getHeaderMeta() || devotional.publication_date">
+            <p class="reader-article__date" data-testid="publication-date">{{ formatPublicationDate(devotional.publication_date) }}</p>
+            <p *ngIf="getHeaderMeta()" class="reader-article__meta" data-testid="scripture-reference">{{ getHeaderMeta() }}</p>
+          </div>
 
-        <section *ngIf="hasText(devotional.scripture_text) || hasText(devotional.scripture_reference)" class="reader-article__section" data-testid="scripture-section">
           <h2 data-testid="scripture-heading">Scripture</h2>
-          <blockquote *ngIf="hasText(devotional.scripture_text)" class="scripture-block preserve-lines" data-testid="scripture-text">
+          <blockquote
+            *ngIf="hasText(devotional.scripture_text)"
+            class="scripture-block preserve-lines"
+            data-testid="scripture-text"
+          >
             {{ devotional.scripture_text }}
           </blockquote>
-        </section>
 
-        <section class="reader-article__section" data-testid="content-section">
           <div class="reading-copy" data-testid="content">
             <p *ngFor="let paragraph of contentParagraphs" class="reading-paragraph preserve-lines">
               {{ paragraph }}
@@ -103,7 +104,16 @@
         </section>
 
         <footer class="reader-article__footer" data-testid="author-attribution">
-          {{ getAttributionLabel() }}
+          <p class="reader-article__footer-attribution">{{ getAttributionLabel() }}</p>
+          <button
+            type="button"
+            class="reader-article__footer-share"
+            aria-label="Share devotional"
+            [disabled]="!canShareDevotional()"
+            (click)="shareDevotionalFromHeader()"
+          >
+            Share this devotional
+          </button>
         </footer>
       </article>
     </div>

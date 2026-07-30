@@ -156,14 +156,14 @@ describe('DevotionalDetailPage', () => {
     expect(image?.getAttribute('alt')).toBe('Trusting God in Uncertain Times cover image');
   });
 
-  it('renders a compact header with back and share actions and no blue hero shell', async () => {
+  it('renders a compact header with back and share actions and no toolbar title', async () => {
     devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
 
     await createComponent();
 
     expect(fixture.nativeElement.querySelector('app-feature-page-shell')).toBeNull();
     expect(fixture.nativeElement.querySelector('ion-header.devotional-reader-header')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('ion-title')?.textContent).toContain('Devotional');
+    expect(fixture.nativeElement.querySelector('ion-title')).toBeNull();
     const backButton = fixture.nativeElement.querySelector('ion-back-button') as HTMLElement | null;
     expect(backButton).not.toBeNull();
     expect(backButton?.getAttribute('defaulthref')).toBe('/tabs/devotionals');
@@ -171,7 +171,7 @@ describe('DevotionalDetailPage', () => {
     expect(fixture.nativeElement.querySelector('ion-button[aria-label="Share devotional"]')).not.toBeNull();
   });
 
-  it('keeps tabs absent on the detail route', async () => {
+  it('does not render its own local tab bar inside the detail page template', async () => {
     devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
 
     await createComponent();
@@ -198,6 +198,19 @@ describe('DevotionalDetailPage', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="scripture-heading"]')?.textContent).toContain('Scripture');
     expect(fixture.nativeElement.querySelector('[data-testid="reflection-heading"]')?.textContent).toContain('Reflection');
     expect(fixture.nativeElement.querySelector('[data-testid="prayer-heading"]')?.textContent).toContain('Prayer');
+  });
+
+  it('renders the footer attribution and article share action', async () => {
+    devotionalService.getDevotionalBySlug.and.returnValue(of(devotional));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="author-attribution"]')?.textContent).toContain(
+      'Written by admin admin'
+    );
+    expect(fixture.nativeElement.querySelector('.reader-article__footer-share')?.textContent).toContain(
+      'Share this devotional'
+    );
   });
 
   it('hides a broken cover image safely', async () => {

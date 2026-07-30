@@ -205,7 +205,7 @@ describe('HomePage', () => {
     (fixture.nativeElement.querySelector('[data-testid="today-devotional-card"]') as HTMLButtonElement).click();
     await Promise.resolve();
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/devotionals/steady-grace-for-today');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/devotionals/steady-grace-for-today');
   });
 
   it('shows a devotional empty state when none is available', async () => {

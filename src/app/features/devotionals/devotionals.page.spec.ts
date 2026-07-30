@@ -66,7 +66,7 @@ describe('DevotionalsPage', () => {
     devotionalService = jasmine.createSpyObj<DevotionalService>('DevotionalService', ['getDevotionals']);
     stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
     stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
-    router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl'], { url: '/devotionals' });
+    router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl'], { url: '/tabs/devotionals' });
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
   });
 
@@ -286,7 +286,7 @@ describe('DevotionalsPage', () => {
     button?.click();
     await fixture.whenStable();
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/devotionals/morning-grace');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/devotionals/morning-grace');
   });
 
   it('renders recent devotionals as an editorial reading list beneath the featured card', async () => {
@@ -363,7 +363,7 @@ describe('DevotionalsPage', () => {
 
     await createComponent();
 
-    expect(page.getDevotionalDetailRoute('trusting god/faith')).toBe('/devotionals/trusting%20god%2Ffaith');
+    expect(page.getDevotionalDetailRoute('trusting god/faith')).toBe('/tabs/devotionals/trusting%20god%2Ffaith');
   });
 
   it('returns null for a blank devotional slug', async () => {
@@ -392,7 +392,7 @@ describe('DevotionalsPage', () => {
     const button = fixture.nativeElement.querySelector('[data-testid="featured-devotional-card"]') as HTMLButtonElement | null;
     expect(button?.disabled).toBeFalse();
     expect(button?.getAttribute('aria-label')).toContain('Morning Grace');
-    expect(page.getDevotionalDetailRoute(firstDevotional.slug)).toBe('/devotionals/morning-grace');
+    expect(page.getDevotionalDetailRoute(firstDevotional.slug)).toBe('/tabs/devotionals/morning-grace');
   });
 
   it('does not display internal or admin-only fields', async () => {

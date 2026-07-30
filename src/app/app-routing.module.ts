@@ -187,6 +187,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/devotionals/devotionals.page').then(m => m.DevotionalsPage)
       },
       {
+        path: 'devotionals/:slug',
+        loadComponent: () => import('./features/devotionals/devotional-detail.page').then(m => m.DevotionalDetailPage)
+      },
+      {
         path: 'donate',
         loadComponent: () => import('./features/donations/donate.page').then(m => m.DonatePage)
       },
@@ -308,7 +312,8 @@ export const routes: Routes = [
   },
   {
     path: 'devotionals/:slug',
-    loadComponent: () => import('./features/devotionals/devotional-detail.page').then(m => m.DevotionalDetailPage)
+    redirectTo: 'tabs/devotionals/:slug',
+    pathMatch: 'full'
   },
   {
     path: 'bible-study/:id/read',

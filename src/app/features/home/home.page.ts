@@ -583,7 +583,7 @@ export class HomePage implements OnInit, OnDestroy {
       return null;
     }
 
-    return `/devotionals/${encodeURIComponent(normalizedSlug)}`;
+    return `/tabs/devotionals/${encodeURIComponent(normalizedSlug)}`;
   }
 
   private isRenderableTodayDevotional(devotional: DevotionalPublicDetail | null | undefined): devotional is DevotionalPublicDetail {

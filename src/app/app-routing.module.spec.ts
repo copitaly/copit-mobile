@@ -19,17 +19,21 @@ describe('app routes', () => {
     expect(loadedComponent).toBe(DevotionalsPage);
   });
 
-  it('registers the public devotional detail route after the legacy devotionals redirect', async () => {
-    const listRouteIndex = routes.findIndex((item) => item.path === 'devotionals');
-    const detailRouteIndex = routes.findIndex((item) => item.path === 'devotionals/:slug');
-    const route = routes[detailRouteIndex];
+  it('registers the canonical devotional detail route inside the tabs shell', async () => {
+    const tabsRoute = routes.find((item) => item.path === 'tabs');
+    const route = tabsRoute?.children?.find((item) => item.path === 'devotionals/:slug');
 
-    expect(detailRouteIndex).toBeGreaterThan(listRouteIndex);
     expect(route).toBeDefined();
     expect(route?.loadComponent).toBeDefined();
 
     const loadedComponent = await route?.loadComponent?.();
     expect(loadedComponent).toBe(DevotionalDetailPage);
+  });
+
+  it('redirects the legacy devotional detail route to the canonical tabs detail route', () => {
+    const route = routes.find((item) => item.path === 'devotionals/:slug');
+
+    expect(route?.redirectTo).toBe('tabs/devotionals/:slug');
   });
 
   it('allows /tabs/profile to render directly without the standalone login guard', () => {

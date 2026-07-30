@@ -124,7 +124,7 @@ describe('Tabs routing', () => {
     const tabsRoute = router.config.find((item) => item.path === 'tabs');
     const childPaths = tabsRoute?.children?.map((child) => child.path);
 
-    expect(childPaths).toEqual(['home', 'bible-study', 'prayer', 'devotionals', 'donate', 'community', 'more', 'profile', '']);
+    expect(childPaths).toEqual(['home', 'bible-study', 'prayer', 'devotionals', 'devotionals/:slug', 'donate', 'community', 'more', 'profile', '']);
     expect(tabsRoute?.children?.find((child) => child.path === '')?.redirectTo).toBe('home');
   });
 
@@ -158,6 +158,13 @@ describe('Tabs routing', () => {
     const route = router.config.find((item) => item.path === 'devotionals');
 
     expect(route?.redirectTo).toBe('tabs/devotionals');
+  });
+
+  it('redirects the legacy devotional detail route to the canonical Devotionals tab detail route', async () => {
+    const router = await createRouter();
+    const route = router.config.find((item) => item.path === 'devotionals/:slug');
+
+    expect(route?.redirectTo).toBe('tabs/devotionals/:slug');
   });
 
   it('redirects the legacy /donate route to the canonical Donate tab route', async () => {
