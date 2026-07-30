@@ -7,7 +7,7 @@
     <app-feature-page-shell
       title="Bible Study"
       subtitle="Read published manual details."
-      backFallbackRoute="/bible-study"
+      backFallbackRoute="/tabs/bible-study"
     >
         <div *ngIf="loading" class="skeleton-stack" aria-live="polite" data-testid="loading-state">
           <div class="detail-card skeleton">
@@ -32,7 +32,7 @@
             <h2>Manual not found</h2>
             <p>This Bible Study manual is no longer available or may not be published.</p>
           </div>
-          <ion-button expand="block" class="state-button" routerLink="/bible-study">
+          <ion-button expand="block" class="state-button" routerLink="/tabs/bible-study">
             Back to Bible Study
           </ion-button>
         </div>

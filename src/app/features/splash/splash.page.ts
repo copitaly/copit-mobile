@@ -29,7 +29,7 @@ export class SplashPage implements OnDestroy {
 
     this.navigationStarted = true;
     this.timer = setTimeout(() => {
-      this.router.navigate(['/home'], { replaceUrl: true });
+      this.router.navigate(['/tabs/home'], { replaceUrl: true });
     }, SPLASH_DURATION_MS);
   }
 

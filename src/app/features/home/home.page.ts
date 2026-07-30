@@ -280,7 +280,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   goToCommunity(): void {
-    void this.navigateTo(['/prayer/community']);
+    void this.navigateTo(['/tabs/community']);
   }
 
   goToGive(): void {
@@ -288,11 +288,11 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   goToPrayer(): void {
-    void this.navigateTo(['/prayer']);
+    void this.navigateTo(['/tabs/prayer']);
   }
 
   goToBibleStudy(): void {
-    void this.navigateTo(['/bible-study']);
+    void this.navigateTo(['/tabs/bible-study']);
   }
 
   goToDevotionals(): void {
@@ -305,7 +305,7 @@ export class HomePage implements OnInit, OnDestroy {
       return;
     }
 
-    void this.navigateTo(['/bible-study']);
+    void this.navigateTo(['/tabs/bible-study']);
   }
 
   async openTodayDevotional(): Promise<void> {
@@ -375,7 +375,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   goToAccount(isAuthenticated: boolean | null): void {
-    void this.navigateTo([isAuthenticated ? '/profile' : '/login']);
+    void this.navigateTo([isAuthenticated ? '/tabs/more' : '/login']);
   }
 
   private async loadPersonalization(options?: { preserveCurrent?: boolean }): Promise<void> {

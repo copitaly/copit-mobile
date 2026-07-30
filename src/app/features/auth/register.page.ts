@@ -444,7 +444,7 @@ export class RegisterPage implements OnDestroy {
     private readonly router: Router
   ) {
     if (this.authService.isAuthenticatedSnapshot || !!this.authService.accessTokenSnapshot) {
-      void this.router.navigateByUrl('/profile', { replaceUrl: true });
+      void this.router.navigateByUrl('/tabs/more', { replaceUrl: true });
     }
   }
 
@@ -526,7 +526,7 @@ export class RegisterPage implements OnDestroy {
     this.clearErrorMessage();
     this.authService.register(this.getRegisterPayload()).subscribe({
       next: () => {
-        void this.router.navigateByUrl('/profile', { replaceUrl: true });
+        void this.router.navigateByUrl('/tabs/more', { replaceUrl: true });
       },
       error: (error: unknown) => {
         this.setErrorMessage(this.getRegisterErrorMessage(error));

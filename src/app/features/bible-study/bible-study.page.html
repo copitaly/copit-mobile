@@ -9,8 +9,8 @@
         <app-mobile-header
           title="Bible Study"
           subtitle="Grow in faith through God's Word"
-          [showBack]="true"
-          fallbackRoute="/home"
+          [showBack]="false"
+          fallbackRoute="/tabs/home"
         ></app-mobile-header>
       </header>
 
@@ -74,7 +74,6 @@
           <app-mobile-hero-card
             *ngIf="heroManual"
             data-testid="hero-card"
-            [eyebrow]="heroEyebrow"
             [title]="heroTitle"
             [meta]="heroMeta"
             [detail]="heroDetail"

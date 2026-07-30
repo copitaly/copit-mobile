@@ -279,7 +279,7 @@ export class DeleteAccountPage implements OnInit {
 
         if (!memberProfileLoaded) {
           const redirectReason = wasAuthenticated ? 'missing-member-profile' : 'unauthenticated';
-          void this.navigateByUrl(wasAuthenticated ? '/profile' : '/login', { replaceUrl: true });
+          void this.navigateByUrl(wasAuthenticated ? '/tabs/more' : '/login', { replaceUrl: true });
           return;
         }
 
@@ -295,7 +295,7 @@ export class DeleteAccountPage implements OnInit {
               ? 'member-profile-denied'
               : 'profile-load-error';
         void this.navigateByUrl(
-          redirectReason === 'unauthenticated' ? '/login' : '/profile',
+          redirectReason === 'unauthenticated' ? '/login' : '/tabs/more',
           { replaceUrl: true }
         );
       },

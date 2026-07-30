@@ -344,7 +344,7 @@ export class LoginPage implements OnDestroy {
     private readonly router: Router
   ) {
     if (this.authService.isAuthenticatedSnapshot || !!this.authService.accessTokenSnapshot) {
-      void this.router.navigateByUrl('/profile', { replaceUrl: true });
+      void this.router.navigateByUrl('/tabs/more', { replaceUrl: true });
     }
   }
 
@@ -381,7 +381,7 @@ export class LoginPage implements OnDestroy {
     this.clearErrorMessage();
     this.authService.login(this.form.getRawValue()).subscribe({
       next: () => {
-        void this.router.navigateByUrl('/profile', { replaceUrl: true });
+        void this.router.navigateByUrl('/tabs/more', { replaceUrl: true });
       },
       error: (error: unknown) => {
         this.setErrorMessage(this.getLoginErrorMessage(error));

@@ -69,6 +69,7 @@ describe('ProfilePage', () => {
     router = jasmine.createSpyObj<Router>('Router', ['navigate', 'navigateByUrl']);
     router.navigate.and.returnValue(Promise.resolve(true));
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
+    Object.defineProperty(router, 'url', { value: '/tabs/more' });
     stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
     stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
     authService = {
@@ -138,13 +139,13 @@ describe('ProfilePage', () => {
       title: 'Bible Study',
       subtitle: 'Browse manuals',
       icon: 'book-outline',
-      route: '/bible-study',
+      route: '/tabs/bible-study',
     });
     page.openQuickAction({
       title: 'Bible Study',
       subtitle: 'Browse manuals',
       icon: 'book-outline',
-      route: '/bible-study',
+      route: '/tabs/bible-study',
     });
 
     expect(router.navigateByUrl.calls.count()).toBe(1);
@@ -171,5 +172,12 @@ describe('ProfilePage', () => {
 
     resolveNavigation?.(true);
     await fixture.whenStable();
+  });
+
+  it('renders the More header without a back button on the top-level tabs route', async () => {
+    await createComponent();
+
+    expect(fixture.nativeElement.textContent).toContain('More');
+    expect(fixture.nativeElement.querySelector('.app-header__back')).toBeNull();
   });
 });

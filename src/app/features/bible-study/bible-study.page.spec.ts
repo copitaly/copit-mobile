@@ -91,6 +91,7 @@ describe('BibleStudyPage', () => {
     expect(text).toContain('Featured Bible Study');
     expect(text).toContain('Start Reading');
     expect(text).toContain('Choose a manual to read or download.');
+    expect(text.match(/Featured Bible Study/g)?.length).toBe(1);
   });
 
   it('renders a Continue Reading hero when an existing session snapshot matches a manual', async () => {
@@ -237,7 +238,7 @@ describe('BibleStudyPage', () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/11/read');
   });
 
-  it('configures the list header to fall back to the home screen when there is no history', async () => {
+  it('renders the top-level Bible Study header without a back button', async () => {
     bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
 
     await createComponent();
@@ -245,8 +246,9 @@ describe('BibleStudyPage', () => {
     const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
     expect(header.title).toBe('Bible Study');
     expect(header.subtitle).toBe("Grow in faith through God's Word");
-    expect(header.fallbackRoute).toBe('/home');
-    expect(header.showBack).toBeTrue();
+    expect(header.fallbackRoute).toBe('/tabs/home');
+    expect(header.showBack).toBeFalse();
+    expect(fixture.nativeElement.querySelector('.app-header__back')).toBeNull();
   });
 
   it('does not intentionally render admin-only fields', async () => {

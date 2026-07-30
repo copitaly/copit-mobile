@@ -279,7 +279,7 @@ export class AccountSettingsPage implements OnInit {
           this.sentryTelemetry.addFeatureBreadcrumb('profile', 'Account settings page redirected', {
             reason: redirectReason,
           }, 'warning');
-          void this.navigateByUrl(wasAuthenticated ? '/profile' : '/login', { replaceUrl: true });
+          void this.navigateByUrl(wasAuthenticated ? '/tabs/more' : '/login', { replaceUrl: true });
           return;
         }
 
@@ -300,7 +300,7 @@ export class AccountSettingsPage implements OnInit {
         }, redirectReason === 'profile-load-error' ? 'error' : 'warning');
 
         void this.navigateByUrl(
-          redirectReason === 'unauthenticated' ? '/login' : '/profile',
+          redirectReason === 'unauthenticated' ? '/login' : '/tabs/more',
           { replaceUrl: true }
         );
       },

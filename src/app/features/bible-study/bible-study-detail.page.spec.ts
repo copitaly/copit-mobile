@@ -157,8 +157,16 @@ describe('BibleStudyDetailPage', () => {
     const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
     expect(header.title).toBe('Bible Study');
     expect(header.subtitle).toBe('Read published manual details.');
-    expect(header.fallbackRoute).toBe('/bible-study');
+    expect(header.fallbackRoute).toBe('/tabs/bible-study');
     expect(header.showBack).toBeTrue();
+  });
+
+  it('does not render the tabs bar inside the manual detail flow', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="tabs-bar"]')).toBeNull();
   });
 
   it('shows the generic error state and retries', async () => {

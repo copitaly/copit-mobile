@@ -93,7 +93,7 @@ describe('PrayerMyRequestsPage routing', () => {
 
     const result = TestBed.runInInjectionContext(() => guard(route, [] as never[])) as UrlTree;
 
-    expect(router.serializeUrl(result)).toBe('/prayer');
+    expect(router.serializeUrl(result)).toBe('/tabs/prayer');
   });
 
   it('platform_admin is blocked by the existing guard', async () => {
@@ -107,7 +107,7 @@ describe('PrayerMyRequestsPage routing', () => {
 
     const result = TestBed.runInInjectionContext(() => guard(route, [] as never[])) as UrlTree;
 
-    expect(router.serializeUrl(result)).toBe('/prayer');
+    expect(router.serializeUrl(result)).toBe('/tabs/prayer');
   });
 });
 

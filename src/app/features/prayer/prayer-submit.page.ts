@@ -370,7 +370,7 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
   }
 
   goBackToPrayer(): void {
-    void this.router.navigateByUrl('/prayer');
+    void this.router.navigateByUrl('/tabs/prayer');
   }
 
   goToMyPrayerRequests(): void {

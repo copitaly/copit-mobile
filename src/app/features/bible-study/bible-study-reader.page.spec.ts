@@ -614,7 +614,15 @@ describe('BibleStudyReaderPage', () => {
 
     await page.goBackToManual();
 
-    expect(stackNavigationService.backWithFallback).toHaveBeenCalledWith('/bible-study');
+    expect(stackNavigationService.backWithFallback).toHaveBeenCalledWith('/tabs/bible-study');
+  });
+
+  it('does not render the tabs bar inside the full-screen reader flow', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="tabs-bar"]')).toBeNull();
   });
 
   it('leaving clears timers and viewer source', async () => {

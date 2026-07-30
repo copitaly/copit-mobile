@@ -183,7 +183,7 @@ export class BibleStudyReaderPage implements OnDestroy {
 
   async goBackToManual(): Promise<void> {
     if (!this.manual?.id) {
-      await this.stackNavigation.backWithFallback('/bible-study');
+      await this.stackNavigation.backWithFallback('/tabs/bible-study');
       return;
     }
 
@@ -191,7 +191,7 @@ export class BibleStudyReaderPage implements OnDestroy {
   }
 
   async goBackToList(): Promise<void> {
-    await this.stackNavigation.backWithFallback('/bible-study');
+    await this.stackNavigation.backWithFallback('/tabs/bible-study');
   }
 
   handlePagesLoaded(event: PagesLoadedEvent): void {
@@ -266,7 +266,7 @@ export class BibleStudyReaderPage implements OnDestroy {
   }
 
   get readerBackFallbackRoute(): string {
-    return this.manual?.id ? `/bible-study/${this.manual.id}` : '/bible-study';
+    return this.manual?.id ? `/bible-study/${this.manual.id}` : '/tabs/bible-study';
   }
 
   get readerSubtitle(): string {

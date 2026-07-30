@@ -166,7 +166,7 @@ describe('HomePage', () => {
     page.openFeaturedManual();
     await Promise.resolve();
 
-    expect(router.navigate).toHaveBeenCalledWith(['/bible-study']);
+    expect(router.navigate).toHaveBeenCalledWith(['/tabs/bible-study']);
   });
 
   it('renders the devotional card below the hero when a devotional is available', async () => {
@@ -241,10 +241,10 @@ describe('HomePage', () => {
     await page.goToCommunity();
     await Promise.resolve();
 
-    expect(router.navigate.calls.allArgs()).toContain([['/prayer']]);
-    expect(router.navigate.calls.allArgs()).toContain([['/bible-study']]);
+    expect(router.navigate.calls.allArgs()).toContain([['/tabs/prayer']]);
+    expect(router.navigate.calls.allArgs()).toContain([['/tabs/bible-study']]);
     expect(router.navigate.calls.allArgs()).toContain([['/branches']]);
-    expect(router.navigate.calls.allArgs()).toContain([['/prayer/community']]);
+    expect(router.navigate.calls.allArgs()).toContain([['/tabs/community']]);
   });
 
   it('preserves giving access through the church utility card', async () => {

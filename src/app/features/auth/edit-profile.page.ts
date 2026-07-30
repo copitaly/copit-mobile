@@ -340,7 +340,7 @@ export class EditProfilePage implements OnInit {
         const memberProfileLoaded = !!profile?.id;
         if (!memberProfileLoaded) {
           this.loadRequestInFlight = false;
-          void this.navigateByUrl(wasAuthenticated ? '/profile' : '/login', { replaceUrl: true });
+          void this.navigateByUrl(wasAuthenticated ? '/tabs/more' : '/login', { replaceUrl: true });
           return;
         }
 
@@ -364,7 +364,7 @@ export class EditProfilePage implements OnInit {
         }
 
         if (httpError?.status === 403 || httpError?.status === 404) {
-          void this.navigateByUrl('/profile', { replaceUrl: true });
+          void this.navigateByUrl('/tabs/more', { replaceUrl: true });
           return;
         }
 

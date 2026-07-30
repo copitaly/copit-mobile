@@ -14,9 +14,9 @@ const redirectAuthenticatedAwayFromAuthPages: CanMatchFn = () => {
 
   if (authService.isAuthenticatedSnapshot || !!authService.accessTokenSnapshot) {
     sentryTelemetry.addFeatureBreadcrumb('auth', 'Route guard redirected authenticated user', {
-      route: '/profile',
+      route: '/tabs/more',
     });
-    return router.parseUrl('/profile');
+    return router.parseUrl('/tabs/more');
   }
 
   return true;
@@ -32,7 +32,7 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
   const routePath = `/${route.path ?? 'profile/account-settings'}`;
   const feature = (route.data?.['memberFeature'] === 'app' ? 'app' : 'profile') as FeatureArea;
   const unauthenticatedRedirect = String(route.data?.['unauthenticatedRedirect'] ?? '/login');
-  const forbiddenRedirect = String(route.data?.['forbiddenRedirect'] ?? '/profile');
+  const forbiddenRedirect = String(route.data?.['forbiddenRedirect'] ?? '/tabs/more');
   const deniedRoute = routePath === '/my-requests' ? '/prayer/my-requests' : routePath;
 
   if (!isAuthenticated) {
@@ -142,8 +142,40 @@ export const routes: Routes = [
     loadComponent: () => import('./features/splash/splash.page').then(m => m.SplashPage)
   },
   {
+    path: 'tabs',
+    loadComponent: () => import('./features/tabs/tabs.page').then(m => m.TabsPage),
+    children: [
+      {
+        path: 'home',
+        loadComponent: () => import('./features/home/home.page').then(m => m.HomePage)
+      },
+      {
+        path: 'bible-study',
+        loadComponent: () => import('./features/bible-study/bible-study.page').then(m => m.BibleStudyPage)
+      },
+      {
+        path: 'prayer',
+        loadComponent: () => import('./features/prayer/prayer.page').then(m => m.PrayerPage)
+      },
+      {
+        path: 'community',
+        loadComponent: () => import('./features/prayer/prayer-community.page').then(m => m.PrayerCommunityPage)
+      },
+      {
+        path: 'more',
+        loadComponent: () => import('./features/auth/profile.page').then(m => m.ProfilePage)
+      },
+      {
+        path: '',
+        redirectTo: 'home',
+        pathMatch: 'full'
+      }
+    ]
+  },
+  {
     path: 'home',
-    loadComponent: () => import('./features/home/home.page').then(m => m.HomePage)
+    redirectTo: 'tabs/home',
+    pathMatch: 'full'
   },
   {
     path: 'login',
@@ -167,19 +199,19 @@ export const routes: Routes = [
   {
     path: 'profile/account-settings/edit-profile',
     canMatch: [allowAuthenticatedMembersOnly],
-    data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/profile' },
+    data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/tabs/more' },
     loadComponent: () => import('./features/auth/edit-profile.page').then(m => m.EditProfilePage)
   },
   {
     path: 'profile/account-settings/delete-account',
     canMatch: [allowAuthenticatedMembersOnly],
-    data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/profile' },
+    data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/tabs/more' },
     loadComponent: () => import('./features/auth/delete-account.page').then(m => m.DeleteAccountPage)
   },
   {
     path: 'profile/account-settings',
     canMatch: [allowAuthenticatedMembersOnly],
-    data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/profile' },
+    data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/tabs/more' },
     loadComponent: () => import('./features/auth/account-settings.page').then(m => m.AccountSettingsPage)
   },
   {
@@ -188,7 +220,8 @@ export const routes: Routes = [
   },
   {
     path: 'profile',
-    loadComponent: () => import('./features/auth/profile.page').then(m => m.ProfilePage)
+    redirectTo: 'tabs/more',
+    pathMatch: 'full'
   },
   {
     path: 'my-donations',
@@ -209,11 +242,18 @@ export const routes: Routes = [
   },
   {
     path: 'prayer',
-    loadComponent: () => import('./features/prayer/prayer.page').then(m => m.PrayerPage)
+    redirectTo: 'tabs/prayer',
+    pathMatch: 'full'
   },
   {
     path: 'bible-study',
-    loadComponent: () => import('./features/bible-study/bible-study.page').then(m => m.BibleStudyPage)
+    redirectTo: 'tabs/bible-study',
+    pathMatch: 'full'
+  },
+  {
+    path: 'community',
+    redirectTo: 'tabs/community',
+    pathMatch: 'full'
   },
   {
     path: 'devotionals',
@@ -237,12 +277,13 @@ export const routes: Routes = [
   },
   {
     path: 'prayer/community',
-    loadComponent: () => import('./features/prayer/prayer-community.page').then(m => m.PrayerCommunityPage)
+    redirectTo: 'tabs/community',
+    pathMatch: 'full'
   },
   {
     path: 'prayer/my-requests',
     canMatch: [allowAuthenticatedMembersOnly],
-    data: { memberFeature: 'app', unauthenticatedRedirect: '/login', forbiddenRedirect: '/prayer' },
+    data: { memberFeature: 'app', unauthenticatedRedirect: '/login', forbiddenRedirect: '/tabs/prayer' },
     loadComponent: () => import('./features/prayer/prayer-my-requests.page').then(m => m.PrayerMyRequestsPage)
   },
   {

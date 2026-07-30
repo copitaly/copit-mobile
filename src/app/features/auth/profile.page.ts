@@ -27,7 +27,11 @@ type QuickAction = {
     <ion-page>
       <ion-content fullscreen class="profile-content">
         <div class="profile-hero app-header app-header--inner">
-          <app-mobile-header title="My Profile" fallbackRoute="/home"></app-mobile-header>
+          <app-mobile-header
+            [title]="headerTitle"
+            [showBack]="!isTabsMoreRoute"
+            fallbackRoute="/tabs/home"
+          ></app-mobile-header>
         </div>
 
         <div class="surface profile-surface">
@@ -447,7 +451,7 @@ export class ProfilePage implements OnInit, OnDestroy {
       title: 'Bible Study',
       subtitle: 'Browse published Bible Study manuals',
       icon: 'book-outline',
-      route: '/bible-study',
+      route: '/tabs/bible-study',
     },
     {
       title: 'My Prayer Requests',
@@ -510,6 +514,14 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   get visibleQuickActions(): QuickAction[] {
     return this.quickActions.filter((action) => !action.membersOnly || this.resolvedRole === 'member');
+  }
+
+  get isTabsMoreRoute(): boolean {
+    return this.router.url.startsWith('/tabs/more');
+  }
+
+  get headerTitle(): string {
+    return this.isTabsMoreRoute ? 'More' : 'My Profile';
   }
 
   get resolvedRole(): string | null {
@@ -598,7 +610,7 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
   goHome(): void {
-    void this.router.navigate(['/home']);
+    void this.router.navigate(['/tabs/home']);
   }
 
   goToLogin(): void {

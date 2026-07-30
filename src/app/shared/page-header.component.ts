@@ -358,7 +358,7 @@ export class PageHeaderComponent {
         return;
       }
 
-      const profileRoute = this.authService.isAuthenticatedSnapshot ? '/profile' : '/login';
+      const profileRoute = this.authService.isAuthenticatedSnapshot ? '/tabs/more' : '/login';
       await this.router.navigateByUrl(profileRoute);
     } finally {
       this.navigationPending = false;
