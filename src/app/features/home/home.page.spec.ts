@@ -246,8 +246,8 @@ describe('HomePage', () => {
     await page.goToCommunity();
     await Promise.resolve();
 
-    expect(router.navigate.calls.allArgs()).toContain([['/prayer']]);
-    expect(router.navigate.calls.allArgs()).toContain([['/community']]);
+    expect(router.navigateByUrl.calls.allArgs()).toContain(['/prayer']);
+    expect(router.navigateByUrl.calls.allArgs()).toContain(['/community']);
   });
 
   it('keeps guest account navigation unchanged', async () => {
@@ -256,7 +256,19 @@ describe('HomePage', () => {
     (fixture.nativeElement.querySelector('[data-testid="account-button"]') as HTMLButtonElement).click();
     await Promise.resolve();
 
-    expect(router.navigate).toHaveBeenCalledWith(['/login']);
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/login');
+  });
+
+  it('sends authenticated account navigation to the profile tab', async () => {
+    authState$.next(true);
+    authServiceStub.isAuthenticatedSnapshot = true;
+
+    fixture = await createComponent();
+
+    (fixture.nativeElement.querySelector('[data-testid="account-button"]') as HTMLButtonElement).click();
+    await Promise.resolve();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/profile');
   });
 
   it('shows the authenticated greeting support text when a first name exists', async () => {
@@ -324,6 +336,6 @@ describe('HomePage', () => {
     page.goToPrayer();
     page.goToPrayer();
 
-    expect(router.navigate.calls.count()).toBe(1);
+    expect(router.navigateByUrl.calls.count()).toBe(1);
   });
 });

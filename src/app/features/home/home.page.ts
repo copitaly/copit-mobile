@@ -280,7 +280,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   goToCommunity(): void {
-    void this.navigateTo(['/community']);
+    void this.navigateTo('/community', true);
   }
 
   goToGive(): void {
@@ -288,19 +288,19 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   goToPrayer(): void {
-    void this.navigateTo(['/prayer']);
+    void this.navigateTo('/prayer', true);
   }
 
   goToProfile(): void {
-    void this.navigateTo([this.authService.isAuthenticatedSnapshot ? '/tabs/more' : '/login']);
+    void this.navigateTo(this.authService.isAuthenticatedSnapshot ? '/tabs/profile' : '/login', true);
   }
 
   goToBibleStudy(): void {
-    void this.navigateTo(['/tabs/bible-study']);
+    void this.navigateTo('/tabs/bible-study', true);
   }
 
   goToDevotionals(): void {
-    void this.navigateTo(['/devotionals']);
+    void this.navigateTo('/tabs/devotionals', true);
   }
 
   openFeaturedManual(): void {
@@ -379,7 +379,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   goToAccount(isAuthenticated: boolean | null): void {
-    void this.navigateTo([isAuthenticated ? '/tabs/more' : '/login']);
+    void this.navigateTo(isAuthenticated ? '/tabs/profile' : '/login', true);
   }
 
   private async loadPersonalization(options?: { preserveCurrent?: boolean }): Promise<void> {

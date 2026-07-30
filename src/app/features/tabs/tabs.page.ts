@@ -20,50 +20,32 @@ type PrimaryTab = {
   imports: [CommonModule, IonicModule, RouterModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <ion-page>
-      <ion-tabs class="app-tabs" data-testid="tabs-shell">
-        <ion-router-outlet></ion-router-outlet>
-
-        <ion-tab-bar slot="bottom" class="app-tabs__bar" data-testid="tabs-bar">
-          <ion-tab-button
-            *ngFor="let tab of tabs"
-            class="app-tabs__button"
-            [class.app-tabs__button--active]="isActiveTab(tab.key)"
-            [tab]="tab.key"
-            [routerLink]="tab.route"
-            [attr.aria-current]="isActiveTab(tab.key) ? 'page' : null"
-            [attr.data-testid]="'tab-button-' + tab.key"
-          >
-            <ion-icon
-              class="app-tabs__icon"
-              [name]="isActiveTab(tab.key) ? tab.activeIcon : tab.inactiveIcon"
-              aria-hidden="true"
-            ></ion-icon>
-            <ion-label>{{ tab.label }}</ion-label>
-          </ion-tab-button>
-        </ion-tab-bar>
-      </ion-tabs>
-    </ion-page>
+    <ion-tabs class="app-tabs" data-testid="tabs-shell">
+      <ion-tab-bar slot="bottom" class="app-tabs__bar" data-testid="tabs-bar">
+        <ion-tab-button
+          *ngFor="let tab of tabs"
+          class="app-tabs__button"
+          [class.app-tabs__button--active]="isActiveTab(tab.key)"
+          [tab]="tab.key"
+          [href]="tab.route"
+          [attr.aria-current]="isActiveTab(tab.key) ? 'page' : null"
+          [attr.data-testid]="'tab-button-' + tab.key"
+        >
+          <ion-icon
+            class="app-tabs__icon"
+            [name]="isActiveTab(tab.key) ? tab.activeIcon : tab.inactiveIcon"
+            aria-hidden="true"
+          ></ion-icon>
+          <ion-label>{{ tab.label }}</ion-label>
+        </ion-tab-button>
+      </ion-tab-bar>
+    </ion-tabs>
   `,
   styles: [
     `
-      :host,
-      ion-page,
-      .app-tabs {
-        display: flex;
-        flex-direction: column;
+      :host {
+        display: block;
         height: 100%;
-        min-height: 100%;
-      }
-
-      ion-tabs.app-tabs {
-        height: 100%;
-        flex: 1 1 auto;
-      }
-
-      .app-tabs ion-router-outlet {
-        flex: 1 1 auto;
-        min-height: 0;
       }
 
       .app-tabs__bar {

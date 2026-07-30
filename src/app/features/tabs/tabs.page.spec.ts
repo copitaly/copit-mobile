@@ -46,6 +46,19 @@ describe('TabsPage', () => {
     expect(labels).toEqual(['Home', 'Bible Study', 'Devotionals', 'Donate', 'Profile']);
   });
 
+  it('uses ion-tabs as the shell root so the routed outlet is not wrapped in an extra ion-page layer', async () => {
+    await createComponent();
+
+    expect(fixture.nativeElement.firstElementChild?.tagName.toLowerCase()).toBe('ion-tabs');
+    expect(fixture.nativeElement.querySelector('ion-page')).toBeNull();
+  });
+
+  it('keeps the tabs shell free of a manually nested ion-router-outlet', async () => {
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('ion-tabs > ion-router-outlet')).toBeNull();
+  });
+
   it('marks the Bible tab active on the Bible Study tab route', async () => {
     await createComponent('/tabs/bible-study');
 
