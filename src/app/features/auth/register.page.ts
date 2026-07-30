@@ -2,16 +2,18 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
 import { AuthService } from '../../core/services/auth.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import {
   AUTH_PASSWORD_MIN_LENGTH,
+  AUTH_FALLBACK_RETURN_URL,
   extractFirstFieldError,
   getAuthNetworkMessage,
   passwordStrengthValidator,
+  sanitizeAuthReturnUrl,
   trimmedRequiredValidator,
   emailFormatValidator,
 } from './auth-form.utils';
@@ -37,7 +39,7 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
           <app-mobile-header
             title="Create account"
             subtitle="Start giving with your profile"
-            fallbackRoute="/tabs/home"
+            [fallbackRoute]="loginRoute"
           ></app-mobile-header>
         </div>
 
@@ -230,62 +232,24 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
         flex-direction: column;
       }
 
-      .auth-hero {
-        width: 100%;
-        padding-bottom: 1.75rem;
-        background: #0b1d73;
-      }
+      .auth-hero {width:100%;padding-bottom:1.9rem;background:#0b1d73}
 
-      .auth-surface {
-        flex: 1;
-        margin-top: -0.08rem;
-        padding-top: 1.25rem;
-        background: #f4f7ff;
-        box-shadow: 0 -6px 22px rgba(2, 18, 54, 0.08);
-        border-radius: 24px 24px 0 0;
-      }
+      .auth-surface {flex:1;margin-top:-.08rem;padding-top:1.3rem;background:#f4f7ff;box-shadow:0 -8px 24px rgba(2,18,54,.08);border-radius:26px 26px 0 0}
 
-      .auth-surface__content {
-        width: 100%;
-        max-width: 456px;
-        margin: 0 auto;
-        gap: 0;
-        padding-top: 0.35rem;
-        padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
-      }
+      .auth-surface__content {width:100%;max-width:456px;margin:0 auto;gap:0;padding:.4rem 1rem calc(1.5rem + env(safe-area-inset-bottom))}
 
-      .auth-card {
-        background: #ffffff;
-        border-radius: 22px;
-        box-shadow: 0 14px 36px rgba(6, 21, 74, 0.1);
-        padding: 1.25rem;
-      }
+      .auth-card {background:#fff;border-radius:24px;box-shadow:0 14px 36px rgba(6,21,74,.1);padding:1.3rem}
 
-      .auth-form {
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-      }
+      .auth-form {display:flex;flex-direction:column;gap:.2rem}
 
-      .name-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.8rem;
-      }
+      .name-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}
 
       .field-group {
         display: flex;
         flex-direction: column;
       }
 
-      .auth-label {
-        display: block;
-        margin: 0 0 0.5rem;
-        color: #304468;
-        font-size: 0.9rem;
-        font-weight: 600;
-        line-height: 1.3;
-      }
+      .auth-label {display:block;margin:0 0 .48rem;color:#304468;font-size:.88rem;font-weight:700;line-height:1.3}
 
       .auth-field {
         --background: #f2f3f6;
@@ -338,12 +302,7 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
         font-size: 1.05rem;
       }
 
-      .auth-feedback {
-        min-height: 1.45rem;
-        display: flex;
-        align-items: center;
-        margin: 0 0 0.45rem;
-      }
+      .auth-feedback {min-height:1.45rem;display:flex;align-items:center;margin:0 0 .55rem}
 
       .auth-feedback--visible {
         min-height: auto;
@@ -375,13 +334,7 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
         filter: saturate(0.8);
       }
 
-      .auth-login-copy {
-        margin: 1.25rem 0 0;
-        text-align: center;
-        color: #41557a;
-        font-size: 1rem;
-        line-height: 1.45;
-      }
+      .auth-login-copy {margin:1.35rem 0 0;text-align:center;color:#41557a;font-size:1rem;line-height:1.45}
 
       .auth-link {
         border: 0;
@@ -392,14 +345,7 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
         padding: 0;
       }
 
-      .auth-legal {
-        margin: 1.2rem auto 0;
-        text-align: center;
-        color: rgba(55, 73, 109, 0.76);
-        font-size: 0.88rem;
-        line-height: 1.45;
-        padding: 0 0.6rem 0;
-      }
+      .auth-legal {margin:1.05rem auto 0;text-align:center;color:rgba(55,73,109,.76);font-size:.88rem;line-height:1.45;padding:0 .6rem}
 
       @media (max-width: 420px) {
         .name-grid {
@@ -436,15 +382,24 @@ export class RegisterPage implements OnDestroy {
   errorMessage = '';
   showPassword = false;
   showConfirmPassword = false;
+  readonly returnUrl: string;
+  readonly loginRoute: string;
   private errorDismissTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private readonly authService: AuthService,
     private readonly formBuilder: FormBuilder,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly route: ActivatedRoute
   ) {
+    this.returnUrl = sanitizeAuthReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'), AUTH_FALLBACK_RETURN_URL);
+    this.loginRoute =
+      this.returnUrl === AUTH_FALLBACK_RETURN_URL
+        ? '/login'
+        : `/login?returnUrl=${encodeURIComponent(this.returnUrl)}`;
+
     if (this.authService.isAuthenticatedSnapshot || !!this.authService.accessTokenSnapshot) {
-      void this.router.navigateByUrl('/tabs/more', { replaceUrl: true });
+      void this.router.navigateByUrl(this.returnUrl, { replaceUrl: true });
     }
   }
 
@@ -526,7 +481,7 @@ export class RegisterPage implements OnDestroy {
     this.clearErrorMessage();
     this.authService.register(this.getRegisterPayload()).subscribe({
       next: () => {
-        void this.router.navigateByUrl('/tabs/more', { replaceUrl: true });
+        void this.router.navigateByUrl(this.returnUrl, { replaceUrl: true });
       },
       error: (error: unknown) => {
         this.setErrorMessage(this.getRegisterErrorMessage(error));
@@ -552,7 +507,9 @@ export class RegisterPage implements OnDestroy {
   }
 
   goToLogin(): void {
-    void this.router.navigate(['/login']);
+    void this.router.navigate(['/login'], {
+      queryParams: this.returnUrl === AUTH_FALLBACK_RETURN_URL ? undefined : { returnUrl: this.returnUrl },
+    });
   }
 
   private getRegisterPayload() {

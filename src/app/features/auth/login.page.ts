@@ -2,12 +2,12 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, ViewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { IonInput, IonicModule } from '@ionic/angular';
 
 import { AuthService } from '../../core/services/auth.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
-import { getAuthNetworkMessage, trimmedRequiredValidator } from './auth-form.utils';
+import { AUTH_FALLBACK_RETURN_URL, getAuthNetworkMessage, sanitizeAuthReturnUrl, trimmedRequiredValidator } from './auth-form.utils';
 
 @Component({
   standalone: true,
@@ -144,44 +144,15 @@ import { getAuthNetworkMessage, trimmedRequiredValidator } from './auth-form.uti
         flex-direction: column;
       }
 
-      .auth-hero {
-        width: 100%;
-        padding-bottom: 1.75rem;
-        background: #0b1d73;
-      }
+      .auth-hero {width:100%;padding-bottom:1.9rem;background:#0b1d73}
 
-      .auth-surface {
-        flex: 1;
-        margin-top: -0.08rem;
-        padding-top: 1.25rem;
-        background: #f4f7ff;
-        box-shadow: 0 -6px 22px rgba(2, 18, 54, 0.08);
-        border-radius: 24px 24px 0 0;
-      }
+      .auth-surface {flex:1;margin-top:-.08rem;padding-top:1.3rem;background:#f4f7ff;box-shadow:0 -8px 24px rgba(2,18,54,.08);border-radius:26px 26px 0 0}
 
-      .auth-surface__content {
-        width: 100%;
-        max-width: 420px;
-        margin: 0 auto;
-        gap: 0;
-        padding-top: 0.35rem;
-        padding-bottom: calc(1.1rem + env(safe-area-inset-bottom));
-      }
+      .auth-surface__content {width:100%;max-width:420px;margin:0 auto;gap:0;padding:.4rem 1rem calc(1.5rem + env(safe-area-inset-bottom))}
 
-      .auth-form,
-      .field-group {
-        display: flex;
-        flex-direction: column;
-      }
+      .auth-form,.field-group{display:flex;flex-direction:column}.auth-form{gap:.2rem}
 
-      .auth-label {
-        display: block;
-        margin: 0 0 0.42rem;
-        color: #304468;
-        font-size: 0.9rem;
-        font-weight: 600;
-        line-height: 1.3;
-      }
+      .auth-label {display:block;margin:0 0 .46rem;color:#304468;font-size:.88rem;font-weight:700;line-height:1.3}
 
       .auth-field {
         --background: #f2f3f6;
@@ -212,11 +183,7 @@ import { getAuthNetworkMessage, trimmedRequiredValidator } from './auth-form.uti
         line-height: 1.35;
       }
 
-      .forgot-row {
-        display: flex;
-        justify-content: flex-end;
-        margin: -0.2rem 0 0.8rem;
-      }
+      .forgot-row {display:flex;justify-content:flex-end;margin:-.05rem 0 .95rem}
 
       .forgot-link {
         border: 0;
@@ -250,12 +217,7 @@ import { getAuthNetworkMessage, trimmedRequiredValidator } from './auth-form.uti
         font-size: 1.05rem;
       }
 
-      .auth-feedback {
-        min-height: 1.6rem;
-        display: flex;
-        align-items: center;
-        margin: 0 0 0.45rem;
-      }
+      .auth-feedback {min-height:1.6rem;display:flex;align-items:center;margin:0 0 .55rem}
 
       .auth-feedback--visible {
         min-height: auto;
@@ -281,13 +243,7 @@ import { getAuthNetworkMessage, trimmedRequiredValidator } from './auth-form.uti
         filter: saturate(0.8);
       }
 
-      .auth-register-copy {
-        margin: 1.3rem 0 0;
-        text-align: center;
-        color: #41557a;
-        font-size: 1rem;
-        line-height: 1.45;
-      }
+      .auth-register-copy {margin:1.45rem 0 0;text-align:center;color:#41557a;font-size:1rem;line-height:1.45}
 
       .auth-link {
         border: 0;
@@ -304,14 +260,7 @@ import { getAuthNetworkMessage, trimmedRequiredValidator } from './auth-form.uti
         line-height: 1.35;
       }
 
-      .auth-legal {
-        margin: 0.95rem auto 0;
-        text-align: center;
-        color: rgba(55, 73, 109, 0.76);
-        font-size: 0.88rem;
-        line-height: 1.45;
-        padding: 0 0.4rem 0;
-      }
+      .auth-legal {margin:1.05rem auto 0;text-align:center;color:rgba(55,73,109,.76);font-size:.88rem;line-height:1.45;padding:0 .4rem}
 
       @media (max-height: 760px) {
         .auth-surface {
@@ -336,15 +285,19 @@ export class LoginPage implements OnDestroy {
   loading = false;
   errorMessage = '';
   showPassword = false;
+  readonly returnUrl: string;
   private errorDismissTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private readonly authService: AuthService,
     private readonly formBuilder: FormBuilder,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly route: ActivatedRoute
   ) {
+    this.returnUrl = sanitizeAuthReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'), AUTH_FALLBACK_RETURN_URL);
+
     if (this.authService.isAuthenticatedSnapshot || !!this.authService.accessTokenSnapshot) {
-      void this.router.navigateByUrl('/tabs/more', { replaceUrl: true });
+      void this.router.navigateByUrl(this.returnUrl, { replaceUrl: true });
     }
   }
 
@@ -381,7 +334,7 @@ export class LoginPage implements OnDestroy {
     this.clearErrorMessage();
     this.authService.login(this.form.getRawValue()).subscribe({
       next: () => {
-        void this.router.navigateByUrl('/tabs/more', { replaceUrl: true });
+        void this.router.navigateByUrl(this.returnUrl, { replaceUrl: true });
       },
       error: (error: unknown) => {
         this.setErrorMessage(this.getLoginErrorMessage(error));
@@ -397,7 +350,9 @@ export class LoginPage implements OnDestroy {
   }
 
   goToRegister(): void {
-    void this.router.navigate(['/register']);
+    void this.router.navigate(['/register'], {
+      queryParams: this.returnUrl === AUTH_FALLBACK_RETURN_URL ? undefined : { returnUrl: this.returnUrl },
+    });
   }
 
   togglePasswordVisibility(): void {

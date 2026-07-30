@@ -3,6 +3,7 @@ import { CanMatchFn, PreloadAllModules, Router, RouterModule, Routes } from '@an
 import { catchError, map, of } from 'rxjs';
 import { AuthService } from './core/services/auth.service';
 import { FeatureArea, SentryTelemetryService } from './core/services/sentry-telemetry.service';
+import { AUTH_FALLBACK_RETURN_URL, sanitizeAuthReturnUrl } from './features/auth/auth-form.utils';
 
 const normalizeRole = (role: string | null | undefined): string | null =>
   typeof role === 'string' && role.trim() ? role.trim().toLowerCase() : null;
@@ -22,6 +23,35 @@ const redirectAuthenticatedAwayFromAuthPages: CanMatchFn = () => {
   return true;
 };
 
+const redirectUnauthenticatedToLogin = (router: Router, returnUrl: string) =>
+  router.createUrlTree(['/login'], {
+    queryParams: {
+      returnUrl: sanitizeAuthReturnUrl(returnUrl, AUTH_FALLBACK_RETURN_URL),
+    },
+  });
+
+const allowAuthenticatedUsersOnly: CanMatchFn = (route) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+  const sentryTelemetry = inject(SentryTelemetryService);
+
+  if (authService.isAuthenticatedSnapshot || !!authService.accessTokenSnapshot) {
+    return true;
+  }
+
+  const deniedRoute = String(route.data?.['returnUrl'] ?? '/tabs/profile');
+  sentryTelemetry.addFeatureBreadcrumb(
+    'profile',
+    'Route guard redirected unauthenticated user',
+    {
+      route: deniedRoute,
+      reason: 'unauthenticated',
+    },
+    'warning'
+  );
+  return redirectUnauthenticatedToLogin(router, deniedRoute);
+};
+
 const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
   const authService = inject(AuthService);
   const router = inject(Router);
@@ -32,6 +62,7 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
   const routePath = `/${route.path ?? 'profile/account-settings'}`;
   const feature = (route.data?.['memberFeature'] === 'app' ? 'app' : 'profile') as FeatureArea;
   const unauthenticatedRedirect = String(route.data?.['unauthenticatedRedirect'] ?? '/login');
+  const unauthenticatedReturnUrl = String(route.data?.['unauthenticatedReturnUrl'] ?? routePath);
   const forbiddenRedirect = String(route.data?.['forbiddenRedirect'] ?? '/tabs/profile');
   const deniedRoute = routePath === '/my-requests' ? '/prayer/my-requests' : routePath;
 
@@ -50,7 +81,9 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
       deniedReason: 'unauthenticated',
       allowed: false,
     });
-    return router.parseUrl(unauthenticatedRedirect);
+    return unauthenticatedRedirect === '/login'
+      ? redirectUnauthenticatedToLogin(router, deniedRoute === routePath ? unauthenticatedReturnUrl : deniedRoute)
+      : router.parseUrl(unauthenticatedRedirect);
   }
 
   if (user?.role) {
@@ -114,7 +147,11 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
         deniedReason,
         allowed: false,
       });
-      return router.parseUrl(!resolvedProfile ? unauthenticatedRedirect : forbiddenRedirect);
+      return !resolvedProfile
+        ? unauthenticatedRedirect === '/login'
+          ? redirectUnauthenticatedToLogin(router, deniedRoute === routePath ? unauthenticatedReturnUrl : deniedRoute)
+          : router.parseUrl(unauthenticatedRedirect)
+        : router.parseUrl(forbiddenRedirect);
     }),
     catchError(() => {
       sentryTelemetry.addFeatureBreadcrumb(feature, 'Route guard redirected member access', {
@@ -131,7 +168,11 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
         deniedReason: 'profile-load-error',
         allowed: false,
       });
-      return of(router.parseUrl(unauthenticatedRedirect));
+      return of(
+        unauthenticatedRedirect === '/login'
+          ? redirectUnauthenticatedToLogin(router, deniedRoute === routePath ? unauthenticatedReturnUrl : deniedRoute)
+          : router.parseUrl(unauthenticatedRedirect)
+      );
     })
   );
 };
@@ -178,6 +219,8 @@ export const routes: Routes = [
       },
       {
         path: 'profile',
+        canMatch: [allowAuthenticatedUsersOnly],
+        data: { returnUrl: '/tabs/profile' },
         loadComponent: () => import('./features/auth/profile.page').then(m => m.ProfilePage)
       },
       {
