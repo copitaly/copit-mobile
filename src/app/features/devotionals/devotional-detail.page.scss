@@ -11,9 +11,10 @@
   --background: rgba(247, 248, 250, 0.92);
   --border-color: transparent;
   --min-height: 56px;
-  --padding-top: calc(var(--app-safe-area-top) + 0.2rem);
-  --padding-start: 0.35rem;
-  --padding-end: 0.35rem;
+  --padding-top: var(--app-safe-area-top);
+  --padding-bottom: 0;
+  --padding-start: 0.4rem;
+  --padding-end: 0.4rem;
 }
 
 .devotional-reader-header ion-back-button,
@@ -34,10 +35,10 @@
 .devotional-reader-shell {
   gap: 1rem;
   padding:
-    calc(var(--app-safe-area-top) + 4.5rem)
-    calc(var(--app-safe-area-right) + 1rem)
+    4.25rem
+    calc(var(--app-safe-area-right) + 0.7rem)
     calc(var(--app-safe-area-bottom) + 1.35rem)
-    calc(var(--app-safe-area-left) + 1rem);
+    calc(var(--app-safe-area-left) + 0.7rem);
 }
 
 .reader-article,
@@ -54,7 +55,7 @@
 .reader-article__media,
 .detail-card__cover-skeleton {
   width: 100%;
-  aspect-ratio: 16 / 8.7;
+  aspect-ratio: 16 / 8.9;
 }
 
 .reader-article__media {
@@ -65,17 +66,19 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center top;
+  background: #f4f6fb;
 }
 
 .reader-article__section {
-  gap: 0.85rem;
-  padding: 1.2rem 1.1rem;
+  gap: 1rem;
+  padding: 1.25rem 1.15rem;
 }
 
 .reader-article__section--header {
-  gap: 0.8rem;
-  padding-top: 1.3rem;
+  gap: 1.05rem;
+  padding-top: 1.4rem;
 }
 
 .reader-article__section--inset,
@@ -107,8 +110,12 @@
 
 .reader-article h1 {
   font-size: 1.88rem;
-  line-height: 1.08;
+  line-height: 1.16;
   letter-spacing: -0.035em;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
 }
 
 .reader-article h2 {
@@ -144,13 +151,13 @@
 
 .reading-copy {
   display: grid;
-  gap: 1rem;
+  gap: 1.08rem;
 }
 
 .reading-paragraph {
   color: #24314f;
   font-size: 1.03rem;
-  line-height: 1.67;
+  line-height: 1.72;
 }
 
 .preserve-lines {
@@ -238,7 +245,7 @@
 
 @media (max-width: 480px) {
   .devotional-reader-shell {
-    padding-top: calc(var(--app-safe-area-top) + 4.2rem);
+    padding-top: 4rem;
   }
 
   .reader-article,
@@ -247,21 +254,22 @@
   }
 
   .reader-article__section {
-    padding: 1rem;
+    padding: 1.1rem 1rem;
   }
 
   .reader-article__section--header {
-    gap: 0.72rem;
-    padding-top: 1.15rem;
+    gap: 0.92rem;
+    padding-top: 1.22rem;
   }
 
   .reader-article h1 {
     font-size: 1.62rem;
-    line-height: 1.12;
+    line-height: 1.18;
   }
 
   .reading-paragraph {
     font-size: 1rem;
+    line-height: 1.7;
   }
 
   .reader-article__footer {
