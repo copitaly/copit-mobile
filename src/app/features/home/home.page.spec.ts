@@ -221,7 +221,10 @@ describe('HomePage', () => {
     fixture = await createComponent();
 
     expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-empty"]')?.textContent).toContain(
-      'No devotional is available right now.'
+      "Today's devotional isn't available yet."
+    );
+    expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-empty"]')?.textContent).toContain(
+      'Check back later today.'
     );
   });
 

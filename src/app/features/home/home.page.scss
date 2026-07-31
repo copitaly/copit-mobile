@@ -11,7 +11,7 @@ ion-page {
   position: relative;
   z-index: 1;
   min-height: 100%;
-  gap: 1.3rem;
+  gap: 1.05rem;
 }
 
 .greet,
@@ -130,7 +130,7 @@ ion-page {
 }
 
 .hero__media {
-  height: clamp(18.75rem, 83vw, 21.25rem);
+  height: clamp(15.5rem, 68vw, 17.4rem);
   background: linear-gradient(140deg, #0b1d73, #17369b 62%, #d5a62f 140%);
 }
 
@@ -138,8 +138,9 @@ ion-page {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
-  object-position: center 22%;
+  object-fit: contain;
+  object-position: center top;
+  background: #f6f7fb;
 }
 
 .hero__media--fallback,
@@ -158,19 +159,18 @@ ion-page {
 
 .hero__body {
   padding: 1.05rem 1.15rem 1.15rem;
-  gap: 0;
 }
 
 .hero__body .cop-eyebrow {
-  margin-bottom: 0.48rem;
-}
-
-.hero__body h2 {
   margin-bottom: 0.62rem;
 }
 
+.hero__body h2 {
+  margin-bottom: 0.76rem;
+}
+
 .hero__body .cop-metadata {
-  margin-bottom: 1rem;
+  margin-bottom: 1.08rem;
 }
 
 .hero__cta,
@@ -261,11 +261,10 @@ ion-page {
 .mini__meta {
   color: rgba(5, 23, 61, 0.56);
 }
-
 .mini__cta {
   color: #0b1d73;
   font-weight: 600;
-  gap: 0.15rem;
+  gap: .15rem;
 }
 
 .mini--devotional {
@@ -282,24 +281,37 @@ ion-page {
 }
 
 .utility {
-  gap: 1rem;
-  padding: 1rem;
+  gap: 0.82rem;
+  padding: 0.92rem 1rem;
 }
 
-.utility h3,
-.utility p {
-  margin-top: 0.15rem;
+.utility__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.72rem;
+  flex-wrap: wrap;
 }
 
-.utility__btn {
-  position: relative;
-  z-index: 3;
-  pointer-events: auto;
+.utility__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: rgba(11, 29, 115, 0.08);
+  color: #0b1d73;
+  flex-shrink: 0;
+}
+
+.utility__actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.68rem;
 }
 
 .utility__btn--solid {
   width: 100%;
-  margin-top: 0.15rem;
   border: 0;
   background: #0b1d73;
   color: #fff;
@@ -307,14 +319,13 @@ ion-page {
 
 .utility__btn--outline {
   width: 100%;
-  margin-top: 0.15rem;
   border: 1px solid rgba(11, 29, 115, 0.16);
   background: var(--cop-color-surface);
   color: #0b1d73;
 }
 
 .home-scroll-spacer {
-  height: calc(env(safe-area-inset-bottom, 0px) + 4.5rem);
+  height: calc(env(safe-area-inset-bottom, 0px) + 3.7rem);
   flex-shrink: 0;
 }
 

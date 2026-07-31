@@ -103,23 +103,24 @@
         </div>
 
         <div *ngIf="todayDevotionalEmpty && !todayDevotionalLoading" class="mini mini--state cop-card cop-card--compact" data-testid="today-devotional-empty" [attr.aria-label]="getEmptyDevotionalAriaLabel()" aria-live="polite">
-          <div class="mini__body mini__body--state">
-            <p class="muted-copy">No devotional is available right now. Check back later today.</p>
+          <div class="mini__body">
+            <h3>Today's devotional isn't available yet.</h3>
+            <p class="muted-copy">Check back later today.</p>
             <button type="button" class="soft-btn cop-button-secondary" data-testid="today-devotional-browse" aria-label="Browse devotionals" (click)="goToDevotionals()">Browse devotionals</button>
           </div>
         </div>
       </section>
 
       <section class="utility cop-card" aria-label="Community and Prayer">
-        <div class="utility__head" style="display:flex;align-items:flex-start;gap:.85rem;flex-wrap:wrap">
-          <span class="utility__icon" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:14px;background:rgba(11,29,115,.08);color:#0b1d73;flex-shrink:0" aria-hidden="true"><ion-icon name="people-outline"></ion-icon></span>
+        <div class="utility__head">
+          <span class="utility__icon" aria-hidden="true"><ion-icon name="people-outline"></ion-icon></span>
           <div>
             <p class="gold-kicker cop-eyebrow">Community</p>
             <h3>You're not walking this journey alone.</h3>
             <p class="muted-copy cop-copy-muted">Connect with your church family or share a prayer request.</p>
           </div>
         </div>
-        <div class="utility__actions" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem">
+        <div class="utility__actions">
           <button type="button" class="utility__btn utility__btn--solid" data-testid="request-prayer-button" (click)="goToPrayer()">Request Prayer</button>
           <button type="button" class="utility__btn utility__btn--outline" data-testid="community-button" (click)="goToCommunity()">Community</button>
         </div>
