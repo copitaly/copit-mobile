@@ -203,7 +203,28 @@ describe('DonatePage', () => {
     expect(page.nativeError).toBe('Donations are currently paused for this branch.');
   });
 
-  it('uses hosted checkout on browser runtimes for one-time gifts', () => {
+  it('routes submitDonation through the native one-time payment path on native runtimes', () => {
+    donationsService.createMobileCheckout.and.returnValue(
+      of({
+        donation_id: 55,
+        transaction_reference: 'TRX-NATIVE-1',
+        client_secret: 'pi_secret_native_123',
+      })
+    );
+
+    page.submitDonation();
+
+    expect(donationsService.createMobileCheckout).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        church_id: branch.id,
+        category_id: category.id,
+        amount: 45,
+      })
+    );
+    expect(donationsService.createCheckout).not.toHaveBeenCalled();
+  });
+
+  it('uses hosted checkout on browser runtimes only when the native payment sheet is unavailable', () => {
     (Capacitor.isNativePlatform as jasmine.Spy).and.returnValue(false);
     donationsService.createCheckout.and.returnValue(
       of({
@@ -213,7 +234,7 @@ describe('DonatePage', () => {
       })
     );
 
-    page.submitDonation();
+    page.startNativePayment();
 
     expect(donationsService.createCheckout).toHaveBeenCalledWith(
       jasmine.objectContaining({

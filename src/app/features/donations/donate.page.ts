@@ -505,6 +505,12 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       return;
     }
 
+    if (this.shouldUseHostedCheckoutFallback()) {
+      console.info('[DonatePage] PaymentSheet unavailable in browser runtime, using hosted checkout fallback');
+      this.submit();
+      return;
+    }
+
     if (this.nativeLoading || this.loading || !this.readyForPayment()) {
       return;
     }
@@ -559,12 +565,6 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   submitDonation(): void {
-    if (!this.isNativePaymentSheetRuntime() && !this.isMonthlySelected) {
-      console.info('[DonatePage] Using hosted checkout fallback for browser runtime');
-      this.submit();
-      return;
-    }
-
     this.startNativePayment();
   }
 
@@ -1489,6 +1489,10 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
   private isNativePaymentSheetRuntime(): boolean {
     return Capacitor.isNativePlatform();
+  }
+
+  private shouldUseHostedCheckoutFallback(): boolean {
+    return !this.isNativePaymentSheetRuntime() && !this.isMonthlySelected;
   }
 
   private async showPaymentFailureToast(message: string): Promise<void> {
