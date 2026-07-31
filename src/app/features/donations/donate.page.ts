@@ -131,32 +131,29 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
               </section>
 
               <form [formGroup]="form" (ngSubmit)="submitDonation()" class="donate-form">
-                <section class="donate-form__section">
-                  <div class="section-label">CATEGORY</div>
-                  <div *ngIf="!branch" class="category-feedback" role="status">
-                    <p>Choose your church to load donation categories.</p>
-                  </div>
-                  <div *ngIf="branch && categoriesLoading" class="category-chip-list category-chip-list--loading" aria-live="polite">
+                <section *ngIf="branch" class="donate-form__section donate-form__section--donation-type donate-form__section--revealed">
+                  <div class="section-label">Donation Type</div>
+                  <div *ngIf="categoriesLoading" class="category-chip-list category-chip-list--loading" aria-live="polite">
                     <span *ngFor="let item of categorySkeletonItems" class="chip chip--skeleton"></span>
                   </div>
-                  <div *ngIf="branch && !categoriesLoading && categoriesLoadError" class="category-feedback" role="status">
+                  <div *ngIf="!categoriesLoading && categoriesLoadError" class="category-feedback" role="status">
                     <p>{{ categoriesLoadError }}</p>
                     <ion-button type="button" fill="outline" size="small" (click)="retryCategoryLoad()">
                       Retry
                     </ion-button>
                   </div>
                   <div
-                    *ngIf="branch && !categoriesLoading && !categoriesLoadError && categories.length === 0"
+                    *ngIf="!categoriesLoading && !categoriesLoadError && categories.length === 0"
                     class="category-feedback"
                     role="status"
                   >
                     <p>No donation categories are available for this branch.</p>
                   </div>
                   <div
-                    *ngIf="branch && !categoriesLoading && !categoriesLoadError && categories.length > 0"
+                    *ngIf="!categoriesLoading && !categoriesLoadError && categories.length > 0"
                     class="category-chip-list"
                     role="group"
-                    aria-label="Donation category"
+                    aria-label="Donation type"
                   >
                     <button
                       *ngFor="let option of categories"
@@ -164,7 +161,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                       class="chip"
                       [class.selected]="isCategory(option.id)"
                       [attr.aria-pressed]="isCategory(option.id)"
-                      [attr.aria-label]="'Donation category ' + option.name"
+                      [attr.aria-label]="'Donation type ' + option.name"
                       (click)="setCategory(option.id)"
                     >
                       {{ option.name }}
