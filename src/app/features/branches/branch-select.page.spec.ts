@@ -1,4 +1,5 @@
 import { of } from 'rxjs';
+import { convertToParamMap } from '@angular/router';
 
 import { PublicBranch } from '../../core/models/branch.model';
 import { AnalyticsService } from '../../core/services/analytics.service';
@@ -62,7 +63,13 @@ describe('BranchSelectPage', () => {
       } as unknown as AuthService,
       {
         setBranch: jasmine.createSpy().and.returnValue(true),
+        getBranch: jasmine.createSpy().and.returnValue(null),
       } as unknown as SelectedBranchService,
+      {
+        snapshot: {
+          queryParamMap: convertToParamMap({}),
+        },
+      } as never,
       router as never,
       {
         create: jasmine.createSpy(),

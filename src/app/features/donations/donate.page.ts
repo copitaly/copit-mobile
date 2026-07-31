@@ -28,7 +28,6 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { DonationAnalyticsContextService } from '../../core/services/donation-analytics-context.service';
-import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 const EURO_SYMBOL = '\u20AC';
 const AMOUNT_PATTERN = /^\d+(\.\d+)?$/;
@@ -63,114 +62,113 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, IonicModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-donate',
   template: `
     <ion-page>
-      <div class="donate-hero app-header app-header--inner">
-        <app-mobile-header
-          title="Make a Donation"
-          subtitle="Support your local church safely and securely."
-          [centerCopy]="false"
-          [showBack]="false"
-          fallbackRoute="/tabs/home"
-        ></app-mobile-header>
-      </div>
-
       <ion-content fullscreen class="donate-content cop-content--tabs" scrollY="true">
+        <div class="donate-shell">
+        <header class="cop-page-header donate-page-header" aria-label="Donate">
+          <h1 class="cop-page-header__title">Make a Donation</h1>
+          <p class="cop-page-header__subtitle">Support your local church safely and securely.</p>
+        </header>
+
         <div class="surface donate-surface">
           <div class="surface__content">
-            <ng-container *ngIf="branch; else missingBranch">
-              <div class="donate-form-card">
-              <div
-                class="branch-card"
-                (click)="goToBranches()"
-                (keydown.enter)="goToBranches()"
-                (keydown.space)="goToBranches(); $event.preventDefault()"
-                tabindex="0"
-                role="button"
-                aria-label="Change selected branch"
-              >
-                <div class="branch-icon">
-                  <ion-icon name="location"></ion-icon>
-                </div>
-                <div class="branch-info">
-                  <div class="branch-title-row">
+            <ng-container *ngIf="branch">
+              <div class="donate-form-card cop-card cop-card--soft">
+              <section class="donate-branch-summary" aria-label="Selected church">
+                <div class="donate-branch-summary__top">
+                  <div class="donate-branch-summary__copy">
+                    <p class="section-label donate-branch-summary__eyebrow">Giving to</p>
                     <h2>{{ branch.name }}</h2>
-                    <span class="change-link" (click)="goToBranches(); $event.stopPropagation()">Change</span>
+                    <p class="donate-branch-summary__meta" *ngIf="branch.district || branch.area">
+                      <ng-container *ngIf="branch.district?.name">
+                        {{ branch.district?.name }} District
+                      </ng-container>
+                      <ng-container *ngIf="branch.district?.name && branch.area?.name">
+                        <span aria-hidden="true">&middot;</span>
+                      </ng-container>
+                      <ng-container *ngIf="branch.area?.name">
+                        {{ branch.area?.name }} Area
+                      </ng-container>
+                    </p>
                   </div>
-                  <p *ngIf="branch.district || branch.area">{{ getHierarchy(branch) }}</p>
-                </div>
-                <div class="branch-code" *ngIf="branch.branch_code">
-                  {{ branch.branch_code }}
-                </div>
-              </div>
-
-              <form [formGroup]="form" (ngSubmit)="submitDonation()" class="donate-form">
-                <div class="section-label">CATEGORY</div>
-                <div *ngIf="categoriesLoading" class="grid category-grid category-grid--loading" aria-live="polite">
-                  <span *ngFor="let item of categorySkeletonItems" class="chip chip--skeleton"></span>
-                </div>
-                <div *ngIf="!categoriesLoading && categoriesLoadError" class="category-feedback" role="status">
-                  <p>{{ categoriesLoadError }}</p>
-                  <ion-button type="button" fill="outline" size="small" (click)="retryCategoryLoad()">
-                    Retry
-                  </ion-button>
-                </div>
-                <div
-                  *ngIf="!categoriesLoading && !categoriesLoadError && categories.length === 0"
-                  class="category-feedback"
-                  role="status"
-                >
-                  <p>No donation categories are available for this branch.</p>
-                </div>
-                <div
-                  *ngIf="!categoriesLoading && !categoriesLoadError && categories.length > 0"
-                  class="grid category-grid"
-                  role="group"
-                  aria-label="Donation category"
-                >
-                  <button
-                    *ngFor="let option of categories"
-                    type="button"
-                    class="chip"
-                    [class.selected]="isCategory(option.id)"
-                    [attr.aria-pressed]="isCategory(option.id)"
-                    [attr.aria-label]="'Donation category ' + option.name"
-                    (click)="setCategory(option.id)"
-                  >
-                    {{ option.name }}
+                  <button type="button" class="donate-branch-summary__change" (click)="goToBranches()">
+                    Change
                   </button>
                 </div>
-                <p *ngIf="categoryRecurringHelperMessage" class="frequency-helper">
-                  {{ categoryRecurringHelperMessage }}
-                </p>
+              </section>
 
-                <div class="section-label">AMOUNT (EUR)</div>
-                <ion-item class="custom-amount" [class.is-valid]="isAmountValid" fill="solid">
-                  <span class="amount-prefix" aria-hidden="true">&euro;</span>
-                  <ion-input
-                    #amountInput
-                    type="text"
-                    [value]="customAmountInputValue"
-                    placeholder="Enter amount (EUR)"
-                    aria-label="Donation amount in euros"
-                    inputmode="decimal"
-                    autocomplete="off"
-                    autocapitalize="off"
-                    autocorrect="off"
-                    spellcheck="false"
-                    enterkeyhint="done"
-                    (ionInput)="handleCustomAmountInput($event)"
-                    (ionBlur)="handleCustomAmountBlur()"
-                  ></ion-input>
-                </ion-item>
-                <ion-text color="danger" *ngIf="amountValidationMessage" class="form-error amount-error" role="alert">
-                  {{ amountValidationMessage }}
-                </ion-text>
+              <form [formGroup]="form" (ngSubmit)="submitDonation()" class="donate-form">
+                <section class="donate-form__section">
+                  <div class="section-label">CATEGORY</div>
+                  <div *ngIf="categoriesLoading" class="category-chip-list category-chip-list--loading" aria-live="polite">
+                    <span *ngFor="let item of categorySkeletonItems" class="chip chip--skeleton"></span>
+                  </div>
+                  <div *ngIf="!categoriesLoading && categoriesLoadError" class="category-feedback" role="status">
+                    <p>{{ categoriesLoadError }}</p>
+                    <ion-button type="button" fill="outline" size="small" (click)="retryCategoryLoad()">
+                      Retry
+                    </ion-button>
+                  </div>
+                  <div
+                    *ngIf="!categoriesLoading && !categoriesLoadError && categories.length === 0"
+                    class="category-feedback"
+                    role="status"
+                  >
+                    <p>No donation categories are available for this branch.</p>
+                  </div>
+                  <div
+                    *ngIf="!categoriesLoading && !categoriesLoadError && categories.length > 0"
+                    class="category-chip-list"
+                    role="group"
+                    aria-label="Donation category"
+                  >
+                    <button
+                      *ngFor="let option of categories"
+                      type="button"
+                      class="chip"
+                      [class.selected]="isCategory(option.id)"
+                      [attr.aria-pressed]="isCategory(option.id)"
+                      [attr.aria-label]="'Donation category ' + option.name"
+                      (click)="setCategory(option.id)"
+                    >
+                      {{ option.name }}
+                    </button>
+                  </div>
+                  <p *ngIf="categoryRecurringHelperMessage" class="frequency-helper">
+                    {{ categoryRecurringHelperMessage }}
+                  </p>
+                </section>
 
-                <div class="frequency-section">
+                <section class="donate-form__section donate-form__section--amount">
+                  <div class="section-label">AMOUNT (EUR)</div>
+                  <ion-item class="custom-amount" [class.is-valid]="isAmountValid" fill="solid">
+                    <span class="amount-prefix" aria-hidden="true">&euro;</span>
+                    <ion-input
+                      #amountInput
+                      type="text"
+                      [value]="customAmountInputValue"
+                      placeholder="0.00"
+                      aria-label="Donation amount in euros"
+                      inputmode="decimal"
+                      autocomplete="off"
+                      autocapitalize="off"
+                      autocorrect="off"
+                      spellcheck="false"
+                      enterkeyhint="done"
+                      (ionInput)="handleCustomAmountInput($event)"
+                      (ionBlur)="handleCustomAmountBlur()"
+                    ></ion-input>
+                  </ion-item>
+                  <ion-text color="danger" *ngIf="amountValidationMessage" class="form-error amount-error" role="alert">
+                    {{ amountValidationMessage }}
+                  </ion-text>
+                </section>
+
+                <section class="donate-form__section frequency-section">
                   <div class="section-label">FREQUENCY</div>
                   <div class="frequency-cards" role="radiogroup" aria-label="Donation frequency">
                     <button
@@ -234,12 +232,14 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                       <span class="monthly-callout__link">Sign in →</span>
                     </span>
                   </button>
-                </div>
+                </section>
+                <section class="donate-form__section">
+                  <div class="section-label">EMAIL (OPTIONAL)</div>
                 <ion-item class="custom-email" fill="solid">
                   <ion-input
                     #emailInput
                     type="email"
-                    placeholder="Email (optional)"
+                    placeholder="name@example.com"
                     aria-label="Donor email"
                     formControlName="donor_email"
                     inputmode="email"
@@ -251,6 +251,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                     (ionFocus)="handleEmailFocus()"
                   ></ion-input>
                 </ion-item>
+                </section>
 
                 <ion-text color="danger" *ngIf="errorMessage" class="form-error" role="alert">
                   {{ errorMessage }}
@@ -282,13 +283,8 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
               </div>
             </ng-container>
 
-            <ng-template #missingBranch>
-              <div class="empty-state">
-                <p>Please choose a branch before continuing.</p>
-                <ion-button expand="block" (click)="goToBranches()">Choose a branch</ion-button>
-              </div>
-            </ng-template>
           </div>
+        </div>
         </div>
       </ion-content>
     </ion-page>
@@ -548,7 +544,9 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   goToBranches(): void {
-    this.router.navigate(['/branches']);
+    this.router.navigate(['/branches'], {
+      queryParams: { fallback: '/tabs/donate' },
+    });
   }
 
   setCategory(optionId: number): void {

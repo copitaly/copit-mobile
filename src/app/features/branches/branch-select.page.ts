@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule, ToastController } from '@ionic/angular';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -48,15 +48,11 @@ interface SearchResultSection {
   selector: 'app-branch-select',
   template: `
     <ion-page>
-      <ion-content fullscreen class="branch-content" style="--background:#ffffff">
-        <div
-          class="branch-page"
-          style="min-height:100%;display:flex;flex-direction:column;background:linear-gradient(180deg,#0b1d73 0,#0b1d73 180px,#ffffff 180px,#ffffff 100%)"
-        >
-          <app-feature-page-shell style="flex:1;min-height:100%"
+      <ion-content fullscreen class="branch-content feature-page-content">
+          <app-feature-page-shell class="branch-shell" style="flex:1;min-height:100%"
             title="Choose Church"
             [subtitle]="currentHelperText"
-              backFallbackRoute="/tabs/donate"
+            [backFallbackRoute]="backFallbackRoute"
           >
             <ion-searchbar
               [(ngModel)]="searchTerm"
@@ -244,10 +240,10 @@ interface SearchResultSection {
                     </button>
                   </div>
 
-                  <div class="breadcrumb" *ngIf="breadcrumbs.length > 0 && currentLevel !== 'churches'">
+                  <div class="breadcrumb" *ngIf="breadcrumbs.length > 0">
                     <button type="button" class="breadcrumb__crumb" (click)="resetHierarchy()">Areas</button>
                     <ng-container *ngFor="let crumb of breadcrumbs">
-                      <span class="breadcrumb__divider">></span>
+                      <span class="breadcrumb__divider">&rsaquo;</span>
                       <button
                         type="button"
                         class="breadcrumb__crumb"
@@ -368,7 +364,6 @@ interface SearchResultSection {
               </div>
             </ng-template>
           </app-feature-page-shell>
-        </div>
       </ion-content>
     </ion-page>
   `,
@@ -469,12 +464,13 @@ interface SearchResultSection {
       }
 
       .branch-search {
-        --background: #ffffff;
-        --border-radius: 16px;
-        box-shadow: var(--app-card-shadow);
+        --background: rgba(255, 255, 255, 0.96);
+        --border-radius: 14px;
+        border: 1px solid rgba(8, 31, 92, 0.08);
+        box-shadow: 0 8px 18px rgba(7, 24, 69, 0.04);
         --padding-start: 1rem;
         --padding-end: 1rem;
-        height: 44px;
+        height: 40px;
         --placeholder-color: rgba(3, 23, 63, 0.45);
       }
 
@@ -484,13 +480,13 @@ interface SearchResultSection {
 
       .branch-card {
         background: #ffffff;
-        border-radius: var(--app-card-radius);
+        border-radius: 16px;
         padding: var(--app-card-padding);
-        box-shadow: var(--app-card-shadow);
+        border: 1px solid rgba(8, 31, 92, 0.06);
+        box-shadow: 0 10px 22px rgba(7, 24, 69, 0.05);
         --background: transparent;
         align-items: center;
         transition: transform 120ms ease-out, box-shadow 120ms ease-out;
-        will-change: transform;
       }
 
       .hierarchy-card {
@@ -566,7 +562,7 @@ interface SearchResultSection {
       .browse-header {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
         gap: 0.75rem;
         flex-wrap: wrap;
       }
@@ -586,13 +582,15 @@ interface SearchResultSection {
       .hierarchy-back {
         display: inline-flex;
         align-items: center;
-        gap: 0.28rem;
-        border: 0;
-        background: transparent;
-        padding: 0;
-        color: rgba(3, 23, 63, 0.72);
-        font-size: 0.84rem;
+        gap: 0.32rem;
+        border: 1px solid rgba(8, 31, 92, 0.08);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.92);
+        padding: 0.38rem 0.72rem;
+        color: rgba(3, 23, 63, 0.74);
+        font-size: 0.82rem;
         font-weight: 600;
+        box-shadow: 0 6px 16px rgba(7, 24, 69, 0.04);
       }
 
       .breadcrumb {
@@ -621,10 +619,10 @@ interface SearchResultSection {
       }
 
       .district-header {
-        font-size: 0.9rem;
+        font-size: 0.78rem;
         font-weight: 600;
         color: var(--app-secondary-text-color);
-        letter-spacing: 0.08em;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
       }
 
@@ -641,18 +639,18 @@ interface SearchResultSection {
 
       h2 {
         margin: 0;
-        font-size: 1rem;
-        font-weight: 600;
+        font-size: 1.02rem;
+        font-weight: 700;
         line-height: 1.2;
         color: #03173f;
       }
 
       .hierarchy {
         margin: 0;
-        font-size: 0.85rem;
+        font-size: 0.82rem;
         font-weight: 400;
         line-height: 1.35;
-        color: var(--app-secondary-text-color);
+        color: rgba(3, 23, 63, 0.56);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -681,6 +679,7 @@ export class BranchSelectPage implements OnInit {
   error: string | null = null;
   allBranches: PublicBranch[] = [];
   isAuthenticated = false;
+  backFallbackRoute = '/tabs/home';
 
   private selectedAreaKey: string | null = null;
   private selectedDistrictKey: string | null = null;
@@ -692,12 +691,14 @@ export class BranchSelectPage implements OnInit {
     private readonly branchesService: BranchesService,
     private readonly authService: AuthService,
     private readonly selectedBranchService: SelectedBranchService,
+    private readonly activatedRoute: ActivatedRoute,
     private readonly router: Router,
     private readonly toastController: ToastController,
     private readonly analyticsService: AnalyticsService
   ) {}
 
   ngOnInit(): void {
+    this.backFallbackRoute = this.resolveBackFallbackRoute();
     this.loadBranches();
   }
 
@@ -1028,7 +1029,7 @@ export class BranchSelectPage implements OnInit {
       area_id: branch.area?.id ?? undefined,
       user_type: this.analyticsService.getUserType(),
     });
-    void this.router.navigate(['/donate']);
+    void this.router.navigate(['/tabs/donate']);
   }
 
   getHierarchy(branch: PublicBranch): string {
@@ -1126,6 +1127,15 @@ export class BranchSelectPage implements OnInit {
     if (!area.districts.some((district) => district.key === this.selectedDistrictKey)) {
       this.selectedDistrictKey = null;
     }
+  }
+
+  private resolveBackFallbackRoute(): string {
+    const requestedFallback = this.activatedRoute.snapshot.queryParamMap.get('fallback')?.trim();
+    if (requestedFallback) {
+      return requestedFallback;
+    }
+
+    return this.selectedBranchService.getBranch() ? '/tabs/donate' : '/tabs/home';
   }
 
   private buildHierarchyKey(prefix: string, id: number | null, fallback: string): string {
