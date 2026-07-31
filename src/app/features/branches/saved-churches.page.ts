@@ -1,15 +1,15 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
 import { PublicBranch } from '../../core/models/branch.model';
 import { SavedChurch } from '../../core/models/user.model';
+import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
-import { AnalyticsService } from '../../core/services/analytics.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
@@ -19,81 +19,90 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
   selector: 'app-saved-churches',
   template: `
     <ion-page>
-      <ion-content fullscreen class="saved-content">
-        <div class="saved-hero app-header app-header--inner">
-          <app-mobile-header title="Saved Churches" fallbackRoute="/tabs/profile"></app-mobile-header>
-        </div>
+      <ion-content fullscreen class="saved-content cop-content--secondary">
+        <div class="saved-shell cop-secondary-shell">
+          <header class="saved-header" aria-label="My Churches">
+            <app-mobile-header
+              title="My Churches"
+              subtitle="Keep your saved churches close for faster access."
+              fallbackRoute="/tabs/profile"
+              tone="editorial"
+            ></app-mobile-header>
+          </header>
 
-        <div class="surface saved-surface">
-          <div class="surface__content saved-surface__content">
-            <div *ngIf="loading" class="skeleton-stack" aria-live="polite">
-              <div class="saved-card skeleton" *ngFor="let item of skeletonItems">
-                <div class="skeleton-row skeleton-row--top">
+          <div class="saved-surface">
+            <div class="saved-surface__content">
+              <div *ngIf="loading" class="skeleton-stack" aria-live="polite">
+                <div class="saved-card skeleton" *ngFor="let item of skeletonItems">
                   <span class="skeleton-line skeleton-line--title"></span>
-                  <span class="skeleton-pill"></span>
+                  <span class="skeleton-line skeleton-line--meta"></span>
+                  <span class="skeleton-line skeleton-line--meta short"></span>
+                  <span class="skeleton-line skeleton-line--meta short"></span>
                 </div>
-                <span class="skeleton-line skeleton-line--meta"></span>
-                <span class="skeleton-line skeleton-line--meta short"></span>
               </div>
-            </div>
 
-            <div *ngIf="!loading && errorMessage" class="state-card error-state">
-              <div class="state-copy">
-                <h2>We couldn't load your saved churches</h2>
-                <p>{{ errorMessage }}</p>
-              </div>
-              <ion-button expand="block" class="state-button" (click)="loadSavedChurches()">Try again</ion-button>
-            </div>
-
-            <div *ngIf="!loading && !errorMessage && savedChurches.length === 0" class="state-card empty-state">
-              <div class="state-copy">
-                <h2>No saved churches yet</h2>
-                <p>Save a church to give faster next time</p>
-              </div>
-              <ion-button expand="block" class="choose-church-button" (click)="goToBranches()">
-                <ion-icon name="location-outline" slot="start" aria-hidden="true"></ion-icon>
-                <span>Choose church</span>
-              </ion-button>
-            </div>
-
-            <div *ngIf="!loading && !errorMessage && savedChurches.length > 0" class="saved-stack">
-              <div
-                class="saved-card saved-card--interactive"
-                *ngFor="let saved of savedChurches"
-                (click)="selectSavedChurch(saved)"
-                (keydown.enter)="selectSavedChurch(saved)"
-                (keydown.space)="selectSavedChurch(saved, $event)"
-                tabindex="0"
-                role="button"
-              >
-                <div class="saved-card__top">
-                  <div class="saved-copy">
-                    <h2>{{ saved.church.name }}</h2>
-                    <p *ngIf="formatHierarchy(saved) as hierarchy">{{ hierarchy }}</p>
-                  </div>
-                  <span class="saved-status" [class.saved-status--inactive]="!saved.church.donations_enabled || !saved.church.is_active">
-                    {{ saved.church.donations_enabled && saved.church.is_active ? 'Ready to give' : 'Unavailable' }}
-                  </span>
+              <div *ngIf="!loading && errorMessage" class="state-card error-state">
+                <div class="state-copy">
+                  <h2>We couldn't load your saved churches</h2>
+                  <p>{{ errorMessage }}</p>
                 </div>
+                <ion-button expand="block" class="state-button" (click)="loadSavedChurches()">Try again</ion-button>
+              </div>
 
-                <div class="saved-meta">
-                  <div class="meta-row" *ngIf="saved.church.branch_code">
-                    <span>Branch code</span>
-                    <strong>{{ saved.church.branch_code }}</strong>
-                  </div>
-                  <div class="meta-row">
-                    <span>Saved</span>
-                    <strong>{{ formatDate(saved.created_at) }}</strong>
-                  </div>
+              <div *ngIf="!loading && !errorMessage && savedChurches.length === 0" class="state-card empty-state">
+                <div class="state-copy">
+                  <h2>You haven't saved any churches yet.</h2>
+                  <p>Save a church to make giving and future access faster.</p>
                 </div>
+                <ion-button expand="block" class="choose-church-button" (click)="goToBranches()">
+                  <ion-icon name="location-outline" slot="start" aria-hidden="true"></ion-icon>
+                  <span>Browse churches</span>
+                </ion-button>
+              </div>
 
-                <button
-                  type="button"
-                  class="saved-action"
-                  (click)="selectSavedChurch(saved, $event)"
+              <div *ngIf="!loading && !errorMessage && savedChurches.length > 0" class="saved-stack">
+                <div
+                  class="saved-card saved-card--interactive"
+                  *ngFor="let saved of savedChurches"
+                  (click)="selectSavedChurch(saved)"
+                  (keydown.enter)="selectSavedChurch(saved)"
+                  (keydown.space)="selectSavedChurch(saved, $event)"
+                  tabindex="0"
+                  role="button"
+                  [attr.aria-label]="'Open saved church ' + saved.church.name"
                 >
-                  Give to this church
-                </button>
+                  <div class="saved-card__content">
+                    <div class="saved-copy">
+                      <h2>{{ saved.church.name }}</h2>
+                      <p *ngIf="saved.church.district?.name" class="saved-copy__line">
+                        {{ saved.church.district?.name }} District
+                      </p>
+                      <p *ngIf="saved.church.area?.name" class="saved-copy__line">
+                        {{ saved.church.area?.name }} Area
+                      </p>
+                      <p class="saved-copy__support">Saved for quick access</p>
+                    </div>
+
+                    <div class="saved-meta">
+                      <div class="meta-row" *ngIf="saved.church.branch_code">
+                        <span>Branch code</span>
+                        <strong>{{ saved.church.branch_code }}</strong>
+                      </div>
+                      <div class="meta-row" *ngIf="!saved.church.donations_enabled || !saved.church.is_active">
+                        <span>Status</span>
+                        <strong>Unavailable</strong>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      class="saved-action"
+                      (click)="selectSavedChurch(saved, $event)"
+                    >
+                      Donate
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -107,73 +116,54 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         display: block;
       }
 
-      ion-page {
-        background: #0b1d73;
-      }
-
-      ion-content.saved-content {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        --background: #0b1d73;
-      }
-
-      ion-content.saved-content::part(scroll) {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-height: 100%;
-      }
-
       .saved-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
+        --background: var(--cop-color-background-soft);
       }
 
-      .saved-hero {
-        width: 100%;
-        padding-bottom: 2rem;
+      .saved-shell {
+        gap: 0.95rem;
       }
 
       .saved-surface {
-        margin-top: -0.08rem;
-        padding-top: 1.25rem;
-        border-radius: 24px 24px 0 0;
-        box-shadow: 0 -6px 22px rgba(2, 18, 54, 0.08);
+        width: 100%;
+        max-width: 32rem;
+        margin: 0 auto;
+      }
+
+      .saved-surface__content,
+      .saved-stack,
+      .skeleton-stack,
+      .state-copy,
+      .saved-card__content,
+      .saved-copy {
+        display: flex;
+        flex-direction: column;
       }
 
       .saved-surface__content {
-        width: 100%;
-        max-width: 440px;
-        margin: 0 auto;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-        padding-bottom: calc(1.2rem + env(safe-area-inset-bottom));
+        gap: 0.95rem;
+        padding-bottom: calc(1.1rem + var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)));
       }
 
       .saved-stack,
       .skeleton-stack {
-        display: flex;
-        flex-direction: column;
-        gap: 0.95rem;
+        gap: 0.85rem;
       }
 
       .saved-card,
       .state-card {
-        background: #ffffff;
-        border-radius: 22px;
-        box-shadow: 0 14px 36px rgba(6, 21, 74, 0.1);
+        background: #fff;
+        border: 1px solid rgba(8, 31, 92, 0.08);
+        border-radius: 16px;
+        box-shadow: 0 10px 22px rgba(7, 24, 69, 0.06);
       }
 
       .saved-card {
-        padding: 1rem 1.05rem;
+        padding: 1rem;
       }
 
       .saved-card--interactive {
         width: 100%;
-        border: 0;
         text-align: left;
         transition: transform 120ms ease-out, box-shadow 120ms ease-out;
         will-change: transform;
@@ -181,7 +171,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
       }
 
       .saved-card--interactive:active {
-        transform: scale(0.985);
+        transform: scale(0.988);
         box-shadow: 0 10px 24px rgba(6, 21, 74, 0.12);
       }
 
@@ -190,35 +180,19 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         outline-offset: 3px;
       }
 
-      .saved-action {
-        margin-top: 0.95rem;
-        width: 100%;
-        min-height: 48px;
-        border: 0;
-        border-radius: 999px;
-        background: #f5b628;
-        color: #0b1d73;
-        font-size: 0.95rem;
-        font-weight: 700;
-        box-shadow: 0 10px 22px rgba(245, 182, 40, 0.24);
-      }
-
-      .saved-action:active {
-        background: #d79d1f;
-      }
-
-      .saved-card__top {
-        display: flex;
-        justify-content: space-between;
+      .saved-card__content {
         gap: 0.9rem;
       }
 
       .saved-copy {
+        gap: 0.28rem;
         min-width: 0;
       }
 
       .saved-copy h2,
-      .saved-copy p {
+      .saved-copy p,
+      .state-copy h2,
+      .state-copy p {
         margin: 0;
       }
 
@@ -226,45 +200,31 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         color: #03173f;
         font-size: 1.08rem;
         font-weight: 700;
-        line-height: 1.2;
+        line-height: 1.24;
         letter-spacing: -0.01em;
       }
 
-      .saved-copy p {
-        margin-top: 0.32rem;
-        color: rgba(3, 23, 63, 0.58);
-        font-size: 0.87rem;
+      .saved-copy__line {
+        color: rgba(3, 23, 63, 0.66);
+        font-size: 0.88rem;
+        line-height: 1.42;
+      }
+
+      .saved-copy__support,
+      .meta-row span {
+        color: rgba(3, 23, 63, 0.56);
+      }
+
+      .saved-copy__support {
+        margin-top: 0.22rem;
+        font-size: 0.82rem;
         line-height: 1.4;
-      }
-
-      .saved-status {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        align-self: flex-start;
-        min-width: 92px;
-        padding: 0.35rem 0.7rem;
-        border-radius: 999px;
-        background: rgba(45, 166, 95, 0.12);
-        color: #217447;
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-      }
-
-      .saved-status--inactive {
-        background: rgba(220, 53, 69, 0.12);
-        color: #b02f3b;
       }
 
       .saved-meta {
         display: flex;
         flex-direction: column;
-        gap: 0.45rem;
-        margin-top: 0.85rem;
-        padding-top: 0.8rem;
-        border-top: 1px solid rgba(3, 23, 63, 0.08);
+        gap: 0.42rem;
       }
 
       .meta-row {
@@ -275,36 +235,45 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
       }
 
       .meta-row span {
-        color: rgba(3, 23, 63, 0.58);
-        font-size: 0.82rem;
+        font-size: 0.8rem;
       }
 
       .meta-row strong {
         color: #03173f;
-        font-size: 0.92rem;
+        font-size: 0.9rem;
         font-weight: 600;
         text-align: right;
         overflow-wrap: anywhere;
       }
 
+      .saved-action {
+        align-self: flex-start;
+        min-height: 38px;
+        padding: 0.45rem 0.95rem;
+        border: 0;
+        border-radius: 999px;
+        background: #f5b628;
+        color: #0b1d73;
+        font-size: 0.86rem;
+        font-weight: 700;
+        box-shadow: 0 10px 20px rgba(245, 182, 40, 0.2);
+      }
+
+      .saved-action:active {
+        background: #d79d1f;
+      }
+
       .state-card {
-        padding: 1.25rem;
+        padding: 1.15rem 1rem;
         display: flex;
         flex-direction: column;
         align-items: center;
         text-align: center;
-        gap: 0.8rem;
+        gap: 0.85rem;
       }
 
       .state-copy {
-        display: flex;
-        flex-direction: column;
-        gap: 0.3rem;
-      }
-
-      .state-copy h2,
-      .state-copy p {
-        margin: 0;
+        gap: 0.32rem;
       }
 
       .state-copy h2 {
@@ -340,31 +309,20 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
       }
 
       .skeleton {
+        padding: 1rem;
         animation: pulse 1.2s infinite ease-in-out;
       }
 
-      .skeleton-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 0.8rem;
-        margin-bottom: 0.8rem;
-      }
-
-      .skeleton-pill,
       .skeleton-line {
         display: block;
         background: rgba(11, 26, 115, 0.08);
         border-radius: 999px;
       }
 
-      .skeleton-pill {
-        width: 92px;
-        height: 24px;
-      }
-
       .skeleton-line--title {
         width: 56%;
         height: 16px;
+        margin-bottom: 0.7rem;
       }
 
       .skeleton-line--meta {
@@ -387,16 +345,6 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         }
         100% {
           opacity: 1;
-        }
-      }
-
-      @media (max-height: 760px) {
-        .saved-hero {
-          padding-bottom: 1.8rem;
-        }
-
-        .saved-surface {
-          padding-top: 1.1rem;
         }
       }
     `,
@@ -457,30 +405,6 @@ export class SavedChurchesPage implements OnInit {
         void this.router.navigate(['/login']);
       },
     });
-  }
-
-  formatHierarchy(saved: SavedChurch): string {
-    const parts: string[] = [];
-    if (saved.church.district?.name) {
-      parts.push(`${saved.church.district.name} District`);
-    }
-    if (saved.church.area?.name) {
-      parts.push(`${saved.church.area.name} Area`);
-    }
-    return parts.join(' • ');
-  }
-
-  formatDate(value: string): string {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return value;
-    }
-
-    return new Intl.DateTimeFormat('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    }).format(date);
   }
 
   selectSavedChurch(saved: SavedChurch, event?: Event): void {
