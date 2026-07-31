@@ -1,27 +1,25 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { NavController, ToastController } from '@ionic/angular';
 import { of, Subject, throwError } from 'rxjs';
 
+import { AppToastService } from '../../core/services/app-toast.service';
 import { MemberProfile } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
-import { StackNavigationService } from '../../core/services/stack-navigation.service';
 import { EditProfilePage } from './edit-profile.page';
 
 describe('EditProfilePage', () => {
   let fixture: ComponentFixture<EditProfilePage>;
   let page: EditProfilePage;
   let router: jasmine.SpyObj<Router>;
-  let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
   let authService: {
     isAuthenticatedSnapshot: boolean;
     accessTokenSnapshot: string | null;
     getCurrentUser: jasmine.Spy;
     updateMemberProfile: jasmine.Spy;
   };
-  let toastController: jasmine.SpyObj<ToastController>;
+  let appToast: jasmine.SpyObj<AppToastService>;
 
   const profile: MemberProfile = {
     id: 9,
@@ -47,9 +45,7 @@ describe('EditProfilePage', () => {
       providers: [
         { provide: AuthService, useValue: authService },
         { provide: Router, useValue: router },
-        { provide: StackNavigationService, useValue: stackNavigationService },
-        { provide: NavController, useValue: {} },
-        { provide: ToastController, useValue: toastController },
+        { provide: AppToastService, useValue: appToast },
         {
           provide: SentryTelemetryService,
           useValue: {
@@ -69,18 +65,14 @@ describe('EditProfilePage', () => {
   beforeEach(() => {
     router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
-    stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
-    stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
     authService = {
       isAuthenticatedSnapshot: true,
       accessTokenSnapshot: 'token',
       getCurrentUser: jasmine.createSpy('getCurrentUser').and.returnValue(of(profile)),
       updateMemberProfile: jasmine.createSpy('updateMemberProfile').and.returnValue(of(profile)),
     };
-    toastController = jasmine.createSpyObj<ToastController>('ToastController', ['create']);
-    toastController.create.and.resolveTo({
-      present: jasmine.createSpy('present').and.resolveTo(),
-    } as never);
+    appToast = jasmine.createSpyObj<AppToastService>('AppToastService', ['success', 'error', 'warning', 'info', 'show']);
+    appToast.success.and.resolveTo();
   });
 
   it('loads the profile and patches the form', async () => {
@@ -124,7 +116,10 @@ describe('EditProfilePage', () => {
     expect(page.form.controls.first_name.invalid).toBeTrue();
   });
 
-  it('trims payload values and refreshes the profile after a successful update', async () => {
+  it('trims payload values and refreshes the form after a successful update without redirecting away', async () => {
+    authService.updateMemberProfile.and.returnValue(
+      of({ ...profile, first_name: 'Maria', last_name: 'Rossi', phone_number: '+39333130099', language: 'italian' })
+    );
     authService.getCurrentUser.and.returnValues(of(profile), of({ ...profile, first_name: 'Maria' }));
 
     await createComponent();
@@ -145,7 +140,15 @@ describe('EditProfilePage', () => {
       preferred_language: 'italian',
     });
     expect(authService.getCurrentUser.calls.count()).toBe(2);
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/profile/account-settings', { replaceUrl: true });
+    expect(page.form.getRawValue()).toEqual({
+      first_name: 'Maria',
+      last_name: 'Rossi',
+      phone_number: '+39333130099',
+      preferred_language: 'italian',
+    });
+    expect(page.form.pristine).toBeTrue();
+    expect(appToast.success).toHaveBeenCalledWith('Profile updated successfully.');
+    expect(router.navigateByUrl).not.toHaveBeenCalledWith('/profile/account-settings', { replaceUrl: true });
   });
 
   it('prevents duplicate save requests while an update is in flight', async () => {

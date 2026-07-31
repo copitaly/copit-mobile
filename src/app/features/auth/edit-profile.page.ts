@@ -434,14 +434,26 @@ export class EditProfilePage implements OnInit {
     };
 
     this.authService.updateMemberProfile(payload).subscribe({
-      next: async () => {
+      next: async (updatedProfile) => {
+        const resolvedProfile = updatedProfile ?? this.profile;
+        if (resolvedProfile) {
+          this.profile = resolvedProfile;
+          this.form.reset(
+            {
+              first_name: resolvedProfile.first_name ?? '',
+              last_name: resolvedProfile.last_name ?? '',
+              phone_number: resolvedProfile.phone_number ?? resolvedProfile.phone ?? '',
+              preferred_language: this.normalizeLanguage(resolvedProfile.language),
+            },
+            { emitEvent: false }
+          );
+        }
+
         this.authService.getCurrentUser().subscribe({
           next: () => undefined,
           error: () => undefined,
         });
-        await this.appToast.success('Profile updated');
-
-        await this.navigateByUrl('/profile/account-settings', { replaceUrl: true });
+        await this.appToast.success('Profile updated successfully.');
       },
       error: (error: unknown) => {
         this.saving = false;
