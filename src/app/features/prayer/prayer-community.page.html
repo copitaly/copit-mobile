@@ -4,39 +4,52 @@
       <ion-refresher-content></ion-refresher-content>
     </ion-refresher>
 
-    <div class="community-page">
-      <div class="community-hero app-header app-header--inner">
+    <div class="community-shell cop-secondary-shell">
+      <header class="community-header" aria-label="Community prayers">
         <app-mobile-header
-          title="Community"
-          subtitle="Pray together with our community."
+          title="Community Prayers"
+          subtitle="Pray with requests shared across COP Italy."
           [showBack]="true"
           fallbackRoute="/tabs/home"
+          tone="editorial"
         ></app-mobile-header>
-      </div>
+      </header>
 
-      <div class="surface community-surface">
-        <div class="surface__content community-surface__content">
+      <div class="community-surface">
+        <div class="community-surface__content">
+          <ion-button expand="block" class="submit-button submit-button--header" data-testid="submit-action" (click)="goToSubmit()">
+            Share Prayer Request
+          </ion-button>
+
           <section class="community-filters" aria-label="Community prayer filters">
-            <label class="filter-field">
-              <span>Category</span>
+            <label class="filter-chip">
+              <span class="sr-only">Category</span>
               <select
                 data-testid="category-filter"
                 [value]="selectedCategory"
+                aria-label="Category filter"
                 (change)="onCategoryChange($any($event.target).value)"
               >
                 <option *ngFor="let option of categoryOptions" [value]="option.value">{{ option.label }}</option>
               </select>
+              <span class="filter-chip__label">Category</span>
+              <span class="filter-chip__value">{{ selectedCategoryLabel }}</span>
+              <ion-icon name="chevron-down" aria-hidden="true"></ion-icon>
             </label>
 
-            <label class="filter-field">
-              <span>Scope</span>
+            <label class="filter-chip">
+              <span class="sr-only">Scope</span>
               <select
                 data-testid="scope-filter"
                 [value]="selectedScope"
+                aria-label="Scope filter"
                 (change)="onScopeChange($any($event.target).value)"
               >
                 <option *ngFor="let option of scopeOptions" [value]="option.value">{{ option.label }}</option>
               </select>
+              <span class="filter-chip__label">Scope</span>
+              <span class="filter-chip__value">{{ selectedScopeLabel }}</span>
+              <ion-icon name="chevron-down" aria-hidden="true"></ion-icon>
             </label>
           </section>
 
@@ -76,24 +89,15 @@
 
           <div *ngIf="!loading && !errorMessage && prayers.length === 0" class="state-card empty-state" data-testid="empty-state">
             <div class="state-copy">
-              <h2>{{ hasActiveFilters ? 'No prayers match these filters.' : 'No community prayers yet' }}</h2>
+              <h2>{{ hasActiveFilters ? 'No prayers match these filters.' : 'No community prayer requests yet.' }}</h2>
               <p>
                 {{
                   hasActiveFilters
                     ? 'Try different filters or reset them to see approved public prayer requests.'
-                    : 'Approved public prayer requests will appear here.'
+                    : 'Be the first to share a prayer request.'
                 }}
               </p>
             </div>
-            <ion-button
-              *ngIf="!hasActiveFilters"
-              expand="block"
-              class="submit-button"
-              data-testid="submit-action"
-              (click)="goToSubmit()"
-            >
-              Submit a Prayer Request
-            </ion-button>
             <ion-button
               *ngIf="hasActiveFilters"
               expand="block"
@@ -110,6 +114,8 @@
               class="community-card"
               *ngFor="let prayer of prayers; trackBy: trackByPrayerId"
               data-testid="community-card"
+              tabindex="0"
+              [attr.aria-label]="'Community prayer from ' + prayer.display_name"
             >
               <div class="community-card__top">
                 <span class="category-chip">{{ formatCategoryLabel(prayer.category) }}</span>
@@ -148,10 +154,6 @@
             >
               <ion-spinner *ngIf="loadingMore" slot="start" name="crescent"></ion-spinner>
               <span>{{ loadingMore ? 'Loading more...' : 'Load more' }}</span>
-            </ion-button>
-
-            <ion-button expand="block" class="submit-button submit-button--footer" (click)="goToSubmit()">
-              Submit a Prayer Request
             </ion-button>
           </section>
         </div>

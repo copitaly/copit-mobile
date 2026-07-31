@@ -848,12 +848,21 @@ describe('PrayerSubmitPage', () => {
     expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
-  it('renders the full submit title text and subtitle in the header', async () => {
+  it('renders the updated submit title text and subtitle in the header', async () => {
     const fixture = await createComponent();
     const host = fixture.nativeElement as HTMLElement;
 
-    expect(host.textContent).toContain('Submit a Prayer Request');
-    expect(host.textContent).toContain('Share what you would like us to pray for.');
+    expect(host.textContent).toContain('Prayer Request');
+    expect(host.textContent).toContain('Share what is on your heart with your church.');
+  });
+
+  it('uses the conversational prompt and updated submit CTA copy', async () => {
+    const fixture = await createComponent();
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(host.textContent).toContain('What would you like us to pray for?');
+    expect(host.textContent).toContain('Optional details');
+    expect(host.textContent).toContain('Share Prayer Request');
   });
 
   it('keeps the submit header back button accessible', async () => {

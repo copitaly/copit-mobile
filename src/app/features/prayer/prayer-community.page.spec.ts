@@ -356,7 +356,7 @@ describe('PrayerCommunityPage', () => {
     await createComponent();
 
     expect(fixture.nativeElement.querySelector('[data-testid="empty-state"]')?.textContent).toContain(
-      'No community prayers yet'
+      'No community prayer requests yet.'
     );
   });
 
@@ -422,7 +422,18 @@ describe('PrayerCommunityPage', () => {
     expect(header.fallbackRoute).toBe('/tabs/home');
     expect(header.showBack).toBeTrue();
     expect(headerElement).not.toBeNull();
-    expect(fixture.nativeElement.textContent).toContain('Community');
+    expect(fixture.nativeElement.textContent).toContain('Community Prayers');
+    expect(fixture.nativeElement.textContent).toContain('Pray with requests shared across COP Italy.');
+  });
+
+  it('renders the share prayer request action below the header', async () => {
+    prayerService.getCommunityPrayers.and.returnValue(of(buildResponse([firstPrayer])));
+
+    await createComponent();
+
+    const submitAction = fixture.nativeElement.querySelector('[data-testid="submit-action"]') as HTMLElement | null;
+    expect(submitAction?.textContent).toContain('Share Prayer Request');
+    expect(fixture.nativeElement.textContent).not.toContain('Submit a Prayer Request');
   });
 
   it('does not intentionally render private or internal fields', async () => {

@@ -6,7 +6,7 @@ import { Subject, combineLatest } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { AuthService } from '../../core/services/auth.service';
-import { FeaturePageShellComponent } from '../../shared/feature-page-shell.component';
+import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 type PrayerAction = {
   title: string;
@@ -18,7 +18,7 @@ type PrayerAction = {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, FeaturePageShellComponent],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-prayer',
   templateUrl: './prayer.page.html',
@@ -31,14 +31,14 @@ export class PrayerPage implements OnInit, OnDestroy {
   readonly primaryActions: PrayerAction[] = [
     {
       title: 'Submit a Prayer Request',
-      description: 'Share a prayer need with the church. Guests do not need an account to submit.',
+      description: 'Share a prayer need with the church. Guests can submit too.',
       icon: 'heart-outline',
       route: '/prayer/submit',
       accentClass: 'prayer-action-card--primary',
     },
     {
       title: 'Community Prayers',
-      description: 'Read approved prayer requests that have been shared with the wider community.',
+      description: 'Read approved requests shared with the wider church community.',
       icon: 'people-outline',
       route: '/community',
       accentClass: 'prayer-action-card--secondary',
@@ -47,7 +47,7 @@ export class PrayerPage implements OnInit, OnDestroy {
 
   readonly memberAction: PrayerAction = {
     title: 'My Prayer Requests',
-    description: 'View the requests you submitted while signed in as a member.',
+    description: 'Review the requests you have shared while signed in.',
     icon: 'document-text-outline',
     route: '/prayer/my-requests',
     accentClass: 'prayer-action-card--member',

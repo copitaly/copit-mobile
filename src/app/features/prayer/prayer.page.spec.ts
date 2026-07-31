@@ -6,7 +6,6 @@ import { NavController } from '@ionic/angular';
 
 import { AuthService } from '../../core/services/auth.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
-import { FeaturePageShellComponent } from '../../shared/feature-page-shell.component';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { PrayerPage } from './prayer.page';
 
@@ -124,18 +123,16 @@ describe('PrayerPage', () => {
     expect(element.textContent).toContain('My Prayer Requests');
   });
 
-  it('uses the shared feature page shell with back navigation because Prayer is a secondary route', () => {
+  it('uses the shared compact mobile header with back navigation because Prayer is a secondary route', () => {
     const componentFixture = TestBed.createComponent(PrayerPage);
     componentFixture.detectChanges();
 
-    expect(componentFixture.nativeElement.querySelector('[data-testid="feature-page-surface"]')).not.toBeNull();
-
-    const shell = componentFixture.debugElement.query(By.directive(FeaturePageShellComponent));
     const header = componentFixture.debugElement.query(By.directive(MobileHeaderComponent))
       ?.componentInstance as MobileHeaderComponent;
 
-    expect(shell).not.toBeNull();
+    expect(componentFixture.nativeElement.querySelector('.prayer-shell')).not.toBeNull();
     expect(header.fallbackRoute).toBe('/tabs/home');
     expect(header.showBack).toBeTrue();
+    expect(header.title).toBe('Prayer');
   });
 });

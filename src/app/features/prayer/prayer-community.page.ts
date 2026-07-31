@@ -68,6 +68,14 @@ export class PrayerCommunityPage implements OnInit {
     return this.selectedCategory !== 'all' || this.selectedScope !== 'all';
   }
 
+  get selectedCategoryLabel(): string {
+    return this.categoryOptions.find((option) => option.value === this.selectedCategory)?.label ?? 'All Categories';
+  }
+
+  get selectedScopeLabel(): string {
+    return this.scopeOptions.find((option) => option.value === this.selectedScope)?.label ?? 'All';
+  }
+
   loadInitialPrayers(options?: { preserveExisting?: boolean; complete?: () => void }): void {
     const preserveExisting = !!options?.preserveExisting && this.prayers.length > 0;
     const requestId = ++this.listRequestId;

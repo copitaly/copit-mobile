@@ -66,10 +66,10 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
   ];
 
   readonly scopeOptions: Array<{ label: string; value: PrayerScope; helper: string }> = [
-    { label: 'Global', value: 'global', helper: 'For the whole Church of Pentecost Italy community.' },
-    { label: 'Area', value: 'area', helper: 'Associated with a specific Area.' },
-    { label: 'District', value: 'district', helper: 'Associated with a specific District.' },
-    { label: 'Local Church', value: 'local', helper: 'Associated with a specific local branch.' },
+    { label: 'Everyone', value: 'global', helper: 'Shared across COP Italy.' },
+    { label: 'My Area', value: 'area', helper: 'Shared with your Area.' },
+    { label: 'My District', value: 'district', helper: 'Shared with your District.' },
+    { label: 'My Local Church', value: 'local', helper: 'Shared with your local church.' },
   ];
 
   readonly visibilityOptions: Array<{ label: string; value: PrayerVisibility; helper: string }> = [
@@ -163,7 +163,7 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
   }
 
   get submitButtonLabel(): string {
-    return this.isSubmitting ? 'Submitting...' : 'Submit Prayer Request';
+    return this.isSubmitting ? 'Submitting...' : 'Share Prayer Request';
   }
 
   get canSubmit(): boolean {
