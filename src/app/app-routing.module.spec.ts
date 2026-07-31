@@ -3,7 +3,6 @@ import { CanActivateFn, CanMatchFn, Router } from '@angular/router';
 
 import { routes } from './app-routing.module';
 import { AuthService } from './core/services/auth.service';
-import { SelectedBranchService } from './core/services/selected-branch.service';
 import { SentryTelemetryService } from './core/services/sentry-telemetry.service';
 import { DevotionalDetailPage } from './features/devotionals/devotional-detail.page';
 import { DevotionalsPage } from './features/devotionals/devotionals.page';
@@ -112,64 +111,17 @@ describe('app routes', () => {
     expect(result.extras?.queryParams).toEqual({ authMode: 'forgot-password' });
   });
 
-  it('redirects the Donate tab to branch selection when no church is selected yet', async () => {
-    await TestBed.configureTestingModule({
-      providers: [
-        {
-          provide: SelectedBranchService,
-          useValue: {
-            getBranch: jasmine.createSpy('getBranch').and.returnValue(null),
-          },
-        },
-        {
-          provide: Router,
-          useValue: {
-            createUrlTree: jasmine
-              .createSpy('createUrlTree')
-              .and.callFake((commands: unknown[], extras?: { queryParams?: Record<string, string> }) => ({
-                commands,
-                extras,
-              })),
-          },
-        },
-      ],
-    }).compileComponents();
-
+  it('allows the Donate tab to render directly without a selected church redirect', () => {
     const tabsRoute = routes.find((item) => item.path === 'tabs');
     const donateRoute = tabsRoute?.children?.find((child) => child.path === 'donate');
-    const guard = donateRoute?.canActivate?.[0] as CanActivateFn;
-    const result = TestBed.runInInjectionContext(() => guard?.(donateRoute as never, {} as never)) as unknown as {
-      commands: string[];
-      extras?: { queryParams?: Record<string, string> };
-    };
 
-    expect(result.commands).toEqual(['/branches']);
-    expect(result.extras?.queryParams).toEqual({ fallback: '/tabs/home' });
+    expect(donateRoute?.loadComponent).toBeDefined();
+    expect(donateRoute?.canActivate).toBeUndefined();
   });
 
-  it('allows the Donate tab to render when a church is already selected', async () => {
-    await TestBed.configureTestingModule({
-      providers: [
-        {
-          provide: SelectedBranchService,
-          useValue: {
-            getBranch: jasmine.createSpy('getBranch').and.returnValue({ id: 12, name: 'Milan Central' }),
-          },
-        },
-        {
-          provide: Router,
-          useValue: {
-            createUrlTree: jasmine.createSpy('createUrlTree'),
-          },
-        },
-      ],
-    }).compileComponents();
+  it('redirects the legacy branches route to the Donate tab', () => {
+    const branchesRoute = routes.find((item) => item.path === 'branches');
 
-    const tabsRoute = routes.find((item) => item.path === 'tabs');
-    const donateRoute = tabsRoute?.children?.find((child) => child.path === 'donate');
-    const guard = donateRoute?.canActivate?.[0] as CanActivateFn;
-    const result = TestBed.runInInjectionContext(() => guard?.(donateRoute as never, {} as never));
-
-    expect(result).toBeTrue();
+    expect(branchesRoute?.redirectTo).toBe('tabs/donate');
   });
 });

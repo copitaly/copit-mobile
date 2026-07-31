@@ -48,11 +48,21 @@ interface SearchResultSection {
   selector: 'app-branch-select',
   template: `
     <ion-page>
-      <ion-content fullscreen class="branch-content feature-page-content">
-          <app-feature-page-shell class="branch-shell" style="flex:1;min-height:100%"
+      <ion-content
+        fullscreen
+        class="branch-content feature-page-content"
+        [class.branch-content--areas]="useEditorialAreaLayout"
+      >
+          <app-feature-page-shell
+            class="branch-shell"
+            [class.branch-shell--areas]="useEditorialAreaLayout"
+            style="flex:1;min-height:100%"
             title="Choose Church"
             [subtitle]="currentHelperText"
             [backFallbackRoute]="backFallbackRoute"
+            [headerTone]="useEditorialAreaLayout ? 'editorial' : 'inverse'"
+            [surfaceTone]="useEditorialAreaLayout ? 'flat' : 'sheet'"
+            [contentMaxWidth]="useEditorialAreaLayout ? '100%' : '520px'"
           >
             <ion-searchbar
               [(ngModel)]="searchTerm"
@@ -60,6 +70,7 @@ interface SearchResultSection {
               debounce="250"
               (ionInput)="onSearchChange()"
               class="branch-search"
+              [class.branch-search--areas]="useEditorialAreaLayout"
             ></ion-searchbar>
 
             <div *ngIf="loading" class="skeleton-stack" aria-live="polite">
@@ -222,8 +233,12 @@ interface SearchResultSection {
                   </ion-list>
                 </div>
 
-                <div class="browse-shell" *ngIf="hierarchyBaseBranches.length > 0; else noHierarchyBranches">
-                  <div class="browse-header">
+                <div
+                  class="browse-shell"
+                  [class.browse-shell--areas]="useEditorialAreaLayout"
+                  *ngIf="hierarchyBaseBranches.length > 0; else noHierarchyBranches"
+                >
+                  <div class="browse-header" [class.browse-header--areas]="useEditorialAreaLayout">
                     <div>
                       <div class="district-header">{{ currentSectionTitle }}</div>
                       <p class="browse-helper" *ngIf="currentLevel !== 'churches'">{{ currentHelperText }}</p>
@@ -255,14 +270,14 @@ interface SearchResultSection {
                     </ng-container>
                   </div>
 
-                  <ion-list lines="none" *ngIf="currentLevel === 'areas'">
+                  <ion-list lines="none" *ngIf="currentLevel === 'areas'" class="area-list">
                     <ion-item
                       button
                       [detail]="false"
                       lines="none"
                       *ngFor="let area of areaGroups"
                       (click)="selectArea(area)"
-                      class="branch-card hierarchy-card"
+                      class="branch-card hierarchy-card branch-card--area"
                     >
                       <ion-icon name="map-outline" slot="start" aria-hidden="true"></ion-icon>
                       <ion-label>
@@ -747,6 +762,10 @@ export class BranchSelectPage implements OnInit {
       return 'districts';
     }
     return 'areas';
+  }
+
+  get useEditorialAreaLayout(): boolean {
+    return this.currentLevel === 'areas';
   }
 
   get currentSectionTitle(): string {

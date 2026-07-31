@@ -9,10 +9,14 @@ import { StackNavigationService } from '../core/services/stack-navigation.servic
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-mobile-header',
   template: `
-    <div class="app-header__inner app-header__inner--mobile-header">
+    <div
+      class="app-header__inner app-header__inner--mobile-header"
+      [class.app-header__inner--editorial]="tone === 'editorial'"
+    >
       <ion-back-button
         *ngIf="showBack"
         class="app-header__back"
+        [class.app-header__back--editorial]="tone === 'editorial'"
         icon="chevron-back"
         text=""
         [defaultHref]="fallbackRoute"
@@ -21,14 +25,21 @@ import { StackNavigationService } from '../core/services/stack-navigation.servic
       >
       </ion-back-button>
 
-      <div class="app-header__copy" [class.app-header__copy--centered]="centerCopy">
-        <h1 class="app-header__title">{{ title }}</h1>
-        <p *ngIf="subtitle" class="app-header__subtitle">{{ subtitle }}</p>
+      <div
+        class="app-header__copy"
+        [class.app-header__copy--centered]="centerCopy"
+        [class.app-header__copy--editorial]="tone === 'editorial'"
+      >
+        <h1 class="app-header__title" [class.app-header__title--editorial]="tone === 'editorial'">{{ title }}</h1>
+        <p *ngIf="subtitle" class="app-header__subtitle" [class.app-header__subtitle--editorial]="tone === 'editorial'">
+          {{ subtitle }}
+        </p>
       </div>
 
       <button
         *ngIf="actionIcon && actionAriaLabel"
         class="app-header__back app-header__action"
+        [class.app-header__back--editorial]="tone === 'editorial'"
         type="button"
         [attr.aria-label]="actionAriaLabel"
         [disabled]="actionDisabled"
@@ -60,6 +71,36 @@ import { StackNavigationService } from '../core/services/stack-navigation.servic
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
         padding: 0;
       }
+
+      .app-header__back--editorial::part(native) {
+        background: #ffffff;
+        color: #081f5c;
+        backdrop-filter: none;
+        box-shadow:
+          0 8px 18px rgba(7, 24, 69, 0.05),
+          inset 0 0 0 1px rgba(8, 31, 92, 0.08);
+      }
+
+      .app-header__copy--editorial {
+        gap: 0.28rem;
+      }
+
+      .app-header__title--editorial,
+      .app-header__subtitle--editorial {
+        color: #081f5c;
+      }
+
+      .app-header__title--editorial {
+        font-size: 1.42rem;
+        line-height: 1.12;
+        letter-spacing: -0.025em;
+      }
+
+      .app-header__subtitle--editorial {
+        color: rgba(8, 31, 92, 0.68);
+        font-size: 0.92rem;
+        line-height: 1.38;
+      }
     `,
   ],
 })
@@ -76,6 +117,7 @@ export class MobileHeaderComponent {
   @Input() actionAriaLabel = '';
   @Input() actionDisabled = false;
   @Input() action: (() => void | Promise<void>) | null = null;
+  @Input() tone: 'inverse' | 'editorial' = 'inverse';
 
   handleBackClick(event: Event): void {
     event.preventDefault();

@@ -2,7 +2,6 @@ import { inject, NgModule } from '@angular/core';
 import { CanActivateFn, CanMatchFn, PreloadAllModules, Router, RouterModule, Routes } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 import { AuthService } from './core/services/auth.service';
-import { SelectedBranchService } from './core/services/selected-branch.service';
 import { FeatureArea, SentryTelemetryService } from './core/services/sentry-telemetry.service';
 import { AUTH_FALLBACK_RETURN_URL, sanitizeAuthReturnUrl } from './features/auth/auth-form.utils';
 
@@ -28,19 +27,6 @@ const redirectForgotPasswordToProfileTab: CanActivateFn = () =>
   inject(Router).createUrlTree(['/tabs/profile'], {
     queryParams: { authMode: 'forgot-password' },
   });
-
-const resolveDonateTabDestination: CanActivateFn = () => {
-  const selectedBranchService = inject(SelectedBranchService);
-  const router = inject(Router);
-
-  if (selectedBranchService.getBranch()) {
-    return true;
-  }
-
-  return router.createUrlTree(['/branches'], {
-    queryParams: { fallback: '/tabs/home' },
-  });
-};
 
 const redirectUnauthenticatedToLogin = (router: Router, returnUrl: string) =>
   router.createUrlTree(['/login'], {
@@ -206,7 +192,6 @@ export const routes: Routes = [
       },
       {
         path: 'donate',
-        canActivate: [resolveDonateTabDestination],
         loadComponent: () => import('./features/donations/donate.page').then(m => m.DonatePage)
       },
       {
@@ -296,7 +281,8 @@ export const routes: Routes = [
   },
   {
     path: 'branches',
-    loadComponent: () => import('./features/branches/branch-select.page').then(m => m.BranchSelectPage)
+    redirectTo: 'tabs/donate',
+    pathMatch: 'full'
   },
   {
     path: 'saved-churches',

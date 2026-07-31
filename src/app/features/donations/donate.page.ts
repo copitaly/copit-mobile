@@ -8,8 +8,8 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, ViewChild } from '@angular/core';
-import { Router } from '@angular/router';
+import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, OnDestroy, ViewChild } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AlertController, IonContent, IonInput, IonicModule, ToastController } from '@ionic/angular';
 import { Subject, Subscription, firstValueFrom } from 'rxjs';
 import { filter, finalize, take, takeUntil, timeout } from 'rxjs/operators';
@@ -28,6 +28,7 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { DonationAnalyticsContextService } from '../../core/services/donation-analytics-context.service';
+import { DonateBranchSheetComponent } from './donate-branch-sheet.component';
 
 const EURO_SYMBOL = '\u20AC';
 const AMOUNT_PATTERN = /^\d+(\.\d+)?$/;
@@ -62,7 +63,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, IonicModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, IonicModule, DonateBranchSheetComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-donate',
   template: `
@@ -76,10 +77,9 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
 
         <div class="surface donate-surface">
           <div class="surface__content">
-            <ng-container *ngIf="branch">
               <div class="donate-form-card cop-card cop-card--soft">
               <section class="donate-branch-summary" aria-label="Selected church">
-                <div class="donate-branch-summary__top">
+                <div class="donate-branch-summary__top" *ngIf="branch; else chooseChurchField">
                   <div class="donate-branch-summary__copy">
                     <p class="section-label donate-branch-summary__eyebrow">Giving to</p>
                     <h2>{{ branch.name }}</h2>
@@ -95,33 +95,63 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                       </ng-container>
                     </p>
                   </div>
-                  <button type="button" class="donate-branch-summary__change" (click)="goToBranches()">
+                  <button
+                    #churchSelectorTrigger
+                    type="button"
+                    class="donate-branch-summary__change"
+                    aria-label="Change church"
+                    (click)="openChurchSelector()"
+                  >
                     Change
                   </button>
                 </div>
+
+                <ng-template #chooseChurchField>
+                  <button
+                    #churchSelectorTrigger
+                    type="button"
+                    class="donate-branch-selector"
+                    aria-label="Open church selector"
+                    (click)="openChurchSelector()"
+                  >
+                    <span class="donate-branch-selector__icon" aria-hidden="true">
+                      <ion-icon name="location-outline"></ion-icon>
+                    </span>
+                    <span class="donate-branch-selector__copy">
+                      <span class="section-label donate-branch-summary__eyebrow">Giving to</span>
+                      <strong>Choose your church</strong>
+                    </span>
+                    <span class="donate-branch-selector__chevron" aria-hidden="true">
+                      <ion-icon name="chevron-forward"></ion-icon>
+                    </span>
+                  </button>
+                </ng-template>
               </section>
 
               <form [formGroup]="form" (ngSubmit)="submitDonation()" class="donate-form">
                 <section class="donate-form__section">
                   <div class="section-label">CATEGORY</div>
-                  <div *ngIf="categoriesLoading" class="category-chip-list category-chip-list--loading" aria-live="polite">
+                  <div *ngIf="!branch" class="category-feedback" role="status">
+                    <p>Choose your church to load donation categories.</p>
+                  </div>
+                  <div *ngIf="branch && categoriesLoading" class="category-chip-list category-chip-list--loading" aria-live="polite">
                     <span *ngFor="let item of categorySkeletonItems" class="chip chip--skeleton"></span>
                   </div>
-                  <div *ngIf="!categoriesLoading && categoriesLoadError" class="category-feedback" role="status">
+                  <div *ngIf="branch && !categoriesLoading && categoriesLoadError" class="category-feedback" role="status">
                     <p>{{ categoriesLoadError }}</p>
                     <ion-button type="button" fill="outline" size="small" (click)="retryCategoryLoad()">
                       Retry
                     </ion-button>
                   </div>
                   <div
-                    *ngIf="!categoriesLoading && !categoriesLoadError && categories.length === 0"
+                    *ngIf="branch && !categoriesLoading && !categoriesLoadError && categories.length === 0"
                     class="category-feedback"
                     role="status"
                   >
                     <p>No donation categories are available for this branch.</p>
                   </div>
                   <div
-                    *ngIf="!categoriesLoading && !categoriesLoadError && categories.length > 0"
+                    *ngIf="branch && !categoriesLoading && !categoriesLoadError && categories.length > 0"
                     class="category-chip-list"
                     role="group"
                     aria-label="Donation category"
@@ -281,12 +311,16 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                 </div>
               </form>
               </div>
-            </ng-container>
-
           </div>
         </div>
         </div>
       </ion-content>
+
+      <app-donate-branch-sheet
+        [isOpen]="isBranchSheetOpen"
+        (dismissed)="handleBranchSheetDismissed()"
+        (branchSelected)="handleBranchSelected($event)"
+      ></app-donate-branch-sheet>
     </ion-page>
   `,
   styles: [
@@ -300,6 +334,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
 export class DonatePage implements AfterViewInit, OnDestroy {
   readonly categorySkeletonItems = [1, 2, 3, 4, 5, 6];
   categories: DonationCategory[] = [];
+  isBranchSheetOpen = false;
 
   form = this.fb.group({
     categoryId: this.fb.control<number | null>(null, Validators.required),
@@ -321,8 +356,11 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   @ViewChild(IonContent) private content?: IonContent;
   @ViewChild('amountInput') private amountInput?: IonInput;
   @ViewChild('emailInput') private emailInput?: IonInput;
+  @ViewChild('churchSelectorTrigger', { read: ElementRef })
+  private churchSelectorTrigger?: ElementRef<HTMLElement>;
 
   private branchSub: Subscription;
+  private readonly churchSelectorQueryParam = 'churchSelector';
   private pendingMobileDonationId?: number;
   private pendingRecurringDonationId?: number;
   private pendingTransactionReference?: string;
@@ -336,6 +374,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   private resolvedUserRole: string | null = this.normalizeRole(this.authService.currentUserSnapshot?.role);
   private readonly destroy$ = new Subject<void>();
   private lastTrackedDonationFormChurchId: number | null = null;
+  private shouldRestoreChurchSelectorFocus = false;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -343,6 +382,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     private readonly donationFlowState: DonationFlowStateService,
     private readonly authService: AuthService,
     private readonly selectedBranchService: SelectedBranchService,
+    private readonly activatedRoute: ActivatedRoute,
     private readonly router: Router,
     private readonly stripePaymentService: StripePaymentService,
     private readonly toastController: ToastController,
@@ -400,6 +440,10 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
     this.ensureMemberProfileResolved();
     this.prefillDonorEmailOnce();
+
+    this.activatedRoute.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+      this.isBranchSheetOpen = params.get(this.churchSelectorQueryParam) === '1';
+    });
   }
 
   ngAfterViewInit(): void {
@@ -544,9 +588,40 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   goToBranches(): void {
-    this.router.navigate(['/branches'], {
-      queryParams: { fallback: '/tabs/donate' },
+    this.openChurchSelector();
+  }
+
+  openChurchSelector(): void {
+    this.shouldRestoreChurchSelectorFocus = true;
+    void this.router.navigate([], {
+      relativeTo: this.activatedRoute,
+      queryParams: { [this.churchSelectorQueryParam]: '1' },
+      queryParamsHandling: 'merge',
     });
+  }
+
+  handleBranchSheetDismissed(): void {
+    if (this.isBranchSheetOpen) {
+      this.closeChurchSelector();
+      return;
+    }
+
+    this.restoreChurchSelectorFocusIfNeeded();
+  }
+
+  handleBranchSelected(branch: PublicBranch): void {
+    if (!this.selectedBranchService.setBranch(branch)) {
+      return;
+    }
+
+    void this.analyticsService.trackBranchSelected({
+      church_id: branch.id,
+      district_id: branch.district?.id ?? undefined,
+      area_id: branch.area?.id ?? undefined,
+      user_type: this.analyticsService.getUserType(),
+    });
+
+    this.closeChurchSelector();
   }
 
   setCategory(optionId: number): void {
@@ -629,7 +704,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   get ctaEnabled(): boolean {
-    return this.form.valid && !this.categoriesLoading && !this.categoriesLoadError && this.categories.length > 0;
+    return !!this.branch && this.form.valid && !this.categoriesLoading && !this.categoriesLoadError && this.categories.length > 0;
   }
 
   get frequency(): DonationFrequency {
@@ -647,6 +722,10 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   get ctaLabel(): string {
     if (this.nativeLoading) {
       return this.isMonthlySelected ? 'Starting monthly gift...' : 'Processing...';
+    }
+
+    if (!this.branch) {
+      return 'Choose your church to continue';
     }
 
     if (this.categoriesLoading) {
@@ -1298,5 +1377,25 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
   private isTimeoutError(error: unknown): boolean {
     return !!error && typeof error === 'object' && 'name' in error && (error as { name?: string }).name === 'TimeoutError';
+  }
+
+  private closeChurchSelector(): void {
+    void this.router.navigate([], {
+      relativeTo: this.activatedRoute,
+      queryParams: { [this.churchSelectorQueryParam]: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  private restoreChurchSelectorFocusIfNeeded(): void {
+    if (!this.shouldRestoreChurchSelectorFocus) {
+      return;
+    }
+
+    this.shouldRestoreChurchSelectorFocus = false;
+    setTimeout(() => {
+      this.churchSelectorTrigger?.nativeElement.focus();
+    }, 50);
   }
 }

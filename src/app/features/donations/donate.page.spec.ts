@@ -1,6 +1,6 @@
 import { FormBuilder } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { AlertController, ToastController } from '@ionic/angular';
 import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
 
@@ -23,6 +23,7 @@ describe('DonatePage', () => {
   let donationFlowState: jasmine.SpyObj<DonationFlowStateService>;
   let stripePaymentService: jasmine.SpyObj<StripePaymentService>;
   let selectedBranch$: BehaviorSubject<PublicBranch | null>;
+  let queryParamMap$: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
 
   const branch: PublicBranch = {
     id: 12,
@@ -59,6 +60,7 @@ describe('DonatePage', () => {
     donationFlowState = jasmine.createSpyObj<DonationFlowStateService>('DonationFlowStateService', ['setSummary']);
     stripePaymentService = jasmine.createSpyObj<StripePaymentService>('StripePaymentService', ['presentPaymentSheet']);
     selectedBranch$ = new BehaviorSubject<PublicBranch | null>(null);
+    queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
 
     donationsService.getPublicDonationCategories.and.returnValue(of([]));
     stripePaymentService.presentPaymentSheet.and.resolveTo({ status: 'completed' });
@@ -75,7 +77,11 @@ describe('DonatePage', () => {
         currentUser$: of(null),
         getCurrentUser: jasmine.createSpy().and.returnValue(of(null)),
       } as unknown as AuthService,
-      { selectedBranch$ } as unknown as SelectedBranchService,
+      {
+        selectedBranch$,
+        setBranch: jasmine.createSpy().and.returnValue(true),
+      } as unknown as SelectedBranchService,
+      { queryParamMap: queryParamMap$.asObservable() } as unknown as ActivatedRoute,
       router,
       stripePaymentService,
       {} as ToastController,
@@ -87,6 +93,7 @@ describe('DonatePage', () => {
       {
         trackDonationCheckoutStarted: jasmine.createSpy().and.resolveTo(),
         trackDonationPaymentFailed: jasmine.createSpy().and.resolveTo(),
+        trackBranchSelected: jasmine.createSpy().and.resolveTo(),
         getAmountBucket: jasmine.createSpy().and.returnValue('0-99'),
         getUserType: jasmine.createSpy().and.returnValue('guest'),
       } as unknown as AnalyticsService,
@@ -268,5 +275,26 @@ describe('DonatePage', () => {
 
     expect(page.nativeError).toBe('Payment failed. Please try again.');
     expect(page.nativeLoading).toBeFalse();
+  });
+
+  it('opens the church selector by adding the selector query param', () => {
+    page.openChurchSelector();
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: jasmine.anything(),
+      queryParams: { churchSelector: '1' },
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('closes the selector and updates the selected branch when a church is chosen', () => {
+    page.handleBranchSelected(branch);
+
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: jasmine.anything(),
+      queryParams: { churchSelector: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   });
 });
