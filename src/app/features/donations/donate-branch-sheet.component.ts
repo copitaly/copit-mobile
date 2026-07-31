@@ -109,6 +109,7 @@ interface AreaBrowseGroup {
                 *ngFor="let row of visibleRows"
                 type="button"
                 class="donate-branch-sheet__row"
+                [disabled]="row.disabled"
                 [attr.aria-label]="row.ariaLabel"
                 (click)="handleRowClick(row)"
               >
@@ -308,6 +309,9 @@ interface AreaBrowseGroup {
 })
 export class DonateBranchSheetComponent implements OnChanges {
   @Input() isOpen = false;
+  @Input() mode: 'donate' | 'save' = 'donate';
+  @Input() savingBranchId: number | null = null;
+  @Input() savedBranchIds: number[] = [];
 
   @Output() dismissed = new EventEmitter<void>();
   @Output() branchSelected = new EventEmitter<PublicBranch>();
@@ -353,7 +357,7 @@ export class DonateBranchSheetComponent implements OnChanges {
 
   get sheetSubtitle(): string {
     if (this.currentLevel === 'areas') {
-      return 'Where would you like to give?';
+      return this.mode === 'save' ? 'Choose a church to save for quick access.' : 'Where would you like to give?';
     }
 
     return '';
@@ -385,7 +389,9 @@ export class DonateBranchSheetComponent implements OnChanges {
 
   get sectionCopy(): string {
     if (this.currentLevel === 'churches') {
-      return 'Select the church you want to support.';
+      return this.mode === 'save'
+        ? 'Select a church to add to My Churches.'
+        : 'Select the church you want to support.';
     }
 
     if (this.currentLevel === 'districts') {
@@ -488,6 +494,7 @@ export class DonateBranchSheetComponent implements OnChanges {
     title: string;
     subtitle: string;
     ariaLabel: string;
+    disabled?: boolean;
     payload: AreaBrowseGroup | DistrictBrowseGroup | PublicBranch;
   }> {
     const query = this.searchTerm.trim().toLowerCase();
@@ -498,8 +505,9 @@ export class DonateBranchSheetComponent implements OnChanges {
         .map((branch) => ({
           icon: 'location-outline',
           title: branch.name,
-          subtitle: this.getBranchHierarchy(branch),
-          ariaLabel: `Choose church ${branch.name}`,
+          subtitle: this.getChurchSubtitle(branch),
+          ariaLabel: this.mode === 'save' ? `Save church ${branch.name}` : `Choose church ${branch.name}`,
+          disabled: this.isChurchDisabled(branch),
           payload: branch,
         }));
     }
@@ -589,7 +597,12 @@ export class DonateBranchSheetComponent implements OnChanges {
       return;
     }
 
-    this.branchSelected.emit(row.payload as PublicBranch);
+    const branch = row.payload as PublicBranch;
+    if (this.isChurchDisabled(branch)) {
+      return;
+    }
+
+    this.branchSelected.emit(branch);
   }
 
   private resetTransientState(): void {
@@ -613,6 +626,28 @@ export class DonateBranchSheetComponent implements OnChanges {
       parts.push(`${branch.area.name} Area`);
     }
     return parts.join(' · ');
+  }
+
+  private getChurchSubtitle(branch: PublicBranch): string {
+    if (this.mode === 'save') {
+      if (this.savingBranchId === branch.id) {
+        return 'Saving church...';
+      }
+
+      if (this.savedBranchIds.includes(branch.id)) {
+        return 'Already saved';
+      }
+    }
+
+    return this.getBranchHierarchy(branch);
+  }
+
+  private isChurchDisabled(branch: PublicBranch): boolean {
+    if (this.currentLevel !== 'churches' || this.mode !== 'save') {
+      return false;
+    }
+
+    return this.savedBranchIds.includes(branch.id) || this.savingBranchId !== null;
   }
 
   private matchesQuery(values: Array<string | null | undefined>, query: string): boolean {

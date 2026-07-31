@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { IonicModule } from '@ionic/angular';
+import { AlertController, IonicModule, ToastController } from '@ionic/angular';
 
 import { PublicBranch } from '../../core/models/branch.model';
 import { SavedChurch } from '../../core/models/user.model';
@@ -10,11 +10,12 @@ import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
+import { DonateBranchSheetComponent } from '../donations/donate-branch-sheet.component';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent, DonateBranchSheetComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-saved-churches',
   template: `
@@ -28,6 +29,16 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
               fallbackRoute="/tabs/profile"
               tone="editorial"
             ></app-mobile-header>
+            <button
+              *ngIf="showAddAction"
+              type="button"
+              class="saved-header__add"
+              aria-label="Add another church"
+              (click)="openChurchSelector()"
+            >
+              <ion-icon name="add" aria-hidden="true"></ion-icon>
+              <span>Add</span>
+            </button>
           </header>
 
           <div class="saved-surface">
@@ -54,7 +65,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                   <h2>You haven't saved any churches yet.</h2>
                   <p>Save a church to make giving and future access faster.</p>
                 </div>
-                <ion-button expand="block" class="choose-church-button" (click)="goToBranches()">
+                <ion-button expand="block" class="choose-church-button" (click)="openChurchSelector()">
                   <ion-icon name="location-outline" slot="start" aria-hidden="true"></ion-icon>
                   <span>Browse churches</span>
                 </ion-button>
@@ -64,12 +75,12 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                 <div
                   class="saved-card saved-card--interactive"
                   *ngFor="let saved of savedChurches"
-                  (click)="selectSavedChurch(saved)"
-                  (keydown.enter)="selectSavedChurch(saved)"
-                  (keydown.space)="selectSavedChurch(saved, $event)"
+                  (click)="donateToSavedChurch(saved)"
+                  (keydown.enter)="donateToSavedChurch(saved)"
+                  (keydown.space)="donateToSavedChurch(saved, $event)"
                   tabindex="0"
-                  role="button"
-                  [attr.aria-label]="'Open saved church ' + saved.church.name"
+                  role="link"
+                  [attr.aria-label]="'Donate to saved church ' + saved.church.name"
                 >
                   <div class="saved-card__content">
                     <div class="saved-copy">
@@ -94,19 +105,38 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      class="saved-action"
-                      (click)="selectSavedChurch(saved, $event)"
-                    >
-                      Donate
-                    </button>
+                    <div class="saved-actions">
+                      <button
+                        type="button"
+                        class="saved-action saved-action--secondary"
+                        [disabled]="savingBranchId === saved.church.id"
+                        (click)="confirmUnsave(saved, $event)"
+                      >
+                        Remove
+                      </button>
+                      <button
+                        type="button"
+                        class="saved-action"
+                        [disabled]="savingBranchId === saved.church.id"
+                        (click)="donateToSavedChurch(saved, $event)"
+                      >
+                        Donate
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+        <app-donate-branch-sheet
+          [isOpen]="isChurchSelectorOpen"
+          mode="save"
+          [savingBranchId]="savingBranchId"
+          [savedBranchIds]="savedBranchIds"
+          (dismissed)="handleChurchSelectorDismissed()"
+          (branchSelected)="handleChurchSelectedForSave($event)"
+        ></app-donate-branch-sheet>
       </ion-content>
     </ion-page>
   `,
@@ -122,6 +152,16 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
       .saved-shell {
         gap: 0.95rem;
+        min-height: 100%;
+        padding-bottom: calc(1.5rem + var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)));
+      }
+
+      .saved-header {
+        position: relative;
+      }
+
+      .saved-header ::ng-deep .app-header__copy--editorial {
+        padding-right: 5rem;
       }
 
       .saved-surface {
@@ -142,12 +182,16 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
       .saved-surface__content {
         gap: 0.95rem;
-        padding-bottom: calc(1.1rem + var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)));
+        padding-bottom: 0;
       }
 
       .saved-stack,
       .skeleton-stack {
         gap: 0.85rem;
+      }
+
+      .saved-stack {
+        align-content: flex-start;
       }
 
       .saved-card,
@@ -202,6 +246,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         font-weight: 700;
         line-height: 1.24;
         letter-spacing: -0.01em;
+        text-transform: capitalize;
       }
 
       .saved-copy__line {
@@ -247,7 +292,6 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
       }
 
       .saved-action {
-        align-self: flex-start;
         min-height: 38px;
         padding: 0.45rem 0.95rem;
         border: 0;
@@ -261,6 +305,64 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
       .saved-action:active {
         background: #d79d1f;
+      }
+
+      .saved-actions {
+        display: flex;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+      }
+
+      .saved-action--secondary {
+        background: #ffffff;
+        color: #9e2e2e;
+        border: 1px solid rgba(158, 46, 46, 0.16);
+        box-shadow: none;
+      }
+
+      .saved-action--secondary:active {
+        background: rgba(158, 46, 46, 0.06);
+      }
+
+      .saved-header ::ng-deep .app-header__title--editorial {
+        word-spacing: 0.08em;
+        letter-spacing: -0.015em;
+      }
+
+      .saved-header ::ng-deep .app-header__subtitle--editorial {
+        max-width: 28rem;
+      }
+
+      .saved-header__add {
+        position: absolute;
+        top: calc(var(--cop-safe-top, env(safe-area-inset-top, 0px)) + 0.3rem);
+        right: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.18rem;
+        min-height: 44px;
+        padding: 0 0.7rem;
+        border: 1px solid rgba(8, 31, 92, 0.1);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.94);
+        color: #0b1d73;
+        font: inherit;
+        font-size: 0.8rem;
+        font-weight: 700;
+        box-shadow: none;
+      }
+
+      .saved-header__add ion-icon {
+        font-size: 0.88rem;
+      }
+
+      .saved-header__add span {
+        line-height: 1;
+      }
+
+      .saved-header__add:active {
+        background: rgba(245, 247, 252, 0.98);
       }
 
       .state-card {
@@ -354,6 +456,8 @@ export class SavedChurchesPage implements OnInit {
   savedChurches: SavedChurch[] = [];
   loading = true;
   errorMessage = '';
+  isChurchSelectorOpen = false;
+  savingBranchId: number | null = null;
   readonly skeletonItems = [1, 2, 3];
 
   constructor(
@@ -361,7 +465,9 @@ export class SavedChurchesPage implements OnInit {
     private readonly selectedBranchService: SelectedBranchService,
     private readonly router: Router,
     private readonly sentryTelemetry: SentryTelemetryService,
-    private readonly analyticsService: AnalyticsService
+    private readonly analyticsService: AnalyticsService,
+    private readonly alertController: AlertController,
+    private readonly toastController: ToastController
   ) {}
 
   ngOnInit(): void {
@@ -407,14 +513,22 @@ export class SavedChurchesPage implements OnInit {
     });
   }
 
-  selectSavedChurch(saved: SavedChurch, event?: Event): void {
+  get savedBranchIds(): number[] {
+    return this.savedChurches.map((savedChurch) => savedChurch.church.id);
+  }
+
+  get showAddAction(): boolean {
+    return !this.loading && !this.errorMessage && this.savedChurches.length > 0;
+  }
+
+  donateToSavedChurch(saved: SavedChurch, event?: Event): void {
     event?.stopPropagation();
     const branch = this.toPublicBranch(saved);
 
     try {
       const didSetBranch = this.selectedBranchService.setBranch(branch);
       if (!didSetBranch || this.selectedBranchService.getBranch()?.id !== branch.id) {
-        void this.router.navigate(['/branches']);
+        this.openChurchSelector();
         return;
       }
       void this.analyticsService.trackBranchSelected({
@@ -423,14 +537,64 @@ export class SavedChurchesPage implements OnInit {
         area_id: branch.area?.id ?? undefined,
         user_type: this.analyticsService.getUserType(),
       });
-      void this.router.navigate(['/donate']);
+      void this.router.navigate(['/tabs/donate']);
     } catch {
-      void this.router.navigate(['/branches']);
+      this.openChurchSelector();
     }
   }
 
-  goToBranches(): void {
-    void this.router.navigate(['/branches']);
+  openChurchSelector(): void {
+    this.isChurchSelectorOpen = true;
+  }
+
+  handleChurchSelectorDismissed(): void {
+    this.isChurchSelectorOpen = false;
+  }
+
+  handleChurchSelectedForSave(branch: PublicBranch): void {
+    if (this.savingBranchId !== null) {
+      return;
+    }
+
+    if (this.savedBranchIds.includes(branch.id)) {
+      void this.presentToast('Church already saved', 'information-circle');
+      return;
+    }
+
+    this.savingBranchId = branch.id;
+    this.authService.saveChurch(branch.id).subscribe({
+      next: async () => {
+        this.savingBranchId = null;
+        this.isChurchSelectorOpen = false;
+        await this.presentToast('Church saved', 'heart');
+        this.fetchSavedChurches();
+      },
+      error: async () => {
+        this.savingBranchId = null;
+        await this.presentToast('Could not update saved church', 'information-circle');
+      },
+    });
+  }
+
+  async confirmUnsave(saved: SavedChurch, event?: Event): Promise<void> {
+    event?.stopPropagation();
+
+    const alert = await this.alertController.create({
+      header: 'Remove church?',
+      message: `Remove ${saved.church.name} from My Churches?`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Remove',
+          role: 'destructive',
+          handler: () => {
+            this.unsaveChurch(saved);
+          },
+        },
+      ],
+    });
+
+    await alert.present();
   }
 
   private fetchSavedChurches(): void {
@@ -460,6 +624,25 @@ export class SavedChurchesPage implements OnInit {
     });
   }
 
+  private unsaveChurch(saved: SavedChurch): void {
+    if (this.savingBranchId !== null) {
+      return;
+    }
+
+    this.savingBranchId = saved.church.id;
+    this.authService.unsaveChurch(saved.id).subscribe({
+      next: async () => {
+        this.savingBranchId = null;
+        this.savedChurches = this.savedChurches.filter((item) => item.id !== saved.id);
+        await this.presentToast('Removed from saved', 'checkmark-circle');
+      },
+      error: async () => {
+        this.savingBranchId = null;
+        await this.presentToast('Could not update saved church', 'information-circle');
+      },
+    });
+  }
+
   private toPublicBranch(saved: SavedChurch): PublicBranch {
     return {
       id: saved.church.id,
@@ -471,5 +654,16 @@ export class SavedChurchesPage implements OnInit {
       donations_enabled: saved.church.donations_enabled,
       is_active: saved.church.is_active,
     };
+  }
+
+  private async presentToast(message: string, icon: string): Promise<void> {
+    const toast = await this.toastController.create({
+      message,
+      duration: 2200,
+      position: 'top',
+      icon,
+    });
+
+    await toast.present();
   }
 }

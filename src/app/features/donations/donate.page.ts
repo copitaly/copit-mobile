@@ -318,6 +318,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
 
       <app-donate-branch-sheet
         [isOpen]="isBranchSheetOpen"
+        mode="donate"
         (dismissed)="handleBranchSheetDismissed()"
         (branchSelected)="handleBranchSelected($event)"
       ></app-donate-branch-sheet>
