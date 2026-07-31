@@ -224,14 +224,14 @@ describe('BibleStudyPage', () => {
     expect(router.navigateByUrl.calls.count()).toBe(1);
   });
 
-  it('navigates to the manual detail route when a row is tapped', async () => {
+  it('navigates to the reader route when a row is tapped', async () => {
     bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
 
     await createComponent();
 
     page.openManual(firstManual);
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/11');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/11/read');
   });
 
   it('opens the reader when the full featured card is tapped', async () => {
@@ -258,7 +258,7 @@ describe('BibleStudyPage', () => {
     cta.click();
 
     expect(router.navigateByUrl.calls.count()).toBe(1);
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/11');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/11/read');
   });
 
   it('does not intentionally render admin-only fields', async () => {

@@ -305,7 +305,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   openFeaturedManual(): void {
     if (this.featuredManual?.id) {
-      void this.navigateTo(`/bible-study/${this.featuredManual.id}`, true);
+      void this.navigateTo(`/bible-study/${this.featuredManual.id}/read`, true);
       return;
     }
 

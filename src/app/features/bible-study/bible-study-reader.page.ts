@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, HostListener, OnDestroy, ViewChild, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule, ToastController } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 import {
   PageRenderedEvent,
@@ -13,6 +13,7 @@ import {
 } from 'ngx-extended-pdf-viewer';
 
 import { BibleStudyManualDetail } from '../../core/models/bible-study.model';
+import { BibleStudyDownloadService } from '../../core/services/bible-study-download.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
@@ -40,7 +41,9 @@ export class BibleStudyReaderPage implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly bibleStudyService = inject(BibleStudyService);
+  private readonly bibleStudyDownloadService = inject(BibleStudyDownloadService);
   private readonly stackNavigation = inject(StackNavigationService);
+  private readonly toastController = inject(ToastController);
   private readonly host = inject(ElementRef<HTMLElement>);
   private pdfLoadTimeoutId: ReturnType<typeof setTimeout> | undefined;
   private viewerLayoutTimeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -69,6 +72,7 @@ export class BibleStudyReaderPage implements OnDestroy {
   pdfSourceUrl: string | null = null;
   viewerRefreshToken = 0;
   viewerProgressPercent = 0;
+  downloadingPdf = false;
 
   currentPage = 1;
   totalPages = 0;
@@ -135,42 +139,38 @@ export class BibleStudyReaderPage implements OnDestroy {
 
     const requestId = ++this.loadRequestId;
     this.setReaderState('loading-manual', { requestId });
-    this.manualRequestSubscription = this.bibleStudyService
-      .getPublishedManualDetail(rawId)
-      .subscribe({
-        next: (manual) => {
-          if (!this.isViewActive || requestId !== this.loadRequestId) {
-            return;
-          }
+    this.manualRequestSubscription = this.bibleStudyService.getPublishedManualDetail(rawId).subscribe({
+      next: (manual) => {
+        if (!this.isViewActive || requestId !== this.loadRequestId) {
+          return;
+        }
 
-          const pdfSourceUrl = this.normalizePdfSourceUrl(manual.pdf_url);
+        const pdfSourceUrl = this.normalizePdfSourceUrl(manual.pdf_url);
 
-          this.manual = manual;
-          this.loading = false;
-          this.pdfSourceUrl = pdfSourceUrl;
-          this.pdfAvailable = !!pdfSourceUrl;
-          if (pdfSourceUrl) {
-            this.setReaderState('loading-document', { requestId });
-            this.prepareViewer();
-            this.scheduleViewerActivation();
-          } else {
-            this.setReaderState('unavailable', { reason: 'missing-pdf-url' });
-          }
-        },
-        error: (error: unknown) => {
-          if (!this.isViewActive || requestId !== this.loadRequestId) {
-            return;
-          }
+        this.manual = manual;
+        this.loading = false;
+        this.pdfSourceUrl = pdfSourceUrl;
+        this.pdfAvailable = !!pdfSourceUrl;
+        if (pdfSourceUrl) {
+          this.setReaderState('loading-document', { requestId });
+          this.prepareViewer();
+          this.scheduleViewerActivation();
+        } else {
+          this.setReaderState('unavailable', { reason: 'missing-pdf-url' });
+        }
+      },
+      error: (error: unknown) => {
+        if (!this.isViewActive || requestId !== this.loadRequestId) {
+          return;
+        }
 
-          this.loading = false;
-          this.manual = null;
-          this.notFound = error instanceof HttpErrorResponse && error.status === 404;
-          this.errorMessage = this.notFound
-            ? ''
-            : this.resolveManualLoadErrorMessage(error);
-          this.setReaderState('error', { notFound: this.notFound });
-        },
-      });
+        this.loading = false;
+        this.manual = null;
+        this.notFound = error instanceof HttpErrorResponse && error.status === 404;
+        this.errorMessage = this.notFound ? '' : this.resolveManualLoadErrorMessage(error);
+        this.setReaderState('error', { notFound: this.notFound });
+      },
+    });
   }
 
   retryLoad(): void {
@@ -182,16 +182,29 @@ export class BibleStudyReaderPage implements OnDestroy {
   }
 
   async goBackToManual(): Promise<void> {
-    if (!this.manual?.id) {
-      await this.stackNavigation.backWithFallback('/tabs/bible-study');
-      return;
-    }
-
-    await this.stackNavigation.backWithFallback(`/bible-study/${this.manual.id}`);
+    await this.stackNavigation.backWithFallback('/tabs/bible-study');
   }
 
   async goBackToList(): Promise<void> {
     await this.stackNavigation.backWithFallback('/tabs/bible-study');
+  }
+
+  async downloadPdf(): Promise<void> {
+    if (!this.manual?.id || this.downloadingPdf) {
+      return;
+    }
+
+    this.downloadingPdf = true;
+
+    try {
+      const freshManual = await this.loadFreshManual(this.manual.id);
+      this.manual = freshManual;
+      await this.downloadFromManual(freshManual, false);
+    } catch (error) {
+      await this.presentToast(this.resolveDownloadErrorMessage(error), 'alert-circle-outline');
+    } finally {
+      this.downloadingPdf = false;
+    }
   }
 
   handlePagesLoaded(event: PagesLoadedEvent): void {
@@ -266,7 +279,7 @@ export class BibleStudyReaderPage implements OnDestroy {
   }
 
   get readerBackFallbackRoute(): string {
-    return this.manual?.id ? `/bible-study/${this.manual.id}` : '/tabs/bible-study';
+    return '/tabs/bible-study';
   }
 
   get readerSubtitle(): string {
@@ -317,6 +330,14 @@ export class BibleStudyReaderPage implements OnDestroy {
 
   get toolbarDisabled(): boolean {
     return this.readerState !== 'ready' || !this.pdfAvailable || !!this.pdfErrorMessage || !this.totalPages;
+  }
+
+  get downloadDisabled(): boolean {
+    return this.downloadingPdf || !this.manual?.id || !this.pdfAvailable || !!this.pdfErrorMessage;
+  }
+
+  get downloadActionAriaLabel(): string {
+    return this.downloadingPdf ? 'Downloading PDF' : 'Download PDF';
   }
 
   formatPageIndicator(): string {
@@ -378,6 +399,7 @@ export class BibleStudyReaderPage implements OnDestroy {
     this.viewerPage = 1;
     this.zoom = BibleStudyReaderPage.DEFAULT_ZOOM;
     this.zoomPercent = 100;
+    this.downloadingPdf = false;
   }
 
   private setZoomPercent(nextPercent: number): void {
@@ -438,10 +460,6 @@ export class BibleStudyReaderPage implements OnDestroy {
     this.viewerLayoutTimeoutId = setTimeout(() => {
       this.scheduleViewerActivation(attempt + 1);
     }, BibleStudyReaderPage.VIEWER_LAYOUT_RETRY_MS);
-  }
-
-  private requestViewerReflow(): void {
-    this.captureViewportDimensions();
   }
 
   private clearViewerLayoutTimer(): void {
@@ -567,6 +585,96 @@ export class BibleStudyReaderPage implements OnDestroy {
     return this.bibleStudyService.normalizeDocumentUrl(value);
   }
 
+  private async loadFreshManual(id: number): Promise<BibleStudyManualDetail> {
+    return new Promise<BibleStudyManualDetail>((resolve, reject) => {
+      this.bibleStudyService.getPublishedManualDetail(id).subscribe({
+        next: resolve,
+        error: reject,
+      });
+    });
+  }
+
+  private async downloadFromManual(manual: BibleStudyManualDetail, hasRetried: boolean): Promise<void> {
+    const pdfUrl = this.bibleStudyService.normalizeDocumentUrl(manual.pdf_url);
+    if (!pdfUrl) {
+      await this.presentToast('This manual does not currently have a readable PDF link.', 'alert-circle-outline');
+      return;
+    }
+
+    const fileName = this.buildDownloadFileName(manual);
+
+    try {
+      const result = await this.bibleStudyDownloadService.downloadPdf(pdfUrl, fileName);
+      const successMessage = result.shared
+        ? `${result.fileName} is ready from your device share sheet.`
+        : `${result.fileName} saved to ${result.locationLabel}.`;
+      await this.presentToast(successMessage, 'checkmark-circle-outline');
+    } catch (error) {
+      if (!hasRetried && this.shouldRetryExpiredLink(error)) {
+        const refreshedManual = await this.loadFreshManual(manual.id);
+        this.manual = refreshedManual;
+        await this.downloadFromManual(refreshedManual, true);
+        return;
+      }
+
+      throw error;
+    }
+  }
+
+  private buildDownloadFileName(manual: BibleStudyManualDetail): string {
+    const title = this.slugifySegment(manual.title, 'bible-study-manual');
+    const language = this.slugifySegment(manual.language_display || manual.language, 'manual');
+    return `${title}-${manual.year}-${language}.pdf`;
+  }
+
+  private slugifySegment(value: string | null | undefined, fallback: string): string {
+    const normalized = (value ?? '')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase();
+
+    return normalized || fallback;
+  }
+
+  private shouldRetryExpiredLink(error: unknown): boolean {
+    const message = String((error as { message?: string } | undefined)?.message ?? '').toLowerCase();
+    return (
+      message.includes('401') ||
+      message.includes('403') ||
+      message.includes('expired') ||
+      message.includes('unauthorized') ||
+      message.includes('signature')
+    );
+  }
+
+  private resolveDownloadErrorMessage(error: unknown): string {
+    const message = String((error as { message?: string } | undefined)?.message ?? '').toLowerCase();
+
+    if (message.includes('permission')) {
+      return 'Storage permission is required to download this PDF.';
+    }
+
+    if (message.includes('unauthorized') || message.includes('401') || message.includes('403') || message.includes('expired')) {
+      return 'This PDF link expired. Please try again to fetch a fresh copy.';
+    }
+
+    if (message.includes('timeout')) {
+      return 'Downloading this manual timed out. Please try again.';
+    }
+
+    if (message.includes('offline') || message.includes('network')) {
+      return 'You appear to be offline. Check your connection and try again.';
+    }
+
+    if (message.includes('invalid') || message.includes('unsupported')) {
+      return 'This PDF link is invalid or unsupported.';
+    }
+
+    return 'We could not download this manual right now. Please try again.';
+  }
+
   private resolvePdfErrorMessage(error: Error): string {
     const message = String(error?.message ?? '').toLowerCase();
     if (message.includes('invalid') || message.includes('unsupported') || message.includes('malformed')) {
@@ -604,5 +712,20 @@ export class BibleStudyReaderPage implements OnDestroy {
   private setReaderState(nextState: ReaderState, context: Record<string, unknown>): void {
     this.readerState = nextState;
     void context;
+  }
+
+  private async presentToast(message: string, icon: string): Promise<void> {
+    try {
+      const toast = await this.toastController.create({
+        message,
+        icon,
+        duration: 2600,
+        position: 'bottom',
+        cssClass: 'branch-save-toast',
+      });
+      await toast.present();
+    } catch {
+      // ignore toast errors
+    }
   }
 }

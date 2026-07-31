@@ -5,6 +5,10 @@
         [title]="readerTitle"
         [subtitle]="readerSubtitle"
         [fallbackRoute]="readerBackFallbackRoute"
+        actionIcon="download-outline"
+        [actionAriaLabel]="downloadActionAriaLabel"
+        [actionDisabled]="downloadDisabled"
+        [action]="downloadPdf.bind(this)"
       ></app-mobile-header>
     </div>
 
@@ -85,7 +89,7 @@
             <p>This manual does not currently have a readable PDF link.</p>
           </div>
           <ion-button expand="block" class="reader-state__button" (click)="goBackToManual()">
-            Back to Manual
+            Back to Bible Study
           </ion-button>
         </div>
 

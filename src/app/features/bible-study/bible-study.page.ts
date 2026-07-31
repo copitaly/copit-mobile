@@ -189,7 +189,7 @@ export class BibleStudyPage implements OnInit {
     }
 
     this.pendingManualId = manual.id;
-    void this.router.navigateByUrl(`/bible-study/${manual.id}`).finally(() => {
+    void this.router.navigateByUrl(`/bible-study/${manual.id}/read`).finally(() => {
       this.pendingManualId = null;
     });
   }
@@ -201,7 +201,7 @@ export class BibleStudyPage implements OnInit {
     }
 
     this.pendingManualId = manual.id;
-    const target = this.hasContinueReading ? `/bible-study/${manual.id}/read` : `/bible-study/${manual.id}`;
+    const target = `/bible-study/${manual.id}/read`;
     void this.router.navigateByUrl(target).finally(() => {
       this.pendingManualId = null;
     });

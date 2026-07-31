@@ -4,14 +4,16 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { By } from '@angular/platform-browser';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
-import { IonContent } from '@ionic/angular';
+import { IonContent, ToastController } from '@ionic/angular';
 import { of, Subject, throwError } from 'rxjs';
 import { ProgressBarEvent } from 'ngx-extended-pdf-viewer';
 
 import { BibleStudyManualDetail } from '../../core/models/bible-study.model';
 import { AuthService } from '../../core/services/auth.service';
+import { BibleStudyDownloadService } from '../../core/services/bible-study-download.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
+import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { BibleStudyPdfViewerComponent } from './bible-study-pdf-viewer.component';
 import { BibleStudyReaderPage } from './bible-study-reader.page';
 
@@ -40,7 +42,10 @@ describe('BibleStudyReaderPage', () => {
   let fixture: ComponentFixture<BibleStudyReaderPage>;
   let page: BibleStudyReaderPage;
   let bibleStudyService: jasmine.SpyObj<BibleStudyService>;
+  let downloadService: jasmine.SpyObj<BibleStudyDownloadService>;
   let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
+  let toastController: jasmine.SpyObj<ToastController>;
+  let toastElement: { present: jasmine.Spy<() => Promise<void>> };
   let boundingRectSpy: jasmine.Spy<() => DOMRect>;
 
   const manual: BibleStudyManualDetail = {
@@ -63,7 +68,9 @@ describe('BibleStudyReaderPage', () => {
       imports: [BibleStudyReaderPage],
       providers: [
         { provide: BibleStudyService, useValue: bibleStudyService },
+        { provide: BibleStudyDownloadService, useValue: downloadService },
         { provide: StackNavigationService, useValue: stackNavigationService },
+        { provide: ToastController, useValue: toastController },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -123,8 +130,14 @@ describe('BibleStudyReaderPage', () => {
 
       return null;
     });
+    downloadService = jasmine.createSpyObj<BibleStudyDownloadService>('BibleStudyDownloadService', ['downloadPdf']);
     stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
     stackNavigationService.backWithFallback.and.returnValue(Promise.resolve());
+    toastElement = {
+      present: jasmine.createSpy('present').and.returnValue(Promise.resolve()),
+    };
+    toastController = jasmine.createSpyObj<ToastController>('ToastController', ['create']);
+    toastController.create.and.returnValue(Promise.resolve(toastElement as never));
     spyOn(window, 'requestAnimationFrame').and.callFake((callback: FrameRequestCallback): number => {
       callback(16);
       return 1;
@@ -156,6 +169,17 @@ describe('BibleStudyReaderPage', () => {
     expect(viewer?.src).toBe('https://example.com/manual.pdf?X-Amz-Signature=fresh');
     expect(viewer?.zoom).toBe('page-width');
     expect(viewer?.page).toBe(1);
+  });
+
+  it('configures the reader header to fall back to the Bible Study list and expose download action', async () => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+
+    await createComponent();
+
+    const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
+    expect(header.fallbackRoute).toBe('/tabs/bible-study');
+    expect(header.actionIcon).toBe('download-outline');
+    expect(header.actionAriaLabel).toBe('Download PDF');
   });
 
   it('does not create the viewer before a usable pdf_url exists', async () => {
@@ -597,13 +621,13 @@ describe('BibleStudyReaderPage', () => {
     }
   });
 
-  it('uses the shared stack back flow for the reader with the manual detail fallback', async () => {
+  it('uses the shared stack back flow for the reader with the Bible Study list fallback', async () => {
     bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
 
     await createComponent();
     await page.goBackToManual();
 
-    expect(stackNavigationService.backWithFallback).toHaveBeenCalledWith('/bible-study/14');
+    expect(stackNavigationService.backWithFallback).toHaveBeenCalledWith('/tabs/bible-study');
   });
 
   it('falls back to the Bible Study list when the reader has no previous history and no manual is loaded', async () => {
@@ -615,6 +639,31 @@ describe('BibleStudyReaderPage', () => {
     await page.goBackToManual();
 
     expect(stackNavigationService.backWithFallback).toHaveBeenCalledWith('/tabs/bible-study');
+  });
+
+  it('downloads using a freshly fetched pdf url from the reader', async () => {
+    const refreshedManual = { ...manual, pdf_url: 'https://example.com/manual.pdf?X-Amz-Signature=fresh-download' };
+    bibleStudyService.getPublishedManualDetail.and.returnValues(of(manual), of(refreshedManual));
+    downloadService.downloadPdf.and.resolveTo({
+      fileName: 'manual.pdf',
+      locationLabel: 'your device share sheet',
+      shared: true,
+    });
+
+    await createComponent();
+    await page.downloadPdf();
+
+    expect(bibleStudyService.getPublishedManualDetail.calls.count()).toBe(2);
+    expect(downloadService.downloadPdf).toHaveBeenCalledWith(
+      'https://example.com/manual.pdf?X-Amz-Signature=fresh-download',
+      jasmine.stringMatching(/bible-study-manual-2026-english\.pdf/)
+    );
+    expect(toastController.create).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        message: 'manual.pdf is ready from your device share sheet.',
+        icon: 'checkmark-circle-outline',
+      })
+    );
   });
 
   it('does not render the tabs bar inside the full-screen reader flow', async () => {

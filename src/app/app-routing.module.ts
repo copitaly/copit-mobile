@@ -321,7 +321,8 @@ export const routes: Routes = [
   },
   {
     path: 'bible-study/:id',
-    loadComponent: () => import('./features/bible-study/bible-study-detail.page').then(m => m.BibleStudyDetailPage)
+    redirectTo: 'bible-study/:id/read',
+    pathMatch: 'full'
   },
   {
     path: 'prayer/submit',

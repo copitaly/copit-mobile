@@ -195,12 +195,13 @@ describe('Tabs routing', () => {
     expect(tabsRoute?.children?.find((child) => child.path === 'community')?.redirectTo).toBe('/community');
   });
 
-  it('keeps Bible Study detail and reader routes outside the tabs child route tree', async () => {
+  it('keeps the Bible Study reader route outside the tabs child route tree and redirects legacy detail URLs', async () => {
     const router = await createRouter();
     const tabsRoute = router.config.find((item) => item.path === 'tabs');
+    const detailRoute = router.config.find((item) => item.path === 'bible-study/:id');
 
-    expect(router.config.find((item) => item.path === 'bible-study/:id')).toBeDefined();
     expect(router.config.find((item) => item.path === 'bible-study/:id/read')).toBeDefined();
+    expect(detailRoute?.redirectTo).toBe('bible-study/:id/read');
     expect(tabsRoute?.children?.some((child) => child.path === 'bible-study/:id')).toBeFalse();
     expect(tabsRoute?.children?.some((child) => child.path === 'bible-study/:id/read')).toBeFalse();
   });
