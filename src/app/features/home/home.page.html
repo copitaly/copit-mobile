@@ -9,21 +9,6 @@
           <h1 class="cop-page-header__title">Welcome back</h1>
           <p class="muted-copy cop-page-header__subtitle">{{ greetingSupportText }}</p>
         </div>
-
-        <div class="greet__actions">
-          <button type="button" class="greet__btn greet__btn--muted" aria-label="Notifications coming soon" disabled>
-            <ion-icon name="notifications-outline" aria-hidden="true"></ion-icon>
-          </button>
-          <button
-            type="button"
-            class="greet__btn"
-            data-testid="account-button"
-            [attr.aria-label]="accountActionLabel"
-            (click)="openAccount()"
-          >
-            <ion-icon [name]="accountIconName" aria-hidden="true"></ion-icon>
-          </button>
-        </div>
       </section>
 
       <section aria-label="Featured Bible Study">

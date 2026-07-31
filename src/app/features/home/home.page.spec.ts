@@ -133,6 +133,8 @@ describe('HomePage', () => {
     expect(text).toContain('Find today');
     expect(fixture.nativeElement.querySelector('.cop-page-shell')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.cop-page-header')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.greet__actions')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="account-button"]')).toBeNull();
   });
 
   it('shows the latest Bible Study manual in the hero section', async () => {
@@ -254,25 +256,14 @@ describe('HomePage', () => {
     expect(router.navigateByUrl.calls.allArgs()).toContain(['/community']);
   });
 
-  it('keeps guest account navigation unchanged', async () => {
-    fixture = await createComponent();
-
-    (fixture.nativeElement.querySelector('[data-testid="account-button"]') as HTMLButtonElement).click();
-    await Promise.resolve();
-
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/login');
-  });
-
-  it('sends authenticated account navigation to the profile tab', async () => {
+  it('does not render the old header utility icons', async () => {
     authState$.next(true);
     authServiceStub.isAuthenticatedSnapshot = true;
 
     fixture = await createComponent();
 
-    (fixture.nativeElement.querySelector('[data-testid="account-button"]') as HTMLButtonElement).click();
-    await Promise.resolve();
-
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/profile');
+    expect(fixture.nativeElement.querySelector('[aria-label="Notifications coming soon"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="account-button"]')).toBeNull();
   });
 
   it('shows the authenticated greeting support text when a first name exists', async () => {
