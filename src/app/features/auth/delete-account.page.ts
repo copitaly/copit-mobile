@@ -3,8 +3,9 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { IonicModule, NavController, ToastController } from '@ionic/angular';
+import { IonicModule, NavController } from '@ionic/angular';
 
+import { AppToastService } from '../../core/services/app-toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { MemberProfile } from '../../core/models/user.model';
 import { DonationFlowStateService } from '../../core/services/donation-flow-state.service';
@@ -261,7 +262,7 @@ export class DeleteAccountPage implements OnInit {
     private readonly selectedBranchService: SelectedBranchService,
     private readonly router: Router,
     private readonly navController: NavController,
-    private readonly toastController: ToastController,
+    private readonly appToast: AppToastService,
     private readonly sentryTelemetry: SentryTelemetryService
   ) {}
 
@@ -318,18 +319,7 @@ export class DeleteAccountPage implements OnInit {
         this.donationFlowState.clear();
         this.selectedBranchService.clearBranch();
 
-        try {
-          const toast = await this.toastController.create({
-            message: 'Account deleted successfully.',
-            icon: 'checkmark-circle-outline',
-            duration: 2400,
-            position: 'bottom',
-            cssClass: 'branch-save-toast',
-          });
-          await toast.present();
-        } catch {
-          // ignore toast errors
-        }
+        await this.appToast.success('Account deleted successfully.');
 
         await this.navController.navigateRoot('/login');
       },
@@ -344,16 +334,7 @@ export class DeleteAccountPage implements OnInit {
             : 'Unable to delete your account right now. Please try again.';
         this.submitting = false;
 
-        try {
-          const toast = await this.toastController.create({
-            message: this.errorMessage,
-            duration: 2600,
-            position: 'bottom',
-          });
-          await toast.present();
-        } catch {
-          // ignore toast errors
-        }
+        await this.appToast.error(this.errorMessage);
       },
       complete: () => {
         this.submitting = false;

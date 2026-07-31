@@ -11,10 +11,11 @@ import {
 } from '@angular/forms';
 import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AlertController, IonContent, IonInput, IonicModule, ToastController } from '@ionic/angular';
+import { AlertController, IonContent, IonInput, IonicModule } from '@ionic/angular';
 import { Subject, Subscription, firstValueFrom } from 'rxjs';
 import { filter, finalize, take, takeUntil, timeout } from 'rxjs/operators';
 import { PublicBranch } from '../../core/models/branch.model';
+import { AppToastService } from '../../core/services/app-toast.service';
 import {
   DonationCategory,
   DonationCheckoutRequest,
@@ -389,7 +390,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     private readonly activatedRoute: ActivatedRoute,
     private readonly router: Router,
     private readonly stripePaymentService: StripePaymentService,
-    private readonly toastController: ToastController,
+    private readonly appToast: AppToastService,
     private readonly alertController: AlertController,
     private readonly sentryTelemetry: SentryTelemetryService,
     private readonly analyticsService: AnalyticsService,
@@ -1244,16 +1245,11 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   private async showMonthlyAccessToast(): Promise<void> {
-    const toast = await this.toastController.create({
-      message: this.authService.isAuthenticatedSnapshot
+    await this.appToast.warning(
+      this.authService.isAuthenticatedSnapshot
         ? 'Monthly giving is available for member accounts.'
-        : 'Sign in to give monthly.',
-      duration: 2200,
-      position: 'bottom',
-      color: 'dark',
-    });
-
-    await toast.present();
+        : 'Sign in to give monthly.'
+    );
   }
 
   async showMonthlyGivingPrompt(): Promise<void> {
@@ -1284,25 +1280,11 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   private async showMonthlyClientSecretErrorToast(): Promise<void> {
-    const toast = await this.toastController.create({
-      message: 'Unable to start monthly payment. Please try again.',
-      duration: 2400,
-      position: 'bottom',
-      color: 'danger',
-    });
-
-    await toast.present();
+    await this.appToast.error('Unable to start monthly payment. Please try again.');
   }
 
   private async showRecurringCreateErrorToast(message: string): Promise<void> {
-    const toast = await this.toastController.create({
-      message,
-      duration: 2600,
-      position: 'bottom',
-      color: 'danger',
-    });
-
-    await toast.present();
+    await this.appToast.error(message);
   }
 
   private normalizeRole(role: string | null | undefined): string | null {
@@ -1497,14 +1479,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   private async showPaymentFailureToast(message: string): Promise<void> {
-    const toast = await this.toastController.create({
-      message,
-      duration: 3000,
-      position: 'top',
-      color: 'danger',
-    });
-
-    await toast.present();
+    await this.appToast.error(message);
   }
 
   private restoreChurchSelectorFocusIfNeeded(): void {

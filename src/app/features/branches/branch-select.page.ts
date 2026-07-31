@@ -2,12 +2,13 @@ import { CommonModule } from '@angular/common';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { IonicModule, ToastController } from '@ionic/angular';
+import { IonicModule } from '@ionic/angular';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import { PublicBranch } from '../../core/models/branch.model';
 import { SavedChurch } from '../../core/models/user.model';
+import { AppToastService } from '../../core/services/app-toast.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
 import { BranchesService } from '../../core/services/branches.service';
@@ -708,7 +709,7 @@ export class BranchSelectPage implements OnInit {
     private readonly selectedBranchService: SelectedBranchService,
     private readonly activatedRoute: ActivatedRoute,
     private readonly router: Router,
-    private readonly toastController: ToastController,
+    private readonly appToast: AppToastService,
     private readonly analyticsService: AnalyticsService
   ) {}
 
@@ -1101,14 +1102,14 @@ export class BranchSelectPage implements OnInit {
       this.authService.unsaveChurch(existingSavedChurchId).subscribe({
         next: async () => {
           this.savingBranchIds.delete(branch.id);
-          await this.presentToast('Removed from saved', 'checkmark-circle');
+          await this.appToast.success('Removed from saved');
         },
         error: async () => {
           this.savedChurchIdsByBranchId.set(branch.id, existingSavedChurchId);
           this.animateHeart(branch.id, 'save');
           this.savingBranchIds.delete(branch.id);
           this.ensureHierarchySelectionIsValid();
-          await this.presentToast('Could not update saved church', 'information-circle');
+          await this.appToast.error('Could not update saved church');
         },
       });
       return;
@@ -1123,14 +1124,14 @@ export class BranchSelectPage implements OnInit {
         this.savedChurchIdsByBranchId.set(branch.id, savedChurch.id);
         this.savingBranchIds.delete(branch.id);
         this.ensureHierarchySelectionIsValid();
-        await this.presentToast('Church saved', 'heart');
+        await this.appToast.success('Church saved');
       },
       error: async () => {
         this.savedChurchIdsByBranchId.delete(branch.id);
         this.animateHeart(branch.id, 'unsave');
         this.savingBranchIds.delete(branch.id);
         this.ensureHierarchySelectionIsValid();
-        await this.presentToast('Could not update saved church', 'information-circle');
+        await this.appToast.error('Could not update saved church');
       },
     });
   }
@@ -1161,19 +1162,8 @@ export class BranchSelectPage implements OnInit {
     return id !== null ? `${prefix}:${id}` : `${prefix}:${fallback.toLowerCase()}`;
   }
 
-  private async presentToast(message: string, icon: string): Promise<void> {
-    const toast = await this.toastController.create({
-      message,
-      icon,
-      duration: 2400,
-      position: 'bottom',
-      cssClass: 'branch-save-toast',
-    });
-    await toast.present();
-  }
-
   private async handleUnauthenticatedSaveAttempt(): Promise<void> {
-    await this.presentToast('Sign in to save churches', 'heart-outline');
+    await this.appToast.warning('Sign in to save churches');
     void this.router.navigate(['/login'], {
       queryParams: { returnUrl: '/branches' },
     });

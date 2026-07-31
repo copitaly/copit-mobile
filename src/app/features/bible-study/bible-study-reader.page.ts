@@ -4,10 +4,11 @@ import { Component, NgZone, OnDestroy, inject } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
-import { IonicModule, ToastController } from '@ionic/angular';
+import { IonicModule } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 
 import { BibleStudyManualDetail } from '../../core/models/bible-study.model';
+import { AppToastService } from '../../core/services/app-toast.service';
 import { BibleStudyDownloadService } from '../../core/services/bible-study-download.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
 import { ExternalBrowserService } from '../../core/services/external-browser.service';
@@ -39,7 +40,7 @@ export class BibleStudyReaderPage implements OnDestroy {
   private readonly bibleStudyDownloadService = inject(BibleStudyDownloadService);
   private readonly externalBrowserService = inject(ExternalBrowserService);
   private readonly stackNavigation = inject(StackNavigationService);
-  private readonly toastController = inject(ToastController);
+  private readonly appToast = inject(AppToastService);
   private readonly sanitizer = inject(DomSanitizer);
 
   private iframeLoadTimeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -197,7 +198,7 @@ export class BibleStudyReaderPage implements OnDestroy {
       this.manual = freshManual;
       await this.downloadFromManual(freshManual, false);
     } catch (error) {
-      await this.presentToast(this.resolveDownloadErrorMessage(error), 'alert-circle-outline');
+      await this.appToast.error(this.resolveDownloadErrorMessage(error));
     } finally {
       this.downloadingPdf = false;
     }
@@ -222,7 +223,7 @@ export class BibleStudyReaderPage implements OnDestroy {
       if (isAutomatic) {
         this.nativeViewerOpenedForRequest = false;
       }
-      await this.presentToast('We could not open this PDF outside the app right now.', 'alert-circle-outline');
+      await this.appToast.error('We could not open this PDF outside the app right now.');
     }
   }
 
@@ -364,7 +365,7 @@ export class BibleStudyReaderPage implements OnDestroy {
   private async downloadFromManual(manual: BibleStudyManualDetail, hasRetried: boolean): Promise<void> {
     const pdfUrl = this.bibleStudyService.normalizeDocumentUrl(manual.pdf_url);
     if (!pdfUrl) {
-      await this.presentToast('This manual does not currently have a readable PDF link.', 'alert-circle-outline');
+      await this.appToast.error('This manual does not currently have a readable PDF link.');
       return;
     }
 
@@ -375,7 +376,7 @@ export class BibleStudyReaderPage implements OnDestroy {
       const successMessage = result.shared
         ? `${result.fileName} is ready from your device share sheet.`
         : `${result.fileName} saved to ${result.locationLabel}.`;
-      await this.presentToast(successMessage, 'checkmark-circle-outline');
+      await this.appToast.success(successMessage);
     } catch (error) {
       if (!hasRetried && this.shouldRetryExpiredLink(error)) {
         const refreshedManual = await this.loadFreshManual(manual.id);
@@ -461,18 +462,4 @@ export class BibleStudyReaderPage implements OnDestroy {
     return "We couldn't load this Bible Study manual right now.";
   }
 
-  private async presentToast(message: string, icon: string): Promise<void> {
-    try {
-      const toast = await this.toastController.create({
-        message,
-        icon,
-        duration: 2600,
-        position: 'bottom',
-        cssClass: 'branch-save-toast',
-      });
-      await toast.present();
-    } catch {
-      // ignore toast errors
-    }
-  }
 }

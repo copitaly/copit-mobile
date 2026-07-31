@@ -3,8 +3,9 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { IonicModule, ToastController } from '@ionic/angular';
+import { IonicModule } from '@ionic/angular';
 
+import { AppToastService } from '../../core/services/app-toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { MemberProfile } from '../../core/models/user.model';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
@@ -337,7 +338,7 @@ export class EditProfilePage implements OnInit {
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
     private readonly router: Router,
-    private readonly toastController: ToastController,
+    private readonly appToast: AppToastService,
     private readonly sentryTelemetry: SentryTelemetryService
   ) {}
 
@@ -438,18 +439,7 @@ export class EditProfilePage implements OnInit {
           next: () => undefined,
           error: () => undefined,
         });
-        try {
-          const toast = await this.toastController.create({
-            message: 'Profile updated',
-            icon: 'checkmark-circle-outline',
-            duration: 2400,
-            position: 'bottom',
-            cssClass: 'branch-save-toast',
-          });
-          await toast.present();
-        } catch {
-          // ignore toast errors
-        }
+        await this.appToast.success('Profile updated');
 
         await this.navigateByUrl('/profile/account-settings', { replaceUrl: true });
       },

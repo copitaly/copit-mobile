@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { AlertController, IonicModule, ToastController } from '@ionic/angular';
+import { AlertController, IonicModule } from '@ionic/angular';
 
 import { RecurringDonationItem } from '../../core/models/donation.model';
+import { AppToastService } from '../../core/services/app-toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { DonationsService } from '../../core/services/donations.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
@@ -503,7 +504,7 @@ export class RecurringDonationsPage implements OnInit {
     private readonly donationsService: DonationsService,
     private readonly router: Router,
     private readonly alertController: AlertController,
-    private readonly toastController: ToastController,
+    private readonly appToast: AppToastService,
     private readonly sentryTelemetry: SentryTelemetryService
   ) {}
 
@@ -797,23 +798,11 @@ export class RecurringDonationsPage implements OnInit {
           this.recurringDonations.map((item) => (item.id === updatedDonation.id ? updatedDonation : item))
         );
         this.cancellingIds.delete(donation.id);
-        const toast = await this.toastController.create({
-          message: 'Monthly donation cancelled',
-          duration: 2500,
-          color: 'success',
-          position: 'bottom',
-        });
-        await toast.present();
+        await this.appToast.success('Monthly donation cancelled');
       },
       error: async () => {
         this.cancellingIds.delete(donation.id);
-        const toast = await this.toastController.create({
-          message: 'Unable to cancel the recurring donation right now. Please try again.',
-          duration: 3000,
-          color: 'danger',
-          position: 'bottom',
-        });
-        await toast.present();
+        await this.appToast.error('Unable to cancel the recurring donation right now. Please try again.');
       },
     });
   }

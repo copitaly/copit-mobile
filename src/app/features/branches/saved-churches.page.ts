@@ -2,10 +2,11 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { AlertController, IonicModule, ToastController } from '@ionic/angular';
+import { AlertController, IonicModule } from '@ionic/angular';
 
 import { PublicBranch } from '../../core/models/branch.model';
 import { SavedChurch } from '../../core/models/user.model';
+import { AppToastService } from '../../core/services/app-toast.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
@@ -467,7 +468,7 @@ export class SavedChurchesPage implements OnInit {
     private readonly sentryTelemetry: SentryTelemetryService,
     private readonly analyticsService: AnalyticsService,
     private readonly alertController: AlertController,
-    private readonly toastController: ToastController
+    private readonly appToast: AppToastService
   ) {}
 
   ngOnInit(): void {
@@ -557,7 +558,7 @@ export class SavedChurchesPage implements OnInit {
     }
 
     if (this.savedBranchIds.includes(branch.id)) {
-      void this.presentToast('Church already saved', 'information-circle');
+      void this.appToast.info('Church already saved');
       return;
     }
 
@@ -566,12 +567,12 @@ export class SavedChurchesPage implements OnInit {
       next: async () => {
         this.savingBranchId = null;
         this.isChurchSelectorOpen = false;
-        await this.presentToast('Church saved', 'heart');
+        await this.appToast.success('Church saved');
         this.fetchSavedChurches();
       },
       error: async () => {
         this.savingBranchId = null;
-        await this.presentToast('Could not update saved church', 'information-circle');
+        await this.appToast.error('Could not update saved church');
       },
     });
   }
@@ -634,11 +635,11 @@ export class SavedChurchesPage implements OnInit {
       next: async () => {
         this.savingBranchId = null;
         this.savedChurches = this.savedChurches.filter((item) => item.id !== saved.id);
-        await this.presentToast('Removed from saved', 'checkmark-circle');
+        await this.appToast.success('Removed from saved');
       },
       error: async () => {
         this.savingBranchId = null;
-        await this.presentToast('Could not update saved church', 'information-circle');
+        await this.appToast.error('Could not update saved church');
       },
     });
   }
@@ -656,14 +657,4 @@ export class SavedChurchesPage implements OnInit {
     };
   }
 
-  private async presentToast(message: string, icon: string): Promise<void> {
-    const toast = await this.toastController.create({
-      message,
-      duration: 2200,
-      position: 'top',
-      icon,
-    });
-
-    await toast.present();
-  }
 }

@@ -5,9 +5,10 @@ import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { ActivatedRoute } from '@angular/router';
 import { RouterModule } from '@angular/router';
-import { IonicModule, ToastController } from '@ionic/angular';
+import { IonicModule } from '@ionic/angular';
 
 import { DevotionalPublicDetail } from '../../core/models/devotional.model';
+import { AppToastService } from '../../core/services/app-toast.service';
 import { DevotionalService } from '../../core/services/devotional.service';
 
 @Component({
@@ -21,7 +22,7 @@ import { DevotionalService } from '../../core/services/devotional.service';
 export class DevotionalDetailPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly devotionalService = inject(DevotionalService);
-  private readonly toastController = inject(ToastController);
+  private readonly appToast = inject(AppToastService);
   private readonly publicationDateFormatter = new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'long',
@@ -182,7 +183,7 @@ export class DevotionalDetailPage implements OnInit {
     const shareTitle = this.devotional.title.trim();
     const shareText = this.buildShareText();
     if (!shareTitle || !shareText) {
-      await this.presentToast("This devotional can't be shared right now.", 'alert-circle-outline');
+      await this.appToast.error("This devotional can't be shared right now.");
       return;
     }
 
@@ -202,11 +203,11 @@ export class DevotionalDetailPage implements OnInit {
 
       const copied = await this.copyShareTextToClipboard(shareText);
       if (copied) {
-        await this.presentToast('Devotional copied to clipboard', 'checkmark-circle-outline');
+        await this.appToast.success('Devotional copied to clipboard');
         return;
       }
 
-      await this.presentToast("Sharing isn't available right now.", 'alert-circle-outline');
+      await this.appToast.error("Sharing isn't available right now.");
     } catch (error) {
       if (this.isShareCancelError(error)) {
         return;
@@ -214,11 +215,11 @@ export class DevotionalDetailPage implements OnInit {
 
       const copied = await this.copyShareTextToClipboard(shareText);
       if (copied) {
-        await this.presentToast('Devotional copied to clipboard', 'checkmark-circle-outline');
+        await this.appToast.success('Devotional copied to clipboard');
         return;
       }
 
-      await this.presentToast("Sharing isn't available right now.", 'alert-circle-outline');
+      await this.appToast.error("Sharing isn't available right now.");
     } finally {
       this.sharing = false;
     }
@@ -358,18 +359,4 @@ export class DevotionalDetailPage implements OnInit {
     return "We couldn't load this devotional right now.";
   }
 
-  private async presentToast(message: string, icon: string): Promise<void> {
-    try {
-      const toast = await this.toastController.create({
-        message,
-        duration: 2200,
-        position: 'bottom',
-        icon,
-        cssClass: 'branch-save-toast',
-      });
-      await toast.present();
-    } catch {
-      // ignore toast errors
-    }
-  }
 }
