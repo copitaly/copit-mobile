@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Capacitor } from '@capacitor/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -300,11 +301,11 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                     class="cta"
                     [class.cta-enabled]="ctaEnabled"
                     [class.cta-monthly]="isMonthlySelected"
-                    [disabled]="!ctaEnabled || nativeLoading"
+                    [disabled]="!ctaEnabled || nativeLoading || loading"
                   >
                     <ion-icon name="lock-closed" slot="start"></ion-icon>
                     <span class="cta-label">{{ ctaLabel }}</span>
-                    <ion-spinner *ngIf="nativeLoading" name="crescent" slot="start"></ion-spinner>
+                    <ion-spinner *ngIf="nativeLoading || loading" name="crescent" slot="start"></ion-spinner>
                   </ion-button>
                   <p class="trust-text">Payments processed securely via Stripe</p>
                 </div>
@@ -484,6 +485,10 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: response => {
+          console.info('[DonatePage] Hosted checkout ready', {
+            hasCheckoutUrl: !!response.checkout_url,
+            transactionReference: response.transaction_reference,
+          });
           this.persistOneTimeSummary(payload, response.transaction_reference);
           window.location.href = response.checkout_url;
         },
@@ -517,7 +522,14 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       .createMobileCheckout(payload)
       .pipe(timeout(CHECKOUT_TIMEOUT_MS))
       .subscribe({
-        next: response => {
+        next: async response => {
+          console.info('[DonatePage] Native checkout created', {
+            donationId: response.donation_id,
+            hasClientSecret: !!response.client_secret?.trim(),
+            transactionReference: response.transaction_reference,
+            churchId: payload.church_id,
+            categoryId: payload.category_id,
+          });
           if (!response.client_secret?.trim()) {
             this.nativeLoading = false;
             this.clearPendingPaymentState();
@@ -528,19 +540,31 @@ export class DonatePage implements AfterViewInit, OnDestroy {
           this.pendingMobileDonationId = response.donation_id;
           this.pendingRecurringDonationId = undefined;
           this.pendingTransactionReference = response.transaction_reference;
-          void this.presentPaymentSheet(response.client_secret);
+          await this.presentPaymentSheet(response.client_secret);
         },
         error: error => {
+          console.warn('[DonatePage] Native checkout failed', {
+            churchId: payload.church_id,
+            categoryId: payload.category_id,
+            status: error instanceof HttpErrorResponse ? error.status : undefined,
+          });
           void this.analyticsService.trackDonationPaymentFailed(analyticsContext, 'checkout_create');
           this.donationAnalyticsContext.clearContext();
           this.nativeLoading = false;
           this.clearPendingPaymentState();
           this.nativeError = this.resolveCheckoutErrorMessage(error, 'Unable to start native payment. Please try again.');
+          void this.showPaymentFailureToast(this.nativeError);
         },
       });
   }
 
   submitDonation(): void {
+    if (!this.isNativePaymentSheetRuntime() && !this.isMonthlySelected) {
+      console.info('[DonatePage] Using hosted checkout fallback for browser runtime');
+      this.submit();
+      return;
+    }
+
     this.startNativePayment();
   }
 
@@ -765,7 +789,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   get ctaLabel(): string {
-    if (this.nativeLoading) {
+    if (this.nativeLoading || this.loading) {
       return this.isMonthlySelected ? 'Starting monthly gift...' : 'Processing...';
     }
 
@@ -1001,6 +1025,13 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     try {
       const recurringCreate$ = this.donationsService.createRecurringDonation(payload).pipe(timeout(CHECKOUT_TIMEOUT_MS));
       const response = await firstValueFrom(recurringCreate$);
+      console.info('[DonatePage] Recurring checkout created', {
+        recurringDonationId: response.recurring_donation_id,
+        hasClientSecret: !!response.client_secret?.trim(),
+        subscriptionId: !!response.subscription_id,
+        churchId: payload.church_id,
+        categoryId: payload.category_id,
+      });
       this.pendingMobileDonationId = undefined;
       this.pendingRecurringDonationId = response.recurring_donation_id;
       this.persistRecurringSummary(payload, response.recurring_donation_id, response.subscription_id);
@@ -1013,6 +1044,11 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       }
       await this.presentPaymentSheet(response.client_secret, true);
     } catch (error) {
+      console.warn('[DonatePage] Recurring checkout failed', {
+        churchId: payload.church_id,
+        categoryId: payload.category_id,
+        status: error instanceof HttpErrorResponse ? error.status : undefined,
+      });
       void this.analyticsService.trackDonationPaymentFailed(analyticsContext, 'checkout_create');
       this.donationAnalyticsContext.clearContext();
       this.clearPendingPaymentState();
@@ -1023,6 +1059,10 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   private async presentPaymentSheet(clientSecret: string, isMonthly = false): Promise<void> {
+    await this.ensureChurchSelectorClosed();
+    console.info('[DonatePage] Presenting payment sheet', {
+      flow: isMonthly ? 'monthly' : 'one_time',
+    });
     const result = await this.stripePaymentService.presentPaymentSheet(
       clientSecret,
       isMonthly ? 'recurring' : 'one_time'
@@ -1431,6 +1471,35 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
+  }
+
+  private async ensureChurchSelectorClosed(): Promise<void> {
+    if (!this.isBranchSheetOpen) {
+      return;
+    }
+
+    await this.router.navigate([], {
+      relativeTo: this.activatedRoute,
+      queryParams: { [this.churchSelectorQueryParam]: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+    this.isBranchSheetOpen = false;
+  }
+
+  private isNativePaymentSheetRuntime(): boolean {
+    return Capacitor.isNativePlatform();
+  }
+
+  private async showPaymentFailureToast(message: string): Promise<void> {
+    const toast = await this.toastController.create({
+      message,
+      duration: 3000,
+      position: 'top',
+      color: 'danger',
+    });
+
+    await toast.present();
   }
 
   private restoreChurchSelectorFocusIfNeeded(): void {

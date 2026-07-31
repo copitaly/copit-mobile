@@ -1,5 +1,6 @@
 import { FormBuilder } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Capacitor } from '@capacitor/core';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { AlertController, ToastController } from '@ionic/angular';
 import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
@@ -23,6 +24,8 @@ describe('DonatePage', () => {
   let router: jasmine.SpyObj<Router>;
   let donationFlowState: jasmine.SpyObj<DonationFlowStateService>;
   let stripePaymentService: jasmine.SpyObj<StripePaymentService>;
+  let toastController: jasmine.SpyObj<ToastController>;
+  let toastElement: { present: jasmine.Spy };
   let selectedBranch$: BehaviorSubject<PublicBranch | null>;
   let queryParamMap$: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
   let authServiceMock: {
@@ -80,6 +83,7 @@ describe('DonatePage', () => {
   });
 
   beforeEach(() => {
+    spyOn(Capacitor, 'isNativePlatform').and.returnValue(true);
     donationsService = jasmine.createSpyObj<DonationsService>('DonationsService', [
       'createCheckout',
       'createMobileCheckout',
@@ -90,6 +94,9 @@ describe('DonatePage', () => {
     router.navigate.and.returnValue(Promise.resolve(true));
     donationFlowState = jasmine.createSpyObj<DonationFlowStateService>('DonationFlowStateService', ['setSummary']);
     stripePaymentService = jasmine.createSpyObj<StripePaymentService>('StripePaymentService', ['presentPaymentSheet']);
+    toastElement = { present: jasmine.createSpy('present').and.resolveTo() };
+    toastController = jasmine.createSpyObj<ToastController>('ToastController', ['create']);
+    toastController.create.and.resolveTo(toastElement as never);
     selectedBranch$ = new BehaviorSubject<PublicBranch | null>(null);
     queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
     authServiceMock = {
@@ -118,7 +125,7 @@ describe('DonatePage', () => {
       { queryParamMap: queryParamMap$.asObservable() } as unknown as ActivatedRoute,
       router,
       stripePaymentService,
-      {} as ToastController,
+      toastController,
       {} as AlertController,
       {
         addFeatureBreadcrumb(): void {},
@@ -194,6 +201,28 @@ describe('DonatePage', () => {
     page.startNativePayment();
 
     expect(page.nativeError).toBe('Donations are currently paused for this branch.');
+  });
+
+  it('uses hosted checkout on browser runtimes for one-time gifts', () => {
+    (Capacitor.isNativePlatform as jasmine.Spy).and.returnValue(false);
+    donationsService.createCheckout.and.returnValue(
+      of({
+        checkout_url: 'https://example.com/checkout',
+        donation_id: 77,
+        transaction_reference: 'TRX-WEB-1',
+      })
+    );
+
+    page.submitDonation();
+
+    expect(donationsService.createCheckout).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        church_id: branch.id,
+        category_id: category.id,
+        amount: 45,
+      })
+    );
+    expect(donationsService.createMobileCheckout).not.toHaveBeenCalled();
   });
 
   it('stores and forwards the transaction reference for successful native payments', async () => {
@@ -309,6 +338,8 @@ describe('DonatePage', () => {
 
     expect(page.nativeError).toBe('Payment failed. Please try again.');
     expect(page.nativeLoading).toBeFalse();
+    expect(toastController.create).toHaveBeenCalled();
+    expect(toastElement.present).toHaveBeenCalled();
   });
 
   it('opens the church selector by adding the selector query param', () => {
