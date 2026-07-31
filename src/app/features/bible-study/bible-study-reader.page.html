@@ -95,7 +95,12 @@
         </ion-button>
       </div>
 
-      <section *ngIf="showPdfSurface" class="reader-viewer reader-viewer--immersive" data-testid="reader-viewer">
+      <section
+        *ngIf="showPdfSurface"
+        class="reader-viewer reader-viewer--immersive"
+        [class.reader-viewer--ready]="isReaderReady"
+        data-testid="reader-viewer"
+      >
         <div *ngIf="showReaderLoadingShell" class="reader-viewer__loading" data-testid="pdf-loading-state">
           <ion-spinner name="crescent"></ion-spinner>
           <div class="reader-state__copy">
@@ -107,6 +112,7 @@
         <iframe
           *ngIf="pdfEmbedUrl"
           class="reader-viewer__native-frame"
+          [class.reader-viewer__native-frame--ready]="isReaderReady"
           [src]="pdfEmbedUrl"
           title="Bible Study PDF"
           loading="eager"

@@ -1,14 +1,14 @@
 .reader-toolbar ion-toolbar {
   --background: rgba(247, 248, 250, 0.92);
   --border-color: transparent;
-  --min-height: 56px;
+  --min-height: 48px;
   padding:
-    calc(var(--app-safe-area-top) + 0.2rem)
-    calc(var(--app-safe-area-right) + 0.72rem)
-    0.35rem
-    calc(var(--app-safe-area-left) + 0.72rem);
+    calc(var(--app-safe-area-top) + 0.15rem)
+    calc(var(--app-safe-area-right) + 0.65rem)
+    0.28rem
+    calc(var(--app-safe-area-left) + 0.65rem);
   backdrop-filter: blur(12px);
-  box-shadow: 0 1px 8px rgba(5, 14, 54, 0.05);
+  box-shadow: 0 1px 7px rgba(5, 14, 54, 0.05);
 }
 
 .reader-toolbar ion-back-button,
@@ -16,9 +16,9 @@
   --color: #0b1d73;
   --background: rgba(255, 255, 255, 0.9);
   --border-radius: 999px;
-  --box-shadow: 0 2px 8px rgba(5, 14, 54, 0.08);
-  min-width: 42px;
-  min-height: 42px;
+  --box-shadow: 0 2px 7px rgba(5, 14, 54, 0.08);
+  min-width: 40px;
+  min-height: 40px;
 }
 
 .reader-toolbar__action {
@@ -26,7 +26,7 @@
 }
 
 ion-content.reader-content {
-  --background: #f7f8fa;
+  --background: var(--app-content-background);
   height: 100%;
 }
 
@@ -51,9 +51,9 @@ ion-content.reader-content::part(scroll) {
   min-height: 0;
   height: 100%;
   padding:
-    0.4rem
+    0.32rem
     calc(var(--app-safe-area-right) + 0.8rem)
-    calc(var(--app-safe-area-bottom) + 0.95rem)
+    calc(var(--app-safe-area-bottom) + 0.85rem)
     calc(var(--app-safe-area-left) + 0.8rem);
   gap: 0.45rem;
   box-sizing: border-box;
@@ -119,18 +119,25 @@ ion-content.reader-content::part(scroll) {
   flex: 1 1 auto;
   min-height: 0;
   height: 100%;
+  padding: 0.5rem;
+  box-sizing: border-box;
   overflow: visible;
   touch-action: auto;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(10, 26, 82, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(5, 14, 54, 0.05);
 }
 
 .reader-viewer__loading {
   position: absolute;
-  inset: 0;
+  inset: 0.5rem;
   z-index: 2;
   align-items: center;
   justify-content: center;
   gap: 0.65rem;
   padding: 1.2rem;
+  border-radius: 8px;
   background: linear-gradient(180deg, rgba(247, 248, 250, 0.94), rgba(247, 248, 250, 0.88));
   color: #0b1d73;
   text-align: center;
@@ -147,8 +154,20 @@ ion-content.reader-content::part(scroll) {
   min-height: 0;
   max-height: 100%;
   border: 0;
-  border-radius: 18px;
+  border-radius: 8px;
   background: #fff;
   pointer-events: auto;
   touch-action: auto;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.reader-viewer__native-frame--ready {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reader-viewer__native-frame {
+    transition-duration: 1ms;
+  }
 }
