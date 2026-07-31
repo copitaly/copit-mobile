@@ -5,22 +5,23 @@
     </ion-refresher>
 
     <div class="bible-study-shell cop-page-shell">
-      <header class="bible-study-header">
-        <app-mobile-header
-          title="Bible Study"
-          subtitle="Grow in faith through God's Word"
-          [showBack]="false"
-          fallbackRoute="/tabs/home"
-        ></app-mobile-header>
+      <header class="bible-study-header cop-page-header">
+        <p class="cop-page-header__eyebrow">Bible Study</p>
+        <h1 class="cop-page-header__title">Bible Study</h1>
+        <p class="cop-page-header__subtitle">
+          Grow in faith through God's Word through structured weekly manuals.
+        </p>
       </header>
 
       <div *ngIf="loading" class="bible-study-stack" aria-live="polite">
-        <section class="bible-study-section">
-          <app-mobile-section-header title="Featured Bible Study" subtitle="Start with the newest published manual available to read now."></app-mobile-section-header>
+        <section class="bible-study-section bible-study-section--featured">
+          <p class="bible-study-section__intro">
+            Start with the newest published manual available to read now.
+          </p>
+
           <div class="hero-skeleton">
             <div class="hero-skeleton__media"></div>
             <div class="hero-skeleton__body">
-              <span class="skeleton-line skeleton-line--hero-kicker"></span>
               <span class="skeleton-line skeleton-line--hero-title"></span>
               <span class="skeleton-line skeleton-line--hero-meta"></span>
               <span class="skeleton-line skeleton-line--hero-detail"></span>
@@ -29,8 +30,8 @@
           </div>
         </section>
 
-        <section class="bible-study-section">
-          <app-mobile-section-header title="Available Manuals" subtitle="Choose a manual to read or download."></app-mobile-section-header>
+        <section class="bible-study-section bible-study-section--manuals">
+          <app-mobile-section-header title="Manuals" subtitle="Choose a manual to read or download."></app-mobile-section-header>
           <div class="manual-list manual-list--skeleton">
             <div *ngFor="let item of skeletonItems" class="manual-list__item">
               <div class="row-skeleton">
@@ -65,32 +66,33 @@
       </div>
 
       <div *ngIf="!loading && !errorMessage && manuals.length > 0" class="bible-study-stack">
-        <section class="bible-study-section">
-          <app-mobile-section-header
-            [title]="heroSectionTitle"
-            [subtitle]="heroSectionSubtitle"
-          ></app-mobile-section-header>
+        <section class="bible-study-section bible-study-section--featured">
+          <p class="bible-study-section__intro" data-testid="featured-manual-intro">
+            {{ heroSectionSubtitle }}
+          </p>
 
-          <app-mobile-hero-card
-            *ngIf="heroManual"
-            data-testid="hero-card"
-            [title]="heroTitle"
-            [meta]="heroMeta"
-            [detail]="heroDetail"
-            [ctaLabel]="heroCtaLabel"
-            [imageSrc]="heroManual.cover_image_url"
-            [imageAlt]="heroTitle + ' cover'"
-            [ariaLabel]="heroAriaLabel"
-            [progressPercent]="heroProgressPercent"
-            [progressLabel]="heroProgressLabel"
-            [progressAriaLabel]="heroProgressLabel"
-            (cardClick)="openHero()"
-          ></app-mobile-hero-card>
+          <div class="bible-study-featured">
+            <app-mobile-hero-card
+              *ngIf="heroManual"
+              data-testid="hero-card"
+              [title]="heroTitle"
+              [meta]="heroMeta"
+              [detail]="heroDetail"
+              [ctaLabel]="heroCtaLabel"
+              [imageSrc]="heroManual.cover_image_url"
+              [imageAlt]="heroTitle + ' cover'"
+              [ariaLabel]="heroAriaLabel"
+              [progressPercent]="heroProgressPercent"
+              [progressLabel]="heroProgressLabel"
+              [progressAriaLabel]="heroProgressLabel"
+              (cardClick)="openHero()"
+            ></app-mobile-hero-card>
+          </div>
         </section>
 
-        <section class="bible-study-section" aria-label="Bible Study manuals">
+        <section class="bible-study-section bible-study-section--manuals" aria-label="Bible Study manuals">
           <app-mobile-section-header
-            title="Available Manuals"
+            title="Manuals"
             subtitle="Choose a manual to read or download."
           ></app-mobile-section-header>
 

@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
@@ -7,7 +6,6 @@ import { BibleStudyManualListItem } from '../../core/models/bible-study.model';
 import { AuthService } from '../../core/services/auth.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
-import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { BibleStudyPage } from './bible-study.page';
 
 describe('BibleStudyPage', () => {
@@ -20,13 +18,13 @@ describe('BibleStudyPage', () => {
 
   const firstManual: BibleStudyManualListItem = {
     id: 11,
-    title: 'Bible Study Manual',
-    year: 2026,
+    title: 'English Bible Study',
+    year: 2027,
     language: 'en',
     language_display: 'English',
-    volume: 'Volume 1',
-    start_week: 1,
-    end_week: 4,
+    volume: '2',
+    start_week: 27,
+    end_week: 37,
     cover_image_url: 'https://example.com/cover.jpg',
     pdf_url: 'https://example.com/manual.pdf',
   };
@@ -74,29 +72,39 @@ describe('BibleStudyPage', () => {
     expect(bibleStudyService.getPublishedManuals).toHaveBeenCalledWith();
   });
 
+  it('renders the editorial header copy and shared tab safe-area class', async () => {
+    bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
+
+    await createComponent();
+
+    const text = fixture.nativeElement.textContent;
+    expect(fixture.nativeElement.querySelector('.bible-study-content')?.className).toContain('cop-content--tabs');
+    expect(fixture.nativeElement.querySelector('.bible-study-shell')?.className).toContain('cop-page-shell');
+    expect(text).toContain('Bible Study');
+    expect(text).toContain("Grow in faith through God's Word through structured weekly manuals.");
+  });
+
   it('renders published manual cards', async () => {
     bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
 
     await createComponent();
 
     expect(fixture.nativeElement.querySelectorAll('[data-testid="manual-card"]').length).toBe(1);
-    expect(fixture.nativeElement.querySelector('.bible-study-content')?.className).toContain('cop-content--tabs');
-    expect(fixture.nativeElement.querySelector('.bible-study-shell')?.className).toContain('cop-page-shell');
   });
 
-  it('renders the featured fallback hero when there is no reading progress', async () => {
+  it('removes the visible featured label and keeps the featured intro copy', async () => {
     bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
 
     await createComponent();
 
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Featured Bible Study');
-    expect(text).toContain('Start Reading');
-    expect(text).toContain('Choose a manual to read or download.');
-    expect(text.match(/Featured Bible Study/g)?.length).toBe(1);
+    expect(text).toContain('Start with the newest published manual available to read now.');
+    expect(text).toContain('Manuals');
+    expect(text).not.toContain('Featured Bible Study');
+    expect(text).not.toContain('Available Manuals');
   });
 
-  it('renders a Continue Reading hero when an existing session snapshot matches a manual', async () => {
+  it('renders a continue-reading intro when an existing session snapshot matches a manual', async () => {
     sessionStorage.setItem(
       continueReadingStorageKey,
       JSON.stringify({ manualId: 11, currentPage: 7, totalPages: 20 })
@@ -106,22 +114,22 @@ describe('BibleStudyPage', () => {
     await createComponent();
 
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Continue Reading');
+    expect(text).toContain('Pick up where you left off in your current manual.');
     expect(text).toContain('Resume Reading');
     expect(text).toContain('Page 7 of 20');
   });
 
-  it('renders title, year, language, volume, and week range', async () => {
+  it('renders title, year, language, volume, and week range from loaded data', async () => {
     bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
 
     await createComponent();
 
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Bible Study Manual');
-    expect(text).toContain('2026');
+    expect(text).toContain('English Bible Study');
+    expect(text).toContain('2027');
     expect(text).toContain('English');
-    expect(text).toContain('Volume 1');
-    expect(text).toContain('Weeks 1-4');
+    expect(text).toContain('Volume 2');
+    expect(text).toContain('Weeks 27-37');
   });
 
   it('renders Full year when week range is missing', async () => {
@@ -139,15 +147,15 @@ describe('BibleStudyPage', () => {
 
     await createComponent();
 
-    expect(fixture.nativeElement.textContent).not.toContain('Volume 1');
+    expect(fixture.nativeElement.textContent).not.toContain('Volume 2');
   });
 
   it('adds a Volume label when the API returns a raw number-like volume value', async () => {
-    bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([{ ...firstManual, volume: '1' }])));
+    bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([{ ...firstManual, volume: '2' }])));
 
     await createComponent();
 
-    expect(fixture.nativeElement.textContent).toContain('Volume 1');
+    expect(fixture.nativeElement.textContent).toContain('Volume 2');
   });
 
   it('renders an empty state when there are no published manuals', async () => {
@@ -216,7 +224,7 @@ describe('BibleStudyPage', () => {
     expect(router.navigateByUrl.calls.count()).toBe(1);
   });
 
-  it('navigates to the placeholder detail route when a manual is tapped', async () => {
+  it('navigates to the manual detail route when a row is tapped', async () => {
     bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
 
     await createComponent();
@@ -226,7 +234,7 @@ describe('BibleStudyPage', () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/11');
   });
 
-  it('navigates straight to the reader when Continue Reading is available', async () => {
+  it('opens the reader when the full featured card is tapped', async () => {
     sessionStorage.setItem(
       continueReadingStorageKey,
       JSON.stringify({ manualId: 11, currentPage: 7, totalPages: 20 })
@@ -235,22 +243,22 @@ describe('BibleStudyPage', () => {
 
     await createComponent();
 
-    page.openHero();
+    const heroButton = fixture.nativeElement.querySelector('[data-testid="hero-card"] .mobile-hero-card') as HTMLButtonElement;
+    heroButton.click();
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/11/read');
   });
 
-  it('renders the top-level Bible Study header without a back button', async () => {
+  it('clicking the Start Reading CTA only triggers one navigation', async () => {
     bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
 
     await createComponent();
 
-    const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
-    expect(header.title).toBe('Bible Study');
-    expect(header.subtitle).toBe("Grow in faith through God's Word");
-    expect(header.fallbackRoute).toBe('/tabs/home');
-    expect(header.showBack).toBeFalse();
-    expect(fixture.nativeElement.querySelector('.app-header__back')).toBeNull();
+    const cta = fixture.nativeElement.querySelector('[data-testid="hero-card"] .mobile-hero-card__cta') as HTMLElement;
+    cta.click();
+
+    expect(router.navigateByUrl.calls.count()).toBe(1);
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/11');
   });
 
   it('does not intentionally render admin-only fields', async () => {

@@ -44,19 +44,21 @@ import { IonicModule } from '@ionic/angular';
   `,
   styles: [
     `
-      .mobile-hero-card{width:100%;padding:0;border:0;border-radius:24px;overflow:hidden;background:#fff;text-align:left;color:inherit;box-shadow:0 18px 44px rgba(11,29,115,.08)}
-      .mobile-hero-card__media{height:clamp(18.75rem,83vw,21.25rem);background:linear-gradient(140deg,#0b1d73,#17369b 62%,#d5a62f 140%);display:flex;align-items:center;justify-content:center;color:#fff}
-      .mobile-hero-card__media img{width:100%;height:100%;object-fit:cover;object-position:center 22%;display:block}
+      .mobile-hero-card{width:100%;padding:0;border:0;border-radius:26px;overflow:hidden;background:#fff;text-align:left;color:inherit;box-shadow:0 18px 44px rgba(11,29,115,.08);transition:transform .16s ease,box-shadow .16s ease}
+      .mobile-hero-card:focus-visible,.mobile-hero-card:hover{transform:translateY(-1px);box-shadow:0 22px 48px rgba(11,29,115,.1)}
+      .mobile-hero-card__media{height:clamp(16.9rem,74vw,18.8rem);background:linear-gradient(140deg,#0b1d73,#17369b 62%,#d5a62f 140%);display:flex;align-items:center;justify-content:center;color:#fff}
+      .mobile-hero-card__media img{width:100%;height:100%;object-fit:cover;object-position:center 18%;display:block}
       .mobile-hero-card__media--placeholder ion-icon{font-size:2.2rem}
-      .mobile-hero-card__body{display:flex;flex-direction:column;gap:.48rem;padding:1.05rem 1.15rem 1.15rem}
+      .mobile-hero-card__body{display:flex;flex-direction:column;gap:.32rem;padding:1.18rem 1.15rem 1.2rem}
       .mobile-hero-card__eyebrow,.mobile-hero-card__meta,.mobile-hero-card__detail,.mobile-hero-card__progress-label{margin:0}
       .mobile-hero-card__eyebrow{color:#d5a62f;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
-      .mobile-hero-card h3{margin:0;color:#05173d;font-size:1.42rem;font-weight:700;line-height:1.12;letter-spacing:-.03em}
-      .mobile-hero-card__meta,.mobile-hero-card__detail,.mobile-hero-card__progress-label{color:rgba(5,23,61,.64);font-size:.87rem;line-height:1.45}
-      .mobile-hero-card__progress{display:flex;flex-direction:column;gap:.42rem;margin-top:.15rem}
+      .mobile-hero-card h3{margin:0;color:#05173d;font-size:1.52rem;font-weight:700;line-height:1.08;letter-spacing:-.03em}
+      .mobile-hero-card__meta,.mobile-hero-card__detail,.mobile-hero-card__progress-label{color:rgba(5,23,61,.66);font-size:.87rem;line-height:1.38}
+      .mobile-hero-card__progress{display:flex;flex-direction:column;gap:.42rem;margin-top:.08rem}
       .mobile-hero-card__progress-bar{height:8px;border-radius:999px;overflow:hidden;background:rgba(11,29,115,.1)}
       .mobile-hero-card__progress-bar span{display:block;height:100%;border-radius:inherit;background:#0b1d73}
-      .mobile-hero-card__cta{display:inline-flex;align-items:center;gap:.45rem;width:fit-content;margin-top:.18rem;padding:.75rem .95rem;border-radius:999px;background:#0b1d73;color:#fff;font-size:.9rem;font-weight:600}
+      .mobile-hero-card__cta{display:inline-flex;align-items:center;gap:.45rem;width:fit-content;margin-top:.34rem;padding:.75rem .95rem;border-radius:999px;background:#0b1d73;color:#fff;font-size:.9rem;font-weight:600}
+      @media (prefers-reduced-motion:reduce){.mobile-hero-card{transition:none}}
     `,
   ],
 })
