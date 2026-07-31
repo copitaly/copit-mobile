@@ -271,10 +271,13 @@ export class HardwareBackCoordinatorService implements OnDestroy {
       return '/login';
     }
 
+    if (currentUrl === '/profile/account-settings/delete-account') {
+      return '/profile/account-settings';
+    }
+
     if (
       currentUrl === '/profile/account-settings/edit-profile' ||
       currentUrl === '/profile/account-settings' ||
-      currentUrl === '/profile/account-settings/delete-account' ||
       currentUrl === '/saved-churches' ||
       currentUrl === '/my-donations' ||
       currentUrl === '/profile/recurring-donations'
