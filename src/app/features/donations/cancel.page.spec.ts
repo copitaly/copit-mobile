@@ -22,6 +22,7 @@ describe('DonateCancelPage', () => {
         {
           provide: DonationFlowStateService,
           useValue: {
+            getStoredSummary: jasmine.createSpy().and.returnValue(null),
             consumeStoredSummary: jasmine.createSpy().and.returnValue(null),
           },
         },

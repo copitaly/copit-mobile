@@ -80,7 +80,7 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
     const recurringDonationIdParam = this.route.snapshot.queryParamMap.get('recurring_donation_id');
 
     if (!sessionId && !donationIdParam && !recurringDonationIdParam) {
-      this.enterPreviewMode();
+      this.applyPendingStoredSummary('No donation confirmation is available right now.');
       return;
     }
 
@@ -198,14 +198,6 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
     this.isVerifying = false;
     this.verificationState = 'pending';
     this.verificationMessage = message;
-  }
-
-  private enterPreviewMode(): void {
-    this.summary = this.donationFlowState.getStoredSummary();
-    this.isVerifying = false;
-    this.verificationState = 'confirmed';
-    this.verificationMessage = '';
-    this.pendingVerification = null;
   }
 
   private mapVerificationResponse(response: VerifyCheckoutSessionResponse): DonationCheckoutSummary {

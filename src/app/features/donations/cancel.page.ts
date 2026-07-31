@@ -30,7 +30,7 @@ export class DonateCancelPage implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.summary = this.donationFlowState.getStoredSummary();
+    this.summary = this.donationFlowState.consumeStoredSummary();
     const context =
       this.donationAnalyticsContext.consumeContext() ?? this.resolveSummaryAnalyticsContext(this.summary);
     if (context) {
