@@ -246,6 +246,8 @@ describe('ForgotPasswordPage', () => {
     expect(fixture.nativeElement.textContent).toContain('Forgot password');
     expect(fixture.nativeElement.querySelector('[data-testid="tabs-shell"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="forgot-password-card"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.recovery-content')?.className).toContain('cop-content--secondary');
+    expect(fixture.nativeElement.querySelector('.recovery-shell')?.className).toContain('cop-secondary-shell');
   });
 
   it('keeps the standard back button with the /tabs/profile fallback', async () => {

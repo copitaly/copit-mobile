@@ -7,15 +7,11 @@
   --background: var(--cop-color-background);
 }
 
-.devotional-detail-content::part(scroll) {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.9rem);
-}
-
 .devotional-reader-header ion-toolbar {
   --background: rgba(247, 248, 250, 0.92);
   --border-color: transparent;
   --min-height: 56px;
-  --padding-top: calc(env(safe-area-inset-top, 0px) + 0.2rem);
+  --padding-top: calc(var(--app-safe-area-top) + 0.2rem);
   --padding-start: 0.35rem;
   --padding-end: 0.35rem;
 }
@@ -37,7 +33,11 @@
 
 .devotional-reader-shell {
   gap: 1rem;
-  padding: calc(env(safe-area-inset-top, 0px) + 4.5rem) 1rem calc(env(safe-area-inset-bottom, 0px) + 1.35rem);
+  padding:
+    calc(var(--app-safe-area-top) + 4.5rem)
+    calc(var(--app-safe-area-right) + 1rem)
+    calc(var(--app-safe-area-bottom) + 1.35rem)
+    calc(var(--app-safe-area-left) + 1rem);
 }
 
 .reader-article,
@@ -160,7 +160,7 @@
 .reader-article__footer {
   display: grid;
   gap: 0.65rem;
-  padding: 0 1.1rem calc(env(safe-area-inset-bottom, 0px) + 1.75rem);
+  padding: 0 1.1rem calc(var(--app-safe-area-bottom) + 1.75rem);
   font-size: 0.92rem;
   line-height: 1.55;
 }
@@ -238,7 +238,7 @@
 
 @media (max-width: 480px) {
   .devotional-reader-shell {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 4.2rem);
+    padding-top: calc(var(--app-safe-area-top) + 4.2rem);
   }
 
   .reader-article,
@@ -265,7 +265,7 @@
   }
 
   .reader-article__footer {
-    padding: 0 1rem calc(env(safe-area-inset-bottom, 0px) + 1.6rem);
+    padding: 0 1rem calc(var(--app-safe-area-bottom) + 1.6rem);
   }
 }
 

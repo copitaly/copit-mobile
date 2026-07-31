@@ -7,10 +7,6 @@ ion-page {
   --background: var(--cop-color-background);
 }
 
-.home-content::part(scroll) {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.5rem);
-}
-
 .home-shell {
   position: relative;
   z-index: 1;

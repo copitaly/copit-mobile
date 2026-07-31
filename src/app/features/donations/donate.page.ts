@@ -78,7 +78,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
         ></app-mobile-header>
       </div>
 
-      <ion-content fullscreen class="donate-content" scrollY="true">
+      <ion-content fullscreen class="donate-content cop-content--tabs" scrollY="true">
         <div class="surface donate-surface">
           <div class="surface__content">
             <ng-container *ngIf="branch; else missingBranch">

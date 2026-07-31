@@ -12,8 +12,8 @@ import { ForgotPasswordFormComponent } from './forgot-password-form.component';
   selector: 'app-forgot-password',
   template: `
     <ion-page>
-      <ion-content fullscreen class="recovery-content">
-        <div class="recovery-shell">
+      <ion-content fullscreen class="recovery-content cop-content--secondary">
+        <div class="recovery-shell cop-secondary-shell">
           <header class="recovery-header" aria-labelledby="forgot-password-title">
             <ion-back-button
               class="recovery-header__back"
@@ -55,12 +55,6 @@ import { ForgotPasswordFormComponent } from './forgot-password-form.component';
       .recovery-header__copy {
         display: flex;
         flex-direction: column;
-      }
-
-      .recovery-shell {
-        min-height: 100%;
-        padding: calc(env(safe-area-inset-top, 0px) + 0.9rem) 1.08rem calc(1.45rem + env(safe-area-inset-bottom));
-        gap: 0.92rem;
       }
 
       .recovery-header {
@@ -127,8 +121,8 @@ import { ForgotPasswordFormComponent } from './forgot-password-form.component';
 
       @media (max-width: 420px) {
         .recovery-shell {
-          padding-left: 0.95rem;
-          padding-right: 0.95rem;
+          padding-left: calc(var(--cop-safe-left, env(safe-area-inset-left, 0px)) + 0.95rem);
+          padding-right: calc(var(--cop-safe-right, env(safe-area-inset-right, 0px)) + 0.95rem);
         }
 
         .recovery-header__copy h1 {

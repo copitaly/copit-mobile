@@ -53,9 +53,9 @@ type PrimaryTab = {
         --border: 1px solid rgba(3, 23, 63, 0.08);
         padding:
           0.45rem
-          calc(env(safe-area-inset-right, 0px) + 0.55rem)
-          calc(env(safe-area-inset-bottom, 0px) + 0.45rem)
-          calc(env(safe-area-inset-left, 0px) + 0.55rem);
+          calc(var(--cop-safe-right, env(safe-area-inset-right, 0px)) + 0.55rem)
+          calc(var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)) + 0.45rem)
+          calc(var(--cop-safe-left, env(safe-area-inset-left, 0px)) + 0.55rem);
         border-top: 1px solid rgba(3, 23, 63, 0.08);
         box-shadow: 0 -8px 28px rgba(6, 21, 74, 0.08);
       }

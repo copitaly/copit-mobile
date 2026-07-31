@@ -33,7 +33,7 @@ type ProfileActionSection = {
   selector: 'app-profile',
   template: `
     <ion-page>
-      <ion-content fullscreen class="profile-content cop-page cop-page--warm">
+      <ion-content fullscreen class="profile-content cop-page cop-page--warm cop-content--tabs">
         <div class="profile-shell cop-page-shell">
           <header class="profile-header cop-page-header" aria-labelledby="profile-title">
             <p class="profile-header__eyebrow cop-page-header__eyebrow">Account hub</p>

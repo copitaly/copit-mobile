@@ -71,7 +71,11 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         max-width: 420px;
         margin: 0 auto;
         gap: 0;
-        padding: 0.4rem 1rem calc(1.5rem + env(safe-area-inset-bottom));
+        padding:
+          0.4rem
+          calc(var(--cop-safe-right, env(safe-area-inset-right, 0px)) + 1rem)
+          calc(1.5rem + var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)))
+          calc(var(--cop-safe-left, env(safe-area-inset-left, 0px)) + 1rem);
       }
 
       .auth-card {

@@ -64,7 +64,7 @@ import { MobileHeaderComponent } from './mobile-header.component';
       .feature-page-shell__content {
         width: 100%;
         margin: 0 auto;
-        padding-bottom: calc(var(--feature-shell-sheet-top-padding) + env(safe-area-inset-bottom));
+        padding-bottom: calc(var(--feature-shell-sheet-top-padding) + var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)));
       }
     `,
   ],

@@ -80,6 +80,8 @@ describe('BibleStudyPage', () => {
     await createComponent();
 
     expect(fixture.nativeElement.querySelectorAll('[data-testid="manual-card"]').length).toBe(1);
+    expect(fixture.nativeElement.querySelector('.bible-study-content')?.className).toContain('cop-content--tabs');
+    expect(fixture.nativeElement.querySelector('.bible-study-shell')?.className).toContain('cop-page-shell');
   });
 
   it('renders the featured fallback hero when there is no reading progress', async () => {
