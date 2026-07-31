@@ -14,19 +14,25 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
   selector: 'app-my-donations',
   template: `
     <ion-page>
-      <ion-content fullscreen class="donations-content">
-        <div class="donations-hero app-header app-header--inner">
-          <app-mobile-header title="My Donations" fallbackRoute="/tabs/profile"></app-mobile-header>
-        </div>
+      <ion-content fullscreen class="donations-content cop-content--secondary">
+        <div class="donations-shell cop-secondary-shell">
+          <header class="donations-header" aria-label="Giving History">
+            <app-mobile-header
+              title="Giving History"
+              subtitle="Review the gifts you've already made."
+              fallbackRoute="/tabs/profile"
+              tone="editorial"
+            ></app-mobile-header>
+          </header>
 
-        <div class="surface donations-surface">
-          <div class="surface__content donations-surface__content">
+          <div class="donations-surface">
+            <div class="donations-surface__content">
             <div *ngIf="loading" class="skeleton-stack" aria-live="polite">
               <div class="donation-card skeleton" *ngFor="let item of skeletonItems">
-                <div class="skeleton-row skeleton-row--top">
+                <div class="skeleton-row skeleton-row--amount">
                   <span class="skeleton-pill skeleton-pill--amount"></span>
-                  <span class="skeleton-pill skeleton-pill--status"></span>
                 </div>
+                <span class="skeleton-pill skeleton-pill--status"></span>
                 <span class="skeleton-line skeleton-line--title"></span>
                 <span class="skeleton-line skeleton-line--meta"></span>
                 <span class="skeleton-line skeleton-line--meta short"></span>
@@ -42,9 +48,10 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
             </div>
 
             <div *ngIf="!loading && !errorMessage && donations.length === 0" class="state-card empty-state">
+              <div class="empty-state__icon" aria-hidden="true">Gift</div>
               <div class="state-copy">
                 <h2>No donations yet</h2>
-                <p>Start giving to support your church</p>
+                <p>Your giving history will appear here after your first donation.</p>
               </div>
               <ion-button expand="block" class="give-now-button" (click)="goToDonationFlow()">
                 <ion-icon name="gift-outline" slot="start" aria-hidden="true"></ion-icon>
@@ -54,26 +61,29 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
             <div *ngIf="!loading && !errorMessage && donations.length > 0" class="donations-stack">
               <article class="donation-card" *ngFor="let donation of donations">
-                <div class="donation-card__top">
-                  <div>
-                    <p class="donation-amount">{{ donation.amount }} {{ donation.currency | uppercase }}</p>
-                    <h2>{{ donation.church?.name || 'Church donation' }}</h2>
+                <div class="donation-card__action" tabindex="0" [attr.aria-label]="'Donation to ' + displayChurchName(donation)">
+                  <div class="donation-card__amount-block">
+                    <p class="donation-amount">{{ formatAmount(donation.amount, donation.currency) }}</p>
+                    <span class="donation-status" [class]="statusClass(donation.status)">{{ formatStatus(donation.status) }}</span>
                   </div>
-                  <span class="donation-status" [class]="statusClass(donation.status)">{{ formatStatus(donation.status) }}</span>
-                </div>
 
-                <div class="donation-meta">
-                  <div class="meta-row">
-                    <span>Category</span>
-                    <strong>{{ donation.category || 'General' }}</strong>
+                  <div class="donation-card__church">
+                    <h2>{{ displayChurchName(donation) }}</h2>
                   </div>
-                  <div class="meta-row">
-                    <span>Date</span>
-                    <strong>{{ formatDate(donation.created_at) }}</strong>
-                  </div>
-                  <div class="meta-row">
-                    <span>Reference</span>
-                    <strong>{{ donation.transaction_reference || 'Pending' }}</strong>
+
+                  <div class="donation-meta">
+                    <div class="meta-row">
+                      <span>Donation Type</span>
+                      <strong>{{ formatDonationType(donation.category) }}</strong>
+                    </div>
+                    <div class="meta-row">
+                      <span>Date</span>
+                      <strong>{{ formatDate(donation.created_at) }}</strong>
+                    </div>
+                    <div class="meta-row">
+                      <span>Reference</span>
+                      <strong class="meta-row__reference">{{ donation.transaction_reference || 'Pending' }}</strong>
+                    </div>
                   </div>
                 </div>
               </article>
@@ -97,6 +107,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
             </div>
           </div>
         </div>
+        </div>
       </ion-content>
     </ion-page>
   `,
@@ -106,50 +117,25 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         display: block;
       }
 
-      ion-page {
-        background: #0b1d73;
-      }
-
-      ion-content.donations-content {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        --background: #0b1d73;
-      }
-
-      ion-content.donations-content::part(scroll) {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-height: 100%;
-      }
-
       .donations-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
+        --background: var(--cop-color-background-soft);
       }
 
-      .donations-hero {
-        width: 100%;
-        padding-bottom: 2rem;
+      .donations-shell {
+        gap: 0.95rem;
       }
 
       .donations-surface {
-        margin-top: -0.08rem;
-        padding-top: 1.25rem;
-        border-radius: 24px 24px 0 0;
-        box-shadow: 0 -6px 22px rgba(2, 18, 54, 0.08);
+        width: 100%;
+        max-width: 32rem;
+        margin: 0 auto;
       }
 
       .donations-surface__content {
-        width: 100%;
-        max-width: 440px;
-        margin: 0 auto;
         display: flex;
         flex-direction: column;
         gap: 1rem;
-        padding-bottom: calc(1.2rem + env(safe-area-inset-bottom));
+        padding-bottom: calc(1.1rem + var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)));
       }
 
       .donations-stack,
@@ -162,99 +148,123 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
       .donation-card,
       .state-card {
         background: #ffffff;
-        border-radius: 22px;
-        box-shadow: 0 14px 36px rgba(6, 21, 74, 0.1);
+        border-radius: 16px;
+        border: 1px solid rgba(8, 31, 92, 0.08);
+        box-shadow: 0 10px 22px rgba(7, 24, 69, 0.06);
       }
 
-      .donation-card {
-        padding: 0.95rem 1.05rem;
-      }
-
-      .donation-card__top {
+      .donation-card__action {
         display: flex;
-        justify-content: space-between;
-        gap: 0.9rem;
+        flex-direction: column;
+        gap: 0.8rem;
+        width: 100%;
+        padding: 0.95rem 1rem;
+        color: inherit;
+        outline: none;
+      }
+
+      .donation-card__action:focus-visible {
+        box-shadow: inset 0 0 0 2px rgba(11, 29, 115, 0.18);
+        border-radius: 16px;
+      }
+
+      .donation-card__amount-block {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.4rem;
       }
 
       .donation-amount {
-        margin: 0 0 0.3rem;
-        color: #b98710;
-        font-size: 1.04rem;
+        margin: 0;
+        color: #081f5c;
+        font-size: 1.5rem;
         font-weight: 700;
-        letter-spacing: 0.02em;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
       }
 
-      .donation-card h2 {
+      .donation-card__church h2 {
         margin: 0;
         color: #03173f;
-        font-size: 1.05rem;
+        font-size: 1rem;
         font-weight: 700;
-        line-height: 1.25;
+        line-height: 1.3;
+        text-transform: none;
       }
 
       .donation-status {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
+        gap: 0.35rem;
         align-self: flex-start;
-        min-width: 72px;
-        padding: 0.35rem 0.65rem;
+        padding: 0.16rem 0;
         border-radius: 999px;
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        background: #eef2fd;
-        color: #425ea6;
+        font-size: 0.78rem;
+        font-weight: 600;
+        background: transparent;
+        color: rgba(8, 31, 92, 0.72);
+      }
+
+      .donation-status::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+        opacity: 0.9;
       }
 
       .donation-status--paid {
-        background: rgba(45, 166, 95, 0.12);
         color: #217447;
       }
 
       .donation-status--pending {
-        background: rgba(245, 182, 40, 0.16);
         color: #9a6d06;
       }
 
       .donation-status--failed,
       .donation-status--cancelled {
-        background: rgba(220, 53, 69, 0.12);
         color: #b02f3b;
       }
 
       .donation-meta {
         display: flex;
         flex-direction: column;
-        gap: 0.45rem;
-        margin-top: 0.8rem;
-        padding-top: 0.8rem;
+        gap: 0.68rem;
+        margin-top: 0.1rem;
+        padding-top: 0.82rem;
         border-top: 1px solid rgba(3, 23, 63, 0.08);
       }
 
       .meta-row {
         display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        align-items: baseline;
+        flex-direction: column;
+        gap: 0.14rem;
+        align-items: flex-start;
       }
 
       .meta-row span {
         color: rgba(3, 23, 63, 0.58);
         font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
       }
 
       .meta-row strong {
         color: #03173f;
         font-size: 0.92rem;
         font-weight: 600;
-        text-align: right;
         overflow-wrap: anywhere;
       }
 
+      .meta-row__reference {
+        user-select: text;
+        -webkit-user-select: text;
+      }
+
       .state-card {
-        padding: 1.25rem;
+        padding: 1.15rem 1rem;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -283,6 +293,22 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         color: rgba(3, 23, 63, 0.65);
         font-size: 0.92rem;
         line-height: 1.45;
+      }
+
+      .empty-state__icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 58px;
+        min-height: 58px;
+        padding: 0 0.75rem;
+        border-radius: 999px;
+        background: rgba(245, 182, 40, 0.12);
+        color: #9a6d06;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
       }
 
       .state-button,
@@ -324,9 +350,8 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
       .skeleton-row {
         display: flex;
-        justify-content: space-between;
         gap: 0.8rem;
-        margin-bottom: 0.85rem;
+        margin-bottom: 0.65rem;
       }
 
       .skeleton-pill,
@@ -342,8 +367,8 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
       }
 
       .skeleton-pill--status {
-        width: 74px;
-        height: 22px;
+        width: 92px;
+        height: 12px;
       }
 
       .skeleton-line--title {
@@ -375,13 +400,9 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         }
       }
 
-      @media (max-height: 760px) {
-        .donations-hero {
-          padding-bottom: 1.8rem;
-        }
-
-        .donations-surface {
-          padding-top: 1.1rem;
+      @media (max-width: 430px) {
+        .donation-card__action {
+          padding: 0.92rem 0.92rem 0.95rem;
         }
       }
     `,
@@ -471,6 +492,42 @@ export class MyDonationsPage implements OnInit {
       month: 'short',
       year: 'numeric',
     }).format(date);
+  }
+
+  formatAmount(amount: string, currency: string): string {
+    const numericAmount = Number(amount);
+    const normalizedCurrency = (currency || 'EUR').toUpperCase();
+    if (Number.isFinite(numericAmount)) {
+      return new Intl.NumberFormat('en-IE', {
+        style: 'currency',
+        currency: normalizedCurrency,
+      }).format(numericAmount);
+    }
+
+    return `${amount} ${normalizedCurrency}`;
+  }
+
+  formatDonationType(category: string): string {
+    const normalized = `${category || ''}`.trim();
+    if (!normalized) {
+      return 'General';
+    }
+
+    return normalized
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
+  displayChurchName(donation: MemberRecentDonation): string {
+    const rawName = donation.church?.name?.trim();
+    if (!rawName) {
+      return 'Church donation';
+    }
+
+    const normalized = rawName.toLowerCase();
+    return normalized.replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 
   goToDonationFlow(): void {
