@@ -74,6 +74,18 @@ export class PrayerMyRequestsPage implements OnInit {
     this.loadInitialPrayers();
   }
 
+  get selectedStatusLabel(): string {
+    return this.statusOptions.find((option) => option.value === this.selectedStatus)?.label ?? 'Status';
+  }
+
+  get selectedVisibilityLabel(): string {
+    return this.visibilityOptions.find((option) => option.value === this.selectedVisibility)?.label ?? 'Visibility';
+  }
+
+  get selectedScopeLabel(): string {
+    return this.scopeOptions.find((option) => option.value === this.selectedScope)?.label ?? 'Scope';
+  }
+
   get hasActiveFilters(): boolean {
     return this.selectedStatus !== 'all' || this.selectedVisibility !== 'all' || this.selectedScope !== 'all';
   }

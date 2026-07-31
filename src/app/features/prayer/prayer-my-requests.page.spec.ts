@@ -564,7 +564,8 @@ describe('PrayerMyRequestsPage', () => {
 
     await createComponent();
 
-    expect(fixture.nativeElement.querySelector('[data-testid="empty-state"]')?.textContent).toContain('No prayer requests yet');
+    expect(fixture.nativeElement.querySelector('[data-testid="empty-state"]')?.textContent).toContain('No prayer requests yet.');
+    expect(fixture.nativeElement.querySelector('[data-testid="empty-state"]')?.textContent).toContain('Share your first prayer request.');
   });
 
   it('renders the filtered empty state and clears filters', async () => {
@@ -759,7 +760,7 @@ describe('PrayerMyRequestsPage', () => {
     expect(ionContent).not.toBeNull();
     expect(surface).not.toBeNull();
     expect(surfaceContent).not.toBeNull();
-    expect(getComputedStyle(surface as Element).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+    expect(getComputedStyle(ionContent as Element).getPropertyValue('--background').trim()).not.toBe('');
     expect(getComputedStyle(surfaceContent as Element).overflow).not.toBe('hidden');
   });
 });

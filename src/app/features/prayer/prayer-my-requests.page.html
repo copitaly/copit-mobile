@@ -1,171 +1,186 @@
 <ion-page>
-  <ion-content fullscreen class="my-prayers-content">
+  <ion-content fullscreen class="my-prayers-content cop-content--secondary">
     <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
       <ion-refresher-content></ion-refresher-content>
     </ion-refresher>
 
-    <div class="my-prayers-hero app-header app-header--inner">
-      <app-mobile-header
-        title="My Requests"
-        subtitle="View the prayer requests you submitted while signed in."
-        fallbackRoute="/tabs/home"
-      ></app-mobile-header>
-    </div>
+    <div class="my-prayers-shell cop-secondary-shell">
+      <header class="my-prayers-header" aria-label="My Prayer Requests">
+        <app-mobile-header
+          title="My Requests"
+          subtitle="View the prayer requests you've submitted."
+          fallbackRoute="/tabs/home"
+          tone="editorial"
+        ></app-mobile-header>
+      </header>
 
-    <div class="surface my-prayers-surface">
-      <div class="surface__content my-prayers-surface__content">
-        <section class="my-prayers-filters" aria-label="My prayer request filters">
-          <label class="filter-field">
-            <span>Status</span>
-            <select
-              data-testid="status-filter"
-              [value]="selectedStatus"
-              (change)="onStatusChange($any($event.target).value)"
-            >
-              <option *ngFor="let option of statusOptions" [value]="option.value">{{ option.label }}</option>
-            </select>
-          </label>
+      <div class="my-prayers-surface">
+        <div class="my-prayers-surface__content">
+          <section class="my-prayers-filters" aria-label="My prayer request filters">
+            <label class="filter-chip">
+              <span class="sr-only">Status</span>
+              <select
+                data-testid="status-filter"
+                [value]="selectedStatus"
+                aria-label="Status filter"
+                (change)="onStatusChange($any($event.target).value)"
+              >
+                <option *ngFor="let option of statusOptions" [value]="option.value">{{ option.label }}</option>
+              </select>
+              <span class="filter-chip__label">Status</span>
+              <span class="filter-chip__value">{{ selectedStatusLabel }}</span>
+              <ion-icon name="chevron-down" aria-hidden="true"></ion-icon>
+            </label>
 
-          <label class="filter-field">
-            <span>Visibility</span>
-            <select
-              data-testid="visibility-filter"
-              [value]="selectedVisibility"
-              (change)="onVisibilityChange($any($event.target).value)"
-            >
-              <option *ngFor="let option of visibilityOptions" [value]="option.value">{{ option.label }}</option>
-            </select>
-          </label>
+            <label class="filter-chip">
+              <span class="sr-only">Visibility</span>
+              <select
+                data-testid="visibility-filter"
+                [value]="selectedVisibility"
+                aria-label="Visibility filter"
+                (change)="onVisibilityChange($any($event.target).value)"
+              >
+                <option *ngFor="let option of visibilityOptions" [value]="option.value">{{ option.label }}</option>
+              </select>
+              <span class="filter-chip__label">Visibility</span>
+              <span class="filter-chip__value">{{ selectedVisibilityLabel }}</span>
+              <ion-icon name="chevron-down" aria-hidden="true"></ion-icon>
+            </label>
 
-          <label class="filter-field">
-            <span>Scope</span>
-            <select
-              data-testid="scope-filter"
-              [value]="selectedScope"
-              (change)="onScopeChange($any($event.target).value)"
-            >
-              <option *ngFor="let option of scopeOptions" [value]="option.value">{{ option.label }}</option>
-            </select>
-          </label>
-        </section>
+            <label class="filter-chip">
+              <span class="sr-only">Scope</span>
+              <select
+                data-testid="scope-filter"
+                [value]="selectedScope"
+                aria-label="Scope filter"
+                (change)="onScopeChange($any($event.target).value)"
+              >
+                <option *ngFor="let option of scopeOptions" [value]="option.value">{{ option.label }}</option>
+              </select>
+              <span class="filter-chip__label">Scope</span>
+              <span class="filter-chip__value">{{ selectedScopeLabel }}</span>
+              <ion-icon name="chevron-down" aria-hidden="true"></ion-icon>
+            </label>
+          </section>
 
-        <button
-          *ngIf="hasActiveFilters"
-          type="button"
-          class="reset-filters-button"
-          data-testid="clear-filters"
-          (click)="resetFilters()"
-        >
-          Clear Filters
-        </button>
-
-        <div *ngIf="loading" class="skeleton-stack" aria-live="polite" data-testid="loading-state">
-          <div class="my-prayer-card skeleton" *ngFor="let item of skeletonItems">
-            <div class="skeleton-row skeleton-row--top">
-              <span class="skeleton-pill skeleton-pill--badge"></span>
-              <span class="skeleton-pill skeleton-pill--date"></span>
-            </div>
-            <span class="skeleton-line skeleton-line--title"></span>
-            <span class="skeleton-line skeleton-line--body"></span>
-            <span class="skeleton-line skeleton-line--body short"></span>
-            <div class="skeleton-row skeleton-row--bottom">
-              <span class="skeleton-pill skeleton-pill--meta"></span>
-              <span class="skeleton-pill skeleton-pill--meta short"></span>
-            </div>
-          </div>
-        </div>
-
-        <div *ngIf="!loading && errorMessage" class="state-card error-state" data-testid="error-state">
-          <div class="state-copy">
-            <h2>We couldn't load your prayer requests right now.</h2>
-            <p>{{ errorMessage }}</p>
-          </div>
-          <ion-button expand="block" class="state-button" (click)="retryLoad()">Try Again</ion-button>
-        </div>
-
-        <div *ngIf="!loading && !errorMessage && prayers.length === 0" class="state-card empty-state" data-testid="empty-state">
-          <div class="state-copy">
-            <h2>{{ hasActiveFilters ? 'No prayer requests match these filters.' : 'No prayer requests yet' }}</h2>
-            <p>
-              {{
-                hasActiveFilters
-                  ? 'Try different filters or clear them to see your submitted prayer history.'
-                  : 'Prayer requests you submit while signed in will appear here.'
-              }}
-            </p>
-          </div>
-          <ion-button
-            *ngIf="!hasActiveFilters"
-            expand="block"
-            class="submit-button"
-            data-testid="submit-action"
-            (click)="goToSubmit()"
-          >
-            Submit a Prayer Request
-          </ion-button>
-          <ion-button
+          <button
             *ngIf="hasActiveFilters"
-            expand="block"
-            fill="outline"
-            class="state-button state-button--secondary"
+            type="button"
+            class="reset-filters-button"
+            data-testid="clear-filters"
             (click)="resetFilters()"
           >
             Clear Filters
-          </ion-button>
-        </div>
+          </button>
 
-        <section *ngIf="!loading && !errorMessage && prayers.length > 0" class="my-prayers-feed" aria-label="My prayer requests">
-          <article class="my-prayer-card" *ngFor="let prayer of prayers; trackBy: trackByPrayerId" data-testid="my-prayer-card">
-            <button
-              type="button"
-              class="my-prayer-card__action"
-              data-testid="view-details"
-              [attr.aria-label]="'View prayer request details for ' + (prayer.title || 'submitted prayer request')"
-              (click)="openPrayerDetails(prayer)"
-            >
-              <div class="my-prayer-card__top">
-                <span class="status-chip" [ngClass]="statusClass(prayer.status)" [attr.aria-label]="'Prayer status ' + formatStatusLabel(prayer.status)">
-                  {{ formatStatusLabel(prayer.status) }}
-                </span>
-                <span class="my-prayer-card__date">{{ formatDate(prayer.created_at) }}</span>
+          <div *ngIf="loading" class="skeleton-stack" aria-live="polite" data-testid="loading-state">
+            <div class="my-prayer-card skeleton" *ngFor="let item of skeletonItems">
+              <div class="skeleton-row skeleton-row--top">
+                <span class="skeleton-pill skeleton-pill--badge"></span>
+                <span class="skeleton-pill skeleton-pill--date"></span>
               </div>
-
-              <h2 *ngIf="prayer.title" class="my-prayer-card__title" data-testid="prayer-title">{{ prayer.title }}</h2>
-
-              <p class="my-prayer-card__body" data-testid="prayer-preview">{{ requestPreview(prayer.request_text) }}</p>
-
-              <div class="my-prayer-card__meta-line" aria-label="Prayer metadata">
-                <span>{{ formatCategoryLabel(prayer.category) }}</span>
-                <span aria-hidden="true">&bull;</span>
-                <span>{{ formatScopeContext(prayer) }}</span>
-                <span aria-hidden="true">&bull;</span>
-                <span>{{ formatVisibilityLabel(prayer.visibility) }}</span>
+              <span class="skeleton-line skeleton-line--title"></span>
+              <span class="skeleton-line skeleton-line--body"></span>
+              <span class="skeleton-line skeleton-line--body short"></span>
+              <div class="skeleton-row skeleton-row--bottom">
+                <span class="skeleton-pill skeleton-pill--meta"></span>
+                <span class="skeleton-pill skeleton-pill--meta short"></span>
               </div>
-
-              <span class="detail-link">
-                <span>View details</span>
-                <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
-              </span>
-            </button>
-          </article>
-
-          <div *ngIf="loadMoreErrorMessage" class="load-more-error" data-testid="load-more-error">
-            <p>{{ loadMoreErrorMessage }}</p>
-            <ion-button fill="outline" class="state-button state-button--secondary" (click)="loadMore()">Try Again</ion-button>
+            </div>
           </div>
 
-          <ion-button
-            *ngIf="nextPageUrl"
-            expand="block"
-            fill="outline"
-            class="state-button state-button--secondary"
-            [disabled]="loadingMore"
-            (click)="loadMore()"
-          >
-            <ion-spinner *ngIf="loadingMore" slot="start" name="crescent"></ion-spinner>
-            <span>{{ loadingMore ? 'Loading more...' : 'Load more' }}</span>
-          </ion-button>
-        </section>
+          <div *ngIf="!loading && errorMessage" class="state-card error-state" data-testid="error-state">
+            <div class="state-copy">
+              <h2>We couldn't load your prayer requests right now.</h2>
+              <p>{{ errorMessage }}</p>
+            </div>
+            <ion-button expand="block" class="state-button" (click)="retryLoad()">Try Again</ion-button>
+          </div>
+
+          <div *ngIf="!loading && !errorMessage && prayers.length === 0" class="state-card empty-state" data-testid="empty-state">
+            <div class="empty-state__icon" aria-hidden="true">&#x1F64F;</div>
+            <div class="state-copy">
+              <h2>{{ hasActiveFilters ? 'No prayer requests match these filters.' : 'No prayer requests yet.' }}</h2>
+              <p>
+                {{
+                  hasActiveFilters
+                    ? 'Try different filters or clear them to see your submitted prayer history.'
+                    : 'Share your first prayer request.'
+                }}
+              </p>
+            </div>
+            <ion-button
+              *ngIf="!hasActiveFilters"
+              expand="block"
+              class="submit-button"
+              data-testid="submit-action"
+              (click)="goToSubmit()"
+            >
+              Submit a Prayer Request
+            </ion-button>
+            <ion-button
+              *ngIf="hasActiveFilters"
+              expand="block"
+              fill="outline"
+              class="state-button state-button--secondary"
+              (click)="resetFilters()"
+            >
+              Clear Filters
+            </ion-button>
+          </div>
+
+          <section *ngIf="!loading && !errorMessage && prayers.length > 0" class="my-prayers-feed" aria-label="My prayer requests">
+            <article class="my-prayer-card" *ngFor="let prayer of prayers; trackBy: trackByPrayerId" data-testid="my-prayer-card">
+              <button
+                type="button"
+                class="my-prayer-card__action"
+                data-testid="prayer-card-action"
+                [attr.aria-label]="'View prayer request details for ' + (prayer.title || 'submitted prayer request')"
+                (click)="openPrayerDetails(prayer)"
+              >
+                <div class="my-prayer-card__top">
+                  <span
+                    class="status-chip"
+                    [ngClass]="statusClass(prayer.status)"
+                    [attr.aria-label]="'Prayer status ' + formatStatusLabel(prayer.status)"
+                  >
+                    {{ formatStatusLabel(prayer.status) }}
+                  </span>
+                  <span class="my-prayer-card__date">{{ formatDate(prayer.created_at) }}</span>
+                </div>
+
+                <h2 *ngIf="prayer.title" class="my-prayer-card__title" data-testid="prayer-title">{{ prayer.title }}</h2>
+
+                <p class="my-prayer-card__body" data-testid="prayer-preview">{{ requestPreview(prayer.request_text) }}</p>
+
+                <div class="my-prayer-card__meta-line" aria-label="Prayer metadata">
+                  <span>{{ formatCategoryLabel(prayer.category) }}</span>
+                  <span aria-hidden="true">&bull;</span>
+                  <span>{{ formatScopeContext(prayer) }}</span>
+                  <span aria-hidden="true">&bull;</span>
+                  <span>{{ formatVisibilityLabel(prayer.visibility) }}</span>
+                </div>
+              </button>
+            </article>
+
+            <div *ngIf="loadMoreErrorMessage" class="load-more-error" data-testid="load-more-error">
+              <p>{{ loadMoreErrorMessage }}</p>
+              <ion-button fill="outline" class="state-button state-button--secondary" (click)="loadMore()">Try Again</ion-button>
+            </div>
+
+            <ion-button
+              *ngIf="nextPageUrl"
+              expand="block"
+              fill="outline"
+              class="state-button state-button--secondary"
+              [disabled]="loadingMore"
+              (click)="loadMore()"
+            >
+              <ion-spinner *ngIf="loadingMore" slot="start" name="crescent"></ion-spinner>
+              <span>{{ loadingMore ? 'Loading more...' : 'Load more' }}</span>
+            </ion-button>
+          </section>
+        </div>
       </div>
     </div>
   </ion-content>
