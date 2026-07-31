@@ -14,6 +14,7 @@ import { DonationsService } from '../../core/services/donations.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { StripePaymentService } from '../../core/services/stripe-payment.service';
+import { SavedChurch } from '../../core/models/user.model';
 import { DonatePage } from './donate.page';
 
 describe('DonatePage', () => {
@@ -24,6 +25,19 @@ describe('DonatePage', () => {
   let stripePaymentService: jasmine.SpyObj<StripePaymentService>;
   let selectedBranch$: BehaviorSubject<PublicBranch | null>;
   let queryParamMap$: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
+  let authServiceMock: {
+    isAuthenticatedSnapshot: boolean;
+    accessTokenSnapshot: string | null;
+    currentUserSnapshot: { recent_donations?: Array<{ church: { id: number; name: string } | null }> } | null;
+    isAuthenticated$: unknown;
+    currentUser$: unknown;
+    getCurrentUser: jasmine.Spy;
+    getSavedChurches: jasmine.Spy;
+  };
+  let selectedBranchServiceMock: {
+    selectedBranch$: BehaviorSubject<PublicBranch | null>;
+    setBranch: jasmine.Spy;
+  };
 
   const branch: PublicBranch = {
     id: 12,
@@ -48,6 +62,23 @@ describe('DonatePage', () => {
     sort_order: 10,
   };
 
+  const toSavedChurch = (
+    churchOverrides: Partial<PublicBranch> & Pick<PublicBranch, 'id' | 'name'>,
+    createdAt = '2026-07-30T08:00:00Z'
+  ): SavedChurch => ({
+    id: churchOverrides.id + 100,
+    created_at: createdAt,
+    church: {
+      id: churchOverrides.id,
+      name: churchOverrides.name,
+      branch_code: churchOverrides.branch_code ?? '',
+      district: churchOverrides.district ?? null,
+      area: churchOverrides.area ?? null,
+      donations_enabled: churchOverrides.donations_enabled ?? true,
+      is_active: churchOverrides.is_active ?? true,
+    },
+  });
+
   beforeEach(() => {
     donationsService = jasmine.createSpyObj<DonationsService>('DonationsService', [
       'createCheckout',
@@ -61,6 +92,19 @@ describe('DonatePage', () => {
     stripePaymentService = jasmine.createSpyObj<StripePaymentService>('StripePaymentService', ['presentPaymentSheet']);
     selectedBranch$ = new BehaviorSubject<PublicBranch | null>(null);
     queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
+    authServiceMock = {
+      isAuthenticatedSnapshot: false,
+      accessTokenSnapshot: null,
+      currentUserSnapshot: null,
+      isAuthenticated$: of(false),
+      currentUser$: of(null),
+      getCurrentUser: jasmine.createSpy().and.returnValue(of(null)),
+      getSavedChurches: jasmine.createSpy().and.returnValue(of([])),
+    };
+    selectedBranchServiceMock = {
+      selectedBranch$,
+      setBranch: jasmine.createSpy().and.returnValue(true),
+    };
 
     donationsService.getPublicDonationCategories.and.returnValue(of([]));
     stripePaymentService.presentPaymentSheet.and.resolveTo({ status: 'completed' });
@@ -69,18 +113,8 @@ describe('DonatePage', () => {
       new FormBuilder(),
       donationsService,
       donationFlowState,
-      {
-        isAuthenticatedSnapshot: false,
-        accessTokenSnapshot: null,
-        currentUserSnapshot: null,
-        isAuthenticated$: of(false),
-        currentUser$: of(null),
-        getCurrentUser: jasmine.createSpy().and.returnValue(of(null)),
-      } as unknown as AuthService,
-      {
-        selectedBranch$,
-        setBranch: jasmine.createSpy().and.returnValue(true),
-      } as unknown as SelectedBranchService,
+      authServiceMock as unknown as AuthService,
+      selectedBranchServiceMock as unknown as SelectedBranchService,
       { queryParamMap: queryParamMap$.asObservable() } as unknown as ActivatedRoute,
       router,
       stripePaymentService,
@@ -290,11 +324,114 @@ describe('DonatePage', () => {
   it('closes the selector and updates the selected branch when a church is chosen', () => {
     page.handleBranchSelected(branch);
 
+    expect(selectedBranchServiceMock.setBranch).toHaveBeenCalledWith(branch);
     expect(router.navigate).toHaveBeenCalledWith([], {
       relativeTo: jasmine.anything(),
       queryParams: { churchSelector: null },
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
+  });
+
+  it('does not prefill when no saved branches exist', () => {
+    (page as unknown as { branch: PublicBranch | null }).branch = null;
+    authServiceMock.isAuthenticatedSnapshot = true;
+    authServiceMock.getSavedChurches.and.returnValue(of([]));
+
+    page.ionViewWillEnter();
+
+    expect(authServiceMock.getSavedChurches).toHaveBeenCalled();
+    expect(selectedBranchServiceMock.setBranch).not.toHaveBeenCalled();
+  });
+
+  it('prefills the only saved branch when no donation branch is selected', () => {
+    (page as unknown as { branch: PublicBranch | null }).branch = null;
+    authServiceMock.isAuthenticatedSnapshot = true;
+    authServiceMock.getSavedChurches.and.returnValue(of([toSavedChurch(branch)]));
+
+    page.ionViewWillEnter();
+
+    expect(selectedBranchServiceMock.setBranch).toHaveBeenCalledWith(jasmine.objectContaining({ id: branch.id, name: branch.name }));
+  });
+
+  it('prefers the most recently used saved branch when recent donation metadata exists', () => {
+    const otherBranch: PublicBranch = {
+      id: 33,
+      name: 'Turin North',
+      branch_code: 'TOR-02',
+      level: 'local',
+      donations_enabled: true,
+      is_active: true,
+      district: { id: 6, name: 'Turin' },
+      area: { id: 3, name: 'Northwest' },
+    };
+    (page as unknown as { branch: PublicBranch | null }).branch = null;
+    authServiceMock.isAuthenticatedSnapshot = true;
+    authServiceMock.currentUserSnapshot = {
+      recent_donations: [{ church: { id: otherBranch.id, name: otherBranch.name } }],
+    };
+    authServiceMock.getSavedChurches.and.returnValue(of([toSavedChurch(branch), toSavedChurch(otherBranch)]));
+
+    page.ionViewWillEnter();
+
+    expect(selectedBranchServiceMock.setBranch).toHaveBeenCalledWith(jasmine.objectContaining({ id: otherBranch.id }));
+  });
+
+  it('keeps an existing explicit donation selection instead of pre-filling from saved branches', () => {
+    authServiceMock.isAuthenticatedSnapshot = true;
+    authServiceMock.getSavedChurches.and.returnValue(of([toSavedChurch(branch)]));
+
+    page.ionViewWillEnter();
+
+    expect(authServiceMock.getSavedChurches).not.toHaveBeenCalled();
+    expect(selectedBranchServiceMock.setBranch).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the next valid saved branch when the first entry is invalid', () => {
+    const validBranch: PublicBranch = {
+      id: 44,
+      name: 'Vicenza Central',
+      branch_code: 'VIC-01',
+      level: 'local',
+      donations_enabled: true,
+      is_active: true,
+      district: { id: 7, name: 'Vicenza' },
+      area: { id: 8, name: 'Veneto' },
+    };
+    (page as unknown as { branch: PublicBranch | null }).branch = null;
+    authServiceMock.isAuthenticatedSnapshot = true;
+    authServiceMock.getSavedChurches.and.returnValue(
+      of([
+        toSavedChurch({ id: 0, name: '' } as PublicBranch),
+        toSavedChurch({ ...branch, id: 99, name: 'Inactive', is_active: false }),
+        toSavedChurch(validBranch),
+      ])
+    );
+
+    page.ionViewWillEnter();
+
+    expect(selectedBranchServiceMock.setBranch).toHaveBeenCalledWith(jasmine.objectContaining({ id: validBranch.id }));
+  });
+
+  it('allows a user-selected church to replace the prefilled branch for the current donation flow', () => {
+    const prefilledBranch: PublicBranch = {
+      id: 66,
+      name: 'Brescia East',
+      branch_code: 'BRE-02',
+      level: 'local',
+      donations_enabled: true,
+      is_active: true,
+      district: { id: 9, name: 'Brescia' },
+      area: { id: 10, name: 'Lombardy' },
+    };
+    authServiceMock.isAuthenticatedSnapshot = true;
+    authServiceMock.getSavedChurches.and.returnValue(of([toSavedChurch(prefilledBranch)]));
+    (page as unknown as { branch: PublicBranch | null }).branch = null;
+
+    page.ionViewWillEnter();
+    page.handleBranchSelected(branch);
+
+    expect(selectedBranchServiceMock.setBranch.calls.argsFor(0)[0]).toEqual(jasmine.objectContaining({ id: prefilledBranch.id }));
+    expect(selectedBranchServiceMock.setBranch.calls.argsFor(1)[0]).toBe(branch);
   });
 });

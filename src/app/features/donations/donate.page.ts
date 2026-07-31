@@ -20,6 +20,7 @@ import {
   DonationFrequency,
   RecurringDonationCreateRequest,
 } from '../../core/models/donation.model';
+import { MemberRecentDonation, SavedChurch } from '../../core/models/user.model';
 import { DonationFlowStateService } from '../../core/services/donation-flow-state.service';
 import { DonationsService } from '../../core/services/donations.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -111,6 +112,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                     #churchSelectorTrigger
                     type="button"
                     class="donate-branch-selector"
+                    [class.is-loading]="branchPrefillLoading"
                     aria-label="Open church selector"
                     (click)="openChurchSelector()"
                   >
@@ -119,7 +121,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                     </span>
                     <span class="donate-branch-selector__copy">
                       <span class="section-label donate-branch-summary__eyebrow">Giving to</span>
-                      <strong>Choose your church</strong>
+                      <strong>{{ branchPrefillLoading ? 'Loading your churches...' : 'Choose your church' }}</strong>
                     </span>
                     <span class="donate-branch-selector__chevron" aria-hidden="true">
                       <ion-icon name="chevron-forward"></ion-icon>
@@ -350,6 +352,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   nativeLoading = false;
   nativeError?: string;
   branch: PublicBranch | null = null;
+  branchPrefillLoading = false;
   customAmountInputValue = '';
   private selectedFrequencyState: DonationFrequency = 'one_time';
 
@@ -375,6 +378,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
   private lastTrackedDonationFormChurchId: number | null = null;
   private shouldRestoreChurchSelectorFocus = false;
+  private savedBranchPrefillAttempted = false;
+  private savedBranchPrefillInFlight = false;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -401,6 +406,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
         this.categoriesLoadError = undefined;
         this.categoryRecurringHelperMessage = undefined;
         this.form.get('categoryId')?.setValue(null, { emitEvent: false });
+        this.tryPrefillSavedBranch();
         return;
       }
 
@@ -420,6 +426,9 @@ export class DonatePage implements AfterViewInit, OnDestroy {
         if (!isAuthenticated) {
           this.memberProfileLoaded = false;
           this.resolvedUserRole = null;
+          this.savedBranchPrefillAttempted = false;
+          this.savedBranchPrefillInFlight = false;
+          this.branchPrefillLoading = false;
           this.ensureRecurringFrequencyAllowed();
           this.clearAuthPrefilledDonorEmail();
           return;
@@ -428,6 +437,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
         this.ensureMemberProfileResolved();
         this.ensureRecurringFrequencyAllowed();
         this.prefillDonorEmailOnce();
+        this.tryPrefillSavedBranch();
       });
 
     this.authService.currentUser$
@@ -454,6 +464,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     this.sentryTelemetry.addFeatureBreadcrumb('donations', 'Donation screen opened');
     this.ensureMemberProfileResolved();
     this.prefillDonorEmailOnce();
+    this.tryPrefillSavedBranch();
     if (this.branch && !this.categoriesLoading && this.categories.length === 0 && !this.categoriesLoadError) {
       this.loadDonationCategories(this.branch.id);
     }
@@ -701,6 +712,43 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     setTimeout(() => {
       void this.content?.scrollToBottom(250);
     }, 120);
+  }
+
+  private tryPrefillSavedBranch(): void {
+    if (this.savedBranchPrefillAttempted || this.savedBranchPrefillInFlight || this.branch) {
+      return;
+    }
+
+    if (!this.authService.isAuthenticatedSnapshot) {
+      this.savedBranchPrefillAttempted = true;
+      this.branchPrefillLoading = false;
+      return;
+    }
+
+    this.savedBranchPrefillInFlight = true;
+    this.branchPrefillLoading = true;
+
+    this.authService.getSavedChurches().pipe(take(1), takeUntil(this.destroy$)).subscribe({
+      next: (savedChurches) => {
+        this.savedBranchPrefillAttempted = true;
+        this.savedBranchPrefillInFlight = false;
+        this.branchPrefillLoading = false;
+
+        if (this.branch) {
+          return;
+        }
+
+        const resolvedBranch = this.resolveSavedBranchPrefill(savedChurches);
+        if (resolvedBranch) {
+          this.selectedBranchService.setBranch(resolvedBranch);
+        }
+      },
+      error: () => {
+        this.savedBranchPrefillAttempted = true;
+        this.savedBranchPrefillInFlight = false;
+        this.branchPrefillLoading = false;
+      },
+    });
   }
 
   get ctaEnabled(): boolean {
@@ -1397,5 +1445,57 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     setTimeout(() => {
       this.churchSelectorTrigger?.nativeElement.focus();
     }, 50);
+  }
+
+  private resolveSavedBranchPrefill(savedChurches: SavedChurch[]): PublicBranch | null {
+    const validSavedBranches = (Array.isArray(savedChurches) ? savedChurches : [])
+      .map((savedChurch) => this.toValidPublicBranch(savedChurch))
+      .filter((branch): branch is PublicBranch => !!branch);
+
+    if (!validSavedBranches.length) {
+      return null;
+    }
+
+    const recentDonationBranch = this.resolveRecentDonationBranch(validSavedBranches);
+    if (recentDonationBranch) {
+      return recentDonationBranch;
+    }
+
+    return validSavedBranches[0];
+  }
+
+  private resolveRecentDonationBranch(savedBranches: PublicBranch[]): PublicBranch | null {
+    const recentDonations = Array.isArray(this.authService.currentUserSnapshot?.recent_donations)
+      ? this.authService.currentUserSnapshot?.recent_donations ?? []
+      : [];
+    const recentDonationChurchId = recentDonations.find((donation) => donation.church?.id)?.church?.id;
+
+    if (!recentDonationChurchId) {
+      return null;
+    }
+
+    return savedBranches.find((branch) => branch.id === recentDonationChurchId) ?? null;
+  }
+
+  private toValidPublicBranch(savedChurch: SavedChurch | null | undefined): PublicBranch | null {
+    const church = savedChurch?.church;
+    if (!church?.id || !church.name?.trim()) {
+      return null;
+    }
+
+    if (!church.is_active || !church.donations_enabled) {
+      return null;
+    }
+
+    return {
+      id: church.id,
+      name: church.name.trim(),
+      branch_code: church.branch_code || '',
+      level: 'local',
+      district: church.district ?? null,
+      area: church.area ?? null,
+      donations_enabled: church.donations_enabled,
+      is_active: church.is_active,
+    };
   }
 }
