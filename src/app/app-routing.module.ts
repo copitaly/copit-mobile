@@ -163,6 +163,7 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
 export const routes: Routes = [
   {
     path: '',
+    pathMatch: 'full',
     loadComponent: () => import('./features/splash/splash.page').then(m => m.SplashPage)
   },
   {
@@ -193,6 +194,14 @@ export const routes: Routes = [
       {
         path: 'donate',
         loadComponent: () => import('./features/donations/donate.page').then(m => m.DonatePage)
+      },
+      {
+        path: 'donate/success',
+        loadComponent: () => import('./features/donations/success.page').then(m => m.DonateSuccessPage)
+      },
+      {
+        path: 'donate/cancel',
+        loadComponent: () => import('./features/donations/cancel.page').then(m => m.DonateCancelPage)
       },
       {
         path: 'community',
@@ -342,11 +351,13 @@ export const routes: Routes = [
   },
   {
     path: 'donate/success',
-    loadComponent: () => import('./features/donations/success.page').then(m => m.DonateSuccessPage)
+    redirectTo: 'tabs/donate/success',
+    pathMatch: 'full'
   },
   {
     path: 'donate/cancel',
-    loadComponent: () => import('./features/donations/cancel.page').then(m => m.DonateCancelPage)
+    redirectTo: 'tabs/donate/cancel',
+    pathMatch: 'full'
   },
   {
     path: '**',

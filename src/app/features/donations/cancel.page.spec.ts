@@ -53,6 +53,7 @@ describe('DonateCancelPage', () => {
 
   beforeEach(() => {
     router = jasmine.createSpyObj<Router>('Router', ['navigate']);
+    router.navigate.and.returnValue(Promise.resolve(true));
   });
 
   it('renders a standard back header with Donate as the fallback tab', async () => {
@@ -71,6 +72,9 @@ describe('DonateCancelPage', () => {
     page.goToBranches();
     page.goHome();
 
-    expect(router.navigate.calls.allArgs()).toEqual([[['/branches']], [['/']]]);
+    expect(router.navigate.calls.allArgs()).toEqual([
+      [['/tabs/donate'], { replaceUrl: true }],
+      [['/tabs/home'], { replaceUrl: true }],
+    ]);
   });
 });

@@ -21,7 +21,7 @@ type PrimaryTab = {
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <ion-tabs class="app-tabs" data-testid="tabs-shell">
-      <ion-tab-bar slot="bottom" class="app-tabs__bar" data-testid="tabs-bar">
+      <ion-tab-bar *ngIf="showTabBar" slot="bottom" class="app-tabs__bar" data-testid="tabs-bar">
         <ion-tab-button
           *ngFor="let tab of tabs"
           class="app-tabs__button"
@@ -85,6 +85,13 @@ type PrimaryTab = {
 })
 export class TabsPage {
   private readonly router = inject(Router);
+  private readonly topLevelTabRoutes = new Set([
+    '/tabs/home',
+    '/tabs/bible-study',
+    '/tabs/devotionals',
+    '/tabs/donate',
+    '/tabs/profile',
+  ]);
 
   readonly tabs: ReadonlyArray<PrimaryTab> = [
     {
@@ -133,5 +140,10 @@ export class TabsPage {
     const url = this.router.url || '';
     const tab = this.tabs.find((item) => item.key === tabKey);
     return !!tab && url.startsWith(tab.activePrefix);
+  }
+
+  get showTabBar(): boolean {
+    const normalizedUrl = (this.router.url || '').split('?')[0].split('#')[0];
+    return this.topLevelTabRoutes.has(normalizedUrl);
   }
 }

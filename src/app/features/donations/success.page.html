@@ -1,0 +1,91 @@
+<ion-page>
+  <ion-content fullscreen class="outcome-content cop-page cop-page--warm cop-content--secondary">
+    <div class="outcome-shell">
+      <app-mobile-header
+        class="outcome-header"
+        title="Donation status"
+        subtitle="Review your donation outcome."
+        fallbackRoute="/tabs/donate"
+        tone="editorial"
+      ></app-mobile-header>
+
+      <div class="outcome-main">
+        <section class="outcome-status" aria-live="polite" role="status">
+          <span class="outcome-status__icon outcome-status__icon--success" aria-hidden="true">
+            <ion-icon [name]="statusIcon"></ion-icon>
+          </span>
+          <h1 class="outcome-status__title">{{ statusTitle }}</h1>
+          <p class="outcome-status__subtitle">{{ statusSubtitle }}</p>
+        </section>
+
+        <p class="outcome-copy">{{ primaryCopy }}</p>
+
+        <p class="outcome-note" *ngIf="verificationMessage">
+          {{ verificationMessage }}
+        </p>
+
+        <section class="outcome-card outcome-card--message cop-card cop-card--soft" *ngIf="summary">
+          <div class="outcome-summary">
+            <ng-container *ngIf="summary.branchName">
+              <p class="outcome-summary__label">Church</p>
+              <p class="outcome-summary__value">{{ summary.branchName }}</p>
+            </ng-container>
+
+            <ng-container *ngIf="summary.category">
+              <p class="outcome-summary__label">Donation Type</p>
+              <p class="outcome-summary__value">{{ summary.category }}</p>
+            </ng-container>
+
+            <ng-container *ngIf="summary.interval">
+              <p class="outcome-summary__label">Frequency</p>
+              <p class="outcome-summary__value">{{ formatInterval(summary.interval) }}</p>
+            </ng-container>
+
+            <ng-container *ngIf="summary.amount !== undefined">
+              <p class="outcome-summary__label">Amount</p>
+              <p class="outcome-summary__value">{{ formatAmount(summary.amount, summary.currency) }}</p>
+            </ng-container>
+
+            <ng-container *ngIf="summary.transactionReference">
+              <p class="outcome-summary__label">Reference</p>
+              <p class="outcome-summary__value outcome-summary__value--reference">{{ summary.transactionReference }}</p>
+            </ng-container>
+          </div>
+        </section>
+
+        <p class="outcome-note" *ngIf="showConfirmationNote">
+          A confirmation email has been sent if provided.
+        </p>
+
+        <div class="outcome-actions">
+          <ion-button
+            *ngIf="verificationState === 'pending' && canRetryVerification"
+            expand="block"
+            class="outcome-button--primary"
+            (click)="retryVerification()"
+          >
+            Check status
+          </ion-button>
+
+          <ion-button
+            *ngIf="verificationState === 'confirmed'"
+            expand="block"
+            class="outcome-button--primary"
+            (click)="goToBranches()"
+          >
+            Give again
+          </ion-button>
+
+          <ion-button
+            expand="block"
+            fill="outline"
+            class="outcome-button--secondary"
+            (click)="goHome()"
+          >
+            Back to Home
+          </ion-button>
+        </div>
+      </div>
+    </div>
+  </ion-content>
+</ion-page>

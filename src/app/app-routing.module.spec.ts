@@ -119,9 +119,24 @@ describe('app routes', () => {
     expect(donateRoute?.canActivate).toBeUndefined();
   });
 
+  it('registers donate outcome pages beneath the tabs donate route hierarchy', () => {
+    const tabsRoute = routes.find((item) => item.path === 'tabs');
+
+    expect(tabsRoute?.children?.find((child) => child.path === 'donate/success')?.loadComponent).toBeDefined();
+    expect(tabsRoute?.children?.find((child) => child.path === 'donate/cancel')?.loadComponent).toBeDefined();
+  });
+
   it('redirects the legacy branches route to the Donate tab', () => {
     const branchesRoute = routes.find((item) => item.path === 'branches');
 
     expect(branchesRoute?.redirectTo).toBe('tabs/donate');
+  });
+
+  it('redirects legacy donate outcome routes to the canonical donate tab outcome routes', () => {
+    const successRoute = routes.find((item) => item.path === 'donate/success');
+    const cancelRoute = routes.find((item) => item.path === 'donate/cancel');
+
+    expect(successRoute?.redirectTo).toBe('tabs/donate/success');
+    expect(cancelRoute?.redirectTo).toBe('tabs/donate/cancel');
   });
 });

@@ -598,12 +598,12 @@ export class DonatePage implements AfterViewInit, OnDestroy {
         return;
       }
 
-      void this.router.navigate(['/donate/success'], { queryParams }).finally(() => {
+      void this.router.navigate(['/tabs/donate/success'], { queryParams, replaceUrl: true }).finally(() => {
         this.nativeLoading = false;
         this.clearPendingPaymentState();
       });
     } else if (result.status === 'canceled') {
-      void this.router.navigate(['/donate/cancel']).finally(() => {
+      void this.router.navigate(['/tabs/donate/cancel'], { replaceUrl: true }).finally(() => {
         this.nativeLoading = false;
         this.clearPendingPaymentState();
       });

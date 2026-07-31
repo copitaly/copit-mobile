@@ -83,6 +83,13 @@ describe('TabsPage', () => {
     );
   });
 
+  it('hides the tab bar on donate outcome child routes while keeping the donate tab active state resolvable', async () => {
+    await createComponent('/tabs/donate/success');
+
+    expect(fixture.nativeElement.querySelector('[data-testid="tabs-bar"]')).toBeNull();
+    expect(fixture.componentInstance.isActiveTab('donate')).toBeTrue();
+  });
+
   it('marks the Profile tab active on the Profile tab route', async () => {
     await createComponent('/tabs/profile');
 
@@ -124,7 +131,20 @@ describe('Tabs routing', () => {
     const tabsRoute = router.config.find((item) => item.path === 'tabs');
     const childPaths = tabsRoute?.children?.map((child) => child.path);
 
-    expect(childPaths).toEqual(['home', 'bible-study', 'prayer', 'devotionals', 'devotionals/:slug', 'donate', 'community', 'more', 'profile', '']);
+    expect(childPaths).toEqual([
+      'home',
+      'bible-study',
+      'prayer',
+      'devotionals',
+      'devotionals/:slug',
+      'donate',
+      'donate/success',
+      'donate/cancel',
+      'community',
+      'more',
+      'profile',
+      '',
+    ]);
     expect(tabsRoute?.children?.find((child) => child.path === '')?.redirectTo).toBe('home');
   });
 
@@ -172,6 +192,15 @@ describe('Tabs routing', () => {
     const donateRoutes = router.config.filter((item) => item.path === 'donate');
 
     expect(donateRoutes.some((route) => route.redirectTo === 'tabs/donate')).toBeTrue();
+  });
+
+  it('redirects the legacy donate outcome routes to the canonical donate tab outcome routes', async () => {
+    const router = await createRouter();
+    const successRoute = router.config.find((item) => item.path === 'donate/success');
+    const cancelRoute = router.config.find((item) => item.path === 'donate/cancel');
+
+    expect(successRoute?.redirectTo).toBe('tabs/donate/success');
+    expect(cancelRoute?.redirectTo).toBe('tabs/donate/cancel');
   });
 
   it('redirects the legacy /profile and /tabs/more routes to the canonical Profile tab route', async () => {

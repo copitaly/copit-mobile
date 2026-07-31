@@ -20,6 +20,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 })
 export class DonateCancelPage implements OnInit {
   summary: DonationCheckoutSummary | null = null;
+  private pendingNavigation = false;
 
   constructor(
     private readonly router: Router,
@@ -29,7 +30,7 @@ export class DonateCancelPage implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.summary = this.donationFlowState.consumeStoredSummary();
+    this.summary = this.donationFlowState.getStoredSummary();
     const context =
       this.donationAnalyticsContext.consumeContext() ?? this.resolveSummaryAnalyticsContext(this.summary);
     if (context) {
@@ -38,11 +39,25 @@ export class DonateCancelPage implements OnInit {
   }
 
   goToBranches(): void {
-    this.router.navigate(['/branches']);
+    if (this.pendingNavigation) {
+      return;
+    }
+
+    this.pendingNavigation = true;
+    this.router.navigate(['/tabs/donate'], { replaceUrl: true }).finally(() => {
+      this.pendingNavigation = false;
+    });
   }
 
   goHome(): void {
-    this.router.navigate(['/']);
+    if (this.pendingNavigation) {
+      return;
+    }
+
+    this.pendingNavigation = true;
+    this.router.navigate(['/tabs/home'], { replaceUrl: true }).finally(() => {
+      this.pendingNavigation = false;
+    });
   }
 
   private resolveSummaryAnalyticsContext(

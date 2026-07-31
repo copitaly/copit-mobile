@@ -9,9 +9,11 @@ export class DeepLinkService implements OnDestroy {
   private readonly resetPasswordPattern = /^\/reset-password\/[^/]+\/[^/]+\/?$/;
   private readonly routeHandlers = new Map<string, (params: URLSearchParams) => void>([
     ['/donate/success', params => this.handleSuccessRoute(params)],
-    ['/donate/cancel', () => this.navigate('/donate/cancel')],
+    ['/donate/cancel', () => this.navigate('/tabs/donate/cancel')],
+    ['/tabs/donate/success', params => this.handleSuccessRoute(params)],
+    ['/tabs/donate/cancel', () => this.navigate('/tabs/donate/cancel')],
     ['/donor-redirect/donate/success', params => this.handleSuccessRoute(params)],
-    ['/donor-redirect/donate/cancel', () => this.navigate('/donate/cancel')],
+    ['/donor-redirect/donate/cancel', () => this.navigate('/tabs/donate/cancel')],
   ]);
 
   constructor(private readonly router: Router, private readonly zone: NgZone) {
@@ -105,7 +107,7 @@ export class DeepLinkService implements OnDestroy {
     }
 
     this.navigate(
-      '/donate/success',
+      '/tabs/donate/success',
       Object.keys(queryParams).length ? queryParams : undefined
     );
   }

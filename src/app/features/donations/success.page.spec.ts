@@ -16,6 +16,7 @@ describe('DonateSuccessPage', () => {
   function createPage(queryParams: Record<string, string | null>, storedSummary?: unknown) {
     const api = jasmine.createSpyObj<ApiService>('ApiService', ['get']);
     const router = jasmine.createSpyObj<Router>('Router', ['navigate']);
+    router.navigate.and.returnValue(Promise.resolve(true));
     const donationFlowState = jasmine.createSpyObj<DonationFlowStateService>('DonationFlowStateService', [
       'getStoredSummary',
       'consumeStoredSummary',
@@ -137,12 +138,12 @@ describe('DonateSuccessPage', () => {
     expect(api.get.calls.count()).toBe(2);
   });
 
-  it('navigates to donation history from the pending state', () => {
+  it('routes Give again back to the canonical Donate tab route', () => {
     const { page, router } = createPage({});
 
-    page.goToDonationHistory();
+    page.goToBranches();
 
-    expect(router.navigate).toHaveBeenCalledWith(['/my-donations']);
+    expect(router.navigate).toHaveBeenCalledWith(['/tabs/donate'], { replaceUrl: true });
   });
 
   it('renders a standard back header with Donate as the fallback tab', async () => {

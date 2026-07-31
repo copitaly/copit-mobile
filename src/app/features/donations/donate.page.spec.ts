@@ -266,11 +266,12 @@ describe('DonatePage', () => {
         donorEmail: 'giver@example.com',
       })
     );
-    expect(router.navigate).toHaveBeenCalledWith(['/donate/success'], {
+    expect(router.navigate).toHaveBeenCalledWith(['/tabs/donate/success'], {
       queryParams: {
         donation_id: 55,
         transaction_reference: 'TRX-2002',
       },
+      replaceUrl: true,
     });
   });
 
@@ -340,7 +341,7 @@ describe('DonatePage', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(router.navigate).toHaveBeenCalledWith(['/donate/cancel']);
+    expect(router.navigate).toHaveBeenCalledWith(['/tabs/donate/cancel'], { replaceUrl: true });
   });
 
   it('keeps the form recoverable after payment-sheet failure', async () => {

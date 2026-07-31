@@ -71,7 +71,7 @@ describe('DeepLinkService', () => {
     );
 
     expect(router.navigateByUrl).toHaveBeenCalledWith(
-      '/donate/success?session_id=session-1&transaction_reference=txn-1'
+      '/tabs/donate/success?session_id=session-1&transaction_reference=txn-1'
     );
   });
 
@@ -82,7 +82,7 @@ describe('DeepLinkService', () => {
     );
 
     expect(router.navigateByUrl).toHaveBeenCalledWith(
-      '/donate/success?donation_id=55&transaction_reference=txn-55'
+      '/tabs/donate/success?donation_id=55&transaction_reference=txn-55'
     );
   });
 });

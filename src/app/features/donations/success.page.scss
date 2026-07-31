@@ -1,0 +1,10 @@
+@use './outcome-page.shared';
+
+:host {
+  display: block;
+}
+
+.outcome-status__icon--success {
+  color: #1f7a4c;
+  background: rgba(31, 122, 76, 0.12);
+}
