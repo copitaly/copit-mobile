@@ -1,11 +1,11 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AlertController, IonicModule, ToastController } from '@ionic/angular';
 
 import { RecurringDonationItem } from '../../core/models/donation.model';
-import { DonationsService } from '../../core/services/donations.service';
 import { AuthService } from '../../core/services/auth.service';
+import { DonationsService } from '../../core/services/donations.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
@@ -18,153 +18,160 @@ type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
   selector: 'app-recurring-donations',
   template: `
     <ion-page>
-      <ion-content fullscreen class="recurring-content">
-        <div class="recurring-hero app-header app-header--inner">
-          <app-mobile-header title="Recurring Donations" fallbackRoute="/tabs/profile"></app-mobile-header>
-        </div>
+      <ion-content fullscreen class="recurring-content cop-content--secondary">
+        <div class="recurring-shell cop-secondary-shell">
+          <header class="recurring-header" aria-label="Recurring Giving">
+            <app-mobile-header
+              title="Recurring Giving"
+              subtitle="Manage your monthly support and subscription status."
+              fallbackRoute="/tabs/profile"
+              tone="editorial"
+            ></app-mobile-header>
+          </header>
 
-        <div class="surface recurring-surface">
-          <div class="surface__content recurring-surface__content">
-            <div *ngIf="!loading && !errorMessage" class="summary-card">
-              <p class="summary-card__eyebrow">Monthly support</p>
-              <h2>{{ monthlySupportTotal }}</h2>
-              <p class="summary-card__meta">{{ monthlySupportCountLabel }}</p>
-            </div>
-
-            <div class="filter-group" *ngIf="!loading && !errorMessage">
-              <button
-                type="button"
-                class="filter-chip"
-                [class.selected]="selectedFilter === 'active'"
-                (click)="setFilter('active')"
-              >
-                Active
-              </button>
-              <button
-                type="button"
-                class="filter-chip"
-                [class.selected]="selectedFilter === 'pending'"
-                (click)="setFilter('pending')"
-              >
-                Pending
-              </button>
-              <button
-                type="button"
-                class="filter-chip"
-                [class.selected]="selectedFilter === 'cancelled'"
-                (click)="setFilter('cancelled')"
-              >
-                Cancelled
-              </button>
-              <button
-                type="button"
-                class="filter-chip"
-                [class.selected]="selectedFilter === 'all'"
-                (click)="setFilter('all')"
-              >
-                All
-              </button>
-            </div>
-
-            <div *ngIf="loading" class="skeleton-stack" aria-live="polite">
-              <div class="recurring-card skeleton" *ngFor="let item of skeletonItems">
-                <div class="skeleton-row skeleton-row--top">
-                  <span class="skeleton-line skeleton-line--title"></span>
-                  <span class="skeleton-pill"></span>
-                </div>
-                <span class="skeleton-line skeleton-line--meta"></span>
-                <span class="skeleton-line skeleton-line--meta short"></span>
-                <span class="skeleton-line skeleton-line--meta"></span>
+          <div class="recurring-surface">
+            <div class="recurring-surface__content">
+              <div *ngIf="!loading && !errorMessage && hasAnyRecurringHistory" class="summary-card">
+                <p class="summary-card__eyebrow">Monthly support</p>
+                <h2>{{ monthlySupportTotal }}</h2>
+                <p class="summary-card__meta">{{ monthlySupportCountLabel }}</p>
               </div>
-            </div>
 
-            <div *ngIf="!loading && errorMessage" class="state-card error-state">
-              <div class="state-copy">
-                <h2>We couldn't load recurring donations</h2>
-                <p>{{ errorMessage }}</p>
+              <div class="filter-group" *ngIf="!loading && !errorMessage && hasAnyRecurringHistory">
+                <button
+                  type="button"
+                  class="filter-chip"
+                  [class.selected]="selectedFilter === 'active'"
+                  (click)="setFilter('active')"
+                >
+                  Active
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  [class.selected]="selectedFilter === 'pending'"
+                  (click)="setFilter('pending')"
+                >
+                  Pending
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  [class.selected]="selectedFilter === 'cancelled'"
+                  (click)="setFilter('cancelled')"
+                >
+                  Cancelled
+                </button>
+                <button
+                  type="button"
+                  class="filter-chip"
+                  [class.selected]="selectedFilter === 'all'"
+                  (click)="setFilter('all')"
+                >
+                  All
+                </button>
               </div>
-              <ion-button expand="block" class="state-button" (click)="loadRecurringDonations()">Try again</ion-button>
-            </div>
 
-            <div *ngIf="!loading && !errorMessage && recurringDonations.length === 0" class="state-card empty-state">
-              <div class="state-copy">
-                <h2>{{ emptyStateTitle }}</h2>
-                <p>{{ emptyStateMessage }}</p>
+              <div *ngIf="loading" class="skeleton-stack" aria-live="polite">
+                <div class="recurring-card skeleton" *ngFor="let item of skeletonItems">
+                  <div class="skeleton-row skeleton-row--top">
+                    <span class="skeleton-line skeleton-line--title"></span>
+                    <span class="skeleton-pill"></span>
+                  </div>
+                  <span class="skeleton-line skeleton-line--meta"></span>
+                  <span class="skeleton-line skeleton-line--meta short"></span>
+                  <span class="skeleton-line skeleton-line--meta"></span>
+                </div>
               </div>
-              <ion-button
-                *ngIf="showGiveNowButton"
-                expand="block"
-                class="give-now-button"
-                (click)="goToDonationFlow()"
-              >
-                <ion-icon name="gift-outline" slot="start" aria-hidden="true"></ion-icon>
-                <span>Give now</span>
-              </ion-button>
-            </div>
 
-            <div *ngIf="!loading && !errorMessage && recurringDonations.length > 0" class="recurring-stack">
-              <article class="recurring-card" *ngFor="let donation of recurringDonations">
-                <div class="recurring-card__top">
-                  <div>
-                    <p class="recurring-amount">{{ donation.amount }} {{ donation.currency | uppercase }}</p>
-                    <h2>{{ donation.church?.name || 'Church donation' }}</h2>
-                  </div>
-                  <span class="recurring-status" [class]="statusClass(donation.status)">
-                    {{ formatStatus(donation.status) }}
-                  </span>
+              <div *ngIf="!loading && errorMessage" class="state-card error-state">
+                <div class="state-copy">
+                  <h2>We couldn't load recurring donations</h2>
+                  <p>{{ errorMessage }}</p>
                 </div>
+                <ion-button expand="block" class="state-button" (click)="loadRecurringDonations()">Try again</ion-button>
+              </div>
 
-                <div class="recurring-meta">
-                  <div class="meta-row">
-                    <span>Category</span>
-                    <strong>{{ formatCategory(donation.category) }}</strong>
-                  </div>
-                  <div class="meta-row">
-                    <span>Interval</span>
-                    <strong>{{ formatInterval(donation.interval) }}</strong>
-                  </div>
-                  <div class="meta-row" *ngIf="nextChargeText(donation) as nextCharge">
-                    <span>Next charge</span>
-                    <strong>{{ nextCharge }}</strong>
-                  </div>
-                  <div class="meta-row" *ngIf="donation.last_payment_date">
-                    <span>Last payment</span>
-                    <strong>{{ formatDate(donation.last_payment_date) }}</strong>
-                  </div>
-                  <div class="meta-row" *ngIf="isCancelled(donation)">
-                    <span>Ended on</span>
-                    <strong>{{ formatCancelledDate(donation) }}</strong>
-                  </div>
+              <div *ngIf="!loading && !errorMessage && recurringDonations.length === 0" class="state-card empty-state">
+                <div class="state-copy">
+                  <h2>{{ emptyStateTitle }}</h2>
+                  <p>{{ emptyStateMessage }}</p>
                 </div>
+                <ion-button
+                  *ngIf="showStartMonthlyGivingButton"
+                  expand="block"
+                  class="give-now-button"
+                  (click)="goToDonationFlow()"
+                >
+                  <ion-icon name="gift-outline" slot="start" aria-hidden="true"></ion-icon>
+                  <span>Start Monthly Giving</span>
+                </ion-button>
+              </div>
 
-                <p class="status-helper" *ngIf="statusHelperText(donation.status) as helperText">
-                  {{ helperText }}
-                </p>
+              <div *ngIf="!loading && !errorMessage && recurringDonations.length > 0" class="recurring-stack">
+                <article class="recurring-card" *ngFor="let donation of recurringDonations">
+                  <div class="recurring-card__top">
+                    <div>
+                      <p class="recurring-amount">{{ donation.amount }} {{ donation.currency | uppercase }}</p>
+                      <h2>{{ donation.church?.name || 'Church donation' }}</h2>
+                    </div>
+                    <span class="recurring-status" [class]="statusClass(donation.status)">
+                      {{ formatStatus(donation.status) }}
+                    </span>
+                  </div>
+
+                  <div class="recurring-meta">
+                    <div class="meta-row">
+                      <span>Category</span>
+                      <strong>{{ formatCategory(donation.category) }}</strong>
+                    </div>
+                    <div class="meta-row">
+                      <span>Interval</span>
+                      <strong>{{ formatInterval(donation.interval) }}</strong>
+                    </div>
+                    <div class="meta-row" *ngIf="nextChargeText(donation) as nextCharge">
+                      <span>Next charge</span>
+                      <strong>{{ nextCharge }}</strong>
+                    </div>
+                    <div class="meta-row" *ngIf="donation.last_payment_date">
+                      <span>Last payment</span>
+                      <strong>{{ formatDate(donation.last_payment_date) }}</strong>
+                    </div>
+                    <div class="meta-row" *ngIf="isCancelled(donation)">
+                      <span>Ended on</span>
+                      <strong>{{ formatCancelledDate(donation) }}</strong>
+                    </div>
+                  </div>
+
+                  <p class="status-helper" *ngIf="statusHelperText(donation.status) as helperText">
+                    {{ helperText }}
+                  </p>
+
+                  <ion-button
+                    *ngIf="canCancel(donation)"
+                    expand="block"
+                    fill="outline"
+                    class="cancel-button"
+                    [disabled]="cancellingIds.has(donation.id)"
+                    (click)="confirmCancel(donation)"
+                  >
+                    <ion-spinner *ngIf="cancellingIds.has(donation.id)" slot="start" name="crescent"></ion-spinner>
+                    <span>{{ cancellingIds.has(donation.id) ? 'Cancelling...' : 'Cancel monthly donation' }}</span>
+                  </ion-button>
+                </article>
 
                 <ion-button
-                  *ngIf="canCancel(donation)"
+                  *ngIf="nextPageUrl"
                   expand="block"
                   fill="outline"
-                  class="cancel-button"
-                  [disabled]="cancellingIds.has(donation.id)"
-                  (click)="confirmCancel(donation)"
+                  class="load-more-button"
+                  [disabled]="loadingMore"
+                  (click)="loadMore()"
                 >
-                  <ion-spinner *ngIf="cancellingIds.has(donation.id)" slot="start" name="crescent"></ion-spinner>
-                  <span>{{ cancellingIds.has(donation.id) ? 'Cancelling...' : 'Cancel monthly donation' }}</span>
+                  <ion-spinner *ngIf="loadingMore" slot="start" name="crescent"></ion-spinner>
+                  <span>{{ loadingMore ? 'Loading more...' : 'Load more' }}</span>
                 </ion-button>
-              </article>
-
-              <ion-button
-                *ngIf="nextPageUrl"
-                expand="block"
-                fill="outline"
-                class="load-more-button"
-                [disabled]="loadingMore"
-                (click)="loadMore()"
-              >
-                <ion-spinner *ngIf="loadingMore" slot="start" name="crescent"></ion-spinner>
-                <span>{{ loadingMore ? 'Loading more...' : 'Load more' }}</span>
-              </ion-button>
+              </div>
             </div>
           </div>
         </div>
@@ -176,11 +183,313 @@ type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
       :host {
         display: block;
       }
+
+      .recurring-content {
+        --background: var(--cop-color-background-soft);
+      }
+
+      .recurring-shell {
+        gap: 0.95rem;
+      }
+
+      .recurring-surface {
+        width: 100%;
+        max-width: 32rem;
+        margin: 0 auto;
+      }
+
+      .recurring-surface__content,
+      .recurring-stack,
+      .skeleton-stack,
+      .state-copy {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .recurring-surface__content {
+        gap: 0.9rem;
+        padding-bottom: calc(1.1rem + var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)));
+      }
+
+      .summary-card,
+      .recurring-card,
+      .state-card {
+        background: #fff;
+        border: 1px solid rgba(8, 31, 92, 0.08);
+        border-radius: 16px;
+        box-shadow: 0 10px 22px rgba(7, 24, 69, 0.06);
+      }
+
+      .summary-card {
+        padding: 1rem;
+      }
+
+      .summary-card__eyebrow,
+      .status-helper,
+      .meta-row span {
+        color: rgba(8, 31, 92, 0.58);
+      }
+
+      .summary-card__eyebrow {
+        margin: 0 0 0.32rem;
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .summary-card h2,
+      .summary-card__meta,
+      .state-copy h2,
+      .state-copy p,
+      .recurring-card h2,
+      .recurring-amount {
+        margin: 0;
+      }
+
+      .summary-card h2 {
+        color: #081f5c;
+        font-size: 1.5rem;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+      }
+
+      .summary-card__meta {
+        margin-top: 0.32rem;
+        color: rgba(8, 31, 92, 0.68);
+        font-size: 0.88rem;
+      }
+
+      .filter-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+      }
+
+      .filter-chip {
+        min-height: 42px;
+        padding: 0.68rem 0.9rem;
+        border: 1px solid var(--cop-color-border-field);
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 6px 16px rgba(7, 24, 69, 0.05);
+        color: rgba(8, 31, 92, 0.72);
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .filter-chip.selected {
+        border-color: rgba(11, 29, 115, 0.12);
+        background: rgba(11, 29, 115, 0.06);
+        color: #081f5c;
+      }
+
+      .recurring-stack,
+      .skeleton-stack {
+        gap: 0.85rem;
+      }
+
+      .recurring-card {
+        padding: 0.95rem 1rem;
+      }
+
+      .recurring-card__top,
+      .meta-row,
+      .skeleton-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.8rem;
+      }
+
+      .recurring-card__top {
+        align-items: flex-start;
+      }
+
+      .recurring-amount {
+        color: #081f5c;
+        font-size: 1.08rem;
+        font-weight: 700;
+        line-height: 1.15;
+      }
+
+      .recurring-card h2 {
+        margin-top: 0.28rem;
+        color: #03173f;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.3;
+      }
+
+      .recurring-status {
+        display: inline-flex;
+        align-items: center;
+        align-self: flex-start;
+        min-height: 24px;
+        padding: 0.22rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        background: rgba(8, 31, 92, 0.08);
+        color: rgba(8, 31, 92, 0.72);
+      }
+
+      .recurring-status--active {
+        background: rgba(78, 142, 100, 0.14);
+        color: #356947;
+      }
+
+      .recurring-status--past_due,
+      .recurring-status--incomplete {
+        background: rgba(213, 166, 47, 0.16);
+        color: #8f6910;
+      }
+
+      .recurring-status--cancelled {
+        background: rgba(198, 62, 81, 0.12);
+        color: #a6293a;
+      }
+
+      .recurring-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.48rem;
+        margin-top: 0.82rem;
+        padding-top: 0.82rem;
+        border-top: 1px solid rgba(3, 23, 63, 0.08);
+      }
+
+      .meta-row {
+        align-items: baseline;
+      }
+
+      .meta-row span {
+        font-size: 0.8rem;
+      }
+
+      .meta-row strong {
+        color: #03173f;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-align: right;
+        overflow-wrap: anywhere;
+      }
+
+      .status-helper {
+        margin: 0.75rem 0 0;
+        font-size: 0.82rem;
+        line-height: 1.45;
+      }
+
+      .cancel-button,
+      .load-more-button,
+      .state-button {
+        --border-radius: 16px;
+        font-weight: 600;
+      }
+
+      .cancel-button,
+      .load-more-button {
+        --background: transparent;
+        --color: #0b1d73;
+        --border-color: rgba(11, 29, 115, 0.14);
+        --box-shadow: none;
+        margin-top: 0.85rem;
+      }
+
+      .state-card {
+        padding: 1.15rem 1rem;
+        align-items: center;
+        text-align: center;
+        gap: 0.85rem;
+      }
+
+      .state-copy {
+        gap: 0.32rem;
+      }
+
+      .state-copy h2 {
+        color: #03173f;
+        font-size: 1.05rem;
+        font-weight: 700;
+      }
+
+      .state-copy p {
+        color: rgba(3, 23, 63, 0.65);
+        font-size: 0.92rem;
+        line-height: 1.45;
+      }
+
+      .empty-state {
+        justify-content: center;
+        min-height: min(55vh, 28rem);
+      }
+
+      .state-button {
+        --background: #0b1d73;
+        --background-activated: #09175c;
+        --box-shadow: 0 12px 22px rgba(11, 29, 115, 0.2);
+      }
+
+      .give-now-button {
+        --background: #f5b628;
+        --background-activated: #d79d1f;
+        --border-radius: 999px;
+        --box-shadow: 0 10px 22px rgba(245, 182, 40, 0.24);
+        --color: #0b1d73;
+        min-height: 52px;
+        font-weight: 700;
+      }
+
+      .skeleton {
+        padding: 0.95rem 1rem;
+        animation: pulse 1.2s infinite ease-in-out;
+      }
+
+      .skeleton-row {
+        margin-bottom: 0.72rem;
+      }
+
+      .skeleton-pill,
+      .skeleton-line {
+        display: block;
+        background: rgba(11, 26, 115, 0.08);
+        border-radius: 999px;
+      }
+
+      .skeleton-pill {
+        width: 72px;
+        height: 22px;
+      }
+
+      .skeleton-line--title {
+        width: 58%;
+        height: 16px;
+        margin-bottom: 0.68rem;
+      }
+
+      .skeleton-line--meta {
+        width: 100%;
+        height: 12px;
+        margin-bottom: 0.45rem;
+      }
+
+      .skeleton-line--meta.short {
+        width: 72%;
+        margin-bottom: 0;
+      }
+
+      @keyframes pulse {
+        50% {
+          opacity: 0.6;
+        }
+      }
     `,
   ],
 })
 export class RecurringDonationsPage implements OnInit {
   recurringDonations: RecurringDonationItem[] = [];
+  hasAnyRecurringHistory = false;
   loading = true;
   loadingMore = false;
   errorMessage = '';
@@ -230,9 +539,12 @@ export class RecurringDonationsPage implements OnInit {
         this.fetchRecurringDonations();
       },
       error: () => {
-        this.sentryTelemetry.addFeatureBreadcrumb('donations', 'Recurring donations list load failed', {
-          filter: this.selectedFilter,
-        }, 'error');
+        this.sentryTelemetry.addFeatureBreadcrumb(
+          'donations',
+          'Recurring donations list load failed',
+          { filter: this.selectedFilter },
+          'error'
+        );
         void this.router.navigate(['/login']);
       },
     });
@@ -248,6 +560,10 @@ export class RecurringDonationsPage implements OnInit {
   }
 
   get emptyStateTitle(): string {
+    if (!this.hasAnyRecurringHistory) {
+      return 'No recurring donations yet';
+    }
+
     switch (this.selectedFilter) {
       case 'active':
         return 'No active monthly donations';
@@ -261,6 +577,10 @@ export class RecurringDonationsPage implements OnInit {
   }
 
   get emptyStateMessage(): string {
+    if (!this.hasAnyRecurringHistory) {
+      return 'Set up a monthly gift to support your church consistently.';
+    }
+
     switch (this.selectedFilter) {
       case 'active':
         return 'Your active monthly gifts will appear here.';
@@ -273,8 +593,8 @@ export class RecurringDonationsPage implements OnInit {
     }
   }
 
-  get showGiveNowButton(): boolean {
-    return this.selectedFilter !== 'cancelled';
+  get showStartMonthlyGivingButton(): boolean {
+    return !this.hasAnyRecurringHistory;
   }
 
   get monthlySupportTotal(): string {
@@ -294,10 +614,12 @@ export class RecurringDonationsPage implements OnInit {
   private fetchRecurringPage(nextPageUrl?: string | null, append = false): void {
     this.donationsService.getRecurringDonations(nextPageUrl, this.apiFilter).subscribe({
       next: (response) => {
+        if (!append && this.selectedFilter !== 'cancelled') {
+          this.hasAnyRecurringHistory = response.count > 0;
+        }
+
         const visibleResults = response.results.filter((item) => this.matchesSelectedFilter(item));
-        this.recurringDonations = append
-          ? [...this.recurringDonations, ...visibleResults]
-          : visibleResults;
+        this.recurringDonations = append ? [...this.recurringDonations, ...visibleResults] : visibleResults;
         this.nextPageUrl = response.next;
 
         if (append) {
@@ -383,7 +705,7 @@ export class RecurringDonationsPage implements OnInit {
   statusHelperText(status: string): string | null {
     switch ((status || '').toLowerCase()) {
       case 'past_due':
-        return 'Payment issue. We’ll retry automatically.';
+        return 'Payment issue. We will retry automatically.';
       case 'incomplete':
         return 'Your monthly donation is still being set up.';
       default:
@@ -407,9 +729,7 @@ export class RecurringDonationsPage implements OnInit {
       return 'General';
     }
 
-    return category
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, (char) => char.toUpperCase());
+    return category.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
   }
 
   formatDate(value: string): string {
@@ -501,11 +821,11 @@ export class RecurringDonationsPage implements OnInit {
   private formatCurrencySymbol(currency?: string | null): string {
     switch ((currency || '').toLowerCase()) {
       case 'eur':
-        return '€';
+        return 'EUR ';
       case 'usd':
         return '$';
       case 'gbp':
-        return '£';
+        return 'GBP ';
       default:
         return currency ? `${currency.toUpperCase()} ` : '';
     }
