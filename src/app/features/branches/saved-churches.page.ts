@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
+import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { AlertController, IonicModule } from '@ionic/angular';
 
@@ -9,6 +9,7 @@ import { SavedChurch } from '../../core/models/user.model';
 import { AppToastService } from '../../core/services/app-toast.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
+import { HardwareBackCoordinatorService } from '../../core/services/hardware-back-coordinator.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { DonateBranchSheetComponent } from '../donations/donate-branch-sheet.component';
@@ -453,13 +454,15 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
     `,
   ],
 })
-export class SavedChurchesPage implements OnInit {
+export class SavedChurchesPage implements OnInit, AfterViewInit, OnDestroy {
   savedChurches: SavedChurch[] = [];
   loading = true;
   errorMessage = '';
   isChurchSelectorOpen = false;
   savingBranchId: number | null = null;
   readonly skeletonItems = [1, 2, 3];
+  @ViewChild(DonateBranchSheetComponent) private donateBranchSheet?: DonateBranchSheetComponent;
+  private unregisterHardwareBackSelector?: () => void;
 
   constructor(
     private readonly authService: AuthService,
@@ -468,11 +471,23 @@ export class SavedChurchesPage implements OnInit {
     private readonly sentryTelemetry: SentryTelemetryService,
     private readonly analyticsService: AnalyticsService,
     private readonly alertController: AlertController,
-    private readonly appToast: AppToastService
+    private readonly appToast: AppToastService,
+    private readonly hardwareBackCoordinator: HardwareBackCoordinatorService
   ) {}
 
   ngOnInit(): void {
     this.loadSavedChurches();
+  }
+
+  ngAfterViewInit(): void {
+    this.unregisterHardwareBackSelector = this.hardwareBackCoordinator.registerSelectorHandler({
+      isOpen: () => this.isChurchSelectorOpen,
+      handleBack: async () => this.donateBranchSheet?.handleHardwareBack() ?? false,
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.unregisterHardwareBackSelector?.();
   }
 
   loadSavedChurches(): void {

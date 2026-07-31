@@ -6,6 +6,7 @@ import { of, Subject, throwError } from 'rxjs';
 import { AppToastService } from '../../core/services/app-toast.service';
 import { MemberProfile } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
+import { HardwareBackCoordinatorService } from '../../core/services/hardware-back-coordinator.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { EditProfilePage } from './edit-profile.page';
 
@@ -46,6 +47,10 @@ describe('EditProfilePage', () => {
         { provide: AuthService, useValue: authService },
         { provide: Router, useValue: router },
         { provide: AppToastService, useValue: appToast },
+        {
+          provide: HardwareBackCoordinatorService,
+          useValue: jasmine.createSpyObj<HardwareBackCoordinatorService>('HardwareBackCoordinatorService', ['registerUnsavedChangesHandler']),
+        },
         {
           provide: SentryTelemetryService,
           useValue: {

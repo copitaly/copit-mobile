@@ -2,16 +2,18 @@ import { FormBuilder } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Capacitor } from '@capacitor/core';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
-import { AlertController, ToastController } from '@ionic/angular';
+import { AlertController } from '@ionic/angular';
 import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
 
 import { PublicBranch } from '../../core/models/branch.model';
 import { DonationCategory } from '../../core/models/donation.model';
 import { AnalyticsService } from '../../core/services/analytics.service';
+import { AppToastService } from '../../core/services/app-toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { DonationAnalyticsContextService } from '../../core/services/donation-analytics-context.service';
 import { DonationFlowStateService } from '../../core/services/donation-flow-state.service';
 import { DonationsService } from '../../core/services/donations.service';
+import { HardwareBackCoordinatorService } from '../../core/services/hardware-back-coordinator.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { StripePaymentService } from '../../core/services/stripe-payment.service';
@@ -24,8 +26,7 @@ describe('DonatePage', () => {
   let router: jasmine.SpyObj<Router>;
   let donationFlowState: jasmine.SpyObj<DonationFlowStateService>;
   let stripePaymentService: jasmine.SpyObj<StripePaymentService>;
-  let toastController: jasmine.SpyObj<ToastController>;
-  let toastElement: { present: jasmine.Spy };
+  let appToast: jasmine.SpyObj<AppToastService>;
   let selectedBranch$: BehaviorSubject<PublicBranch | null>;
   let queryParamMap$: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
   let authServiceMock: {
@@ -94,9 +95,9 @@ describe('DonatePage', () => {
     router.navigate.and.returnValue(Promise.resolve(true));
     donationFlowState = jasmine.createSpyObj<DonationFlowStateService>('DonationFlowStateService', ['setSummary']);
     stripePaymentService = jasmine.createSpyObj<StripePaymentService>('StripePaymentService', ['presentPaymentSheet']);
-    toastElement = { present: jasmine.createSpy('present').and.resolveTo() };
-    toastController = jasmine.createSpyObj<ToastController>('ToastController', ['create']);
-    toastController.create.and.resolveTo(toastElement as never);
+    appToast = jasmine.createSpyObj<AppToastService>('AppToastService', ['success', 'error', 'warning', 'info', 'show']);
+    appToast.error.and.resolveTo();
+    appToast.warning.and.resolveTo();
     selectedBranch$ = new BehaviorSubject<PublicBranch | null>(null);
     queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
     authServiceMock = {
@@ -125,7 +126,7 @@ describe('DonatePage', () => {
       { queryParamMap: queryParamMap$.asObservable() } as unknown as ActivatedRoute,
       router,
       stripePaymentService,
-      toastController,
+      appToast,
       {} as AlertController,
       {
         addFeatureBreadcrumb(): void {},
@@ -142,7 +143,8 @@ describe('DonatePage', () => {
         setContext: jasmine.createSpy(),
         clearContext: jasmine.createSpy(),
         peekContext: jasmine.createSpy().and.returnValue(null),
-      } as unknown as DonationAnalyticsContextService
+      } as unknown as DonationAnalyticsContextService,
+      jasmine.createSpyObj<HardwareBackCoordinatorService>('HardwareBackCoordinatorService', ['registerSelectorHandler'])
     );
 
     (page as unknown as { branch: PublicBranch | null }).branch = branch;
@@ -360,8 +362,7 @@ describe('DonatePage', () => {
 
     expect(page.nativeError).toBe('Payment failed. Please try again.');
     expect(page.nativeLoading).toBeFalse();
-    expect(toastController.create).toHaveBeenCalled();
-    expect(toastElement.present).toHaveBeenCalled();
+    expect(appToast.error).toHaveBeenCalledWith('Payment failed. Please try again.');
   });
 
   it('opens the church selector by adding the selector query param', () => {

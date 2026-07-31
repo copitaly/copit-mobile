@@ -575,6 +575,20 @@ export class DonateBranchSheetComponent implements OnChanges {
     this.dismissed.emit();
   }
 
+  async handleHardwareBack(): Promise<boolean> {
+    if (!this.isOpen) {
+      return false;
+    }
+
+    if (this.currentLevel === 'churches' || this.currentLevel === 'districts') {
+      this.stepBack();
+      return true;
+    }
+
+    this.requestDismiss();
+    return true;
+  }
+
   handleDidDismiss(): void {
     this.dismissed.emit();
   }

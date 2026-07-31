@@ -6,6 +6,7 @@ import { NavController } from '@ionic/angular';
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 
 import { AuthService } from '../../core/services/auth.service';
+import { HardwareBackCoordinatorService } from '../../core/services/hardware-back-coordinator.service';
 import { PrayerRequestSubmissionResponse, PublicChurchHierarchy } from '../../core/models/prayer.model';
 import { PrayerService } from '../../core/services/prayer.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
@@ -116,6 +117,10 @@ describe('PrayerSubmitPage', () => {
         { provide: PrayerService, useValue: prayerService },
         { provide: Router, useValue: router },
         { provide: AuthService, useValue: authServiceValue },
+        {
+          provide: HardwareBackCoordinatorService,
+          useValue: jasmine.createSpyObj<HardwareBackCoordinatorService>('HardwareBackCoordinatorService', ['registerUnsavedChangesHandler']),
+        },
         { provide: StackNavigationService, useValue: stackNavigationService },
         { provide: NavController, useValue: jasmine.createSpyObj<NavController>('NavController', ['navigateBack']) },
       ],

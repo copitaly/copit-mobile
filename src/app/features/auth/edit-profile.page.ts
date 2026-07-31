@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
 import { AppToastService } from '../../core/services/app-toast.service';
 import { AuthService } from '../../core/services/auth.service';
+import { HardwareBackCoordinatorService } from '../../core/services/hardware-back-coordinator.service';
 import { MemberProfile } from '../../core/models/user.model';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
@@ -305,7 +306,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
     `,
   ],
 })
-export class EditProfilePage implements OnInit {
+export class EditProfilePage implements OnInit, OnDestroy {
   readonly languageOptions = [
     { value: 'english', label: 'English' },
     { value: 'italian', label: 'Italian' },
@@ -322,6 +323,7 @@ export class EditProfilePage implements OnInit {
   loadErrorMessage = '';
   private loadRequestInFlight = false;
   private navigationPending = false;
+  private unregisterUnsavedChangesHandler?: () => void;
 
   @ViewChild('firstNameInput', { read: ElementRef }) private readonly firstNameInput?: ElementRef<HTMLElement>;
   @ViewChild('lastNameInput', { read: ElementRef }) private readonly lastNameInput?: ElementRef<HTMLElement>;
@@ -339,7 +341,8 @@ export class EditProfilePage implements OnInit {
     private readonly authService: AuthService,
     private readonly router: Router,
     private readonly appToast: AppToastService,
-    private readonly sentryTelemetry: SentryTelemetryService
+    private readonly sentryTelemetry: SentryTelemetryService,
+    private readonly hardwareBackCoordinator: HardwareBackCoordinatorService
   ) {}
 
   get canSubmit(): boolean {
@@ -358,7 +361,14 @@ export class EditProfilePage implements OnInit {
   }
 
   ngOnInit(): void {
+    this.unregisterUnsavedChangesHandler = this.hardwareBackCoordinator.registerUnsavedChangesHandler({
+      isDirty: () => this.form.dirty && !this.loading && !this.saving,
+    });
     this.loadProfile();
+  }
+
+  ngOnDestroy(): void {
+    this.unregisterUnsavedChangesHandler?.();
   }
 
   loadProfile(): void {

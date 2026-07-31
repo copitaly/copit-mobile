@@ -16,6 +16,7 @@ import {
 } from '../../core/models/prayer.model';
 import { MemberProfile } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
+import { HardwareBackCoordinatorService } from '../../core/services/hardware-back-coordinator.service';
 import { PrayerService } from '../../core/services/prayer.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
@@ -54,6 +55,7 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
   private readonly prayerService = inject(PrayerService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly hardwareBackCoordinator = inject(HardwareBackCoordinatorService);
 
   readonly categoryOptions: Array<{ label: string; value: PrayerCategory }> = [
     { label: 'Personal', value: 'personal' },
@@ -120,8 +122,12 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
   private districtsRequestId = 0;
   private localChurchesRequestId = 0;
   private readonly destroy$ = new Subject<void>();
+  private unregisterUnsavedChangesHandler?: () => void;
 
   ngOnInit(): void {
+    this.unregisterUnsavedChangesHandler = this.hardwareBackCoordinator.registerUnsavedChangesHandler({
+      isDirty: () => this.form.dirty && !this.showSuccessState && !this.isSubmitting,
+    });
     this.configureScopeValidators();
     this.configureSubmitterValidators();
     this.loadAreas();
@@ -146,6 +152,7 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.unregisterUnsavedChangesHandler?.();
     this.destroy$.next();
     this.destroy$.complete();
   }

@@ -31,6 +31,7 @@ import { PaymentSheetOutcome, StripePaymentService } from '../../core/services/s
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { DonationAnalyticsContextService } from '../../core/services/donation-analytics-context.service';
+import { HardwareBackCoordinatorService } from '../../core/services/hardware-back-coordinator.service';
 import { DonateBranchSheetComponent } from './donate-branch-sheet.component';
 
 const EURO_SYMBOL = '\u20AC';
@@ -361,6 +362,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   @ViewChild('emailInput') private emailInput?: IonInput;
   @ViewChild('churchSelectorTrigger', { read: ElementRef })
   private churchSelectorTrigger?: ElementRef<HTMLElement>;
+  @ViewChild(DonateBranchSheetComponent)
+  private donateBranchSheet?: DonateBranchSheetComponent;
 
   private branchSub: Subscription;
   private readonly churchSelectorQueryParam = 'churchSelector';
@@ -380,6 +383,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   private shouldRestoreChurchSelectorFocus = false;
   private savedBranchPrefillAttempted = false;
   private savedBranchPrefillInFlight = false;
+  private unregisterHardwareBackSelector?: () => void;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -394,7 +398,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     private readonly alertController: AlertController,
     private readonly sentryTelemetry: SentryTelemetryService,
     private readonly analyticsService: AnalyticsService,
-    private readonly donationAnalyticsContext: DonationAnalyticsContextService
+    private readonly donationAnalyticsContext: DonationAnalyticsContextService,
+    private readonly hardwareBackCoordinator: HardwareBackCoordinatorService
   ) {
     this.branchSub = this.selectedBranchService.selectedBranch$.subscribe(branch => {
       this.branch = branch;
@@ -457,6 +462,10 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
+    this.unregisterHardwareBackSelector = this.hardwareBackCoordinator.registerSelectorHandler({
+      isOpen: () => this.isBranchSheetOpen,
+      handleBack: async () => this.donateBranchSheet?.handleHardwareBack() ?? false,
+    });
     this.tryAutoFocusAmount();
   }
 
@@ -575,6 +584,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       clearTimeout(this.focusTimeoutId);
     }
 
+    this.unregisterHardwareBackSelector?.();
     this.destroy$.next();
     this.destroy$.complete();
     this.branchSub.unsubscribe();

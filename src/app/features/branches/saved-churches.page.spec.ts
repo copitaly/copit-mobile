@@ -8,6 +8,7 @@ import { SavedChurch } from '../../core/models/user.model';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
 import { BranchesService } from '../../core/services/branches.service';
+import { HardwareBackCoordinatorService } from '../../core/services/hardware-back-coordinator.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { SavedChurchesPage } from './saved-churches.page';
@@ -70,6 +71,10 @@ describe('SavedChurchesPage', () => {
           useValue: {
             getAllBranches: jasmine.createSpy('getAllBranches').and.returnValue(of([])),
           },
+        },
+        {
+          provide: HardwareBackCoordinatorService,
+          useValue: jasmine.createSpyObj<HardwareBackCoordinatorService>('HardwareBackCoordinatorService', ['registerSelectorHandler']),
         },
       ],
     }).compileComponents();
