@@ -131,6 +131,8 @@ describe('HomePage', () => {
 
     expect(text).toContain('Welcome back');
     expect(text).toContain('Find today');
+    expect(fixture.nativeElement.querySelector('.cop-page-shell')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.cop-page-header')).not.toBeNull();
   });
 
   it('shows the latest Bible Study manual in the hero section', async () => {
@@ -195,6 +197,7 @@ describe('HomePage', () => {
     expect(fixture.nativeElement.textContent).toContain('Daily Devotional');
     expect(fixture.nativeElement.textContent).toContain('Read devotional');
     expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-image"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-card"]')?.className).toContain('cop-card');
   });
 
   it('opens the devotional detail route from the devotional card', async () => {
@@ -236,6 +239,7 @@ describe('HomePage', () => {
     expect(fixture.nativeElement.textContent).toContain('Connect with your church family or share a prayer request.');
     expect(fixture.nativeElement.querySelector('[data-testid="request-prayer-button"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="community-button"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.utility')?.className).toContain('cop-card');
   });
 
   it('opens Prayer and Community from the utility card', async () => {

@@ -107,6 +107,8 @@ describe('ProfilePage', () => {
     expect(text).toContain('Member account');
     expect(text).toContain('Member since 2026');
     expect(text).toContain('Edit Profile');
+    expect(fixture.nativeElement.querySelector('.cop-page-header')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.account-card')?.className).toContain('cop-card');
   });
 
   it('renders compact membership metadata on one summary line', async () => {
@@ -217,6 +219,7 @@ describe('ProfilePage', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="login-form-shell"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="login-form-heading"]')?.textContent).toContain('Sign in to your account');
     expect(fixture.nativeElement.querySelector('[data-testid="profile-benefits"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="profile-benefits"]')?.className).toContain('cop-card');
     expect(fixture.nativeElement.textContent).toContain('Why create an account?');
     expect(fixture.nativeElement.textContent).toContain('View your giving history');
     expect(fixture.nativeElement.textContent).toContain('Read Bible Study manuals');

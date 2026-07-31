@@ -118,6 +118,7 @@ describe('DevotionalDetailPage', () => {
     await createComponent();
 
     expect(fixture.nativeElement.querySelector('[data-testid="scripture-text"]')?.className).toContain('preserve-lines');
+    expect(fixture.nativeElement.querySelector('[data-testid="scripture-text"]')?.className).toContain('cop-inset-quote');
     expect(fixture.nativeElement.querySelectorAll('[data-testid="content"] .reading-paragraph').length).toBe(2);
     expect(fixture.nativeElement.querySelectorAll('[data-testid="reflection-question"] .reading-paragraph').length).toBe(2);
     expect(fixture.nativeElement.querySelectorAll('[data-testid="prayer"] .reading-paragraph').length).toBe(2);
@@ -198,6 +199,8 @@ describe('DevotionalDetailPage', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="scripture-heading"]')?.textContent).toContain('Scripture');
     expect(fixture.nativeElement.querySelector('[data-testid="reflection-heading"]')?.textContent).toContain('Reflection');
     expect(fixture.nativeElement.querySelector('[data-testid="prayer-heading"]')?.textContent).toContain('Prayer');
+    expect(fixture.nativeElement.querySelector('[data-testid="reflection-section"]')?.className).toContain('cop-card--reflection');
+    expect(fixture.nativeElement.querySelector('[data-testid="prayer-section"]')?.className).toContain('cop-card--prayer');
   });
 
   it('renders the footer attribution and article share action', async () => {

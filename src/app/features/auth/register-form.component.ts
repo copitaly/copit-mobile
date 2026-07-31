@@ -241,110 +241,17 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
         gap: 0.8rem;
       }
 
-      .auth-label {
-        display: block;
-        margin: 0 0 0.46rem;
-        color: #304468;
-        font-size: 0.88rem;
-        font-weight: 700;
-        line-height: 1.3;
-      }
-
-      .auth-field {
-        --background: #f2f3f6;
-        --border-radius: 18px;
-        --padding-start: 0.65rem;
-        --inner-padding-end: 0.35rem;
-        --inner-padding-top: 0.42rem;
-        --inner-padding-bottom: 0.42rem;
-        margin-bottom: 0.2rem;
-        border: 1px solid rgba(47, 66, 107, 0.12);
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
-        transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
-        overflow: hidden;
-        border-radius: 18px;
-      }
-
-      .auth-field.item-has-focus,
-      .auth-field.ion-focused {
-        --background: #f7f9ff;
-        border-color: rgba(32, 59, 144, 0.48);
-        box-shadow: 0 0 0 3px rgba(32, 59, 144, 0.12);
-      }
-
       .field-error {
         margin: 0 0 0.58rem;
-        color: #c63d47;
-        font-size: 0.84rem;
-        line-height: 1.35;
-      }
-
-      .password-toggle {
-        border: 0;
-        background: transparent;
-        color: rgba(48, 68, 104, 0.54);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        align-self: center;
-        width: 44px;
-        height: 44px;
-        min-width: 44px;
-        min-height: 44px;
-        margin: 0;
-        padding: 0;
-        opacity: 0.9;
-        line-height: 1;
-      }
-
-      .password-toggle ion-icon {
-        font-size: 1.05rem;
       }
 
       .auth-feedback {
         min-height: 0;
-        display: flex;
-        align-items: center;
         margin: 0 0 0.35rem;
       }
 
       .auth-feedback--visible {
         min-height: auto;
-      }
-
-      .auth-error {
-        display: block;
-        margin: 0;
-        line-height: 1.35;
-      }
-
-      .auth-submit {
-        --background: #dfaa22;
-        --background-hover: #d59f17;
-        --background-activated: #c8920d;
-        --color: #10204b;
-        --border-radius: 999px;
-        --box-shadow: 0 10px 22px rgba(223, 170, 34, 0.28);
-        margin-top: 0.1rem;
-        font-weight: 700;
-        min-height: 52px;
-        height: 52px;
-      }
-
-      .auth-submit.button-disabled {
-        --background: #eddca7;
-        --background-hover: #eddca7;
-        --color: rgba(22, 37, 77, 0.52);
-        --box-shadow: none;
-        opacity: 0.82;
-        filter: saturate(0.7);
-      }
-
-      .auth-submit.ion-focused,
-      .auth-submit:focus-visible {
-        --box-shadow:
-          0 12px 24px rgba(223, 170, 34, 0.3),
-          0 0 0 3px rgba(32, 59, 144, 0.14);
       }
 
       .auth-submit:active {
@@ -364,22 +271,8 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
         line-height: 1.45;
       }
 
-      .auth-link {
-        border: 0;
-        background: transparent;
-        color: #163c9a;
-        font: inherit;
-        font-size: 0.94rem;
-        font-weight: 600;
-        padding: 0.25rem 0;
-      }
-
       .auth-legal {
         margin: 0.72rem auto 0;
-        text-align: center;
-        color: rgba(55, 73, 109, 0.76);
-        font-size: 0.88rem;
-        line-height: 1.45;
         padding: 0 0.4rem;
       }
 

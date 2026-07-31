@@ -104,6 +104,7 @@ describe('DevotionalsPage', () => {
     expect(text).toContain('Psalm 23:1');
     expect(text).toContain('Pastor John');
     expect(text).toContain('27 Jul 2026');
+    expect(fixture.nativeElement.querySelector('.cop-page-header')).not.toBeNull();
   });
 
   it('keeps the featured devotional metadata compact when author_name is blank', async () => {
@@ -300,6 +301,7 @@ describe('DevotionalsPage', () => {
     expect(text).toContain('Keep reading');
     expect(text).toContain('Read devotional');
     expect(fixture.nativeElement.querySelectorAll('[data-testid="devotional-card"]').length).toBe(1);
+    expect(fixture.nativeElement.querySelector('[data-testid="featured-devotional-card"]')?.className).toContain('cop-card');
   });
 
   it('shows the caught-up state only when there are no more recent devotionals or additional pages', async () => {

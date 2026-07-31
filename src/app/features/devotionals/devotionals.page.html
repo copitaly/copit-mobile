@@ -1,20 +1,20 @@
 <ion-page>
-  <ion-content fullscreen class="devotionals-content">
+  <ion-content fullscreen class="devotionals-content cop-page">
     <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
       <ion-refresher-content pullingIcon="chevron-down-circle-outline"></ion-refresher-content>
     </ion-refresher>
 
-    <div class="devotionals-shell">
-      <header class="devotionals-header" aria-labelledby="devotionals-title">
-        <p class="devotionals-header__eyebrow">Devotionals</p>
-        <h1 id="devotionals-title">Devotionals</h1>
-        <p class="devotionals-header__subtitle">Pause, reflect, and grow through daily Scripture.</p>
+    <div class="devotionals-shell cop-page-shell">
+      <header class="devotionals-header cop-page-header" aria-labelledby="devotionals-title">
+        <p class="devotionals-header__eyebrow cop-page-header__eyebrow">Devotionals</p>
+        <h1 id="devotionals-title" class="cop-page-header__title">Devotionals</h1>
+        <p class="devotionals-header__subtitle cop-page-header__subtitle">Pause, reflect, and grow through daily Scripture.</p>
       </header>
 
       <div *ngIf="loading" class="devotionals-loading" aria-live="polite" data-testid="loading-state">
         <section class="editorial-section">
-          <p class="section-label">Featured Devotional</p>
-          <article class="featured-card skeleton">
+          <p class="section-label cop-eyebrow">Featured Devotional</p>
+          <article class="featured-card cop-card skeleton">
             <div class="featured-card__media devotional-card__cover-skeleton"></div>
             <div class="featured-card__content">
               <span class="skeleton-line skeleton-line--eyebrow"></span>
@@ -27,7 +27,7 @@
         </section>
 
         <section class="editorial-section">
-          <p class="section-label">Recent Devotionals</p>
+          <p class="section-label cop-eyebrow">Recent Devotionals</p>
           <div class="recent-list">
             <article class="recent-card skeleton" *ngFor="let item of skeletonItems">
               <div class="recent-card__copy">
@@ -40,18 +40,18 @@
         </section>
       </div>
 
-      <div *ngIf="!loading && errorMessage" class="state-card error-state" data-testid="error-state">
+      <div *ngIf="!loading && errorMessage" class="state-card cop-card error-state" data-testid="error-state">
         <div class="state-copy">
-          <p class="section-label">Devotionals</p>
+          <p class="section-label cop-eyebrow">Devotionals</p>
           <h2>We couldn't load devotionals right now.</h2>
           <p>{{ errorMessage }}</p>
         </div>
         <ion-button expand="block" class="state-button" (click)="retryLoad()">Try Again</ion-button>
       </div>
 
-      <div *ngIf="!loading && !errorMessage && devotionals.length === 0" class="state-card empty-state" data-testid="empty-state">
+      <div *ngIf="!loading && !errorMessage && devotionals.length === 0" class="state-card cop-card empty-state" data-testid="empty-state">
         <div class="state-copy">
-          <p class="section-label">Devotionals</p>
+          <p class="section-label cop-eyebrow">Devotionals</p>
           <h2>No devotionals have been published yet.</h2>
           <p>Check back soon for daily encouragement from published devotionals.</p>
         </div>
@@ -62,10 +62,10 @@
 
       <div *ngIf="!loading && !errorMessage && featuredDevotional" class="devotionals-editorial">
         <section class="editorial-section" aria-label="Featured Devotional">
-          <p class="section-label">Featured Devotional</p>
+          <p class="section-label cop-eyebrow">Featured Devotional</p>
           <button
             type="button"
-            class="featured-card featured-card--button ion-activatable"
+            class="featured-card featured-card--button cop-card cop-card-button ion-activatable"
             data-testid="featured-devotional-card"
             [attr.aria-label]="buildCardAriaLabel(featuredDevotional)"
             (click)="openDevotional(featuredDevotional)"
@@ -85,12 +85,12 @@
             </div>
 
             <div class="featured-card__content">
-              <p class="featured-card__eyebrow">{{ formatPublicationDate(featuredDevotional.publication_date) }}</p>
+              <p class="featured-card__eyebrow cop-eyebrow">{{ formatPublicationDate(featuredDevotional.publication_date) }}</p>
               <h2 data-testid="devotional-title">{{ featuredDevotional.title }}</h2>
               <p *ngIf="hasScriptureReference(featuredDevotional)" class="featured-card__scripture" data-testid="devotional-scripture">
                 {{ featuredDevotional.scripture_reference }}
               </p>
-              <p *ngIf="getCardMeta(featuredDevotional)" class="featured-card__meta" data-testid="featured-devotional-meta">
+              <p *ngIf="getCardMeta(featuredDevotional)" class="featured-card__meta cop-metadata" data-testid="featured-devotional-meta">
                 {{ getCardMeta(featuredDevotional) }}
               </p>
               <span class="featured-card__cta">
@@ -109,7 +109,7 @@
         >
           <div class="section-heading">
             <div>
-              <p class="section-label">Recent Devotionals</p>
+              <p class="section-label cop-eyebrow">Recent Devotionals</p>
               <h3>Keep reading</h3>
             </div>
           </div>
@@ -118,13 +118,13 @@
             <button
               *ngFor="let devotional of recentDevotionals; trackBy: trackByDevotional"
               type="button"
-              class="recent-card recent-card--button ion-activatable"
+              class="recent-card recent-card--button cop-card cop-card--compact cop-card-button ion-activatable"
               data-testid="devotional-card"
               [attr.aria-label]="buildCardAriaLabel(devotional)"
               (click)="openDevotional(devotional)"
             >
               <div class="recent-card__copy">
-                <p class="recent-card__meta" data-testid="devotional-publication-date">
+                <p class="recent-card__meta cop-metadata" data-testid="devotional-publication-date">
                   {{ formatPublicationDate(devotional.publication_date) }}
                 </p>
                 <div class="recent-card__top">
@@ -161,8 +161,8 @@
         </section>
 
         <section *ngIf="showCaughtUpState" class="editorial-section" data-testid="caught-up-state" aria-live="polite">
-          <div class="caught-up-card">
-            <p class="section-label">Caught Up</p>
+          <div class="caught-up-card cop-card">
+            <p class="section-label cop-eyebrow">Caught Up</p>
             <h3>You're all caught up.</h3>
             <p>Check back soon for the next published devotional.</p>
           </div>

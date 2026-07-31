@@ -18,10 +18,10 @@
     </ion-toolbar>
   </ion-header>
 
-  <ion-content fullscreen class="devotional-detail-content">
-    <div class="devotional-reader-shell">
+  <ion-content fullscreen class="devotional-detail-content cop-page">
+    <div class="devotional-reader-shell cop-page-shell">
       <div *ngIf="loading" class="reader-loading" aria-live="polite" data-testid="loading-state">
-        <article class="reader-article skeleton">
+        <article class="reader-article cop-card skeleton">
           <div class="reader-article__media detail-card__cover-skeleton"></div>
           <div class="reader-article__section reader-article__section--header">
             <span class="skeleton-line skeleton-line--title"></span>
@@ -36,7 +36,7 @@
         </article>
       </div>
 
-      <div *ngIf="!loading && notFound" class="state-card empty-state" data-testid="not-found-state">
+      <div *ngIf="!loading && notFound" class="state-card cop-card empty-state" data-testid="not-found-state">
         <div class="state-copy">
           <h2>Devotional unavailable</h2>
           <p>This devotional is no longer available.</p>
@@ -46,7 +46,7 @@
         </ion-button>
       </div>
 
-      <div *ngIf="!loading && !notFound && errorMessage" class="state-card error-state" data-testid="error-state">
+      <div *ngIf="!loading && !notFound && errorMessage" class="state-card cop-card error-state" data-testid="error-state">
         <div class="state-copy">
           <h2>We couldn't load this devotional</h2>
           <p>{{ errorMessage }}</p>
@@ -54,28 +54,28 @@
         <ion-button expand="block" class="state-button" (click)="retryLoad()">Try Again</ion-button>
       </div>
 
-      <article *ngIf="!loading && !notFound && !errorMessage && devotional" class="reader-article" data-testid="devotional-detail">
+      <article *ngIf="!loading && !notFound && !errorMessage && devotional" class="reader-article cop-card" data-testid="devotional-detail">
         <div *ngIf="shouldShowCoverImage()" class="reader-article__media" data-testid="cover-image">
           <img [src]="devotional.cover_image!" [alt]="getCoverImageAlt()" (error)="handleCoverImageError()" />
         </div>
 
         <section class="reader-article__section reader-article__section--header" data-testid="content-section">
           <h1 data-testid="devotional-title">{{ devotional.title }}</h1>
-          <div class="reader-article__meta-group" *ngIf="getHeaderMeta() || devotional.publication_date">
-            <p class="reader-article__date" data-testid="publication-date">{{ formatPublicationDate(devotional.publication_date) }}</p>
-            <p *ngIf="getHeaderMeta()" class="reader-article__meta" data-testid="scripture-reference">{{ getHeaderMeta() }}</p>
+          <div class="reader-article__meta-group cop-metadata" *ngIf="getHeaderMeta() || devotional.publication_date">
+            <p class="reader-article__date cop-metadata" data-testid="publication-date">{{ formatPublicationDate(devotional.publication_date) }}</p>
+            <p *ngIf="getHeaderMeta()" class="reader-article__meta cop-metadata" data-testid="scripture-reference">{{ getHeaderMeta() }}</p>
           </div>
 
           <h2 data-testid="scripture-heading">Scripture</h2>
           <blockquote
             *ngIf="hasText(devotional.scripture_text)"
-            class="scripture-block preserve-lines"
+            class="scripture-block cop-inset-quote preserve-lines"
             data-testid="scripture-text"
           >
             {{ devotional.scripture_text }}
           </blockquote>
 
-          <div class="reading-copy" data-testid="content">
+          <div class="reading-copy cop-reading-body" data-testid="content">
             <p *ngFor="let paragraph of contentParagraphs" class="reading-paragraph preserve-lines">
               {{ paragraph }}
             </p>
@@ -85,18 +85,18 @@
           </div>
         </section>
 
-        <section *ngIf="hasText(devotional.reflection_question)" class="reader-article__section reader-article__section--inset" data-testid="reflection-section">
+        <section *ngIf="hasText(devotional.reflection_question)" class="reader-article__section reader-article__section--inset cop-card--reflection" data-testid="reflection-section">
           <h2 data-testid="reflection-heading">Reflection</h2>
-          <div class="reading-copy" data-testid="reflection-question">
+          <div class="reading-copy cop-reading-body" data-testid="reflection-question">
             <p *ngFor="let paragraph of reflectionParagraphs" class="reading-paragraph preserve-lines">
               {{ paragraph }}
             </p>
           </div>
         </section>
 
-        <section *ngIf="hasText(devotional.prayer)" class="reader-article__section reader-article__section--prayer" data-testid="prayer-section">
+        <section *ngIf="hasText(devotional.prayer)" class="reader-article__section reader-article__section--prayer cop-card--prayer" data-testid="prayer-section">
           <h2 data-testid="prayer-heading">Prayer</h2>
-          <div class="reading-copy" data-testid="prayer">
+          <div class="reading-copy cop-reading-body" data-testid="prayer">
             <p *ngFor="let paragraph of prayerParagraphs" class="reading-paragraph preserve-lines">
               {{ paragraph }}
             </p>

@@ -1,13 +1,13 @@
 <ion-page>
-  <ion-content fullscreen class="home-content">
+  <ion-content fullscreen class="home-content cop-page">
     <p class="sr-only" aria-live="polite">{{ liveStatusMessage }}</p>
 
-    <div class="home-shell">
-      <section class="greet" aria-label="Home greeting">
+    <div class="home-shell cop-page-shell">
+      <section class="greet cop-page-header" aria-label="Home greeting">
         <div class="greet__copy">
-          <p class="gold-kicker">{{ greeting }}</p>
-          <h1>Welcome back</h1>
-          <p class="muted-copy">{{ greetingSupportText }}</p>
+          <p class="gold-kicker cop-page-header__eyebrow">{{ greeting }}</p>
+          <h1 class="cop-page-header__title">Welcome back</h1>
+          <p class="muted-copy cop-page-header__subtitle">{{ greetingSupportText }}</p>
         </div>
 
         <div class="greet__actions">
@@ -27,7 +27,7 @@
       </section>
 
       <section aria-label="Featured Bible Study">
-        <div *ngIf="featuredManualLoading" class="hero hero--loading" data-testid="featured-manual-loading">
+        <div *ngIf="featuredManualLoading" class="hero hero--loading cop-card" data-testid="featured-manual-loading">
           <div class="hero__media hero__media--skel"></div>
           <div class="hero__body">
             <div class="skel skel--sm" style="width:42%"></div>
@@ -40,7 +40,7 @@
         <button
           *ngIf="!featuredManualLoading"
           type="button"
-          class="hero hero--btn ion-activatable"
+          class="hero hero--btn cop-card cop-card-button ion-activatable"
           data-testid="featured-manual-card"
           [attr.aria-label]="featuredHeroAriaLabel"
           (click)="openFeaturedManual()"
@@ -55,9 +55,9 @@
           </div>
 
           <div class="hero__body">
-            <p class="gold-kicker">{{ featuredHeroEyebrow }}</p>
+            <p class="gold-kicker cop-eyebrow">{{ featuredHeroEyebrow }}</p>
             <h2 data-testid="featured-manual-title">{{ featuredHeroTitle }}</h2>
-            <p class="muted-copy">{{ featuredHeroMeta }}</p>
+            <p class="muted-copy cop-metadata">{{ featuredHeroMeta }}</p>
             <span class="hero__cta">
               <span>{{ featuredHeroActionLabel }}</span>
               <ion-icon name="arrow-forward" aria-hidden="true"></ion-icon>
@@ -68,9 +68,9 @@
       </section>
 
       <section aria-label="Daily Devotional">
-        <div class="sec-head"><h2>Daily Devotional</h2></div>
+        <div class="sec-head cop-section-heading"><h2 class="cop-section-heading__title">Daily Devotional</h2></div>
 
-        <div *ngIf="todayDevotionalLoading && !hasTodayDevotional" class="mini mini--load" data-testid="today-devotional-loading">
+        <div *ngIf="todayDevotionalLoading && !hasTodayDevotional" class="mini mini--load cop-card cop-card--compact" data-testid="today-devotional-loading">
           <div class="mini__body">
             <div class="skel skel--sm" style="width:34%"></div>
             <div class="skel skel--lg" style="width:72%"></div>
@@ -86,13 +86,13 @@
         <button
           *ngIf="hasTodayDevotional && todayDevotional"
           type="button"
-          class="mini mini--btn mini--devotional ion-activatable"
+          class="mini mini--btn mini--devotional cop-card cop-card--compact cop-card-button ion-activatable"
           data-testid="today-devotional-card"
           [attr.aria-label]="buildTodayDevotionalAriaLabel()"
           [disabled]="todayDevotionalRefreshing"
           (click)="openTodayDevotional()"
         >
-          <div class="mini__body">
+          <div class="mini__body cop-reading-body">
             <div class="mini__top">
               <span class="mini__mark" aria-hidden="true"><ion-icon name="book-outline"></ion-icon></span>
               <span class="mini__cta">Read devotional <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon></span>
@@ -110,28 +110,28 @@
           <ion-ripple-effect></ion-ripple-effect>
         </button>
 
-        <div *ngIf="todayDevotionalError && !hasTodayDevotional" class="mini mini--state" data-testid="today-devotional-error" aria-live="polite">
+        <div *ngIf="todayDevotionalError && !hasTodayDevotional" class="mini mini--state cop-card cop-card--compact" data-testid="today-devotional-error" aria-live="polite">
           <div class="mini__body mini__body--state">
             <p class="muted-copy">{{ todayDevotionalStatusMessage }}</p>
-            <button type="button" class="soft-btn" data-testid="today-devotional-retry" aria-label="Retry loading today's devotional" (click)="retryTodayDevotional()">Retry</button>
+            <button type="button" class="soft-btn cop-button-secondary" data-testid="today-devotional-retry" aria-label="Retry loading today's devotional" (click)="retryTodayDevotional()">Retry</button>
           </div>
         </div>
 
-        <div *ngIf="todayDevotionalEmpty && !todayDevotionalLoading" class="mini mini--state" data-testid="today-devotional-empty" [attr.aria-label]="getEmptyDevotionalAriaLabel()" aria-live="polite">
+        <div *ngIf="todayDevotionalEmpty && !todayDevotionalLoading" class="mini mini--state cop-card cop-card--compact" data-testid="today-devotional-empty" [attr.aria-label]="getEmptyDevotionalAriaLabel()" aria-live="polite">
           <div class="mini__body mini__body--state">
             <p class="muted-copy">No devotional is available right now. Check back later today.</p>
-            <button type="button" class="soft-btn" data-testid="today-devotional-browse" aria-label="Browse devotionals" (click)="goToDevotionals()">Browse devotionals</button>
+            <button type="button" class="soft-btn cop-button-secondary" data-testid="today-devotional-browse" aria-label="Browse devotionals" (click)="goToDevotionals()">Browse devotionals</button>
           </div>
         </div>
       </section>
 
-      <section class="utility" aria-label="Community and Prayer">
+      <section class="utility cop-card" aria-label="Community and Prayer">
         <div class="utility__head" style="display:flex;align-items:flex-start;gap:.85rem;flex-wrap:wrap">
           <span class="utility__icon" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:14px;background:rgba(11,29,115,.08);color:#0b1d73;flex-shrink:0" aria-hidden="true"><ion-icon name="people-outline"></ion-icon></span>
           <div>
-            <p class="gold-kicker">Community</p>
+            <p class="gold-kicker cop-eyebrow">Community</p>
             <h3>You're not walking this journey alone.</h3>
-            <p class="muted-copy">Connect with your church family or share a prayer request.</p>
+            <p class="muted-copy cop-copy-muted">Connect with your church family or share a prayer request.</p>
           </div>
         </div>
         <div class="utility__actions" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem">
