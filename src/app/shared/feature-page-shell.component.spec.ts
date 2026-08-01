@@ -25,10 +25,10 @@ class TestHostComponent {}
   imports: [FeaturePageShellComponent],
   template: `
     <app-feature-page-shell
-      title="Devotional"
+      title="Devotion"
       subtitle="Read details."
       [actionIcon]="'share-social-outline'"
-      actionAriaLabel="Share devotional"
+      actionAriaLabel="Share devotion"
       [action]="handleShare"
     >
       <div class="projected-content">Body content</div>
@@ -93,7 +93,7 @@ describe('FeaturePageShellComponent', () => {
     actionFixture.detectChanges();
 
     const actionButton = actionFixture.nativeElement.querySelector('.app-header__action') as HTMLButtonElement | null;
-    expect(actionButton?.getAttribute('aria-label')).toBe('Share devotional');
+    expect(actionButton?.getAttribute('aria-label')).toBe('Share devotion');
 
     actionButton?.click();
     actionFixture.detectChanges();

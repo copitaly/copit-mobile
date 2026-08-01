@@ -334,14 +334,14 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   getTodayDevotionalTitle(): string {
-    return this.normalizeText(this.todayDevotional?.title) || 'Today\'s devotional';
+    return this.normalizeText(this.todayDevotional?.title) || 'Today\'s devotion';
   }
 
   getTodayDevotionalPreview(): string {
     const content = this.normalizeText(this.todayDevotional?.content).replace(/\s+/g, ' ');
 
     if (!content) {
-      return 'Read today\'s devotional for encouragement and scripture reflection.';
+      return 'Read today\'s devotion for encouragement and scripture reflection.';
     }
 
     if (content.length <= this.devotionalPreviewMaxLength) {
@@ -358,10 +358,10 @@ export class HomePage implements OnInit, OnDestroy {
 
   buildTodayDevotionalAriaLabel(): string {
     if (!this.todayDevotional) {
-      return 'Read today\'s devotional';
+      return 'Read today\'s devotion';
     }
 
-    const parts = ['Read today\'s devotional', this.getTodayDevotionalTitle()];
+    const parts = ['Read today\'s devotion', this.getTodayDevotionalTitle()];
     if (this.hasTodayScriptureReference()) {
       parts.push(this.normalizeText(this.todayDevotional?.scripture_reference));
     }
@@ -371,11 +371,11 @@ export class HomePage implements OnInit, OnDestroy {
 
   getTodayDevotionalImageAlt(): string {
     const title = this.getTodayDevotionalTitle();
-    return title ? `${title} cover image` : 'Devotional cover image';
+    return title ? `${title} cover image` : 'Devotion cover image';
   }
 
   getEmptyDevotionalAriaLabel(): string {
-    return 'No devotional is available right now.';
+    return 'No devotion is available right now.';
   }
 
   goToAccount(isAuthenticated: boolean | null): void {
@@ -538,7 +538,7 @@ export class HomePage implements OnInit, OnDestroy {
         this.hasTodayDevotional = false;
         this.liveStatusMessage = this.todayDevotionalStatusMessage;
       } else {
-        this.liveStatusMessage = 'Refresh failed. Showing previously loaded devotional content.';
+        this.liveStatusMessage = 'Refresh failed. Showing previously loaded devotion content.';
       }
     } finally {
       if (requestId === this.todayDevotionalRequestId) {
@@ -557,20 +557,20 @@ export class HomePage implements OnInit, OnDestroy {
     this.todayDevotionalStatusMessage = '';
     this.todayDevotionalImageFailed = false;
     this.liveStatusMessage = isRefresh
-      ? 'Home refreshed. No devotional is available right now.'
-      : 'No devotional is available right now.';
+      ? 'Home refreshed. No devotion is available right now.'
+      : 'No devotion is available right now.';
   }
 
   private getTodayDevotionalFailureMessage(error: unknown): string {
     if (this.isTimeoutError(error)) {
-      return 'Today\'s devotional is taking too long to load. Please try again.';
+      return 'Today\'s devotion is taking too long to load. Please try again.';
     }
 
     if (error instanceof HttpErrorResponse && error.status === 0) {
       return 'You\'re offline. Check your connection and try again.';
     }
 
-    return 'Today\'s devotional could not be loaded.';
+    return 'Today\'s devotion could not be loaded.';
   }
 
   private isTimeoutError(error: unknown): boolean {

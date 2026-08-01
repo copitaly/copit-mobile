@@ -82,7 +82,7 @@ export class DevotionalService {
   ): DevotionalPublicDetail {
     const normalizedBase = this.normalizeListItem(response) ?? {
       id: 0,
-      title: 'Devotional',
+      title: 'Devotion',
       slug: '',
       scripture_reference: '',
       author_name: null,
@@ -107,7 +107,7 @@ export class DevotionalService {
 
     return {
       id,
-      title: this.normalizeOptionalText(item?.title) ?? 'Devotional',
+      title: this.normalizeOptionalText(item?.title) ?? 'Devotion',
       slug: this.normalizeOptionalText(item?.slug) ?? '',
       scripture_reference: this.normalizeOptionalText(item?.scripture_reference) ?? '',
       author_name: this.normalizeOptionalText(item?.author_name),

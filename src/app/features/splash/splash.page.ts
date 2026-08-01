@@ -4,7 +4,7 @@ import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
 
 const APP_TITLE = 'C.O.P Italy';
-const TAGLINE = 'Giving • Prayer • Events • Devotionals';
+const TAGLINE = 'Giving • Prayer • Events • Devotions';
 const SPLASH_DURATION_MS = 5000;
 
 @Component({

@@ -216,7 +216,7 @@ export class DevotionalsPage implements OnInit {
 
   getCoverImageAlt(devotional: DevotionalPublicListItem): string {
     const title = devotional.title?.trim();
-    return title ? `${title} cover image` : 'Devotional cover image';
+    return title ? `${title} cover image` : 'Devotion cover image';
   }
 
   getCardMeta(devotional: DevotionalPublicListItem): string {
@@ -257,21 +257,21 @@ export class DevotionalsPage implements OnInit {
   }
 
   private resolveLoadErrorMessage(error: unknown): string {
-    return this.resolveErrorMessage(error, "We couldn't load devotionals right now.");
+    return this.resolveErrorMessage(error, "We couldn't load devotions right now.");
   }
 
   private resolveRefreshErrorMessage(error: unknown): string {
-    return this.resolveErrorMessage(error, "We couldn't refresh devotionals right now. Please try again.");
+    return this.resolveErrorMessage(error, "We couldn't refresh devotions right now. Please try again.");
   }
 
   private resolveLoadMoreErrorMessage(error: unknown): string {
-    return this.resolveErrorMessage(error, "We couldn't load more devotionals right now. Please try again.");
+    return this.resolveErrorMessage(error, "We couldn't load more devotions right now. Please try again.");
   }
 
   private resolveErrorMessage(error: unknown, fallback: string): string {
     const message = String((error as { message?: string } | undefined)?.message ?? '').toLowerCase();
     if (message.includes('timeout')) {
-      return 'Loading devotionals timed out. Please try again.';
+      return 'Loading devotions timed out. Please try again.';
     }
 
     if (message.includes('offline') || message.includes('network')) {

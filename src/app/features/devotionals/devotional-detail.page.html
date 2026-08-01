@@ -2,14 +2,14 @@
   <ion-header class="devotional-reader-header" translucent="true">
     <ion-toolbar>
       <ion-buttons slot="start">
-        <ion-back-button defaultHref="/tabs/devotionals" text="" icon="chevron-back" aria-label="Back to devotionals"></ion-back-button>
+        <ion-back-button defaultHref="/tabs/devotionals" text="" icon="chevron-back" aria-label="Back to Devotions"></ion-back-button>
       </ion-buttons>
       <ion-buttons slot="end">
         <ion-button
           fill="clear"
           color="dark"
           [disabled]="!canShareDevotional()"
-          aria-label="Share devotional"
+          aria-label="Share devotion"
           (click)="shareDevotionalFromHeader()"
         >
           <ion-icon slot="icon-only" name="share-social-outline" aria-hidden="true"></ion-icon>
@@ -38,17 +38,17 @@
 
       <div *ngIf="!loading && notFound" class="state-card cop-card empty-state" data-testid="not-found-state">
         <div class="state-copy">
-          <h2>Devotional unavailable</h2>
-          <p>This devotional is no longer available.</p>
+          <h2>Devotion unavailable</h2>
+          <p>This devotion is no longer available.</p>
         </div>
         <ion-button expand="block" class="state-button" routerLink="/tabs/devotionals">
-          Back to devotionals
+          Back to Devotions
         </ion-button>
       </div>
 
       <div *ngIf="!loading && !notFound && errorMessage" class="state-card cop-card error-state" data-testid="error-state">
         <div class="state-copy">
-          <h2>We couldn't load this devotional</h2>
+          <h2>We couldn't load this devotion</h2>
           <p>{{ errorMessage }}</p>
         </div>
         <ion-button expand="block" class="state-button" (click)="retryLoad()">Try Again</ion-button>
@@ -108,11 +108,11 @@
           <button
             type="button"
             class="reader-article__footer-share"
-            aria-label="Share devotional"
+            aria-label="Share devotion"
             [disabled]="!canShareDevotional()"
             (click)="shareDevotionalFromHeader()"
           >
-            Share this devotional
+            Share this devotion
           </button>
         </footer>
       </article>

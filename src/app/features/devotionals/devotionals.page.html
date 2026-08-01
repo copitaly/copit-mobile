@@ -6,14 +6,14 @@
 
     <div class="devotionals-shell cop-page-shell">
       <header class="devotionals-header cop-page-header" aria-labelledby="devotionals-title">
-        <p class="devotionals-header__eyebrow cop-page-header__eyebrow">Devotionals</p>
-        <h1 id="devotionals-title" class="cop-page-header__title">Devotionals</h1>
+        <p class="devotionals-header__eyebrow cop-page-header__eyebrow">Devotions</p>
+        <h1 id="devotionals-title" class="cop-page-header__title">Devotions</h1>
         <p class="devotionals-header__subtitle cop-page-header__subtitle">Pause, reflect, and grow through daily Scripture.</p>
       </header>
 
       <div *ngIf="loading" class="devotionals-loading" aria-live="polite" data-testid="loading-state">
         <section class="editorial-section">
-          <p class="section-label cop-eyebrow">Featured Devotional</p>
+          <p class="section-label cop-eyebrow">Featured Devotion</p>
           <article class="featured-card cop-card skeleton">
             <div class="featured-card__media devotional-card__cover-skeleton"></div>
             <div class="featured-card__content">
@@ -27,7 +27,7 @@
         </section>
 
         <section class="editorial-section">
-          <p class="section-label cop-eyebrow">Recent Devotionals</p>
+          <p class="section-label cop-eyebrow">Recent Devotions</p>
           <div class="recent-list">
             <article class="recent-card skeleton" *ngFor="let item of skeletonItems">
               <div class="recent-card__copy">
@@ -42,8 +42,8 @@
 
       <div *ngIf="!loading && errorMessage" class="state-card cop-card error-state" data-testid="error-state">
         <div class="state-copy">
-          <p class="section-label cop-eyebrow">Devotionals</p>
-          <h2>We couldn't load devotionals right now.</h2>
+          <p class="section-label cop-eyebrow">Devotions</p>
+          <h2>We couldn't load devotions right now.</h2>
           <p>{{ errorMessage }}</p>
         </div>
         <ion-button expand="block" class="state-button" (click)="retryLoad()">Try Again</ion-button>
@@ -51,9 +51,9 @@
 
       <div *ngIf="!loading && !errorMessage && devotionals.length === 0" class="state-card cop-card empty-state" data-testid="empty-state">
         <div class="state-copy">
-          <p class="section-label cop-eyebrow">Devotionals</p>
-          <h2>No devotionals have been published yet.</h2>
-          <p>Check back soon for daily encouragement from published devotionals.</p>
+          <p class="section-label cop-eyebrow">Devotions</p>
+          <h2>No devotions have been published yet.</h2>
+          <p>Check back soon for daily encouragement from published devotions.</p>
         </div>
         <ion-button expand="block" fill="outline" class="state-button state-button--secondary" (click)="retryLoad()">
           Refresh
@@ -61,8 +61,8 @@
       </div>
 
       <div *ngIf="!loading && !errorMessage && featuredDevotional" class="devotionals-editorial">
-        <section class="editorial-section" aria-label="Featured Devotional">
-          <p class="section-label cop-eyebrow">Featured Devotional</p>
+        <section class="editorial-section" aria-label="Featured Devotion">
+          <p class="section-label cop-eyebrow">Featured Devotion</p>
           <button
             type="button"
             class="featured-card featured-card--button cop-card cop-card-button ion-activatable"
@@ -94,7 +94,7 @@
                 {{ getCardMeta(featuredDevotional) }}
               </p>
               <span class="featured-card__cta">
-                <span>Read devotional</span>
+                <span>Read devotion</span>
                 <ion-icon name="arrow-forward" aria-hidden="true"></ion-icon>
               </span>
             </div>
@@ -105,11 +105,11 @@
         <section
           *ngIf="recentDevotionals.length > 0 || nextPageUrl || loadMoreErrorMessage"
           class="editorial-section"
-          aria-label="Recent Devotionals"
+          aria-label="Recent Devotions"
         >
           <div class="section-heading">
             <div>
-              <p class="section-label cop-eyebrow">Recent Devotionals</p>
+              <p class="section-label cop-eyebrow">Recent Devotions</p>
               <h3>Keep reading</h3>
             </div>
           </div>
@@ -164,7 +164,7 @@
           <div class="caught-up-card cop-card">
             <p class="section-label cop-eyebrow">Caught Up</p>
             <h3>You're all caught up.</h3>
-            <p>Check back soon for the next published devotional.</p>
+            <p>Check back soon for the next published devotion.</p>
           </div>
         </section>
       </div>

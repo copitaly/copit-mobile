@@ -52,8 +52,8 @@
         </button>
       </section>
 
-      <section aria-label="Daily Devotional">
-        <div class="sec-head cop-section-heading"><h2 class="cop-section-heading__title">Daily Devotional</h2></div>
+      <section aria-label="Daily Devotion">
+        <div class="sec-head cop-section-heading"><h2 class="cop-section-heading__title">Daily Devotion</h2></div>
 
         <div *ngIf="todayDevotionalLoading && !hasTodayDevotional" class="mini mini--load cop-card cop-card--compact" data-testid="today-devotional-loading">
           <div class="mini__body">
@@ -80,7 +80,7 @@
           <div class="mini__body cop-reading-body">
             <div class="mini__top">
               <span class="mini__mark" aria-hidden="true"><ion-icon name="book-outline"></ion-icon></span>
-              <span class="mini__cta">Read devotional <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon></span>
+              <span class="mini__cta">Read devotion <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon></span>
             </div>
             <h3 class="mini__title" data-testid="today-devotional-title">{{ getTodayDevotionalTitle() }}</h3>
             <p *ngIf="todayDevotionalScriptureSnippet; else devotionalPreview" class="mini__quote">{{ todayDevotionalScriptureSnippet }}</p>
@@ -98,15 +98,15 @@
         <div *ngIf="todayDevotionalError && !hasTodayDevotional" class="mini mini--state cop-card cop-card--compact" data-testid="today-devotional-error" aria-live="polite">
           <div class="mini__body mini__body--state">
             <p class="muted-copy">{{ todayDevotionalStatusMessage }}</p>
-            <button type="button" class="soft-btn cop-button-secondary" data-testid="today-devotional-retry" aria-label="Retry loading today's devotional" (click)="retryTodayDevotional()">Retry</button>
+            <button type="button" class="soft-btn cop-button-secondary" data-testid="today-devotional-retry" aria-label="Retry loading today's devotion" (click)="retryTodayDevotional()">Retry</button>
           </div>
         </div>
 
         <div *ngIf="todayDevotionalEmpty && !todayDevotionalLoading" class="mini mini--state cop-card cop-card--compact" data-testid="today-devotional-empty" [attr.aria-label]="getEmptyDevotionalAriaLabel()" aria-live="polite">
           <div class="mini__body">
-            <h3>Today's devotional isn't available yet.</h3>
+            <h3>Today's devotion isn't available yet.</h3>
             <p class="muted-copy">Check back later today.</p>
-            <button type="button" class="soft-btn cop-button-secondary" data-testid="today-devotional-browse" aria-label="Browse devotionals" (click)="goToDevotionals()">Browse devotionals</button>
+            <button type="button" class="soft-btn cop-button-secondary" data-testid="today-devotional-browse" aria-label="Browse Devotions" (click)="goToDevotionals()">Browse Devotions</button>
           </div>
         </div>
       </section>

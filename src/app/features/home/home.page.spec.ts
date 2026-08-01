@@ -173,7 +173,7 @@ describe('HomePage', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/tabs/bible-study']);
   });
 
-  it('renders the devotional card below the hero when a devotional is available', async () => {
+  it('renders the devotion card below the hero when a devotion is available', async () => {
     devotionalService.getTodayDevotional.and.returnValue(of(todayDevotional));
 
     fixture = await createComponent();
@@ -181,28 +181,28 @@ describe('HomePage', () => {
       (node) => (node as HTMLElement).textContent?.trim() ?? ''
     );
 
-    expect(sectionLabels).toEqual(['Daily Devotional']);
+    expect(sectionLabels).toEqual(['Daily Devotion']);
     expect(fixture.nativeElement.textContent).toContain('Steady Grace for Today');
     expect(fixture.nativeElement.textContent).toContain('Isaiah 41:10');
     expect(
       fixture.nativeElement.querySelector('[aria-label="Featured Bible Study"]')!.compareDocumentPosition(
-        fixture.nativeElement.querySelector('[aria-label="Daily Devotional"]')
+        fixture.nativeElement.querySelector('[aria-label="Daily Devotion"]')
       ) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
   });
 
-  it('uses the calm devotional card treatment with devotional CTA copy', async () => {
+  it('uses the calm devotion card treatment with devotion CTA copy', async () => {
     devotionalService.getTodayDevotional.and.returnValue(of(todayDevotional));
 
     fixture = await createComponent();
 
-    expect(fixture.nativeElement.textContent).toContain('Daily Devotional');
-    expect(fixture.nativeElement.textContent).toContain('Read devotional');
+    expect(fixture.nativeElement.textContent).toContain('Daily Devotion');
+    expect(fixture.nativeElement.textContent).toContain('Read devotion');
     expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-image"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-card"]')?.className).toContain('cop-card');
   });
 
-  it('opens the devotional detail route from the devotional card', async () => {
+  it('opens the devotion detail route from the devotion card', async () => {
     devotionalService.getTodayDevotional.and.returnValue(of(todayDevotional));
 
     fixture = await createComponent();
@@ -213,7 +213,7 @@ describe('HomePage', () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/devotionals/steady-grace-for-today');
   });
 
-  it('shows a devotional empty state when none is available', async () => {
+  it('shows a devotion empty state when none is available', async () => {
     devotionalService.getTodayDevotional.and.returnValue(
       throwError(() => new HttpErrorResponse({ status: 404 }))
     );
@@ -221,7 +221,7 @@ describe('HomePage', () => {
     fixture = await createComponent();
 
     expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-empty"]')?.textContent).toContain(
-      "Today's devotional isn't available yet."
+      "Today's devotion isn't available yet."
     );
     expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-empty"]')?.textContent).toContain(
       'Check back later today.'
@@ -302,7 +302,7 @@ describe('HomePage', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Upcoming Service');
   });
 
-  it('requests both Bible Study and devotional content without blocking the rest of the page', async () => {
+  it('requests both Bible Study and devotion content without blocking the rest of the page', async () => {
     const devotionalResponse$ = new Subject<DevotionalPublicDetail>();
     devotionalService.getTodayDevotional.and.returnValue(devotionalResponse$.asObservable());
 

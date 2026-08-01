@@ -55,7 +55,7 @@ export class DevotionalDetailPage implements OnInit {
         this.loading = false;
         this.devotional = null;
         this.notFound = false;
-        this.errorMessage = 'Invalid devotional link.';
+        this.errorMessage = 'Invalid devotion link.';
       }
       return;
     }
@@ -131,7 +131,7 @@ export class DevotionalDetailPage implements OnInit {
 
   getCoverImageAlt(): string {
     const title = this.devotional?.title?.trim();
-    return title ? `${title} cover image` : 'Devotional cover preview';
+    return title ? `${title} cover image` : 'Devotion cover preview';
   }
 
   getHeaderMeta(): string {
@@ -183,7 +183,7 @@ export class DevotionalDetailPage implements OnInit {
     const shareTitle = this.devotional.title.trim();
     const shareText = this.buildShareText();
     if (!shareTitle || !shareText) {
-      await this.appToast.error("This devotional can't be shared right now.");
+      await this.appToast.error("This devotion can't be shared right now.");
       return;
     }
 
@@ -203,7 +203,7 @@ export class DevotionalDetailPage implements OnInit {
 
       const copied = await this.copyShareTextToClipboard(shareText);
       if (copied) {
-        await this.appToast.success('Devotional copied to clipboard');
+        await this.appToast.success('Devotion copied to clipboard');
         return;
       }
 
@@ -215,7 +215,7 @@ export class DevotionalDetailPage implements OnInit {
 
       const copied = await this.copyShareTextToClipboard(shareText);
       if (copied) {
-        await this.appToast.success('Devotional copied to clipboard');
+        await this.appToast.success('Devotion copied to clipboard');
         return;
       }
 
@@ -234,7 +234,7 @@ export class DevotionalDetailPage implements OnInit {
       this.normalizeShareValue(this.devotional.title),
       this.normalizeShareValue(this.devotional.scripture_reference),
       this.normalizeShareValue(this.devotional.scripture_text),
-      'Read more daily devotionals in the COP Italy app.',
+      'Read more daily devotions in the COP Italy app.',
     ].filter((value): value is string => !!value);
 
     return sections.join('\n\n');
@@ -295,7 +295,7 @@ export class DevotionalDetailPage implements OnInit {
     await this.nativeShare({
       title,
       text,
-      dialogTitle: 'Share devotional',
+      dialogTitle: 'Share devotion',
     });
   }
 
@@ -353,10 +353,10 @@ export class DevotionalDetailPage implements OnInit {
 
     const message = String((error as { message?: string } | undefined)?.message ?? '').toLowerCase();
     if (message.includes('timeout')) {
-      return 'Loading this devotional timed out. Please try again.';
+      return 'Loading this devotion timed out. Please try again.';
     }
 
-    return "We couldn't load this devotional right now.";
+    return "We couldn't load this devotion right now.";
   }
 
 }

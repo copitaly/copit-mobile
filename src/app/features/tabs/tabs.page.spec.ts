@@ -67,7 +67,7 @@ describe('TabsPage', () => {
     );
   });
 
-  it('marks the Devotionals tab active on the Devotionals tab route', async () => {
+  it('marks the Devotions tab active on the Devotions tab route', async () => {
     await createComponent('/tabs/devotionals');
 
     expect(fixture.nativeElement.querySelector('[data-testid="tab-button-devotionals"]')?.className).toContain(
@@ -173,14 +173,14 @@ describe('Tabs routing', () => {
     expect(route?.redirectTo).toBe('tabs/bible-study');
   });
 
-  it('redirects the legacy /devotionals route to the canonical Devotionals tab route', async () => {
+  it('redirects the legacy /devotionals route to the canonical Devotions tab route', async () => {
     const router = await createRouter();
     const route = router.config.find((item) => item.path === 'devotionals');
 
     expect(route?.redirectTo).toBe('tabs/devotionals');
   });
 
-  it('redirects the legacy devotional detail route to the canonical Devotionals tab detail route', async () => {
+  it('redirects the legacy devotion detail route to the canonical Devotions tab detail route', async () => {
     const router = await createRouter();
     const route = router.config.find((item) => item.path === 'devotionals/:slug');
 

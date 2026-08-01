@@ -97,7 +97,7 @@ describe('DevotionalDetailPage', () => {
     expect(text).toContain('Written by admin admin');
   });
 
-  it('shows a graceful fallback when devotional content is blank', async () => {
+  it('shows a graceful fallback when devotion content is blank', async () => {
     devotionalService.getDevotionalBySlug.and.returnValue(
       of({
         ...devotional,
@@ -168,8 +168,8 @@ describe('DevotionalDetailPage', () => {
     const backButton = fixture.nativeElement.querySelector('ion-back-button') as HTMLElement | null;
     expect(backButton).not.toBeNull();
     expect(backButton?.getAttribute('defaulthref')).toBe('/tabs/devotionals');
-    expect(backButton?.getAttribute('aria-label')).toBe('Back to devotionals');
-    expect(fixture.nativeElement.querySelector('ion-button[aria-label="Share devotional"]')).not.toBeNull();
+    expect(backButton?.getAttribute('aria-label')).toBe('Back to Devotions');
+    expect(fixture.nativeElement.querySelector('ion-button[aria-label="Share devotion"]')).not.toBeNull();
   });
 
   it('does not render its own local tab bar inside the detail page template', async () => {
@@ -212,7 +212,7 @@ describe('DevotionalDetailPage', () => {
       'Written by admin admin'
     );
     expect(fixture.nativeElement.querySelector('.reader-article__footer-share')?.textContent).toContain(
-      'Share this devotional'
+      'Share this devotion'
     );
   });
 
@@ -235,7 +235,7 @@ describe('DevotionalDetailPage', () => {
     await createComponent();
 
     expect(fixture.nativeElement.querySelector('[data-testid="not-found-state"]')?.textContent).toContain(
-      'This devotional is no longer available.'
+      'This devotion is no longer available.'
     );
   });
 
@@ -245,7 +245,7 @@ describe('DevotionalDetailPage', () => {
     await createComponent();
 
     expect(fixture.nativeElement.querySelector('[data-testid="error-state"]')?.textContent).toContain(
-      "We couldn't load this devotional"
+      "We couldn't load this devotion"
     );
 
     page.retryLoad();
@@ -264,11 +264,11 @@ describe('DevotionalDetailPage', () => {
   });
 
   it('shows a timeout-specific error message when the request times out', async () => {
-    devotionalService.getDevotionalBySlug.and.returnValue(throwError(() => new Error('Timeout while loading devotional')));
+    devotionalService.getDevotionalBySlug.and.returnValue(throwError(() => new Error('Timeout while loading devotion')));
 
     await createComponent();
 
-    expect(page.errorMessage).toBe('Loading this devotional timed out. Please try again.');
+    expect(page.errorMessage).toBe('Loading this devotion timed out. Please try again.');
   });
 
   it('prevents overlapping detail reload requests where practical', async () => {
@@ -283,13 +283,13 @@ describe('DevotionalDetailPage', () => {
     response$.complete();
   });
 
-  it('keeps the share button unavailable while the devotional is loading', async () => {
+  it('keeps the share button unavailable while the devotion is loading', async () => {
     const response$ = new Subject<DevotionalPublicDetail>();
     devotionalService.getDevotionalBySlug.and.returnValue(response$.asObservable());
 
     await createComponent();
 
-    const shareButton = fixture.nativeElement.querySelector('ion-button[aria-label="Share devotional"]') as HTMLButtonElement | null;
+    const shareButton = fixture.nativeElement.querySelector('ion-button[aria-label="Share devotion"]') as HTMLButtonElement | null;
     expect(shareButton?.disabled).toBeTrue();
     response$.complete();
   });
@@ -303,7 +303,7 @@ describe('DevotionalDetailPage', () => {
     expect(shareText).toContain('Trusting God in Uncertain Times');
     expect(shareText).toContain('Proverbs 3:5-6');
     expect(shareText).toContain('Trust in the Lord with all your heart. Lean not on your own understanding.');
-    expect(shareText).toContain('Read more daily devotionals in the COP Italy app.');
+    expect(shareText).toContain('Read more daily devotions in the COP Italy app.');
     expect(shareText).not.toContain('When uncertainty rises,');
     expect(shareText).not.toContain('What worry do you need to surrender today?');
     expect(shareText).not.toContain('Lord, keep my heart steady.');
@@ -322,7 +322,7 @@ describe('DevotionalDetailPage', () => {
     await createComponent();
 
     const shareText = page.buildShareText();
-    expect(shareText).toBe('Trusting God in Uncertain Times\n\nRead more daily devotionals in the COP Italy app.');
+    expect(shareText).toBe('Trusting God in Uncertain Times\n\nRead more daily devotions in the COP Italy app.');
   });
 
   it('invokes Capacitor Share on native platforms', async () => {
@@ -336,7 +336,7 @@ describe('DevotionalDetailPage', () => {
     expect(shareSpy).toHaveBeenCalledWith({
       title: 'Trusting God in Uncertain Times',
       text: page.buildShareText(),
-      dialogTitle: 'Share devotional',
+      dialogTitle: 'Share devotion',
     });
   });
 
@@ -405,7 +405,7 @@ describe('DevotionalDetailPage', () => {
     expect(clipboardWriteText).toHaveBeenCalledWith(page.buildShareText());
     expect(toastController.create).toHaveBeenCalledWith(
       jasmine.objectContaining({
-        message: 'Devotional copied to clipboard',
+        message: 'Devotion copied to clipboard',
         cssClass: 'branch-save-toast',
       })
     );
@@ -454,7 +454,7 @@ describe('DevotionalDetailPage', () => {
     await createComponent('   ');
 
     expect(devotionalService.getDevotionalBySlug).not.toHaveBeenCalled();
-    expect(page.errorMessage).toBe('Invalid devotional link.');
+    expect(page.errorMessage).toBe('Invalid devotion link.');
   });
 
   it('formats yyyy-mm-dd publication dates without timezone drift', async () => {

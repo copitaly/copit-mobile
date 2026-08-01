@@ -88,14 +88,14 @@ describe('DevotionalsPage', () => {
     response$.complete();
   });
 
-  it('renders the editorial header and devotional cards with title, scripture reference, author, and publication date', async () => {
+  it('renders the editorial header and devotion cards with title, scripture reference, author, and publication date', async () => {
     devotionalService.getDevotionals.and.returnValue(of(buildResponse([firstDevotional, secondDevotional])));
 
     await createComponent();
 
     const text = fixture.nativeElement.textContent;
     expect(fixture.nativeElement.querySelector('.devotionals-header')).not.toBeNull();
-    expect(text).toContain('Devotionals');
+    expect(text).toContain('Devotions');
     expect(text).toContain('Pause, reflect, and grow through daily Scripture.');
     expect(fixture.nativeElement.querySelector('[data-testid="featured-devotional-card"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelectorAll('[data-testid="devotional-card"]').length).toBe(1);
@@ -147,13 +147,13 @@ describe('DevotionalsPage', () => {
     expect(fixture.nativeElement.querySelector('ion-icon[name="book-outline"]')).not.toBeNull();
   });
 
-  it('renders the friendly empty state when no devotionals are published', async () => {
+  it('renders the friendly empty state when no devotions are published', async () => {
     devotionalService.getDevotionals.and.returnValue(of(buildResponse([])));
 
     await createComponent();
 
     expect(fixture.nativeElement.querySelector('[data-testid="empty-state"]')?.textContent).toContain(
-      'No devotionals have been published yet.'
+      'No devotions have been published yet.'
     );
   });
 
@@ -166,7 +166,7 @@ describe('DevotionalsPage', () => {
     await createComponent();
 
     expect(fixture.nativeElement.querySelector('[data-testid="error-state"]')?.textContent).toContain(
-      "We couldn't load devotionals right now."
+      "We couldn't load devotions right now."
     );
 
     page.retryLoad();
@@ -264,7 +264,7 @@ describe('DevotionalsPage', () => {
 
     expect(page.devotionals.length).toBe(1);
     expect(fixture.nativeElement.querySelector('[data-testid="load-more-error"]')?.textContent).toContain(
-      "We couldn't load more devotionals right now."
+      "We couldn't load more devotions right now."
     );
   });
 
@@ -274,11 +274,11 @@ describe('DevotionalsPage', () => {
     await createComponent();
 
     expect(fixture.nativeElement.querySelector('app-feature-page-shell')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.devotionals-header__eyebrow')?.textContent).toContain('Devotionals');
+    expect(fixture.nativeElement.querySelector('.devotionals-header__eyebrow')?.textContent).toContain('Devotions');
     expect(fixture.nativeElement.querySelector('ion-back-button')).toBeNull();
   });
 
-  it('navigates to the devotional detail route when the featured devotional is tapped', async () => {
+  it('navigates to the devotion detail route when the featured devotion is tapped', async () => {
     devotionalService.getDevotionals.and.returnValue(of(buildResponse([firstDevotional])));
 
     await createComponent();
@@ -290,16 +290,16 @@ describe('DevotionalsPage', () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/devotionals/morning-grace');
   });
 
-  it('renders recent devotionals as an editorial reading list beneath the featured card', async () => {
+  it('renders recent devotions as an editorial reading list beneath the featured card', async () => {
     devotionalService.getDevotionals.and.returnValue(of(buildResponse([firstDevotional, secondDevotional])));
 
     await createComponent();
 
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Featured Devotional');
-    expect(text).toContain('Recent Devotionals');
+    expect(text).toContain('Featured Devotion');
+    expect(text).toContain('Recent Devotions');
     expect(text).toContain('Keep reading');
-    expect(text).toContain('Read devotional');
+    expect(text).toContain('Read devotion');
     expect(fixture.nativeElement.querySelectorAll('[data-testid="devotional-card"]').length).toBe(1);
     expect(fixture.nativeElement.querySelector('[data-testid="featured-devotional-card"]')?.className).toContain('cop-card');
   });
@@ -324,7 +324,7 @@ describe('DevotionalsPage', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="caught-up-state"]')).toBeNull();
   });
 
-  it('prevents duplicate devotional navigation from rapid taps', async () => {
+  it('prevents duplicate devotion navigation from rapid taps', async () => {
     let resolveNavigation: ((value: boolean) => void) | undefined;
     router.navigateByUrl.and.returnValue(
       new Promise<boolean>((resolve) => {
