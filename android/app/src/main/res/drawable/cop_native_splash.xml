@@ -3,8 +3,11 @@
     <item android:drawable="@color/cop_splash_blue" />
 
     <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@drawable/cop_splash_logo" />
+        <inset
+            android:drawable="@drawable/cop_splash_logo"
+            android:insetLeft="30%"
+            android:insetTop="30%"
+            android:insetRight="30%"
+            android:insetBottom="30%" />
     </item>
 </layer-list>

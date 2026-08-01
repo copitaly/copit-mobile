@@ -5,13 +5,20 @@
         <div class="logo-wrap">
           <img src="assets/img/logo.png" alt="COP Italy logo" />
         </div>
-        <div class="text-block">
+        <div class="text-block" [class.text-block--visible]="showSupportingCopy">
           <h1>{{ title }}</h1>
-          <p>{{ tagline }}</p>
+          <p class="tagline" aria-label="Bible Study, Devotions, Prayer, Giving">
+            <span *ngFor="let line of taglineLines">{{ line }}</span>
+          </p>
         </div>
       </div>
 
-      <div *ngIf="showLoadingIndicator" class="loading-indicator" aria-hidden="true">
+      <div
+        *ngIf="showLoadingIndicator"
+        class="loading-indicator"
+        [class.loading-indicator--visible]="showSupportingCopy"
+        aria-hidden="true"
+      >
         <span></span>
         <span></span>
         <span></span>

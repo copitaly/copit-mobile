@@ -35,7 +35,7 @@
  */
 
 :root {
-  --splash-bg: #ffffff;
+  --splash-bg: #051a44;
   --splash-gold: #f3c65c;
   --splash-gold-light: #fdebb0;
   --splash-blue: #002857;
@@ -125,12 +125,21 @@ app-root {
   font-family: var(--ion-font-family);
 }
 
+html {
+  background: var(--splash-bg);
+}
+
 body {
-  background: #F5F6FA;
+  background: var(--splash-bg);
   color: #1A2B4B;
   font-size: var(--app-type-body-size);
   font-weight: var(--app-type-weight-body);
   line-height: var(--app-line-height-body);
+}
+
+ion-app,
+app-root {
+  background: var(--splash-bg);
 }
 
 .cop-page {

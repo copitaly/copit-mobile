@@ -3,20 +3,40 @@
 
 <head>
   <meta charset="utf-8" />
-  <title>Ionic App</title>
+  <title>COPIT</title>
 
   <base href="/" />
 
-  <meta name="color-scheme" content="light dark" />
+  <meta name="color-scheme" content="light" />
   <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="format-detection" content="telephone=no" />
   <meta name="msapplication-tap-highlight" content="no" />
+  <meta name="theme-color" content="#051A44" />
 
   <link rel="icon" type="image/png" href="assets/icon/favicon.png" />
 
   <!-- add to homescreen for ios -->
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <style>
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: #051a44;
+    }
+
+    body,
+    app-root,
+    ion-app {
+      background: #051a44;
+    }
+
+    app-root {
+      display: block;
+      min-height: 100vh;
+    }
+  </style>
 </head>
 
 <body>

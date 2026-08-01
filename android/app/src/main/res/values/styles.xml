@@ -19,7 +19,7 @@
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:windowBackground">@drawable/cop_native_splash</item>
         <item name="windowSplashScreenBackground">@color/cop_splash_blue</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/cop_splash_logo</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/cop_splash_logo_inset</item>
         <item name="windowSplashScreenIconBackgroundColor">@color/cop_splash_icon_bg</item>
         <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>

@@ -39,7 +39,7 @@ ion-content::part(scroll) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: calc(var(--cop-safe-top, env(safe-area-inset-top, 0px)) + 1.5rem) 1.5rem
+  padding: calc(var(--cop-safe-top, env(safe-area-inset-top, 0px)) + 1.25rem) 1.5rem
     calc(var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)) + 1.6rem);
   box-sizing: border-box;
 }
@@ -49,24 +49,33 @@ ion-content::part(scroll) {
   flex-direction: column;
   align-items: center;
   text-align: center;
+  transform: translateY(-1.1rem);
 }
 
 .logo-wrap {
-  width: 178px;
-  height: 178px;
+  width: 172px;
+  height: 172px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .logo-wrap img {
-  width: 168px;
-  height: 168px;
+  width: 162px;
+  height: 162px;
   object-fit: contain;
 }
 
 .text-block {
-  margin-top: 0.15rem;
+  margin-top: 0.2rem;
+  opacity: 0;
+  transform: translateY(0.45rem);
+  transition: opacity 280ms ease, transform 280ms ease;
+}
+
+.text-block--visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .text-block h1 {
@@ -78,12 +87,17 @@ ion-content::part(scroll) {
   line-height: 1.03;
 }
 
-.text-block p {
-  margin: 1rem 0 0;
+.tagline {
+  margin: 1.12rem 0 0;
   font-size: 0.95rem;
   color: rgba(255, 255, 255, 0.88);
   letter-spacing: 0.05em;
   font-weight: 500;
+  line-height: 1.55;
+}
+
+.tagline span {
+  display: block;
 }
 
 .loading-indicator {
@@ -94,6 +108,12 @@ ion-content::part(scroll) {
   display: inline-flex;
   align-items: center;
   gap: 0.42rem;
+  opacity: 0;
+  transition: opacity 280ms ease;
+}
+
+.loading-indicator--visible {
+  opacity: 1;
 }
 
 .loading-indicator span {
@@ -106,16 +126,34 @@ ion-content::part(scroll) {
 
 @media (max-width: 420px) {
   .logo-wrap {
-    width: 168px;
-    height: 168px;
+    width: 162px;
+    height: 162px;
   }
 
   .logo-wrap img {
-    width: 158px;
-    height: 158px;
+    width: 152px;
+    height: 152px;
   }
 
   .text-block h1 {
     font-size: 2.38rem;
+  }
+}
+
+@media (min-width: 460px) {
+  .tagline span {
+    display: inline;
+  }
+
+  .tagline span + span::before {
+    content: ' ';
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .text-block,
+  .loading-indicator {
+    transition-duration: 120ms;
+    transform: none;
   }
 }
