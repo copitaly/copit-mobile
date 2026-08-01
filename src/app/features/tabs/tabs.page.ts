@@ -129,7 +129,7 @@ export class TabsPage {
     },
     {
       key: 'bible-study',
-      label: 'Bible',
+      label: 'Study',
       route: '/tabs/bible-study',
       activePrefix: '/tabs/bible-study',
       inactiveIcon: 'book-outline',
