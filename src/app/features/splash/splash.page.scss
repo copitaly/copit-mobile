@@ -1,12 +1,12 @@
-﻿:host {
+:host {
   display: block;
   height: 100%;
-  --splash-bg-top: #1b2f5b;
-  --splash-bg-bottom: #051a44;
+  --splash-bg: #051a44;
+  --splash-glow: rgba(240, 198, 105, 0.14);
 }
 
 .splash-content {
-  --background: linear-gradient(180deg, var(--splash-bg-top), var(--splash-bg-bottom));
+  --background: var(--splash-bg);
   background: var(--background);
   min-height: 100vh;
   display: flex;
@@ -25,8 +25,7 @@ ion-content::part(scroll) {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 40%, rgba(240, 198, 105, 0.35), transparent 55%);
-  opacity: 0.6;
+  background: radial-gradient(circle at 50% 34%, var(--splash-glow), transparent 34%);
   pointer-events: none;
 }
 
@@ -37,42 +36,37 @@ ion-content::part(scroll) {
   max-width: 420px;
   height: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  transform: translateY(-3.2vh);
+  padding: calc(var(--cop-safe-top, env(safe-area-inset-top, 0px)) + 1.5rem) 1.5rem
+    calc(var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)) + 1.6rem);
+  box-sizing: border-box;
 }
 
 .splash-stack {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
   text-align: center;
 }
 
 .logo-wrap {
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
+  width: 178px;
+  height: 178px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.2rem;
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
-  animation: haloPulse 2.6s ease infinite;
 }
 
 .logo-wrap img {
-  width: 140px;
-  height: 140px;
+  width: 168px;
+  height: 168px;
   object-fit: contain;
-  animation: logoFloat 1.8s ease-in-out infinite;
 }
 
 .text-block {
-  opacity: 0;
-  animation: textFade 1.4s ease 0.35s forwards;
+  margin-top: 0.15rem;
 }
 
 .text-block h1 {
@@ -81,50 +75,47 @@ ion-content::part(scroll) {
   color: #ffffff;
   font-weight: 600;
   letter-spacing: 0.01em;
+  line-height: 1.03;
 }
 
 .text-block p {
-  margin: 0;
+  margin: 1rem 0 0;
   font-size: 0.95rem;
   color: rgba(255, 255, 255, 0.88);
   letter-spacing: 0.05em;
   font-weight: 500;
 }
 
-@keyframes haloPulse {
-  0% {
-    transform: scale(0.98);
-    opacity: 0.85;
-  }
-  50% {
-    transform: scale(1.02);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(0.98);
-    opacity: 0.85;
-  }
+.loading-indicator {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)) + 1.8rem);
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
 }
 
-@keyframes logoFloat {
-  0% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-4px);
-  }
-  100% {
-    transform: translateY(0);
-  }
+.loading-indicator span {
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
-@keyframes textFade {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
+@media (max-width: 420px) {
+  .logo-wrap {
+    width: 168px;
+    height: 168px;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+  .logo-wrap img {
+    width: 158px;
+    height: 158px;
+  }
+
+  .text-block h1 {
+    font-size: 2.38rem;
   }
 }

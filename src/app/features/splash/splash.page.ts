@@ -4,7 +4,8 @@ import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
 
 const APP_TITLE = 'C.O.P Italy';
-const TAGLINE = 'Giving • Prayer • Events • Devotions';
+const TAGLINE = 'Bible Study • Devotions • Prayer • Giving';
+const LOADING_INDICATOR_DELAY_MS = 1000;
 const SPLASH_DURATION_MS = 5000;
 
 @Component({
@@ -17,7 +18,11 @@ const SPLASH_DURATION_MS = 5000;
 export class SplashPage implements OnDestroy {
   readonly title = APP_TITLE;
   readonly tagline = TAGLINE;
+
+  showLoadingIndicator = false;
+
   private timer?: ReturnType<typeof setTimeout>;
+  private loadingIndicatorTimer?: ReturnType<typeof setTimeout>;
   private navigationStarted = false;
 
   constructor(private readonly router: Router) {}
@@ -28,6 +33,12 @@ export class SplashPage implements OnDestroy {
     }
 
     this.navigationStarted = true;
+    this.showLoadingIndicator = false;
+
+    this.loadingIndicatorTimer = setTimeout(() => {
+      this.showLoadingIndicator = true;
+    }, LOADING_INDICATOR_DELAY_MS);
+
     this.timer = setTimeout(() => {
       this.router.navigate(['/tabs/home'], { replaceUrl: true });
     }, SPLASH_DURATION_MS);
@@ -38,6 +49,11 @@ export class SplashPage implements OnDestroy {
       clearTimeout(this.timer);
     }
 
+    if (this.loadingIndicatorTimer) {
+      clearTimeout(this.loadingIndicatorTimer);
+    }
+
     this.navigationStarted = false;
+    this.showLoadingIndicator = false;
   }
 }
