@@ -43,7 +43,7 @@ describe('TabsPage', () => {
       (node) => (node as HTMLElement).textContent?.trim() ?? ''
     );
 
-    expect(labels).toEqual(['Home', 'Study', 'Devotions', 'Donate', 'Profile']);
+    expect(labels).toEqual(['Home', 'Study', 'Daily', 'Donate', 'Profile']);
   });
 
   it('uses ion-tabs as the shell root so the routed outlet is not wrapped in an extra ion-page layer', async () => {

@@ -137,7 +137,7 @@ export class TabsPage {
     },
     {
       key: 'devotionals',
-      label: 'Devotions',
+      label: 'Daily',
       route: '/tabs/devotionals',
       activePrefix: '/tabs/devotionals',
       inactiveIcon: 'reader-outline',
