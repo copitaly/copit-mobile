@@ -120,7 +120,8 @@
 html,
 body,
 ion-app,
-app-root {
+app-root,
+ion-router-outlet {
   min-height: 100%;
   font-family: var(--ion-font-family);
 }
@@ -138,7 +139,8 @@ body {
 }
 
 ion-app,
-app-root {
+app-root,
+ion-router-outlet {
   background: var(--splash-bg);
 }
 

@@ -1,7 +1,8 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy } from '@angular/core';
+import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
+import { StartupSplashService } from '../../core/services/startup-splash.service';
 
 const APP_TITLE = 'C.O.P Italy';
 const TAGLINE_LINES = ['Bible Study • Devotions', 'Prayer • Giving'];
@@ -16,19 +17,25 @@ const SUPPORTING_COPY_REVEAL_DELAY_MS = 120;
   styleUrls: ['./splash.page.scss'],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
-export class SplashPage implements OnDestroy {
+export class SplashPage implements AfterViewInit, OnDestroy {
   readonly title = APP_TITLE;
   readonly taglineLines = TAGLINE_LINES;
 
   showLoadingIndicator = false;
   showSupportingCopy = false;
 
+  private readonly startupSplash = inject(StartupSplashService);
   private timer?: ReturnType<typeof setTimeout>;
   private loadingIndicatorTimer?: ReturnType<typeof setTimeout>;
   private supportingCopyTimer?: ReturnType<typeof setTimeout>;
   private navigationStarted = false;
 
   constructor(private readonly router: Router) {}
+
+  ngAfterViewInit(): void {
+    this.startupSplash.markBrandedSplashMounted();
+    this.waitForFirstPaint();
+  }
 
   ionViewDidEnter(): void {
     if (this.navigationStarted) {
@@ -68,5 +75,13 @@ export class SplashPage implements OnDestroy {
     this.navigationStarted = false;
     this.showLoadingIndicator = false;
     this.showSupportingCopy = false;
+  }
+
+  private waitForFirstPaint(): void {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.startupSplash.markBrandedSplashPaintReady();
+      });
+    });
   }
 }

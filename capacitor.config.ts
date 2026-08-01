@@ -15,6 +15,16 @@ const config: CapacitorConfig = {
   appId: 'com.peniel.platform',
   appName: 'COP Italy',
   webDir: 'www',
+  plugins: {
+    SplashScreen: {
+      launchAutoHide: false,
+      fadeOutDuration: 220,
+      backgroundColor: '#051A44',
+      androidSplashResourceName: 'cop_native_splash',
+      androidScaleType: 'CENTER_INSIDE',
+      showSpinner: false,
+    },
+  },
   server: {
     hostname: FIXED_WEBVIEW_HOSTNAME,
     androidScheme: FIXED_ANDROID_SCHEME,
