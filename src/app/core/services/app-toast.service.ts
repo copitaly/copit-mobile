@@ -8,10 +8,10 @@ interface AppToastOptions {
 }
 
 const DEFAULT_DURATIONS: Record<AppToastTone, number> = {
-  success: 2000,
+  success: 2500,
   info: 2500,
   warning: 3000,
-  error: 4000,
+  error: 3000,
 };
 
 const DEFAULT_ICONS: Record<AppToastTone, string> = {
@@ -40,7 +40,7 @@ function buildToastEnterAnimation(baseEl: HTMLElement): Animation {
     .duration(180)
     .easing('cubic-bezier(0.2, 0.8, 0.2, 1)')
     .fromTo('opacity', '0', '1')
-    .fromTo('transform', 'translateY(-12px)', 'translateY(0)');
+    .fromTo('transform', 'translateY(12px)', 'translateY(0)');
 }
 
 function buildToastLeaveAnimation(baseEl: HTMLElement): Animation {
@@ -81,10 +81,16 @@ export class AppToastService {
         await activeToast.dismiss();
       }
 
+      const positionAnchor =
+        (document.querySelector('[data-testid="tabs-bar"]') as HTMLElement | null) ??
+        (document.querySelector('ion-tab-bar.app-tabs__bar') as HTMLElement | null) ??
+        undefined;
+
       const toast = await this.toastController.create({
         message,
         duration: options?.duration ?? DEFAULT_DURATIONS[tone],
-        position: 'top',
+        position: 'bottom',
+        positionAnchor,
         icon: DEFAULT_ICONS[tone],
         cssClass: ['app-toast', `app-toast--${tone}`],
         enterAnimation: buildToastEnterAnimation,

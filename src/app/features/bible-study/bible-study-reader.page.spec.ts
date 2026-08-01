@@ -328,7 +328,9 @@ describe('BibleStudyReaderPage', () => {
     expect(toastController.create).toHaveBeenCalledWith(
       jasmine.objectContaining({
         message: 'manual.pdf is ready from your device share sheet.',
-        icon: 'checkmark-circle-outline',
+        position: 'bottom',
+        icon: 'checkmark-circle',
+        cssClass: ['app-toast', 'app-toast--success'],
       })
     );
   });

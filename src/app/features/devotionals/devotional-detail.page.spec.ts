@@ -406,7 +406,8 @@ describe('DevotionalDetailPage', () => {
     expect(toastController.create).toHaveBeenCalledWith(
       jasmine.objectContaining({
         message: 'Devotion copied to clipboard',
-        cssClass: 'branch-save-toast',
+        position: 'bottom',
+        cssClass: ['app-toast', 'app-toast--success'],
       })
     );
   });
@@ -431,7 +432,8 @@ describe('DevotionalDetailPage', () => {
     expect(toastController.create).toHaveBeenCalledWith(
       jasmine.objectContaining({
         message: "Sharing isn't available right now.",
-        cssClass: 'branch-save-toast',
+        position: 'bottom',
+        cssClass: ['app-toast', 'app-toast--error'],
       })
     );
   });

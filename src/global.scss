@@ -2615,12 +2615,13 @@ ion-modal.donate-branch-sheet-modal {
 
 ion-toast.app-toast {
   --background: transparent;
-  --color: #082356;
+  --color: #ffffff;
   --border-radius: 16px;
   --box-shadow: none;
   --width: min(calc(100vw - 2rem), 24rem);
   --max-width: 24rem;
-  top: calc(var(--cop-safe-top, env(safe-area-inset-top, 0px)) + 4.35rem);
+  bottom: calc(var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)) + 0.9rem);
+  top: auto;
 }
 
 ion-toast.app-toast::part(container) {
@@ -2634,47 +2635,32 @@ ion-toast.app-toast::part(message) {
   font-size: 0.94rem;
   font-weight: 600;
   line-height: 1.4;
-  color: #082356;
+  color: #ffffff;
 }
 
 ion-toast.app-toast::part(icon) {
   font-size: 1rem;
+  color: #ffffff;
 }
 
 ion-toast.app-toast--success::part(container) {
-  background: #eaf8f0;
-  border-color: rgba(62, 143, 96, 0.16);
-}
-
-ion-toast.app-toast--success::part(icon) {
-  color: #2f8a56;
+  background: #2f8a56;
+  border-color: rgba(47, 138, 86, 0.92);
 }
 
 ion-toast.app-toast--error::part(container) {
-  background: #fdeeee;
-  border-color: rgba(191, 67, 78, 0.16);
-}
-
-ion-toast.app-toast--error::part(icon) {
-  color: #c03d49;
+  background: #c03d49;
+  border-color: rgba(192, 61, 73, 0.92);
 }
 
 ion-toast.app-toast--warning::part(container) {
-  background: #fff4dd;
-  border-color: rgba(205, 145, 32, 0.16);
-}
-
-ion-toast.app-toast--warning::part(icon) {
-  color: #b77a12;
+  background: #c98310;
+  border-color: rgba(201, 131, 16, 0.92);
 }
 
 ion-toast.app-toast--info::part(container) {
-  background: #edf5ff;
-  border-color: rgba(55, 108, 188, 0.16);
-}
-
-ion-toast.app-toast--info::part(icon) {
-  color: #2f62b8;
+  background: #2f62b8;
+  border-color: rgba(47, 98, 184, 0.92);
 }
 
 app-profile ion-content.profile-content {
