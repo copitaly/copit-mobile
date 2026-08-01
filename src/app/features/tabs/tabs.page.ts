@@ -52,44 +52,58 @@ type PrimaryTab = {
         --background: rgba(255, 255, 255, 0.98);
         --border: 1px solid rgba(3, 23, 63, 0.08);
         padding:
-          0.35rem
-          calc(var(--cop-safe-right, env(safe-area-inset-right, 0px)) + 0.65rem)
-          max(var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)), 0.18rem)
-          calc(var(--cop-safe-left, env(safe-area-inset-left, 0px)) + 0.65rem);
+          0.28rem
+          calc(var(--cop-safe-right, env(safe-area-inset-right, 0px)) + 0.5rem)
+          max(var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)), 0px)
+          calc(var(--cop-safe-left, env(safe-area-inset-left, 0px)) + 0.5rem);
         border-top: 1px solid rgba(3, 23, 63, 0.08);
-        box-shadow: 0 -8px 28px rgba(6, 21, 74, 0.08);
+        box-shadow: 0 -6px 22px rgba(6, 21, 74, 0.08);
         display: flex;
         align-items: stretch;
         justify-content: space-between;
-        column-gap: 0.15rem;
+        column-gap: 0;
       }
 
       .app-tabs__button {
         --color: rgba(3, 23, 63, 0.5);
         --color-selected: #0b1d73;
-        --padding-top: 0.34rem;
-        --padding-bottom: 0.26rem;
-        min-height: 54px;
-        border-radius: 16px;
-        font-size: 0.72rem;
-        font-weight: 600;
+        --padding-top: 0.36rem;
+        --padding-bottom: 0.3rem;
+        min-height: 48px;
+        border-radius: 14px;
+        font-size: 0.79rem;
+        font-weight: 500;
         letter-spacing: 0.01em;
         transition: background-color 160ms ease, color 160ms ease;
-        flex: 1 1 0;
+        flex: 0 0 20%;
+        width: 20%;
+        max-width: 20%;
         min-width: 0;
         margin: 0;
         display: flex;
         align-items: center;
         justify-content: center;
         overflow: visible;
+        box-sizing: border-box;
       }
 
       .app-tabs__button--active {
         background: rgba(11, 29, 115, 0.08);
+        margin-inline: 0.28rem;
       }
 
       .app-tabs__icon {
-        font-size: 1.22rem;
+        font-size: 1.16rem;
+        margin-bottom: 0.1rem;
+      }
+
+      ion-tab-button ion-label {
+        font-size: 0.79rem;
+        font-weight: 500;
+        line-height: 1.15;
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: clip;
       }
     `,
   ],
@@ -115,7 +129,7 @@ export class TabsPage {
     },
     {
       key: 'bible-study',
-      label: 'Bible Study',
+      label: 'Bible',
       route: '/tabs/bible-study',
       activePrefix: '/tabs/bible-study',
       inactiveIcon: 'book-outline',
@@ -123,7 +137,7 @@ export class TabsPage {
     },
     {
       key: 'devotionals',
-      label: 'Devotionals',
+      label: 'Devotions',
       route: '/tabs/devotionals',
       activePrefix: '/tabs/devotionals',
       inactiveIcon: 'reader-outline',
