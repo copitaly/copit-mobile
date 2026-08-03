@@ -3,6 +3,7 @@ import { SecurityContext } from '@angular/core';
 import { fakeAsync, flushMicrotasks, ComponentFixture, TestBed, tick } from '@angular/core/testing';
 import { DomSanitizer } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { Capacitor } from '@capacitor/core';
 import { ToastController } from '@ionic/angular';
 import { of, throwError } from 'rxjs';
 
@@ -68,6 +69,8 @@ describe('BibleStudyReaderPage', () => {
   }
 
   beforeEach(() => {
+    spyOn(Capacitor, 'isNativePlatform').and.returnValue(false);
+    spyOn(Capacitor, 'getPlatform').and.returnValue('web');
     bibleStudyService = jasmine.createSpyObj<BibleStudyService>('BibleStudyService', [
       'getPublishedManualDetail',
       'normalizeDocumentUrl',
@@ -343,6 +346,40 @@ describe('BibleStudyReaderPage', () => {
     await page.openPdfExternally();
 
     expect(externalBrowserService.openUrl).toHaveBeenCalledWith('https://example.com/manual.pdf?X-Amz-Signature=fresh');
+  });
+
+  it('keeps native Android launches in a loading state, opens externally, and removes the reader from history', async () => {
+    (Capacitor.isNativePlatform as jasmine.Spy).and.returnValue(true);
+    (Capacitor.getPlatform as jasmine.Spy).and.returnValue('android');
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+    externalBrowserService.openUrl.and.returnValue(Promise.resolve());
+
+    await createComponent();
+    await Promise.resolve();
+
+    expect(page.viewerState).toBe('loading');
+    expect(page.errorKind).toBe('none');
+    expect(fixture.nativeElement.querySelector('[data-testid="reader-pdf-error-state"]')).toBeNull();
+    expect(externalBrowserService.openUrl).toHaveBeenCalledWith('https://example.com/manual.pdf?X-Amz-Signature=fresh');
+    expect(stackNavigationService.backWithFallback).toHaveBeenCalledWith('/tabs/bible-study');
+  });
+
+  it('shows the unavailable state only when automatic native Android launch fails', async () => {
+    (Capacitor.isNativePlatform as jasmine.Spy).and.returnValue(true);
+    (Capacitor.getPlatform as jasmine.Spy).and.returnValue('android');
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+    externalBrowserService.openUrl.and.returnValue(Promise.reject(new Error('no viewer')));
+
+    await createComponent();
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    expect(page.viewerState).toBe('error');
+    expect(page.errorKind).toBe('pdf-unavailable');
+    expect(fixture.nativeElement.querySelector('[data-testid="reader-pdf-error-state"]')?.textContent).toContain(
+      'We could not open this PDF on your device right now.'
+    );
+    expect(stackNavigationService.backWithFallback).not.toHaveBeenCalled();
   });
 
   it('keeps download and open externally in the pdf error state', async () => {

@@ -116,7 +116,6 @@ export class BibleStudyReaderPage implements OnDestroy {
         this.errorMessage = '';
 
         if (this.usesNativeExternalViewer) {
-          this.setErrorState('pdf-unavailable', 'This PDF opens in your device viewer for the best reading experience.');
           void this.openPdfExternally(true);
           return;
         }
@@ -219,9 +218,13 @@ export class BibleStudyReaderPage implements OnDestroy {
 
     try {
       await this.externalBrowserService.openUrl(this.pdfSourceUrl);
+      if (isAutomatic) {
+        await this.exitNativeLaunchSurface();
+      }
     } catch {
       if (isAutomatic) {
         this.nativeViewerOpenedForRequest = false;
+        this.setErrorState('pdf-unavailable', 'We could not open this PDF on your device right now.');
       }
       await this.appToast.error('We could not open this PDF outside the app right now.');
     }
@@ -288,7 +291,7 @@ export class BibleStudyReaderPage implements OnDestroy {
   }
 
   get usesNativeExternalViewer(): boolean {
-    return Capacitor.isNativePlatform();
+    return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
   }
 
   private startIframeLoadTimeout(): void {
@@ -351,6 +354,14 @@ export class BibleStudyReaderPage implements OnDestroy {
     this.viewerState = 'error';
     this.errorKind = kind;
     this.errorMessage = message;
+  }
+
+  private async exitNativeLaunchSurface(): Promise<void> {
+    if (!this.isViewActive) {
+      return;
+    }
+
+    await this.stackNavigation.backWithFallback('/tabs/bible-study');
   }
 
   private async loadFreshManual(id: number): Promise<BibleStudyManualDetail> {
