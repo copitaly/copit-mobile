@@ -243,12 +243,6 @@ export class ProfilePage implements OnInit, OnDestroy {
       title: 'Prayer & Care',
       actions: [
         {
-          title: 'Prayer',
-          subtitle: 'Share a request or pray with the community',
-          icon: 'heart-outline',
-          route: '/prayer',
-        },
-        {
           title: 'My Prayer Requests',
           subtitle: 'Review your submitted prayer history',
           icon: 'chatbubbles-outline',

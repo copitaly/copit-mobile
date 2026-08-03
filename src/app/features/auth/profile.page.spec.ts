@@ -174,6 +174,7 @@ describe('ProfilePage', () => {
     await createComponent();
 
     expect(fixture.nativeElement.textContent).toContain('My Prayer Requests');
+    expect(fixture.nativeElement.textContent).not.toContain('Share a request or pray with the community');
   });
 
   it('hides member-only prayer history when the resolved role is not member', async () => {
@@ -438,9 +439,9 @@ describe('ProfilePage', () => {
 
     await createComponent();
 
-    const prayerButton = fixture.nativeElement.querySelector('[data-testid="prayer"]') as HTMLButtonElement | null;
-    prayerButton?.click();
-    prayerButton?.click();
+    const requestsButton = fixture.nativeElement.querySelector('[data-testid="my-prayer-requests"]') as HTMLButtonElement | null;
+    requestsButton?.click();
+    requestsButton?.click();
 
     expect(router.navigateByUrl.calls.count()).toBe(1);
     resolveNavigation?.(true);
