@@ -27,6 +27,8 @@ export interface SetLocaleOptions {
   source?: LocaleSource;
 }
 
+export type TranslationParams = Record<string, string | number | null | undefined>;
+
 @Injectable({ providedIn: 'root' })
 export class LocaleService {
   private readonly resources: Record<SupportedLanguageCode, TranslationTree> = {
@@ -118,17 +120,17 @@ export class LocaleService {
     return this.lastAppliedSource;
   }
 
-  translate(key: string): string {
+  translate(key: string, params?: TranslationParams): string {
     const currentMessages = this.activeMessagesSubject.value;
     const currentValue = this.getNestedValue(currentMessages, key);
     if (typeof currentValue === 'string') {
-      return currentValue;
+      return this.interpolate(currentValue, params);
     }
 
     const fallbackValue = this.getNestedValue(this.resources[FALLBACK_LANGUAGE], key);
     if (typeof fallbackValue === 'string') {
       this.warnMissingKey(key, this.localeSubject.value);
-      return fallbackValue;
+      return this.interpolate(fallbackValue, params);
     }
 
     this.warnMissingKey(key, this.localeSubject.value);
@@ -185,5 +187,16 @@ export class LocaleService {
 
     this.warnedMissingKeys.add(warningKey);
     console.warn(`[LocaleService] Missing translation for "${key}" in locale "${locale}".`);
+  }
+
+  private interpolate(template: string, params?: TranslationParams): string {
+    if (!params) {
+      return template;
+    }
+
+    return template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_match, token: string) => {
+      const value = params[token];
+      return value === null || value === undefined ? '' : String(value);
+    });
   }
 }

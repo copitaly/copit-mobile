@@ -2,24 +2,23 @@ import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, inject } f
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { StartupSplashService } from '../../core/services/startup-splash.service';
 
 const APP_TITLE = 'C.O.P Italy';
-const TAGLINE_LINES = ['Bible Study • Devotions', 'Prayer • Giving'];
 const LOADING_INDICATOR_DELAY_MS = 1000;
 const SPLASH_DURATION_MS = 5000;
 const SUPPORTING_COPY_REVEAL_DELAY_MS = 120;
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonicModule, TranslatePipe],
   templateUrl: './splash.page.html',
   styleUrls: ['./splash.page.scss'],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class SplashPage implements AfterViewInit, OnDestroy {
   readonly title = APP_TITLE;
-  readonly taglineLines = TAGLINE_LINES;
 
   showLoadingIndicator = false;
   showSupportingCopy = false;

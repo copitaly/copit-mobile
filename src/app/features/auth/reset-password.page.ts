@@ -5,6 +5,8 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors } f
 import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { PasswordResetValidateResponse } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
@@ -12,7 +14,8 @@ import {
   AUTH_PASSWORD_MIN_LENGTH,
   extractErrorDetail,
   extractFirstFieldError,
-  getAuthNetworkMessage,
+  getAuthTranslatedNetworkMessage,
+  mapKnownAuthError,
   passwordStrengthValidator,
   trimmedRequiredValidator,
 } from './auth-form.utils';
@@ -21,7 +24,7 @@ type ResetViewState = 'loading' | 'valid' | 'invalid' | 'expired' | 'success';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, ReactiveFormsModule, IonicModule, MobileHeaderComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-reset-password',
   template: `
@@ -29,7 +32,7 @@ type ResetViewState = 'loading' | 'valid' | 'invalid' | 'expired' | 'success';
       <ion-content fullscreen class="auth-content">
         <div class="auth-hero app-header app-header--inner">
           <app-mobile-header
-            title="Reset password"
+            [title]="'auth.resetPasswordTitle' | t"
             [subtitle]="headerSubtitle"
             fallbackRoute="/login"
           ></app-mobile-header>
@@ -41,60 +44,60 @@ type ResetViewState = 'loading' | 'valid' | 'invalid' | 'expired' | 'success';
               <ng-container [ngSwitch]="state">
                 <div *ngSwitchCase="'loading'" class="status-copy status-copy--loading">
                   <ion-spinner name="crescent"></ion-spinner>
-                  <h2>Checking your reset link</h2>
-                  <p>Please wait while we verify this password reset request.</p>
+                  <h2>{{ 'auth.checkingResetLinkTitle' | t }}</h2>
+                  <p>{{ 'auth.checkingResetLinkMessage' | t }}</p>
                 </div>
 
                 <div *ngSwitchCase="'invalid'" class="status-copy">
-                  <h2>Reset link unavailable</h2>
-                  <p>{{ stateMessage || 'This password reset link is invalid or expired.' }}</p>
+                  <h2>{{ 'auth.resetLinkUnavailableTitle' | t }}</h2>
+                  <p>{{ stateMessage || ('auth.invalidResetLinkMessage' | t) }}</p>
                   <div class="action-stack">
                     <ion-button expand="block" class="auth-submit" (click)="goToForgotPassword()">
-                      Request a new link
+                      {{ 'auth.requestNewLink' | t }}
                     </ion-button>
                     <button type="button" class="auth-link auth-link--center" (click)="goToLogin()">
-                      Go to login
+                      {{ 'auth.goToLogin' | t }}
                     </button>
                   </div>
                 </div>
 
                 <div *ngSwitchCase="'expired'" class="status-copy">
-                  <h2>Reset link expired</h2>
-                  <p>{{ stateMessage || 'This password reset link has expired. Request a new one to continue.' }}</p>
+                  <h2>{{ 'auth.resetLinkExpiredTitle' | t }}</h2>
+                  <p>{{ stateMessage || ('auth.expiredResetLinkMessage' | t) }}</p>
                   <div class="action-stack">
                     <ion-button expand="block" class="auth-submit" (click)="goToForgotPassword()">
-                      Request a new link
+                      {{ 'auth.requestNewLink' | t }}
                     </ion-button>
                     <button type="button" class="auth-link auth-link--center" (click)="goToLogin()">
-                      Go to login
+                      {{ 'auth.goToLogin' | t }}
                     </button>
                   </div>
                 </div>
 
                 <div *ngSwitchCase="'success'" class="status-copy">
-                  <h2>Password updated</h2>
-                  <p>Your password has been reset successfully. Sign in with your new password.</p>
+                  <h2>{{ 'auth.passwordUpdatedTitle' | t }}</h2>
+                  <p>{{ 'auth.passwordUpdatedMessage' | t }}</p>
                   <ion-button expand="block" class="auth-submit" (click)="goToLogin()">
-                    Go to login
+                    {{ 'auth.goToLogin' | t }}
                   </ion-button>
                 </div>
 
                 <form *ngSwitchCase="'valid'" [formGroup]="form" (ngSubmit)="submit()" class="auth-form" novalidate>
                   <div class="status-copy status-copy--inline">
                     <p *ngIf="maskedRecipient">
-                      Resetting password for <strong>{{ maskedRecipient }}</strong>
+                      {{ 'auth.resettingPasswordFor' | t:{ recipient: maskedRecipient } }}
                     </p>
-                    <p *ngIf="expiresAtDisplay">Link available until {{ expiresAtDisplay }}</p>
+                    <p *ngIf="expiresAtDisplay">{{ 'auth.resetLinkAvailableUntil' | t:{ date: expiresAtDisplay } }}</p>
                   </div>
 
                   <div class="field-group">
-                    <label class="auth-label" for="reset-password">New password</label>
+                    <label class="auth-label" for="reset-password">{{ 'auth.newPassword' | t }}</label>
                     <ion-item fill="solid" class="auth-field">
                       <ion-input
                         id="reset-password"
                         formControlName="new_password"
                         [type]="showNewPassword ? 'text' : 'password'"
-                        placeholder="Enter your new password"
+                        [placeholder]="'auth.newPasswordPlaceholder' | t"
                         autocomplete="new-password"
                         autocapitalize="off"
                         autocorrect="off"
@@ -111,20 +114,22 @@ type ResetViewState = 'loading' | 'valid' | 'invalid' | 'expired' | 'success';
                         <ion-icon [name]="showNewPassword ? 'eye-off-outline' : 'eye-outline'" aria-hidden="true"></ion-icon>
                       </button>
                     </ion-item>
-                    <p class="field-error" *ngIf="showNewPasswordRequiredError" aria-live="polite">Enter a new password.</p>
+                    <p class="field-error" *ngIf="showNewPasswordRequiredError" aria-live="polite">
+                      {{ 'validation.newPasswordRequired' | t }}
+                    </p>
                     <p class="field-error" *ngIf="showNewPasswordLengthError" aria-live="polite">
-                      Use at least {{ passwordMinLength }} characters.
+                      {{ 'validation.passwordTooShort' | t:{ count: passwordMinLength } }}
                     </p>
                   </div>
 
                   <div class="field-group">
-                    <label class="auth-label" for="reset-confirm-password">Confirm new password</label>
+                    <label class="auth-label" for="reset-confirm-password">{{ 'auth.confirmNewPassword' | t }}</label>
                     <ion-item fill="solid" class="auth-field">
                       <ion-input
                         id="reset-confirm-password"
                         formControlName="confirm_password"
                         [type]="showConfirmPassword ? 'text' : 'password'"
-                        placeholder="Confirm your new password"
+                        [placeholder]="'auth.confirmNewPasswordPlaceholder' | t"
                         autocomplete="new-password"
                         autocapitalize="off"
                         autocorrect="off"
@@ -141,8 +146,12 @@ type ResetViewState = 'loading' | 'valid' | 'invalid' | 'expired' | 'success';
                         <ion-icon [name]="showConfirmPassword ? 'eye-off-outline' : 'eye-outline'" aria-hidden="true"></ion-icon>
                       </button>
                     </ion-item>
-                    <p class="field-error" *ngIf="showConfirmRequiredError" aria-live="polite">Confirm your new password.</p>
-                    <p class="field-error" *ngIf="showPasswordMismatchError" aria-live="polite">Your passwords do not match.</p>
+                    <p class="field-error" *ngIf="showConfirmRequiredError" aria-live="polite">
+                      {{ 'validation.confirmNewPasswordRequired' | t }}
+                    </p>
+                    <p class="field-error" *ngIf="showPasswordMismatchError" aria-live="polite">
+                      {{ 'validation.passwordMismatch' | t }}
+                    </p>
                   </div>
 
                   <div class="auth-feedback" [class.auth-feedback--visible]="!!inlineMessage" aria-live="polite">
@@ -153,7 +162,7 @@ type ResetViewState = 'loading' | 'valid' | 'invalid' | 'expired' | 'success';
 
                   <ion-button expand="block" type="submit" class="auth-submit" [disabled]="!canSubmit">
                     <ion-spinner *ngIf="submitting" slot="start" name="crescent"></ion-spinner>
-                    <span>{{ submitting ? 'Updating password...' : 'Reset password' }}</span>
+                    <span>{{ submitting ? ('auth.updatingPassword' | t) : ('auth.resetPasswordAction' | t) }}</span>
                   </ion-button>
                 </form>
               </ng-container>
@@ -409,20 +418,21 @@ export class ResetPasswordPage implements OnInit {
     private readonly authService: AuthService,
     private readonly activatedRoute: ActivatedRoute,
     private readonly formBuilder: FormBuilder,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly localeService: LocaleService
   ) {}
 
   get headerSubtitle(): string {
     if (this.state === 'success') {
-      return 'Your password is ready to use';
+      return this.localeService.translate('auth.passwordReadySubtitle');
     }
     if (this.state === 'loading') {
-      return 'Verifying your reset link';
+      return this.localeService.translate('auth.verifyingResetLinkSubtitle');
     }
     if (this.state === 'valid') {
-      return 'Choose a new password';
+      return this.localeService.translate('auth.chooseNewPasswordSubtitle');
     }
-    return 'Request a new link if this one is no longer available';
+    return this.localeService.translate('auth.requestNewLinkSubtitle');
   }
 
   get canSubmit(): boolean {
@@ -450,11 +460,15 @@ export class ResetPasswordPage implements OnInit {
   }
 
   get newPasswordToggleLabel(): string {
-    return this.showNewPassword ? 'Hide password' : 'Show password';
+    return this.showNewPassword
+      ? this.localeService.translate('auth.hidePassword')
+      : this.localeService.translate('auth.showPassword');
   }
 
   get confirmPasswordToggleLabel(): string {
-    return this.showConfirmPassword ? 'Hide password' : 'Show password';
+    return this.showConfirmPassword
+      ? this.localeService.translate('auth.hidePassword')
+      : this.localeService.translate('auth.showPassword');
   }
 
   ngOnInit(): void {
@@ -463,7 +477,7 @@ export class ResetPasswordPage implements OnInit {
 
     if (!this.uid || !this.token) {
       this.state = 'invalid';
-      this.stateMessage = 'This password reset link is invalid or incomplete.';
+      this.stateMessage = this.localeService.translate('auth.invalidResetLinkIncomplete');
       return;
     }
 
@@ -526,12 +540,12 @@ export class ResetPasswordPage implements OnInit {
 
     if (normalized.includes('expired') && !normalized.includes('invalid')) {
       this.state = 'expired';
-      this.stateMessage = detail || 'This password reset link has expired.';
+      this.stateMessage = detail || this.localeService.translate('auth.expiredResetLinkShort');
       return;
     }
 
     this.state = normalized.includes('expired') ? 'expired' : 'invalid';
-    this.stateMessage = detail || 'This password reset link is invalid or expired.';
+    this.stateMessage = detail || this.localeService.translate('auth.invalidResetLinkMessage');
   }
 
   private applySubmitError(error: unknown): void {
@@ -563,7 +577,9 @@ export class ResetPasswordPage implements OnInit {
     }
 
     this.inlineMessageTone = 'danger';
-    this.inlineMessage = getAuthNetworkMessage('reset your password', error);
+    this.inlineMessage =
+      mapKnownAuthError(this.localeService, 'reset-password', error) ??
+      getAuthTranslatedNetworkMessage(this.localeService, 'reset-password', error);
   }
 
   private static passwordMatchValidator(group: AbstractControl): ValidationErrors | null {

@@ -5,18 +5,21 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { AuthService } from '../../core/services/auth.service';
 import {
   emailFormatValidator,
   extractErrorDetail,
   extractFirstFieldError,
-  getAuthNetworkMessage,
+  getAuthTranslatedNetworkMessage,
+  mapKnownAuthError,
   trimmedRequiredValidator,
 } from './auth-form.utils';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, IonicModule],
+  imports: [CommonModule, ReactiveFormsModule, IonicModule, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-forgot-password-form',
   template: `
@@ -32,13 +35,13 @@ import {
       <ng-container *ngIf="!submitted; else submittedState">
         <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form" novalidate>
           <div class="field-group">
-            <label class="auth-label" for="forgot-email">Email</label>
+            <label class="auth-label" for="forgot-email">{{ 'auth.email' | t }}</label>
             <ion-item fill="solid" class="auth-field auth-field--pill">
               <ion-input
                 id="forgot-email"
                 formControlName="email"
                 type="email"
-                placeholder="you@example.com"
+                [placeholder]="'auth.emailPlaceholder' | t"
                 autocomplete="email"
                 inputmode="email"
                 autocapitalize="off"
@@ -59,32 +62,32 @@ import {
 
           <ion-button expand="block" type="submit" class="auth-submit" [disabled]="!canSubmit">
             <ion-spinner *ngIf="loading" slot="start" name="crescent"></ion-spinner>
-            <span>{{ loading ? 'Sending...' : 'Send reset link' }}</span>
+            <span>{{ loading ? ('auth.sendingResetLink' | t) : ('auth.sendResetLink' | t) }}</span>
           </ion-button>
         </form>
 
         <div class="auth-switches" data-testid="forgot-password-auth-links">
           <p class="auth-switches__copy">
-            Remembered your password?
+            {{ 'auth.rememberedPassword' | t }}
             <button
               type="button"
               class="auth-link"
-              aria-label="Return to Sign In"
+              [attr.aria-label]="'auth.returnToSignIn' | t"
               (click)="goToLogin()"
             >
-              Sign In
+              {{ 'auth.signIn' | t }}
             </button>
           </p>
 
           <p class="auth-switches__copy">
-            Don't have an account?
+            {{ 'auth.dontHaveAccount' | t }}
             <button
               type="button"
               class="auth-link"
-              aria-label="Open Create Account"
+              [attr.aria-label]="'auth.openCreateAccount' | t"
               (click)="goToRegister()"
             >
-              Create Account
+              {{ 'auth.createAccount' | t }}
             </button>
           </p>
         </div>
@@ -93,23 +96,21 @@ import {
       <ng-template #submittedState>
         <div class="status-copy" aria-live="polite" role="status" data-testid="forgot-password-success">
           <span class="status-copy__icon" aria-hidden="true">✓</span>
-          <h2 #successHeading tabindex="-1">Check your email</h2>
+          <h2 #successHeading tabindex="-1">{{ 'auth.checkEmailTitle' | t }}</h2>
           <p>
-            We've sent password reset instructions if an account exists for that address.
+            {{ 'auth.checkEmailMessage' | t }}
           </p>
-          <p class="status-copy__support">
-            Open your email and follow the link to create a new password.
-          </p>
+          <p class="status-copy__support">{{ 'auth.checkEmailSupport' | t }}</p>
           <button type="button" class="auth-link auth-link--center" (click)="goToLogin()">
-            Back to Sign In
+            {{ 'navigation.backToSignIn' | t }}
           </button>
           <button
             type="button"
             class="auth-link auth-link--center auth-link--secondary"
-            aria-label="Open Create Account"
+            [attr.aria-label]="'auth.openCreateAccount' | t"
             (click)="goToRegister()"
           >
-            Create Account
+            {{ 'auth.createAccount' | t }}
           </button>
         </div>
       </ng-template>
@@ -251,7 +252,8 @@ export class ForgotPasswordFormComponent implements AfterViewChecked {
   constructor(
     private readonly authService: AuthService,
     private readonly formBuilder: FormBuilder,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly localeService: LocaleService
   ) {}
 
   get canSubmit(): boolean {
@@ -266,10 +268,10 @@ export class ForgotPasswordFormComponent implements AfterViewChecked {
   get emailErrorMessage(): string {
     const control = this.form.controls.email;
     if (control.hasError('required')) {
-      return 'Enter your email address.';
+      return this.localeService.translate('validation.emailRequired');
     }
 
-    return 'Enter a valid email address.';
+    return this.localeService.translate('validation.emailInvalid');
   }
 
   ngAfterViewChecked(): void {
@@ -330,10 +332,13 @@ export class ForgotPasswordFormComponent implements AfterViewChecked {
 
   private getErrorMessage(error: unknown): string {
     if (error instanceof HttpErrorResponse && error.status === 400) {
-      return 'Enter a valid email address.';
+      return (
+        mapKnownAuthError(this.localeService, 'forgot-password', error) ??
+        this.localeService.translate('validation.emailInvalid')
+      );
     }
 
-    return getAuthNetworkMessage('send reset instructions', error);
+    return getAuthTranslatedNetworkMessage(this.localeService, 'forgot-password', error);
   }
 
   private shouldRespondNeutrally(error: unknown): boolean {

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, Input, inject } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
+import { LocaleService } from '../core/localization/locale.service';
 import { StackNavigationService } from '../core/services/stack-navigation.service';
 
 @Component({
@@ -20,7 +21,7 @@ import { StackNavigationService } from '../core/services/stack-navigation.servic
         icon="chevron-back"
         text=""
         [defaultHref]="fallbackRoute"
-        [attr.aria-label]="backAriaLabel"
+        [attr.aria-label]="resolvedBackAriaLabel"
         (click)="handleBackClick($event)"
       >
       </ion-back-button>
@@ -106,6 +107,7 @@ import { StackNavigationService } from '../core/services/stack-navigation.servic
 })
 export class MobileHeaderComponent {
   private readonly stackNavigation = inject(StackNavigationService);
+  private readonly localeService = inject(LocaleService);
 
   @Input({ required: true }) title = '';
   @Input() subtitle = '';
@@ -118,6 +120,10 @@ export class MobileHeaderComponent {
   @Input() actionDisabled = false;
   @Input() action: (() => void | Promise<void>) | null = null;
   @Input() tone: 'inverse' | 'editorial' = 'inverse';
+
+  get resolvedBackAriaLabel(): string {
+    return this.backAriaLabel || this.localeService.translate('navigation.goBack');
+  }
 
   handleBackClick(event: Event): void {
     event.preventDefault();
