@@ -1,0 +1,14 @@
+{
+  "app": {
+    "name": "C.O.P Italy"
+  },
+  "common": {
+    "loading": "Caricamento",
+    "retry": "Riprova",
+    "cancel": "Annulla",
+    "save": "Salva"
+  },
+  "errors": {
+    "generic": "Si è verificato un errore. Riprova."
+  }
+}

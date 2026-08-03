@@ -9,6 +9,7 @@ import { environment } from 'src/environments/environment';
 import { AuthStorageService } from './auth-storage.service';
 import { AuthService } from './auth.service';
 import { SentryTelemetryService } from './sentry-telemetry.service';
+import { LocaleService } from '../localization/locale.service';
 
 class MockAuthStorageService {
   getAccessToken = jasmine.createSpy().and.resolveTo(null);
@@ -24,11 +25,19 @@ class MockSentryTelemetryService {
   captureFeatureError(): void {}
 }
 
+class MockLocaleService {
+  initialize = jasmine.createSpy().and.resolveTo();
+  setLocale = jasmine.createSpy().and.resolveTo('en');
+  applyAuthenticatedPreference = jasmine.createSpy().and.resolveTo('en');
+  handleLogout = jasmine.createSpy().and.resolveTo('en');
+}
+
 describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
   let documentRef: Document;
   let storage: MockAuthStorageService;
+  let localeService: MockLocaleService;
   const apiUrl = environment.apiBaseUrl.replace(/\/+$/, '');
   const api = (path: string) => `${apiUrl}/${path.replace(/^\/*/, '').replace(/\/+$/, '')}/`;
 
@@ -56,6 +65,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: AuthStorageService, useClass: MockAuthStorageService },
         { provide: SentryTelemetryService, useClass: MockSentryTelemetryService },
+        { provide: LocaleService, useClass: MockLocaleService },
       ],
     }).compileComponents();
 
@@ -63,6 +73,7 @@ describe('AuthService', () => {
     httpMock = TestBed.inject(HttpTestingController);
     documentRef = TestBed.inject(DOCUMENT);
     storage = TestBed.inject(AuthStorageService) as unknown as MockAuthStorageService;
+    localeService = TestBed.inject(LocaleService) as unknown as MockLocaleService;
 
     documentRef.cookie = 'csrftoken=test-csrf-token; path=/';
     await service.initialize();
@@ -232,6 +243,7 @@ describe('AuthService', () => {
     expect(storage.setCurrentUser).toHaveBeenCalledWith(
       jasmine.objectContaining({ language: 'it' })
     );
+    expect(localeService.applyAuthenticatedPreference).toHaveBeenCalledWith('it');
   });
 
   it('falls back to en for unsupported current user language values', () => {
@@ -244,6 +256,7 @@ describe('AuthService', () => {
     expect(storage.setCurrentUser).toHaveBeenCalledWith(
       jasmine.objectContaining({ language: 'en' })
     );
+    expect(localeService.applyAuthenticatedPreference).toHaveBeenCalledWith('en');
   });
 
   it('sends canonical language in the member profile update payload', fakeAsync(() => {
@@ -265,4 +278,10 @@ describe('AuthService', () => {
     expect(responseBody?.language).toBe('fr');
     expect(service.currentUserSnapshot?.language).toBe('fr');
   }));
+
+  it('restores guest or device locale behavior on logout instead of persisting the authenticated language', () => {
+    service.logout();
+
+    expect(localeService.handleLogout).toHaveBeenCalled();
+  });
 });
