@@ -31,6 +31,16 @@ interface AreaBrowseGroup {
   districts: DistrictBrowseGroup[];
 }
 
+interface DonateBranchSheetRow {
+  icon: string;
+  title: string;
+  subtitle: string;
+  ariaLabel: string;
+  disabled?: boolean;
+  selected?: boolean;
+  payload: AreaBrowseGroup | DistrictBrowseGroup | PublicBranch;
+}
+
 @Component({
   standalone: true,
   selector: 'app-donate-branch-sheet',
@@ -95,36 +105,75 @@ interface AreaBrowseGroup {
               <ion-button type="button" fill="outline" size="small" (click)="loadBranches()">Retry</ion-button>
             </div>
 
-            <div *ngIf="!loading && !error" class="donate-branch-sheet__section">
-              <div class="donate-branch-sheet__section-label">{{ sectionLabel }}</div>
-              <p class="donate-branch-sheet__section-copy">{{ sectionCopy }}</p>
-            </div>
+            <ng-container *ngIf="!loading && !error">
+              <div *ngIf="showSavedChurchesSection" class="donate-branch-sheet__section donate-branch-sheet__section--saved">
+                <div class="donate-branch-sheet__section-label">Saved Churches</div>
+                <p class="donate-branch-sheet__section-copy">Choose from your saved churches for faster giving.</p>
+              </div>
 
-            <div *ngIf="!loading && !error && visibleRows.length === 0" class="donate-branch-sheet__state">
-              <p>{{ emptyMessage }}</p>
-            </div>
+              <div *ngIf="showSavedChurchesSection" class="donate-branch-sheet__rows donate-branch-sheet__rows--saved">
+                <button
+                  *ngFor="let row of visibleSavedChurchRows"
+                  type="button"
+                  class="donate-branch-sheet__row"
+                  [class.donate-branch-sheet__row--selected]="row.selected"
+                  [attr.aria-label]="row.ariaLabel"
+                  (click)="handleRowClick(row)"
+                >
+                  <span class="donate-branch-sheet__row-icon" aria-hidden="true">
+                    <ion-icon [name]="row.icon"></ion-icon>
+                  </span>
+                  <span class="donate-branch-sheet__row-copy">
+                    <strong>{{ row.title }}</strong>
+                    <small>{{ row.subtitle }}</small>
+                  </span>
+                  <span *ngIf="row.selected" class="donate-branch-sheet__row-badge" aria-hidden="true">Selected</span>
+                  <span class="donate-branch-sheet__row-trailing" aria-hidden="true">
+                    <ion-icon name="chevron-forward"></ion-icon>
+                  </span>
+                </button>
+              </div>
 
-            <div *ngIf="!loading && !error && visibleRows.length > 0" class="donate-branch-sheet__rows">
               <button
-                *ngFor="let row of visibleRows"
+                *ngIf="showViewAllSavedChurchesAction"
                 type="button"
-                class="donate-branch-sheet__row"
-                [disabled]="row.disabled"
-                [attr.aria-label]="row.ariaLabel"
-                (click)="handleRowClick(row)"
+                class="donate-branch-sheet__link-action"
+                (click)="showAllSavedChurches = true"
               >
-                <span class="donate-branch-sheet__row-icon" aria-hidden="true">
-                  <ion-icon [name]="row.icon"></ion-icon>
-                </span>
-                <span class="donate-branch-sheet__row-copy">
-                  <strong>{{ row.title }}</strong>
-                  <small>{{ row.subtitle }}</small>
-                </span>
-                <span class="donate-branch-sheet__row-trailing" aria-hidden="true">
-                  <ion-icon name="chevron-forward"></ion-icon>
-                </span>
+                View all saved churches
               </button>
-            </div>
+
+              <div class="donate-branch-sheet__section">
+                <div class="donate-branch-sheet__section-label">{{ sectionLabel }}</div>
+                <p class="donate-branch-sheet__section-copy">{{ sectionCopy }}</p>
+              </div>
+
+              <div *ngIf="allVisibleRows.length === 0" class="donate-branch-sheet__state">
+                <p>{{ emptyMessage }}</p>
+              </div>
+
+              <div *ngIf="browseVisibleRows.length > 0" class="donate-branch-sheet__rows">
+                <button
+                  *ngFor="let row of browseVisibleRows"
+                  type="button"
+                  class="donate-branch-sheet__row"
+                  [disabled]="row.disabled"
+                  [attr.aria-label]="row.ariaLabel"
+                  (click)="handleRowClick(row)"
+                >
+                  <span class="donate-branch-sheet__row-icon" aria-hidden="true">
+                    <ion-icon [name]="row.icon"></ion-icon>
+                  </span>
+                  <span class="donate-branch-sheet__row-copy">
+                    <strong>{{ row.title }}</strong>
+                    <small>{{ row.subtitle }}</small>
+                  </span>
+                  <span class="donate-branch-sheet__row-trailing" aria-hidden="true">
+                    <ion-icon name="chevron-forward"></ion-icon>
+                  </span>
+                </button>
+              </div>
+            </ng-container>
           </div>
         </ion-content>
       </ng-template>
@@ -230,6 +279,10 @@ interface AreaBrowseGroup {
         margin-bottom: 0.7rem;
       }
 
+      .donate-branch-sheet__section--saved {
+        margin-bottom: 0.55rem;
+      }
+
       .donate-branch-sheet__section-label {
         color: var(--cop-color-gold-deep);
         font-size: 0.7rem;
@@ -244,6 +297,10 @@ interface AreaBrowseGroup {
         gap: 0.55rem;
       }
 
+      .donate-branch-sheet__rows--saved {
+        margin-bottom: 0.55rem;
+      }
+
       .donate-branch-sheet__row {
         width: 100%;
         gap: 0.78rem;
@@ -253,6 +310,10 @@ interface AreaBrowseGroup {
         background: #ffffff;
         text-align: left;
         box-shadow: 0 8px 18px rgba(7, 24, 69, 0.03);
+      }
+
+      .donate-branch-sheet__row--selected {
+        border-color: rgba(11, 29, 115, 0.18);
       }
 
       .donate-branch-sheet__row-icon,
@@ -286,6 +347,18 @@ interface AreaBrowseGroup {
         line-height: 1.28;
       }
 
+      .donate-branch-sheet__row-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0.18rem 0.55rem;
+        background: rgba(11, 29, 115, 0.08);
+        color: #0b1d73;
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+
       .donate-branch-sheet__row-trailing {
         color: rgba(8, 31, 92, 0.44);
       }
@@ -304,6 +377,17 @@ interface AreaBrowseGroup {
         align-items: flex-start;
         text-align: left;
       }
+
+      .donate-branch-sheet__link-action {
+        border: 0;
+        background: transparent;
+        padding: 0 0 0.75rem;
+        color: #0b1d73;
+        font: inherit;
+        font-size: 0.84rem;
+        font-weight: 700;
+        text-align: left;
+      }
     `,
   ],
 })
@@ -312,6 +396,8 @@ export class DonateBranchSheetComponent implements OnChanges {
   @Input() mode: 'donate' | 'save' = 'donate';
   @Input() savingBranchId: number | null = null;
   @Input() savedBranchIds: number[] = [];
+  @Input() savedBranches: PublicBranch[] = [];
+  @Input() selectedBranchId: number | null = null;
 
   @Output() dismissed = new EventEmitter<void>();
   @Output() branchSelected = new EventEmitter<PublicBranch>();
@@ -320,6 +406,7 @@ export class DonateBranchSheetComponent implements OnChanges {
   error: string | null = null;
   searchTerm = '';
   currentLevel: BrowseLevel = 'areas';
+  showAllSavedChurches = false;
 
   private allBranches: PublicBranch[] = [];
   private selectedAreaKey: string | null = null;
@@ -372,7 +459,7 @@ export class DonateBranchSheetComponent implements OnChanges {
       return 'Search districts...';
     }
 
-    return 'Search areas...';
+    return 'Search saved churches or areas...';
   }
 
   get sectionLabel(): string {
@@ -384,7 +471,7 @@ export class DonateBranchSheetComponent implements OnChanges {
       return 'Districts';
     }
 
-    return 'Areas';
+    return this.mode === 'donate' ? 'Browse by Area' : 'Areas';
   }
 
   get sectionCopy(): string {
@@ -398,7 +485,7 @@ export class DonateBranchSheetComponent implements OnChanges {
       return 'Choose a district in this area.';
     }
 
-    return 'Select your area.';
+    return this.mode === 'donate' ? 'Browse all churches by area.' : 'Select your area.';
   }
 
   get emptyMessage(): string {
@@ -410,7 +497,19 @@ export class DonateBranchSheetComponent implements OnChanges {
       return 'No matching districts found.';
     }
 
-    return 'No matching areas found.';
+    return 'No matching saved churches or areas found.';
+  }
+
+  get showSavedChurchesSection(): boolean {
+    return this.mode === 'donate' && this.currentLevel === 'areas' && this.visibleSavedChurchRows.length > 0;
+  }
+
+  get showViewAllSavedChurchesAction(): boolean {
+    return this.mode === 'donate'
+      && this.currentLevel === 'areas'
+      && !this.searchTerm.trim()
+      && !this.showAllSavedChurches
+      && this.orderedSavedBranches.length > 4;
   }
 
   get areaGroups(): AreaBrowseGroup[] {
@@ -489,14 +588,31 @@ export class DonateBranchSheetComponent implements OnChanges {
     return this.currentDistrictGroup?.branches ?? [];
   }
 
-  get visibleRows(): Array<{
-    icon: string;
-    title: string;
-    subtitle: string;
-    ariaLabel: string;
-    disabled?: boolean;
-    payload: AreaBrowseGroup | DistrictBrowseGroup | PublicBranch;
-  }> {
+  get visibleSavedChurchRows(): DonateBranchSheetRow[] {
+    if (this.mode !== 'donate' || this.currentLevel !== 'areas') {
+      return [];
+    }
+
+    const query = this.searchTerm.trim().toLowerCase();
+    const matchingBranches = this.orderedSavedBranches.filter((branch) =>
+      this.matchesQuery([branch.name, branch.district?.name, branch.area?.name, branch.branch_code], query)
+    );
+    const visibleBranches = !query && !this.showAllSavedChurches ? matchingBranches.slice(0, 4) : matchingBranches;
+
+    return visibleBranches.map((branch) => ({
+      icon: 'heart-outline',
+      title: branch.name,
+      subtitle: this.getBranchHierarchy(branch),
+      ariaLabel:
+        this.selectedBranchId === branch.id
+          ? `Selected saved church ${branch.name}`
+          : `Choose saved church ${branch.name}`,
+      selected: this.selectedBranchId === branch.id,
+      payload: branch,
+    }));
+  }
+
+  get browseVisibleRows(): DonateBranchSheetRow[] {
     const query = this.searchTerm.trim().toLowerCase();
 
     if (this.currentLevel === 'churches') {
@@ -533,6 +649,26 @@ export class DonateBranchSheetComponent implements OnChanges {
         ariaLabel: `Choose area ${area.name}`,
         payload: area,
       }));
+  }
+
+  get allVisibleRows(): DonateBranchSheetRow[] {
+    return [...this.visibleSavedChurchRows, ...this.browseVisibleRows];
+  }
+
+  get orderedSavedBranches(): PublicBranch[] {
+    const validBranches = (Array.isArray(this.savedBranches) ? this.savedBranches : []).filter(
+      (branch) => !!branch?.id && !!branch.name?.trim() && branch.is_active && branch.donations_enabled
+    );
+
+    return [...validBranches].sort((left, right) => {
+      if (this.selectedBranchId === left.id && this.selectedBranchId !== right.id) {
+        return -1;
+      }
+      if (this.selectedBranchId === right.id && this.selectedBranchId !== left.id) {
+        return 1;
+      }
+      return left.name.localeCompare(right.name);
+    });
   }
 
   loadBranches(): void {
@@ -593,7 +729,12 @@ export class DonateBranchSheetComponent implements OnChanges {
     this.dismissed.emit();
   }
 
-  handleRowClick(row: { payload: AreaBrowseGroup | DistrictBrowseGroup | PublicBranch }): void {
+  handleRowClick(row: DonateBranchSheetRow): void {
+    if (this.isSavedBranchPayload(row.payload)) {
+      this.branchSelected.emit(row.payload);
+      return;
+    }
+
     if (this.currentLevel === 'areas') {
       const area = row.payload as AreaBrowseGroup;
       this.selectedAreaKey = area.key;
@@ -611,7 +752,7 @@ export class DonateBranchSheetComponent implements OnChanges {
       return;
     }
 
-    const branch = row.payload as PublicBranch;
+    const branch = row.payload as unknown as PublicBranch;
     if (this.isChurchDisabled(branch)) {
       return;
     }
@@ -622,6 +763,7 @@ export class DonateBranchSheetComponent implements OnChanges {
   private resetTransientState(): void {
     this.searchTerm = '';
     this.currentLevel = 'areas';
+    this.showAllSavedChurches = false;
     this.selectedAreaKey = null;
     this.selectedDistrictKey = null;
     this.error = null;
@@ -639,7 +781,7 @@ export class DonateBranchSheetComponent implements OnChanges {
     if (branch.area?.name) {
       parts.push(`${branch.area.name} Area`);
     }
-    return parts.join(' · ');
+    return parts.join(' - ');
   }
 
   private getChurchSubtitle(branch: PublicBranch): string {
@@ -670,5 +812,9 @@ export class DonateBranchSheetComponent implements OnChanges {
     }
 
     return values.some((value) => value?.toLowerCase().includes(query));
+  }
+
+  private isSavedBranchPayload(payload: AreaBrowseGroup | DistrictBrowseGroup | PublicBranch): payload is PublicBranch {
+    return this.currentLevel === 'areas' && 'branch_code' in payload;
   }
 }

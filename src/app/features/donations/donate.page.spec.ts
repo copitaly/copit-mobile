@@ -387,6 +387,18 @@ describe('DonatePage', () => {
     });
   });
 
+  it('closes the selector without resetting form state when the current church is selected again', () => {
+    page.handleBranchSelected(branch);
+
+    expect(selectedBranchServiceMock.setBranch).not.toHaveBeenCalled();
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: jasmine.anything(),
+      queryParams: { churchSelector: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  });
+
   it('does not prefill when no saved branches exist', () => {
     (page as unknown as { branch: PublicBranch | null }).branch = null;
     authServiceMock.isAuthenticatedSnapshot = true;
@@ -406,6 +418,7 @@ describe('DonatePage', () => {
     page.ionViewWillEnter();
 
     expect(selectedBranchServiceMock.setBranch).toHaveBeenCalledWith(jasmine.objectContaining({ id: branch.id, name: branch.name }));
+    expect(page.savedBranchesForSelector).toEqual([jasmine.objectContaining({ id: branch.id, name: branch.name })]);
   });
 
   it('prefers the most recently used saved branch when recent donation metadata exists', () => {
