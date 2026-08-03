@@ -5,6 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonicModule, NavController } from '@ionic/angular';
 
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { AppToastService } from '../../core/services/app-toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { MemberProfile } from '../../core/models/user.model';
@@ -15,7 +17,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, FormsModule, IonicModule, MobileHeaderComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-delete-account',
   template: `
@@ -24,8 +26,8 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         <div class="delete-account-shell cop-secondary-shell">
           <header class="delete-account-header" aria-label="Delete Account">
             <app-mobile-header
-              title="Delete Account"
-              subtitle="Review this carefully before you continue."
+              [title]="'profile.deletePageTitle' | t"
+              [subtitle]="'profile.deletePageSubtitle' | t"
               fallbackRoute="/profile/account-settings"
               tone="editorial"
             ></app-mobile-header>
@@ -35,8 +37,8 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
             <div *ngIf="loading" class="state-card loading-state" aria-live="polite">
               <ion-spinner name="crescent"></ion-spinner>
               <div class="state-copy">
-                <h2>Loading account</h2>
-                <p>Checking your member session.</p>
+                <h2>{{ 'profile.deleteLoadingTitle' | t }}</h2>
+                <p>{{ 'profile.deleteLoadingSubtitle' | t }}</p>
               </div>
             </div>
 
@@ -47,31 +49,28 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                 </div>
 
                 <div class="warning-card__copy">
-                  <h2>Delete your account</h2>
-                  <p>
-                    This will permanently delete your account. Your donation records may be retained for legal and
-                    accounting purposes.
-                  </p>
+                  <h2>{{ 'profile.deleteWarningTitle' | t }}</h2>
+                  <p>{{ 'profile.deleteWarningBody' | t }}</p>
                 </div>
               </section>
 
               <section class="confirm-card cop-card cop-card--soft">
-                <label class="confirm-label" for="delete-confirmation">Type DELETE to continue</label>
+                <label class="confirm-label" for="delete-confirmation">{{ 'profile.deleteConfirmLabel' | t }}</label>
                 <ion-item fill="solid" class="confirm-field">
                   <ion-input
                     id="delete-confirmation"
                     [(ngModel)]="confirmationValue"
-                    placeholder="DELETE"
+                    [placeholder]="'profile.deleteConfirmPlaceholder' | t"
                     autocapitalize="characters"
                     aria-describedby="delete-confirmation-help delete-confirmation-error"
-                    aria-label="Type DELETE to continue"
+                    [attr.aria-label]="'profile.deleteConfirmLabel' | t"
                     [disabled]="submitting"
                   ></ion-input>
                 </ion-item>
 
 
                 <p id="delete-confirmation-error" class="error-copy" *ngIf="showInlineValidation">
-                  Type DELETE exactly to continue.
+                  {{ 'profile.deleteConfirmExactError' | t }}
                 </p>
 
                 <ion-text color="danger" *ngIf="errorMessage" class="error-copy error-copy--server" role="alert">
@@ -82,12 +81,12 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
               <ion-button
                 expand="block"
                 class="delete-button"
-                aria-label="Delete account permanently"
+                [attr.aria-label]="'profile.deleteAction' | t"
                 [disabled]="!canDelete"
                 (click)="deleteAccount()"
               >
                 <ion-spinner *ngIf="submitting" slot="start" name="crescent"></ion-spinner>
-                <span>{{ submitting ? 'Deleting account...' : 'Delete account permanently' }}</span>
+                <span>{{ submitting ? ('profile.deletingAction' | t) : ('profile.deleteAction' | t) }}</span>
               </ion-button>
             </div>
           </div>
@@ -310,6 +309,7 @@ export class DeleteAccountPage implements OnInit {
     private readonly router: Router,
     private readonly navController: NavController,
     private readonly appToast: AppToastService,
+    private readonly localeService: LocaleService,
     private readonly sentryTelemetry: SentryTelemetryService
   ) {}
 
@@ -371,7 +371,7 @@ export class DeleteAccountPage implements OnInit {
         this.donationFlowState.clear();
         this.selectedBranchService.clearBranch();
 
-        await this.appToast.success('Account deleted successfully.');
+        await this.appToast.success(this.localeService.translate('profile.deleteSuccess'));
 
         await this.navController.navigateRoot('/login');
       },
@@ -382,8 +382,8 @@ export class DeleteAccountPage implements OnInit {
         });
         this.errorMessage =
           httpError?.status === 502
-            ? 'We could not cancel your recurring donations. Please try again.'
-            : 'Unable to delete your account right now. Please try again.';
+            ? this.localeService.translate('profile.deleteRecurringError')
+            : this.localeService.translate('profile.deleteError');
         this.submitting = false;
 
         await this.appToast.warning(this.errorMessage);

@@ -6,14 +6,14 @@
 
     <div class="devotionals-shell cop-page-shell">
       <header class="devotionals-header cop-page-header" aria-labelledby="devotionals-title">
-        <p class="devotionals-header__eyebrow cop-page-header__eyebrow">Devotions</p>
-        <h1 id="devotionals-title" class="cop-page-header__title">Devotions</h1>
-        <p class="devotionals-header__subtitle cop-page-header__subtitle">Pause, reflect, and grow through daily Scripture.</p>
+        <p class="devotionals-header__eyebrow cop-page-header__eyebrow">{{ 'devotions.title' | t }}</p>
+        <h1 id="devotionals-title" class="cop-page-header__title">{{ 'devotions.title' | t }}</h1>
+        <p class="devotionals-header__subtitle cop-page-header__subtitle">{{ 'devotions.subtitle' | t }}</p>
       </header>
 
       <div *ngIf="loading" class="devotionals-loading" aria-live="polite" data-testid="loading-state">
         <section class="editorial-section">
-          <p class="section-label cop-eyebrow">Featured Devotion</p>
+          <p class="section-label cop-eyebrow">{{ 'devotions.featuredTitle' | t }}</p>
           <article class="featured-card cop-card skeleton">
             <div class="featured-card__media devotional-card__cover-skeleton"></div>
             <div class="featured-card__content">
@@ -27,7 +27,7 @@
         </section>
 
         <section class="editorial-section">
-          <p class="section-label cop-eyebrow">Recent Devotions</p>
+          <p class="section-label cop-eyebrow">{{ 'devotions.recentTitle' | t }}</p>
           <div class="recent-list">
             <article class="recent-card skeleton" *ngFor="let item of skeletonItems">
               <div class="recent-card__copy">
@@ -42,27 +42,27 @@
 
       <div *ngIf="!loading && errorMessage" class="state-card cop-card error-state" data-testid="error-state">
         <div class="state-copy">
-          <p class="section-label cop-eyebrow">Devotions</p>
-          <h2>We couldn't load devotions right now.</h2>
+          <p class="section-label cop-eyebrow">{{ 'devotions.title' | t }}</p>
+          <h2>{{ 'devotions.errorTitle' | t }}</h2>
           <p>{{ errorMessage }}</p>
         </div>
-        <ion-button expand="block" class="state-button" (click)="retryLoad()">Try Again</ion-button>
+        <ion-button expand="block" class="state-button" (click)="retryLoad()">{{ 'devotions.errorRetry' | t }}</ion-button>
       </div>
 
       <div *ngIf="!loading && !errorMessage && devotionals.length === 0" class="state-card cop-card empty-state" data-testid="empty-state">
         <div class="state-copy">
-          <p class="section-label cop-eyebrow">Devotions</p>
-          <h2>No devotions have been published yet.</h2>
-          <p>Check back soon for daily encouragement from published devotions.</p>
+          <p class="section-label cop-eyebrow">{{ 'devotions.title' | t }}</p>
+          <h2>{{ 'devotions.emptyTitle' | t }}</h2>
+          <p>{{ 'devotions.emptySubtitle' | t }}</p>
         </div>
         <ion-button expand="block" fill="outline" class="state-button state-button--secondary" (click)="retryLoad()">
-          Refresh
+          {{ 'common.refresh' | t }}
         </ion-button>
       </div>
 
       <div *ngIf="!loading && !errorMessage && featuredDevotional" class="devotionals-editorial">
-        <section class="editorial-section" aria-label="Featured Devotion">
-          <p class="section-label cop-eyebrow">Featured Devotion</p>
+        <section class="editorial-section" [attr.aria-label]="'devotions.featuredTitle' | t">
+          <p class="section-label cop-eyebrow">{{ 'devotions.featuredTitle' | t }}</p>
           <button
             type="button"
             class="featured-card featured-card--button cop-card cop-card-button ion-activatable"
@@ -94,7 +94,7 @@
                 {{ getCardMeta(featuredDevotional) }}
               </p>
               <span class="featured-card__cta">
-                <span>Read devotion</span>
+                <span>{{ 'devotions.readCta' | t }}</span>
                 <ion-icon name="arrow-forward" aria-hidden="true"></ion-icon>
               </span>
             </div>
@@ -105,12 +105,12 @@
         <section
           *ngIf="recentDevotionals.length > 0 || nextPageUrl || loadMoreErrorMessage"
           class="editorial-section"
-          aria-label="Recent Devotions"
+          [attr.aria-label]="'devotions.recentTitle' | t"
         >
           <div class="section-heading">
             <div>
-              <p class="section-label cop-eyebrow">Recent Devotions</p>
-              <h3>Keep reading</h3>
+              <p class="section-label cop-eyebrow">{{ 'devotions.recentTitle' | t }}</p>
+              <h3>{{ 'devotions.recentSubtitle' | t }}</h3>
             </div>
           </div>
 
@@ -144,7 +144,7 @@
 
           <div *ngIf="loadMoreErrorMessage" class="load-more-error" data-testid="load-more-error">
             <p>{{ loadMoreErrorMessage }}</p>
-            <ion-button fill="outline" class="state-button state-button--secondary" (click)="loadMore()">Try Again</ion-button>
+            <ion-button fill="outline" class="state-button state-button--secondary" (click)="loadMore()">{{ 'common.tryAgain' | t }}</ion-button>
           </div>
 
           <ion-button
@@ -156,15 +156,15 @@
             (click)="loadMore()"
           >
             <ion-spinner *ngIf="loadingMore" slot="start" name="crescent"></ion-spinner>
-            <span>{{ loadingMore ? 'Loading more...' : 'Load more' }}</span>
+            <span>{{ loadingMore ? ('devotions.loadingMore' | t) : ('devotions.loadMore' | t) }}</span>
           </ion-button>
         </section>
 
         <section *ngIf="showCaughtUpState" class="editorial-section" data-testid="caught-up-state" aria-live="polite">
           <div class="caught-up-card cop-card">
-            <p class="section-label cop-eyebrow">Caught Up</p>
-            <h3>You're all caught up.</h3>
-            <p>Check back soon for the next published devotion.</p>
+            <p class="section-label cop-eyebrow">{{ 'devotions.caughtUpEyebrow' | t }}</p>
+            <h3>{{ 'devotions.caughtUpTitle' | t }}</h3>
+            <p>{{ 'devotions.caughtUpSubtitle' | t }}</p>
           </div>
         </section>
       </div>

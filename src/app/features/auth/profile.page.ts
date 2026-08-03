@@ -14,17 +14,18 @@ import { LoginFormComponent } from './login-form.component';
 import { RegisterFormComponent } from './register-form.component';
 
 type ProfileAction = {
-  title: string;
-  subtitle: string;
+  titleKey: string;
+  subtitleKey: string;
   icon: string;
   route?: string;
   membersOnly?: boolean;
   destructive?: boolean;
   action?: () => void;
+  testId: string;
 };
 
 type ProfileActionSection = {
-  title: string;
+  titleKey: string;
   actions: ProfileAction[];
 };
 
@@ -56,17 +57,17 @@ type ProfileActionSection = {
             </div>
 
             <div class="state-copy">
-              <h2>Loading profile</h2>
-              <p>Fetching your member details.</p>
+              <h2>{{ 'profile.loadingTitle' | t }}</h2>
+              <p>{{ 'profile.loadingSubtitle' | t }}</p>
             </div>
           </div>
 
           <div *ngIf="!loading && errorMessage" class="state-card state-card--error">
             <div class="state-copy">
-              <h2>We couldn't load your profile</h2>
+              <h2>{{ 'profile.errorTitle' | t }}</h2>
               <p>{{ errorMessage }}</p>
             </div>
-            <ion-button expand="block" class="state-button" (click)="loadProfile()">Try again</ion-button>
+            <ion-button expand="block" class="state-button" (click)="loadProfile()">{{ 'common.tryAgain' | t }}</ion-button>
           </div>
 
           <div *ngIf="!loading && !errorMessage && profile; else signedOutState" class="profile-stack">
@@ -76,8 +77,8 @@ type ProfileActionSection = {
 
                 <div class="account-copy">
                   <h2 id="account-summary-title">{{ displayName }}</h2>
-                  <p class="account-copy__email">{{ profile.email || 'Not provided' }}</p>
-                  <p class="account-meta">{{ membershipLabel }} <span aria-hidden="true">&middot;</span> Member since {{ memberSinceLabel }}</p>
+                  <p class="account-copy__email">{{ profile.email || ('profile.notProvided' | t) }}</p>
+                  <p class="account-meta">{{ membershipLabel }} <span aria-hidden="true">&middot;</span> {{ 'profile.memberSince' | t:{ year: memberSinceLabel } }}</p>
                 </div>
               </div>
 
@@ -86,9 +87,9 @@ type ProfileActionSection = {
                 class="account-card__edit"
                 data-testid="edit-profile-summary"
                 (click)="goToEditProfile()"
-                aria-label="Edit Profile"
+                [attr.aria-label]="'profile.editProfile' | t"
               >
-                <span>Edit Profile</span>
+                <span>{{ 'profile.editProfile' | t }}</span>
                 <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
               </button>
             </section>
@@ -96,10 +97,10 @@ type ProfileActionSection = {
             <section
               class="profile-group"
               *ngFor="let section of visibleSections"
-              [attr.aria-labelledby]="'profile-section-' + section.title"
+              [attr.aria-labelledby]="'profile-section-' + section.titleKey"
             >
-              <h2 class="profile-group__title" [id]="'profile-section-' + section.title">
-                {{ section.title }}
+              <h2 class="profile-group__title" [id]="'profile-section-' + section.titleKey">
+                {{ section.titleKey | t }}
               </h2>
 
               <div class="profile-group__card cop-card cop-card--soft">
@@ -117,8 +118,8 @@ type ProfileActionSection = {
                   </span>
 
                   <span class="action-row__copy">
-                    <strong>{{ action.title }}</strong>
-                    <small>{{ action.subtitle }}</small>
+                    <strong>{{ action.titleKey | t }}</strong>
+                    <small>{{ action.subtitleKey | t }}</small>
                   </span>
 
                   <span class="action-row__meta" aria-hidden="true">
@@ -134,15 +135,15 @@ type ProfileActionSection = {
                 class="action-row action-row--last action-row--destructive sign-out-row"
                 data-testid="sign-out"
                 (click)="logout()"
-                aria-label="Sign Out"
+                [attr.aria-label]="'profile.signOut' | t"
               >
                 <span class="action-row__icon" aria-hidden="true">
                   <ion-icon name="log-out-outline"></ion-icon>
                 </span>
 
                 <span class="action-row__copy">
-                  <strong>Sign Out</strong>
-                  <small>Log out of your account on this device</small>
+                  <strong>{{ 'profile.signOut' | t }}</strong>
+                  <small>{{ 'profile.signOutSubtitle' | t }}</small>
                 </span>
 
                 <span class="action-row__meta" aria-hidden="true">
@@ -225,77 +226,78 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   readonly actionSections: ProfileActionSection[] = [
     {
-      title: 'Personal',
+      titleKey: 'profile.sectionPersonal',
       actions: [
         {
-          title: 'Edit Profile',
-          subtitle: 'Update your name and member details',
+          titleKey: 'profile.editProfile',
+          subtitleKey: 'profile.editProfileSubtitle',
           icon: 'create-outline',
           route: '/profile/account-settings/edit-profile',
+          testId: 'edit-profile',
         },
         {
-          title: 'Account Settings',
-          subtitle: 'Manage your account and privacy',
+          titleKey: 'profile.accountSettings',
+          subtitleKey: 'profile.accountSettingsSubtitle',
           icon: 'settings-outline',
           route: '/profile/account-settings',
+          testId: 'account-settings',
         },
       ],
     },
     {
-      title: 'Prayer & Care',
+      titleKey: 'profile.sectionPrayer',
       actions: [
         {
-          title: 'Prayer',
-          subtitle: 'Share a request or pray with the community',
-          icon: 'heart-outline',
-          route: '/prayer',
-        },
-        {
-          title: 'My Prayer Requests',
-          subtitle: 'Review your submitted prayer history',
+          titleKey: 'profile.myPrayerRequests',
+          subtitleKey: 'profile.myPrayerRequestsSubtitle',
           icon: 'chatbubbles-outline',
           route: '/prayer/my-requests',
           membersOnly: true,
+          testId: 'my-prayer-requests',
         },
       ],
     },
     {
-      title: 'Giving',
+      titleKey: 'profile.sectionGiving',
       actions: [
         {
-          title: 'My Donations',
-          subtitle: 'View your giving history',
+          titleKey: 'profile.myDonations',
+          subtitleKey: 'profile.myDonationsSubtitle',
           icon: 'heart-outline',
           route: '/my-donations',
+          testId: 'my-donations',
         },
         {
-          title: 'Recurring Donations',
-          subtitle: 'Manage scheduled gifts',
+          titleKey: 'profile.recurringDonations',
+          subtitleKey: 'profile.recurringDonationsSubtitle',
           icon: 'repeat-outline',
           route: '/profile/recurring-donations',
+          testId: 'recurring-donations',
         },
       ],
     },
     {
-      title: 'Church',
+      titleKey: 'profile.sectionChurch',
       actions: [
         {
-          title: 'Saved Churches',
-          subtitle: 'Quick access to your churches',
+          titleKey: 'profile.savedChurches',
+          subtitleKey: 'profile.savedChurchesSubtitle',
           icon: 'bookmark-outline',
           route: '/saved-churches',
+          testId: 'saved-churches',
         },
       ],
     },
     {
-      title: 'Account',
+      titleKey: 'profile.sectionAccount',
       actions: [
         {
-          title: 'Delete Account',
-          subtitle: 'Permanently close your member account',
+          titleKey: 'profile.deleteAccount',
+          subtitleKey: 'profile.deleteAccountSubtitle',
           icon: 'trash-outline',
           route: '/profile/account-settings/delete-account',
           destructive: true,
+          testId: 'delete-account',
         },
       ],
     },
@@ -323,18 +325,18 @@ export class ProfilePage implements OnInit, OnDestroy {
 
     const firstName = this.profile?.first_name?.trim() ?? '';
     const lastName = this.profile?.last_name?.trim() ?? '';
-    return `${firstName} ${lastName}`.trim() || 'Your account';
+    return `${firstName} ${lastName}`.trim() || this.localeService.translate('profile.fallbackDisplayName');
   }
 
   get memberSinceLabel(): string {
     const joinedAt = this.profile?.date_joined;
     if (!joinedAt) {
-      return 'recently';
+      return this.localeService.translate('profile.memberSinceFallback');
     }
 
     const joinedDate = new Date(joinedAt);
     if (Number.isNaN(joinedDate.getTime())) {
-      return 'recently';
+      return this.localeService.translate('profile.memberSinceFallback');
     }
 
     return joinedDate.getUTCFullYear().toString();
@@ -342,10 +344,10 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   get membershipLabel(): string {
     if (this.resolvedRole === 'member') {
-      return 'Member account';
+      return this.localeService.translate('profile.memberAccount');
     }
 
-    return this.profile?.role?.trim() || 'Account active';
+    return this.profile?.role?.trim() || this.localeService.translate('profile.accountActive');
   }
 
   get profileHeaderSubtitle(): string {
@@ -361,7 +363,7 @@ export class ProfilePage implements OnInit, OnDestroy {
       return this.localeService.translate('auth.profileSignedOutSubtitle');
     }
 
-    return 'Manage your details, giving history, and church connections in one place.';
+    return this.localeService.translate('profile.signedInSubtitle');
   }
 
   get profileHeaderTitle(): string {
@@ -436,7 +438,7 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
   actionTestId(action: ProfileAction): string {
-    return action.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    return action.testId;
   }
 
   loadProfile(options?: { preserveCurrent?: boolean }): void {
@@ -462,7 +464,7 @@ export class ProfilePage implements OnInit, OnDestroy {
         this.refreshing = false;
         this.profileRequestInFlight = false;
         if (!preserveCurrent || !this.profile) {
-          this.errorMessage = 'Please check your connection and try again.';
+          this.errorMessage = this.localeService.translate('errors.network');
         }
         this.sentryTelemetry.addFeatureBreadcrumb(
           'profile',

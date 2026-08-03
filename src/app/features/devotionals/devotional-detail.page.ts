@@ -7,13 +7,15 @@ import { ActivatedRoute } from '@angular/router';
 import { RouterModule } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { DevotionalPublicDetail } from '../../core/models/devotional.model';
 import { AppToastService } from '../../core/services/app-toast.service';
 import { DevotionalService } from '../../core/services/devotional.service';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, RouterModule, IonicModule],
+  imports: [CommonModule, RouterModule, IonicModule, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-devotional-detail',
   templateUrl: './devotional-detail.page.html',
@@ -23,11 +25,7 @@ export class DevotionalDetailPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly devotionalService = inject(DevotionalService);
   private readonly appToast = inject(AppToastService);
-  private readonly publicationDateFormatter = new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  private readonly localeService = inject(LocaleService);
 
   devotional: DevotionalPublicDetail | null = null;
   loading = true;
@@ -37,7 +35,7 @@ export class DevotionalDetailPage implements OnInit {
   contentParagraphs: string[] = [];
   reflectionParagraphs: string[] = [];
   prayerParagraphs: string[] = [];
-  contentFallbackMessage = 'Content will be available soon.';
+  contentFallbackMessage = this.localeService.translate('devotions.contentFallback');
 
   readonly skeletonItems = [1, 2, 3, 4];
   private coverImageFailed = false;
@@ -55,7 +53,7 @@ export class DevotionalDetailPage implements OnInit {
         this.loading = false;
         this.devotional = null;
         this.notFound = false;
-        this.errorMessage = 'Invalid devotion link.';
+        this.errorMessage = this.localeService.translate('devotions.invalidLink');
       }
       return;
     }
@@ -106,7 +104,7 @@ export class DevotionalDetailPage implements OnInit {
 
   formatPublicationDate(value: string | null): string {
     if (!value) {
-      return 'Available now';
+      return this.localeService.translate('devotions.availableNow');
     }
 
     const parsed = this.parsePublicationDate(value);
@@ -114,7 +112,11 @@ export class DevotionalDetailPage implements OnInit {
       return value;
     }
 
-    return this.publicationDateFormatter.format(parsed);
+    return new Intl.DateTimeFormat(this.getDateLocale(), {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(parsed);
   }
 
   hasText(value: string | null | undefined): boolean {
@@ -148,11 +150,11 @@ export class DevotionalDetailPage implements OnInit {
   }
 
   getPublisherLabel(): string {
-    return this.devotional?.author_name?.trim() || 'COP Italy';
+    return this.devotional?.author_name?.trim() || this.localeService.translate('devotions.publisherFallback');
   }
 
   getAttributionLabel(): string {
-    return `Written by ${this.getPublisherLabel()}`;
+    return this.localeService.translate('devotions.writtenBy', { author: this.getPublisherLabel() });
   }
 
   getParagraphs(value: string | null | undefined): string[] {
@@ -183,7 +185,7 @@ export class DevotionalDetailPage implements OnInit {
     const shareTitle = this.devotional.title.trim();
     const shareText = this.buildShareText();
     if (!shareTitle || !shareText) {
-      await this.appToast.error("This devotion can't be shared right now.");
+      await this.appToast.error(this.localeService.translate('devotions.shareUnavailable'));
       return;
     }
 
@@ -203,11 +205,11 @@ export class DevotionalDetailPage implements OnInit {
 
       const copied = await this.copyShareTextToClipboard(shareText);
       if (copied) {
-        await this.appToast.success('Devotion copied to clipboard');
+        await this.appToast.success(this.localeService.translate('devotions.shareCopied'));
         return;
       }
 
-      await this.appToast.error("Sharing isn't available right now.");
+      await this.appToast.error(this.localeService.translate('devotions.shareFailed'));
     } catch (error) {
       if (this.isShareCancelError(error)) {
         return;
@@ -215,11 +217,11 @@ export class DevotionalDetailPage implements OnInit {
 
       const copied = await this.copyShareTextToClipboard(shareText);
       if (copied) {
-        await this.appToast.success('Devotion copied to clipboard');
+        await this.appToast.success(this.localeService.translate('devotions.shareCopied'));
         return;
       }
 
-      await this.appToast.error("Sharing isn't available right now.");
+      await this.appToast.error(this.localeService.translate('devotions.shareFailed'));
     } finally {
       this.sharing = false;
     }
@@ -234,7 +236,7 @@ export class DevotionalDetailPage implements OnInit {
       this.normalizeShareValue(this.devotional.title),
       this.normalizeShareValue(this.devotional.scripture_reference),
       this.normalizeShareValue(this.devotional.scripture_text),
-      'Read more daily devotions in the COP Italy app.',
+      this.localeService.translate('devotions.shareAppCopy'),
     ].filter((value): value is string => !!value);
 
     return sections.join('\n\n');
@@ -295,7 +297,7 @@ export class DevotionalDetailPage implements OnInit {
     await this.nativeShare({
       title,
       text,
-      dialogTitle: 'Share devotion',
+      dialogTitle: this.localeService.translate('devotions.shareDialogTitle'),
     });
   }
 
@@ -348,15 +350,26 @@ export class DevotionalDetailPage implements OnInit {
 
   private resolveLoadErrorMessage(error: unknown): string {
     if (error instanceof HttpErrorResponse && error.status === 0) {
-      return 'You appear to be offline. Check your connection and try again.';
+      return this.localeService.translate('devotions.detailOfflineError');
     }
 
     const message = String((error as { message?: string } | undefined)?.message ?? '').toLowerCase();
     if (message.includes('timeout')) {
-      return 'Loading this devotion timed out. Please try again.';
+      return this.localeService.translate('devotions.detailTimeoutError');
     }
 
-    return "We couldn't load this devotion right now.";
+    return this.localeService.translate('devotions.detailLoadErrorTitle');
+  }
+
+  private getDateLocale(): string {
+    switch (this.localeService.getCurrentLocale()) {
+      case 'it':
+        return 'it-IT';
+      case 'fr':
+        return 'fr-FR';
+      default:
+        return 'en-GB';
+    }
   }
 
 }

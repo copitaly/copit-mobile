@@ -6,17 +6,15 @@
 
     <div class="bible-study-shell cop-page-shell">
       <header class="bible-study-header cop-page-header">
-        <p class="cop-page-header__eyebrow">Bible Study</p>
-        <h1 class="cop-page-header__title">Bible Study</h1>
-        <p class="cop-page-header__subtitle">
-          Grow in faith through God's Word through structured weekly manuals.
-        </p>
+        <p class="cop-page-header__eyebrow">{{ 'bibleStudy.eyebrow' | t }}</p>
+        <h1 class="cop-page-header__title">{{ 'bibleStudy.title' | t }}</h1>
+        <p class="cop-page-header__subtitle">{{ 'bibleStudy.subtitle' | t }}</p>
       </header>
 
       <div *ngIf="loading" class="bible-study-stack" aria-live="polite">
         <section class="bible-study-section bible-study-section--featured">
           <p class="bible-study-section__intro">
-            Start with the newest published manual available to read now.
+            {{ 'bibleStudy.featuredIntro' | t }}
           </p>
 
           <div class="hero-skeleton">
@@ -31,7 +29,7 @@
         </section>
 
         <section class="bible-study-section bible-study-section--manuals">
-          <app-mobile-section-header title="Manuals" subtitle="Choose a manual to read or download."></app-mobile-section-header>
+          <app-mobile-section-header [title]="'bibleStudy.manualsTitle' | t" [subtitle]="'bibleStudy.manualsSubtitle' | t"></app-mobile-section-header>
           <div class="manual-list manual-list--skeleton">
             <div *ngFor="let item of skeletonItems" class="manual-list__item">
               <div class="row-skeleton">
@@ -49,10 +47,10 @@
 
       <div *ngIf="!loading && errorMessage" class="state-card error-state" data-testid="error-state">
         <div class="state-copy">
-          <h2>We couldn't load Bible Study manuals right now.</h2>
+          <h2>{{ 'bibleStudy.errorTitle' | t }}</h2>
           <p>{{ errorMessage }}</p>
         </div>
-        <ion-button expand="block" class="state-button" (click)="retryLoad()">Try Again</ion-button>
+        <ion-button expand="block" class="state-button" (click)="retryLoad()">{{ 'common.tryAgain' | t }}</ion-button>
       </div>
 
       <div *ngIf="!loading && !errorMessage && manuals.length === 0" class="state-card empty-state" data-testid="empty-state">
@@ -60,8 +58,8 @@
           <ion-icon name="book-outline"></ion-icon>
         </div>
         <div class="state-copy">
-          <h2>No Bible Studies Available</h2>
-          <p>New manuals will appear here when published.</p>
+          <h2>{{ 'bibleStudy.emptyTitle' | t }}</h2>
+          <p>{{ 'bibleStudy.emptySubtitle' | t }}</p>
         </div>
       </div>
 
@@ -90,10 +88,10 @@
           </div>
         </section>
 
-        <section class="bible-study-section bible-study-section--manuals" aria-label="Bible Study manuals">
+        <section class="bible-study-section bible-study-section--manuals" [attr.aria-label]="'bibleStudy.manualsTitle' | t">
           <app-mobile-section-header
-            title="Manuals"
-            subtitle="Choose a manual to read or download."
+            [title]="'bibleStudy.manualsTitle' | t"
+            [subtitle]="'bibleStudy.manualsSubtitle' | t"
           ></app-mobile-section-header>
 
           <div class="manual-list">
@@ -104,7 +102,7 @@
                 [detail]="buildManualDetail(manual)"
                 [thumbnailSrc]="manual.cover_image_url"
                 [thumbnailAlt]="manual.title + ' cover'"
-                [ariaLabel]="'Open Bible Study manual ' + manual.title"
+                [ariaLabel]="'bibleStudy.openManualAria' | t:{ title: manual.title }"
                 (rowClick)="openManual(manual)"
               ></app-mobile-content-row>
             </div>

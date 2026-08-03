@@ -14,6 +14,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AlertController, IonContent, IonInput, IonicModule } from '@ionic/angular';
 import { Subject, Subscription, firstValueFrom } from 'rxjs';
 import { filter, finalize, take, takeUntil, timeout } from 'rxjs/operators';
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { PublicBranch } from '../../core/models/branch.model';
 import { AppToastService } from '../../core/services/app-toast.service';
 import {
@@ -67,7 +69,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, IonicModule, DonateBranchSheetComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, IonicModule, DonateBranchSheetComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-donate',
   template: `
@@ -75,8 +77,8 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
       <ion-content fullscreen class="donate-content cop-content--tabs" scrollY="true">
         <div class="donate-shell">
         <header class="cop-page-header donate-page-header" aria-label="Donate">
-          <h1 class="cop-page-header__title">Make a Donation</h1>
-          <p class="cop-page-header__subtitle">Support your local church safely and securely.</p>
+          <h1 class="cop-page-header__title">{{ 'donations.title' | t }}</h1>
+          <p class="cop-page-header__subtitle">{{ 'donations.subtitle' | t }}</p>
         </header>
 
         <div class="surface donate-surface">
@@ -85,17 +87,17 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
               <section class="donate-branch-summary" aria-label="Selected church">
                 <div class="donate-branch-summary__top" *ngIf="branch; else chooseChurchField">
                   <div class="donate-branch-summary__copy">
-                    <p class="section-label donate-branch-summary__eyebrow">Giving to</p>
+                    <p class="section-label donate-branch-summary__eyebrow">{{ 'donations.givingTo' | t }}</p>
                     <h2>{{ branch.name }}</h2>
                     <p class="donate-branch-summary__meta" *ngIf="branch.district || branch.area">
                       <ng-container *ngIf="branch.district?.name">
-                        {{ branch.district?.name }} District
+                        {{ branch.district?.name }} {{ 'donations.districtSuffix' | t }}
                       </ng-container>
                       <ng-container *ngIf="branch.district?.name && branch.area?.name">
                         <span aria-hidden="true">&middot;</span>
                       </ng-container>
                       <ng-container *ngIf="branch.area?.name">
-                        {{ branch.area?.name }} Area
+                        {{ branch.area?.name }} {{ 'donations.areaSuffix' | t }}
                       </ng-container>
                     </p>
                   </div>
@@ -103,10 +105,10 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                     #churchSelectorTrigger
                     type="button"
                     class="donate-branch-summary__change"
-                    aria-label="Change church"
+                    [attr.aria-label]="'donations.changeChurchAria' | t"
                     (click)="openChurchSelector()"
                   >
-                    Change
+                    {{ 'donations.changeChurch' | t }}
                   </button>
                 </div>
 
@@ -116,15 +118,15 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                     type="button"
                     class="donate-branch-selector"
                     [class.is-loading]="branchPrefillLoading"
-                    aria-label="Open church selector"
+                    [attr.aria-label]="'donations.openChurchSelectorAria' | t"
                     (click)="openChurchSelector()"
                   >
                     <span class="donate-branch-selector__icon" aria-hidden="true">
                       <ion-icon name="location-outline"></ion-icon>
                     </span>
                     <span class="donate-branch-selector__copy">
-                      <span class="section-label donate-branch-summary__eyebrow">Giving to</span>
-                      <strong>{{ branchPrefillLoading ? 'Loading your churches...' : 'Choose your church' }}</strong>
+                      <span class="section-label donate-branch-summary__eyebrow">{{ 'donations.givingTo' | t }}</span>
+                      <strong>{{ branchPrefillLoading ? ('donations.loadingChurches' | t) : ('donations.chooseChurch' | t) }}</strong>
                     </span>
                     <span class="donate-branch-selector__chevron" aria-hidden="true">
                       <ion-icon name="chevron-forward"></ion-icon>
@@ -135,7 +137,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
 
               <form [formGroup]="form" (ngSubmit)="submitDonation()" class="donate-form">
                 <section *ngIf="branch" class="donate-form__section donate-form__section--donation-type donate-form__section--revealed">
-                  <div class="section-label">Donation Type</div>
+                  <div class="section-label">{{ 'donations.donationType' | t }}</div>
                   <div *ngIf="categoriesLoading" class="category-chip-list category-chip-list--loading" aria-live="polite">
                     <span *ngFor="let item of categorySkeletonItems" class="chip chip--skeleton"></span>
                   </div>
@@ -150,13 +152,13 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                     class="category-feedback"
                     role="status"
                   >
-                    <p>No donation categories are available for this branch.</p>
+                    <p>{{ 'donations.noDonationTypes' | t }}</p>
                   </div>
                   <div
                     *ngIf="!categoriesLoading && !categoriesLoadError && categories.length > 0"
                     class="category-chip-list"
                     role="group"
-                    aria-label="Donation type"
+                    [attr.aria-label]="'donations.donationTypeAria' | t"
                   >
                     <button
                       *ngFor="let option of categories"
@@ -164,7 +166,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                       class="chip"
                       [class.selected]="isCategory(option.id)"
                       [attr.aria-pressed]="isCategory(option.id)"
-                      [attr.aria-label]="'Donation type ' + option.name"
+                      [attr.aria-label]="('donations.donationType' | t) + ' ' + option.name"
                       (click)="setCategory(option.id)"
                     >
                       {{ option.name }}
@@ -176,15 +178,15 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                 </section>
 
                 <section class="donate-form__section donate-form__section--amount">
-                  <div class="section-label">AMOUNT (EUR)</div>
+                  <div class="section-label">{{ 'donations.amountLabel' | t }}</div>
                   <ion-item class="custom-amount" [class.is-valid]="isAmountValid" fill="solid">
                     <span class="amount-prefix" aria-hidden="true">&euro;</span>
                     <ion-input
                       #amountInput
                       type="text"
                       [value]="customAmountInputValue"
-                      placeholder="0.00"
-                      aria-label="Donation amount in euros"
+                      [placeholder]="'donations.amountPlaceholder' | t"
+                      [attr.aria-label]="'donations.amountAria' | t"
                       inputmode="decimal"
                       autocomplete="off"
                       autocapitalize="off"
@@ -201,14 +203,14 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                 </section>
 
                 <section class="donate-form__section frequency-section">
-                  <div class="section-label">FREQUENCY</div>
-                  <div class="frequency-cards" role="radiogroup" aria-label="Donation frequency">
+                  <div class="section-label">{{ 'donations.frequencyLabel' | t }}</div>
+                  <div class="frequency-cards" role="radiogroup" [attr.aria-label]="'donations.frequencyAria' | t">
                     <button
                       type="button"
                       class="frequency-card"
                       [class.selected]="frequency === 'one_time'"
                       [attr.aria-checked]="frequency === 'one_time'"
-                      aria-label="One-time donation"
+                      [attr.aria-label]="'donations.oneTime' | t"
                       role="radio"
                       (click)="setFrequency('one_time')"
                     >
@@ -216,8 +218,8 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                         <span class="frequency-radio-indicator"></span>
                       </span>
                       <span class="frequency-copy">
-                        <span class="frequency-title">One-time</span>
-                        <span class="frequency-subtitle">Pay once</span>
+                        <span class="frequency-title">{{ 'donations.oneTime' | t }}</span>
+                        <span class="frequency-subtitle">{{ 'donations.oneTimeSubtitle' | t }}</span>
                       </span>
                     </button>
 
@@ -228,7 +230,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                       [class.selected]="frequency === 'monthly'"
                       [class.disabled]="!canUseRecurring"
                       [attr.aria-checked]="frequency === 'monthly'"
-                      aria-label="Monthly donation"
+                      [attr.aria-label]="'donations.monthly' | t"
                       role="radio"
                       (click)="handleMonthlySelection()"
                     >
@@ -236,11 +238,11 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                         <span class="frequency-radio-indicator"></span>
                       </span>
                       <span class="frequency-copy">
-                        <span class="frequency-title">Monthly</span>
+                        <span class="frequency-title">{{ 'donations.monthly' | t }}</span>
                         <span class="frequency-subtitle">
                           {{
                             canUseRecurring
-                              ? 'Charged today, then monthly. Cancel anytime.'
+                              ? ('donations.monthlySubtitle' | t)
                               : monthlyUnavailableMessage
                           }}
                         </span>
@@ -260,19 +262,19 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                       <ion-icon name="lock-closed"></ion-icon>
                     </span>
                     <span class="monthly-callout__copy">
-                      <span class="monthly-callout__title">Monthly giving is available for members.</span>
-                      <span class="monthly-callout__link">Sign in →</span>
+                      <span class="monthly-callout__title">{{ 'donations.monthlyMembersOnly' | t }}</span>
+                      <span class="monthly-callout__link">{{ 'donations.monthlyPromptSignIn' | t }} →</span>
                     </span>
                   </button>
                 </section>
                 <section class="donate-form__section">
-                  <div class="section-label">EMAIL (OPTIONAL)</div>
+                  <div class="section-label">{{ 'donations.emailLabel' | t }}</div>
                 <ion-item class="custom-email" fill="solid">
                   <ion-input
                     #emailInput
                     type="email"
-                    placeholder="name@example.com"
-                    aria-label="Donor email"
+                    [placeholder]="'donations.emailPlaceholder' | t"
+                    [attr.aria-label]="'donations.emailAria' | t"
                     formControlName="donor_email"
                     inputmode="email"
                     autocomplete="email"
@@ -290,7 +292,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                 </ion-text>
 
                 <p class="recurring-confirmation" *ngIf="showRecurringConfirmation">
-                  You will give {{ formattedValidAmount }} every month.
+                  {{ 'donations.recurringConfirmation' | t:{ amount: formattedValidAmount } }}
                 </p>
 
                 <ion-text color="danger" *ngIf="nativeError" class="form-error" role="alert">
@@ -309,7 +311,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                     <span class="cta-label">{{ ctaLabel }}</span>
                     <ion-spinner *ngIf="nativeLoading || loading" name="crescent" slot="start"></ion-spinner>
                   </ion-button>
-                  <p class="trust-text">Payments processed securely via Stripe</p>
+                  <p class="trust-text">{{ 'donations.securePayment' | t }}</p>
                 </div>
               </form>
               </div>
@@ -398,6 +400,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     private readonly router: Router,
     private readonly stripePaymentService: StripePaymentService,
     private readonly appToast: AppToastService,
+    private readonly localeService: LocaleService,
     private readonly alertController: AlertController,
     private readonly sentryTelemetry: SentryTelemetryService,
     private readonly analyticsService: AnalyticsService,
@@ -813,38 +816,40 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
   get ctaLabel(): string {
     if (this.nativeLoading || this.loading) {
-      return this.isMonthlySelected ? 'Starting monthly gift...' : 'Processing...';
+      return this.isMonthlySelected
+        ? this.localeService.translate('donations.startingMonthlyGift')
+        : this.localeService.translate('donations.ctaProcessing');
     }
 
     if (!this.branch) {
-      return 'Choose your church to continue';
+      return this.localeService.translate('donations.chooseChurchToContinue');
     }
 
     if (this.categoriesLoading) {
-      return 'Loading categories...';
+      return this.localeService.translate('donations.loadingCategories');
     }
 
     if (this.categoriesLoadError) {
-      return 'Retry categories to continue';
+      return this.localeService.translate('donations.retryCategoriesToContinue');
     }
 
     if (!this.categories.length) {
-      return 'No categories available';
+      return this.localeService.translate('donations.noCategoriesAvailableCta');
     }
 
     if (!this.selectedCategory) {
-      return 'Choose a category to continue';
+      return this.localeService.translate('donations.chooseTypeToContinue');
     }
 
     const amountControl = this.form.get('amount');
     if (!amountControl || amountControl.invalid) {
-      return 'Enter an amount to continue';
+      return this.localeService.translate('donations.enterAmountToContinue');
     }
 
     const amount = Number(amountControl.value);
     return this.isMonthlySelected
-      ? `Give ${EURO_SYMBOL}${amount.toFixed(2)} monthly`
-      : `Give ${EURO_SYMBOL}${amount.toFixed(2)}`;
+      ? this.localeService.translate('donations.giveAmountMonthly', { amount: `${EURO_SYMBOL}${amount.toFixed(2)}` })
+      : this.localeService.translate('donations.giveAmount', { amount: `${EURO_SYMBOL}${amount.toFixed(2)}` });
   }
 
   get showRecurringConfirmation(): boolean {
@@ -864,7 +869,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   get monthlyUnavailableMessage(): string {
-    return 'Monthly giving is available for member accounts.';
+    return this.localeService.translate('donations.monthlyMemberError');
   }
 
   get formattedValidAmount(): string {
@@ -883,23 +888,23 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     }
 
     if (amountControl.hasError('required')) {
-      return 'Enter an amount to continue';
+      return this.localeService.translate('donations.enterAmountToContinue');
     }
 
     if (amountControl.hasError('greaterThanZero')) {
-      return `Amount must be greater than ${EURO_SYMBOL}0`;
+      return this.localeService.translate('donations.amountGreaterThanZero', { amount: `${EURO_SYMBOL}0` });
     }
 
     if (amountControl.hasError('incompleteAmount')) {
-      return 'Complete the amount before continuing';
+      return this.localeService.translate('donations.completeAmount');
     }
 
     if (amountControl.hasError('decimalPlaces')) {
-      return 'Use up to 2 decimal places';
+      return this.localeService.translate('donations.twoDecimalPlaces');
     }
 
     if (amountControl.hasError('invalidAmount')) {
-      return 'Enter a valid amount in euros';
+      return this.localeService.translate('donations.validEuroAmount');
     }
 
     return null;
@@ -913,10 +918,10 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   getHierarchy(branch: PublicBranch): string {
     const parts = [];
     if (branch.district?.name) {
-      parts.push(`${branch.district.name} District`);
+      parts.push(`${branch.district.name} ${this.localeService.translate('donations.districtSuffix')}`);
     }
     if (branch.area?.name) {
-      parts.push(`${branch.area.name} Area`);
+      parts.push(`${branch.area.name} ${this.localeService.translate('donations.areaSuffix')}`);
     }
     return parts.join(' • ');
   }
@@ -973,38 +978,38 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
   private readyForPayment(): boolean {
     if (!this.branch) {
-      this.errorMessage = 'Please pick a branch first.';
+      this.errorMessage = this.localeService.translate('donations.chooseBranchError');
       return false;
     }
 
     if (!this.branch.is_active || !this.branch.donations_enabled) {
-      this.errorMessage = 'This branch is not available for donations right now.';
+      this.errorMessage = this.localeService.translate('donations.branchUnavailableError');
       return false;
     }
 
     if (this.categoriesLoading) {
-      this.errorMessage = 'Donation categories are still loading.';
+      this.errorMessage = this.localeService.translate('donations.typesLoadingError');
       return false;
     }
 
     if (this.categoriesLoadError) {
-      this.errorMessage = 'Unable to load donation categories. Please retry.';
+      this.errorMessage = this.localeService.translate('donations.typesRetryError');
       return false;
     }
 
     if (!this.categories.length) {
-      this.errorMessage = 'No donation categories are available for this branch.';
+      this.errorMessage = this.localeService.translate('donations.typesMissingError');
       return false;
     }
 
     if (!this.selectedCategory) {
-      this.errorMessage = 'Please choose a donation category.';
+      this.errorMessage = this.localeService.translate('donations.chooseTypeError');
       return false;
     }
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.errorMessage = 'Please fill the required fields.';
+      this.errorMessage = this.localeService.translate('donations.requiredFieldsError');
       return false;
     }
 
@@ -1020,8 +1025,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       this.clearPendingPaymentState();
       this.selectedFrequencyState = 'one_time';
       this.nativeError = this.authService.isAuthenticatedSnapshot
-        ? 'Monthly giving is available for member accounts.'
-        : 'Sign in to give monthly.';
+        ? this.localeService.translate('donations.monthlyMemberError')
+        : this.localeService.translate('donations.monthlySignInPrompt');
       void this.showMonthlyAccessToast();
       return;
     }
@@ -1029,7 +1034,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     if (!this.selectedCategoryAllowsRecurring) {
       this.clearPendingPaymentState();
       this.selectedFrequencyState = 'one_time';
-      this.categoryRecurringHelperMessage = 'Recurring giving is not available for this category.';
+      this.categoryRecurringHelperMessage = this.localeService.translate('donations.categoryRecurringUnavailable');
       return;
     }
 
@@ -1061,7 +1066,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       if (!response.client_secret?.trim()) {
         this.clearPendingPaymentState();
         this.nativeLoading = false;
-        this.nativeError = 'Unable to start monthly payment. Please try again.';
+        this.nativeError = this.localeService.translate('donations.monthlyPaymentStartError');
         void this.showMonthlyClientSecretErrorToast();
         return;
       }
@@ -1101,7 +1106,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       }
 
       if (error.status === 401) {
-        return 'Sign in to give monthly.';
+        return this.localeService.translate('donations.monthlySignInPrompt');
       }
 
       if (error.status === 403) {
@@ -1109,15 +1114,15 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       }
 
       if (error.status === 0) {
-        return "You're offline. Check your connection and try again.";
+        return this.localeService.translate('donations.offlineError');
       }
     }
 
     if (this.isTimeoutError(error)) {
-      return 'The payment request timed out. Please try again.';
+      return this.localeService.translate('donations.timeoutError');
     }
 
-    return 'Unable to start monthly giving. Please try again.';
+    return this.localeService.translate('donations.monthlyStartError');
   }
 
   private extractApiErrorMessage(errorBody: unknown): string | null {
@@ -1260,7 +1265,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     if (this.isMonthlySelected && !this.selectedCategoryAllowsRecurring) {
       this.selectedFrequencyState = 'one_time';
       if (showCategoryMessage) {
-        this.categoryRecurringHelperMessage = 'Recurring giving is not available for this category.';
+        this.categoryRecurringHelperMessage = this.localeService.translate('donations.categoryRecurringUnavailable');
       }
     }
   }
@@ -1268,30 +1273,30 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   private async showMonthlyAccessToast(): Promise<void> {
     await this.appToast.warning(
       this.authService.isAuthenticatedSnapshot
-        ? 'Monthly giving is available for member accounts.'
-        : 'Sign in to give monthly.'
+        ? this.localeService.translate('donations.monthlyMemberError')
+        : this.localeService.translate('donations.monthlySignInPrompt')
     );
   }
 
   async showMonthlyGivingPrompt(): Promise<void> {
     const alert = await this.alertController.create({
-      header: 'Monthly giving',
-      message: 'Monthly giving requires a free account so you can manage and cancel your recurring donations.',
+      header: this.localeService.translate('donations.monthlyPromptTitle'),
+      message: this.localeService.translate('donations.monthlyPromptMessage'),
       buttons: [
         {
-          text: 'Sign in',
+          text: this.localeService.translate('donations.monthlyPromptSignIn'),
           handler: () => {
             void this.router.navigate(['/login']);
           },
         },
         {
-          text: 'Create account',
+          text: this.localeService.translate('donations.monthlyPromptCreateAccount'),
           handler: () => {
             void this.router.navigate(['/register']);
           },
         },
         {
-          text: 'Cancel',
+          text: this.localeService.translate('common.cancel'),
           role: 'cancel',
         },
       ],
@@ -1301,7 +1306,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   private async showMonthlyClientSecretErrorToast(): Promise<void> {
-    await this.appToast.error('Unable to start monthly payment. Please try again.');
+    await this.appToast.error(this.localeService.translate('donations.monthlyPaymentStartError'));
   }
 
   private async showRecurringCreateErrorToast(message: string): Promise<void> {

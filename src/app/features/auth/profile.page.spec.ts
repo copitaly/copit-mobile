@@ -438,7 +438,7 @@ describe('ProfilePage', () => {
 
     await createComponent();
 
-    const prayerButton = fixture.nativeElement.querySelector('[data-testid="prayer"]') as HTMLButtonElement | null;
+    const prayerButton = fixture.nativeElement.querySelector('[data-testid="my-prayer-requests"]') as HTMLButtonElement | null;
     prayerButton?.click();
     prayerButton?.click();
 
