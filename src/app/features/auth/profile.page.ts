@@ -249,12 +249,6 @@ export class ProfilePage implements OnInit, OnDestroy {
           route: '/prayer',
         },
         {
-          title: 'Community',
-          subtitle: 'Read approved public prayer requests',
-          icon: 'people-outline',
-          route: '/community',
-        },
-        {
           title: 'My Prayer Requests',
           subtitle: 'Review your submitted prayer history',
           icon: 'chatbubbles-outline',
