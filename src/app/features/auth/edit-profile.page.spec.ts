@@ -86,6 +86,17 @@ describe('EditProfilePage', () => {
     expect(page.form.value.first_name).toBe('Member');
     expect(page.form.value.last_name).toBe('User');
     expect(page.form.value.phone_number).toBe('+39333111222');
+    expect(page.form.value.language).toBe('en');
+  });
+
+  it('exposes only canonical language options', async () => {
+    await createComponent();
+
+    expect(page.languageOptions).toEqual([
+      { value: 'en', label: 'English' },
+      { value: 'it', label: 'Italiano' },
+      { value: 'fr', label: 'Français' },
+    ]);
   });
 
   it('shows a retryable load error for generic failures instead of crashing', async () => {
@@ -123,7 +134,7 @@ describe('EditProfilePage', () => {
 
   it('trims payload values and refreshes the form after a successful update without redirecting away', async () => {
     authService.updateMemberProfile.and.returnValue(
-      of({ ...profile, first_name: 'Maria', last_name: 'Rossi', phone_number: '+39333130099', language: 'italian' })
+      of({ ...profile, first_name: 'Maria', last_name: 'Rossi', phone_number: '+39333130099', language: 'it' })
     );
     authService.getCurrentUser.and.returnValues(of(profile), of({ ...profile, first_name: 'Maria' }));
 
@@ -132,7 +143,7 @@ describe('EditProfilePage', () => {
       first_name: '  Maria  ',
       last_name: '  Rossi ',
       phone_number: ' +39333130099 ',
-      preferred_language: ' italian ',
+      language: 'it',
     });
 
     await page.save();
@@ -142,18 +153,42 @@ describe('EditProfilePage', () => {
       first_name: 'Maria',
       last_name: 'Rossi',
       phone_number: '+39333130099',
-      preferred_language: 'italian',
+      language: 'it',
     });
     expect(authService.getCurrentUser.calls.count()).toBe(2);
     expect(page.form.getRawValue()).toEqual({
       first_name: 'Maria',
       last_name: 'Rossi',
       phone_number: '+39333130099',
-      preferred_language: 'italian',
+      language: 'it',
     });
     expect(page.form.pristine).toBeTrue();
     expect(appToast.success).toHaveBeenCalledWith('Profile updated successfully.');
     expect(router.navigateByUrl).not.toHaveBeenCalledWith('/profile/account-settings', { replaceUrl: true });
+  });
+
+  it('normalizes legacy italian to the canonical form value', async () => {
+    authService.getCurrentUser.and.returnValue(of({ ...profile, language: 'italian' }));
+
+    await createComponent();
+
+    expect(page.form.value.language).toBe('it');
+  });
+
+  it('normalizes legacy french to the canonical form value', async () => {
+    authService.getCurrentUser.and.returnValue(of({ ...profile, language: 'french' }));
+
+    await createComponent();
+
+    expect(page.form.value.language).toBe('fr');
+  });
+
+  it('falls back to english for unsupported legacy values', async () => {
+    authService.getCurrentUser.and.returnValue(of({ ...profile, language: 'spanish' }));
+
+    await createComponent();
+
+    expect(page.form.value.language).toBe('en');
   });
 
   it('prevents duplicate save requests while an update is in flight', async () => {

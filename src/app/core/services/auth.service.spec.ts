@@ -221,4 +221,48 @@ describe('AuthService', () => {
 
     expect(responseBody).toEqual({ success: true, message: 'Password has been reset.' });
   }));
+
+  it('normalizes legacy language values when setting current user state', () => {
+    service.setCurrentUser({
+      ...profile,
+      language: 'italian',
+    });
+
+    expect(service.currentUserSnapshot?.language).toBe('it');
+    expect(storage.setCurrentUser).toHaveBeenCalledWith(
+      jasmine.objectContaining({ language: 'it' })
+    );
+  });
+
+  it('falls back to en for unsupported current user language values', () => {
+    service.setCurrentUser({
+      ...profile,
+      language: 'portuguese',
+    });
+
+    expect(service.currentUserSnapshot?.language).toBe('en');
+    expect(storage.setCurrentUser).toHaveBeenCalledWith(
+      jasmine.objectContaining({ language: 'en' })
+    );
+  });
+
+  it('sends canonical language in the member profile update payload', fakeAsync(() => {
+    (service as unknown as { accessToken: string | null }).accessToken = 'active-token';
+
+    let responseBody: MemberProfile | undefined;
+    service.updateMemberProfile({ language: 'fr' }).subscribe((response) => {
+      responseBody = response;
+    });
+    flushMicrotasks();
+
+    const request = httpMock.expectOne(api('members/me'));
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ language: 'fr' });
+    request.flush({ ...profile, language: 'fr' });
+
+    flushMicrotasks();
+
+    expect(responseBody?.language).toBe('fr');
+    expect(service.currentUserSnapshot?.language).toBe('fr');
+  }));
 });

@@ -10,6 +10,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { HardwareBackCoordinatorService } from '../../core/services/hardware-back-coordinator.service';
 import { MemberProfile } from '../../core/models/user.model';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
+import { SUPPORTED_LANGUAGE_OPTIONS, normalizePreferredLanguage } from '../../core/utils/language-preference';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
@@ -106,7 +107,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                     <ion-item fill="solid" class="form-field form-field--select">
                       <ion-select
                         id="edit-language"
-                        formControlName="preferred_language"
+                        formControlName="language"
                         placeholder="Select language"
                         interface="action-sheet"
                         justify="space-between"
@@ -307,14 +308,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
   ],
 })
 export class EditProfilePage implements OnInit, OnDestroy {
-  readonly languageOptions = [
-    { value: 'english', label: 'English' },
-    { value: 'italian', label: 'Italian' },
-    { value: 'french', label: 'French' },
-    { value: 'spanish', label: 'Spanish' },
-    { value: 'german', label: 'German' },
-    { value: 'portuguese', label: 'Portuguese' },
-  ] as const;
+  readonly languageOptions = SUPPORTED_LANGUAGE_OPTIONS;
 
   profile: MemberProfile | null = null;
   loading = true;
@@ -333,7 +327,7 @@ export class EditProfilePage implements OnInit, OnDestroy {
     first_name: ['', [Validators.required, Validators.maxLength(150), this.trimmedRequiredValidator]],
     last_name: ['', [Validators.required, Validators.maxLength(150), this.trimmedRequiredValidator]],
     phone_number: ['', [Validators.required, this.phoneValidator]],
-    preferred_language: [''],
+    language: ['en'],
   });
 
   constructor(
@@ -397,7 +391,7 @@ export class EditProfilePage implements OnInit, OnDestroy {
           first_name: profile.first_name ?? '',
           last_name: profile.last_name ?? '',
           phone_number: profile.phone_number ?? profile.phone ?? '',
-          preferred_language: this.normalizeLanguage(profile.language),
+          language: normalizePreferredLanguage(profile.language),
         });
         this.loading = false;
         this.loadRequestInFlight = false;
@@ -440,7 +434,7 @@ export class EditProfilePage implements OnInit, OnDestroy {
       first_name: this.form.value.first_name?.trim() || undefined,
       last_name: this.form.value.last_name?.trim() || undefined,
       phone_number: this.form.value.phone_number?.trim() || undefined,
-      preferred_language: this.normalizeLanguage(this.form.value.preferred_language) || null,
+      language: normalizePreferredLanguage(this.form.value.language),
     };
 
     this.authService.updateMemberProfile(payload).subscribe({
@@ -453,7 +447,7 @@ export class EditProfilePage implements OnInit, OnDestroy {
               first_name: resolvedProfile.first_name ?? '',
               last_name: resolvedProfile.last_name ?? '',
               phone_number: resolvedProfile.phone_number ?? resolvedProfile.phone ?? '',
-              preferred_language: this.normalizeLanguage(resolvedProfile.language),
+              language: normalizePreferredLanguage(resolvedProfile.language),
             },
             { emitEvent: false }
           );
@@ -489,7 +483,7 @@ export class EditProfilePage implements OnInit, OnDestroy {
       return null;
     }
 
-    for (const key of ['first_name', 'last_name', 'phone_number', 'preferred_language']) {
+    for (const key of ['first_name', 'last_name', 'phone_number', 'language']) {
       const value = body[key];
       if (Array.isArray(value) && typeof value[0] === 'string') {
         return value[0];
@@ -526,11 +520,6 @@ export class EditProfilePage implements OnInit, OnDestroy {
       return null;
     }
     return /^\+?[0-9()\-\s]{7,20}$/.test(value) ? null : { invalidPhone: true };
-  }
-
-  private normalizeLanguage(value: unknown): string {
-    const normalized = `${value ?? ''}`.trim().toLowerCase();
-    return this.languageOptions.some((option) => option.value === normalized) ? normalized : '';
   }
 
   private async navigateByUrl(url: string, extras?: { replaceUrl?: boolean }): Promise<void> {

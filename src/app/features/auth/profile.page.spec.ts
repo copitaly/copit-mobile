@@ -29,7 +29,7 @@ describe('ProfilePage', () => {
     last_name: 'User',
     role: 'member',
     phone_number: '+39333111222',
-    language: 'english',
+    language: 'en',
     date_joined: '2026-07-01T00:00:00Z',
     donation_summary: {
       total_paid_amount: '0.00',
