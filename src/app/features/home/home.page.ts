@@ -146,12 +146,7 @@ export class HomePage implements OnInit, OnDestroy {
       return this.localeService.translate('home.featuredFallbackMeta');
     }
 
-    const details = [
-      this.bibleStudyMetadataService.formatPrimaryMetadata(this.featuredManual),
-      this.bibleStudyMetadataService.formatWeekRange(this.featuredManual),
-    ].filter(Boolean);
-
-    return details.join(` ${this.localeService.translate('bibleStudy.metadataSeparator')} `);
+    return this.bibleStudyMetadataService.formatMetadata(this.featuredManual);
   }
 
   get featuredHeroActionLabel(): string {

@@ -1,8 +1,12 @@
 {
   "app": {
-    "name": "C.O.P Italy",
-    "taglineLineOne": "Étude biblique - Dévotions",
-    "taglineLineTwo": "Prayer - Giving"
+    "name": "COP Italy"
+  },
+  "splash": {
+    "taglineLineOne": "\u00c9tude biblique \u2022 D\u00e9votions",
+    "taglineLineTwo": "Pri\u00e8re \u2022 Dons",
+    "logoAlt": "Logo COP Italy",
+    "ariaLabel": "\u00c9cran de d\u00e9marrage COP Italy"
   },
   "common": {
     "loading": "Chargement",
@@ -400,8 +404,7 @@
     "startReading": "Commencer la lecture",
     "pageProgress": "Page {{current}} sur {{total}}",
     "fullYear": "Année complète",
-    "weeksRange": "Semaines {{start}}\u2013{{end}}",
-    "volume": "Volume {{value}}",
+    "weeksRange": "Semaines {{start}}–{{end}}",
     "manualLabel": "Manuel d’étude biblique",
     "manualsTitle": "Manuels",
     "manualsSubtitle": "Choisissez un manuel à lire ou à télécharger.",
@@ -441,9 +444,12 @@
     "manualLoadFailure": "Nous n'avons pas pu charger ce manuel d’étude biblique pour le moment.",
     "pdfMissingTitle": "PDF indisponible",
     "tryAgain": "Réessayer",
-    "metadataSeparator": "\u00b7",
-    "week": "Semaine",
-    "weeks": "Semaines"
+    "metadata": {
+      "separator": "\u00b7",
+      "week": "Semaine",
+      "weeks": "Semaines",
+      "volume": "Volume {{value}}"
+    }
   },
   "devotions": {
     "title": "Dévotions",

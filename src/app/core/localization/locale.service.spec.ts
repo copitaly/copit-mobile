@@ -180,6 +180,22 @@ describe('LocaleService', () => {
     expect(service.translate('home.communityLabel')).toBe('Communauté');
   });
 
+  it('exposes localized splash branding and tagline keys', async () => {
+    await service.initialize();
+
+    expect(service.translate('app.name')).toBe('COP Italy');
+    expect(service.translate('splash.taglineLineOne')).toBe('Bible Study • Devotions');
+    expect(service.translate('splash.taglineLineTwo')).toBe('Prayer • Giving');
+
+    await service.setLocale('it', { persistGuest: false, source: 'runtime' });
+    expect(service.translate('splash.taglineLineOne')).toBe('Studio biblico • Devozioni');
+    expect(service.translate('splash.taglineLineTwo')).toBe('Preghiera • Donazioni');
+
+    await service.setLocale('fr', { persistGuest: false, source: 'runtime' });
+    expect(service.translate('splash.taglineLineOne')).toBe('Étude biblique • Dévotions');
+    expect(service.translate('splash.taglineLineTwo')).toBe('Prière • Dons');
+  });
+
   it('falls back to English when the active locale is missing a key', async () => {
     await service.initialize();
     await service.setLocale('fr', { persistGuest: false, source: 'runtime' });

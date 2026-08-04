@@ -1,8 +1,12 @@
 {
   "app": {
-    "name": "C.O.P Italy",
-    "taglineLineOne": "Bible Study - Devotions",
-    "taglineLineTwo": "Prayer - Giving"
+    "name": "COP Italy"
+  },
+  "splash": {
+    "taglineLineOne": "Bible Study \u2022 Devotions",
+    "taglineLineTwo": "Prayer \u2022 Giving",
+    "logoAlt": "COP Italy logo",
+    "ariaLabel": "COP Italy splash screen"
   },
   "common": {
     "loading": "Loading",
@@ -400,8 +404,7 @@
     "startReading": "Start Reading",
     "pageProgress": "Page {{current}} of {{total}}",
     "fullYear": "Full year",
-    "weeksRange": "Weeks {{start}}\u2013{{end}}",
-    "volume": "Volume {{value}}",
+    "weeksRange": "Weeks {{start}}–{{end}}",
     "manualsTitle": "Manuals",
     "manualsSubtitle": "Choose a manual to read or download.",
     "manualLabel": "Bible Study Manual",
@@ -441,9 +444,12 @@
     "manualLoadFailure": "We couldn't load this Bible Study manual right now.",
     "pdfMissingTitle": "PDF unavailable",
     "tryAgain": "Try Again",
-    "metadataSeparator": "\u00b7",
-    "week": "Week",
-    "weeks": "Weeks"
+    "metadata": {
+      "separator": "\u00b7",
+      "week": "Week",
+      "weeks": "Weeks",
+      "volume": "Volume {{value}}"
+    }
   },
   "devotions": {
     "title": "Devotions",

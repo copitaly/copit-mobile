@@ -1,8 +1,12 @@
 {
   "app": {
-    "name": "C.O.P Italy",
-    "taglineLineOne": "Studio biblico - Devozioni",
-    "taglineLineTwo": "Prayer - Giving"
+    "name": "COP Italy"
+  },
+  "splash": {
+    "taglineLineOne": "Studio biblico \u2022 Devozioni",
+    "taglineLineTwo": "Preghiera \u2022 Donazioni",
+    "logoAlt": "Logo COP Italy",
+    "ariaLabel": "Schermata iniziale COP Italy"
   },
   "common": {
     "loading": "Caricamento",
@@ -400,8 +404,7 @@
     "startReading": "Inizia a leggere",
     "pageProgress": "Pagina {{current}} di {{total}}",
     "fullYear": "Anno completo",
-    "weeksRange": "Settimane {{start}}\u2013{{end}}",
-    "volume": "Volume {{value}}",
+    "weeksRange": "Settimane {{start}}–{{end}}",
     "manualLabel": "Manuale di studio biblico",
     "manualsTitle": "Manuali",
     "manualsSubtitle": "Scegli un manuale da leggere o scaricare.",
@@ -441,9 +444,12 @@
     "manualLoadFailure": "Non siamo riusciti a caricare questo manuale di studio biblico in questo momento.",
     "pdfMissingTitle": "PDF non disponibile",
     "tryAgain": "Riprova",
-    "metadataSeparator": "\u00b7",
-    "week": "Settimana",
-    "weeks": "Settimane"
+    "metadata": {
+      "separator": "\u00b7",
+      "week": "Settimana",
+      "weeks": "Settimane",
+      "volume": "Volume {{value}}"
+    }
   },
   "devotions": {
     "title": "Devozioni",

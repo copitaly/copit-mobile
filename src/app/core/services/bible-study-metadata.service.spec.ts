@@ -1,8 +1,8 @@
-import { TestBed } from '@angular/core/testing';
 import { DOCUMENT } from '@angular/common';
+import { TestBed } from '@angular/core/testing';
 
-import { LocaleService } from '../localization/locale.service';
 import { GuestLocaleStorageService } from '../localization/guest-locale-storage.service';
+import { LocaleService } from '../localization/locale.service';
 import { BibleStudyMetadataService } from './bible-study-metadata.service';
 
 describe('BibleStudyMetadataService', () => {
@@ -43,6 +43,7 @@ describe('BibleStudyMetadataService', () => {
 
     expect(service.formatPrimaryMetadata(manual)).toBe('2027 · English');
     expect(service.formatSecondaryMetadata(manual)).toBe('Volume 2 · Weeks 27–37');
+    expect(service.formatMetadata(manual)).toBe('2027 · English · Volume 2 · Weeks 27–37');
   });
 
   it('formats single-week manuals without repeating the week number', () => {
@@ -56,6 +57,7 @@ describe('BibleStudyMetadataService', () => {
 
     expect(service.formatWeekRange(manual)).toBe('Week 27');
     expect(service.formatSecondaryMetadata(manual)).toBe('Volume 3 · Week 27');
+    expect(service.formatMetadata(manual)).toBe('2027 · English · Volume 3 · Week 27');
   });
 
   it('localizes week labels in Italian and French while preserving backend language text', async () => {
@@ -74,5 +76,31 @@ describe('BibleStudyMetadataService', () => {
     await localeService.setLocale('fr', { persistGuest: false, source: 'runtime' });
     expect(service.formatPrimaryMetadata(manual)).toBe('2027 · English');
     expect(service.formatSecondaryMetadata(manual)).toBe('Volume 2 · Semaines 27–37');
+  });
+
+  it('omits missing metadata parts cleanly without duplicate separators', () => {
+    const manual = {
+      year: 2027,
+      language_display: '',
+      volume: '',
+      start_week: null,
+      end_week: null,
+    };
+
+    expect(service.formatMetadata(manual)).toBe('2027 · Full year');
+    expect(service.formatMetadata(manual)).not.toContain('�');
+  });
+
+  it('uses the correct start and end week fields for multi-week ranges', () => {
+    const manual = {
+      year: 2027,
+      language_display: 'English',
+      volume: '2',
+      start_week: 27,
+      end_week: 37,
+    };
+
+    expect(service.formatWeekRange(manual)).toBe('Weeks 27–37');
+    expect(service.formatWeekRange(manual)).not.toBe('Weeks 27–27');
   });
 });

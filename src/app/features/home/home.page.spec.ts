@@ -153,8 +153,8 @@ describe('HomePage', () => {
   it('formats featured Bible Study metadata with a middle-dot separator and correct week range', async () => {
     fixture = await createComponent();
 
-    expect(page.featuredHeroMeta).toBe('2026 · English · Weeks 15–22');
-    expect(page.featuredHeroMeta).not.toContain('�');
+    expect(page.featuredHeroMeta).toBe('2026 \u00b7 English \u00b7 Volume 2 \u00b7 Weeks 15\u201322');
+    expect(page.featuredHeroMeta).not.toContain('\uFFFD');
   });
 
   it('opens the featured manual detail route from the hero card', async () => {
@@ -163,7 +163,7 @@ describe('HomePage', () => {
     (fixture.nativeElement.querySelector('[data-testid="featured-manual-card"]') as HTMLButtonElement).click();
     await Promise.resolve();
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/11');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/11/read');
   });
 
   it('falls back to the Bible Study list when no featured manual exists', async () => {

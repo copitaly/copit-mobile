@@ -12,6 +12,19 @@ type ManualMetadataSource = Pick<
 export class BibleStudyMetadataService {
   constructor(private readonly localeService: LocaleService) {}
 
+  formatMetadata(manual: ManualMetadataSource | null | undefined): string {
+    if (!manual) {
+      return '';
+    }
+
+    return this.joinParts([
+      this.formatYear(manual.year),
+      this.normalizeText(manual.language_display),
+      this.formatVolume(manual.volume),
+      this.formatWeekRange(manual),
+    ]);
+  }
+
   formatPrimaryMetadata(manual: ManualMetadataSource | null | undefined): string {
     if (!manual) {
       return '';
@@ -40,10 +53,10 @@ export class BibleStudyMetadataService {
     }
 
     if (manual.start_week === manual.end_week) {
-      return `${this.localeService.translate('bibleStudy.week')} ${manual.start_week}`;
+      return `${this.localeService.translate('bibleStudy.metadata.week')} ${manual.start_week}`;
     }
 
-    return `${this.localeService.translate('bibleStudy.weeks')} ${manual.start_week}\u2013${manual.end_week}`;
+    return `${this.localeService.translate('bibleStudy.metadata.weeks')} ${manual.start_week}\u2013${manual.end_week}`;
   }
 
   formatVolume(volume: string | null | undefined): string | null {
@@ -54,7 +67,7 @@ export class BibleStudyMetadataService {
 
     const match = trimmed.match(/^volume\s+(.+)$/i);
     const value = match ? match[1].trim() : trimmed;
-    return this.localeService.translate('bibleStudy.volume', { value });
+    return this.localeService.translate('bibleStudy.metadata.volume', { value });
   }
 
   private formatYear(year: number | null | undefined): string {
@@ -62,7 +75,7 @@ export class BibleStudyMetadataService {
   }
 
   private joinParts(parts: Array<string | null | undefined>): string {
-    const separator = ` ${this.localeService.translate('bibleStudy.metadataSeparator')} `;
+    const separator = ` ${this.localeService.translate('bibleStudy.metadata.separator')} `;
     return parts.filter((part): part is string => !!part && !!part.trim()).join(separator);
   }
 

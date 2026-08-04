@@ -132,9 +132,9 @@ describe('BibleStudyPage', () => {
     expect(text).toContain('2027');
     expect(text).toContain('English');
     expect(text).toContain('Volume 2');
-    expect(text).toContain('2027 · English');
+    expect(text).toContain('2027 \u00b7 English');
     expect(text).toContain('Volume 2');
-    expect(text).toContain('Weeks 27–37');
+    expect(text).toContain('Weeks 27\u201337');
   });
 
   it('updates the Bible Study heading immediately when the locale changes while preserving backend manual titles', async () => {
@@ -150,7 +150,7 @@ describe('BibleStudyPage', () => {
     await localeService.setLocale('fr', { persistGuest: false, source: 'runtime' });
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Étude biblique');
+    expect(fixture.nativeElement.textContent).toContain('\u00c9tude biblique');
     expect(fixture.nativeElement.textContent).toContain('English Bible Study');
   });
 
