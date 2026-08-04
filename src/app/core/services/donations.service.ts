@@ -6,6 +6,7 @@ import { ApiService } from './api.service';
 import {
   DonationCategory,
   DonationCheckoutRequest,
+  DonationHostedCheckoutRequest,
   DonationCheckoutResponse,
   DonationCheckoutVerificationResponse,
   RecurringDonationCreateRequest,
@@ -33,7 +34,7 @@ export class DonationsService {
   ) {}
 
   createCheckout(
-    payload: DonationCheckoutRequest
+    payload: DonationHostedCheckoutRequest
   ): Observable<DonationCheckoutResponse> {
     this.sentryTelemetry.addFeatureBreadcrumb('donations', 'One-time checkout started', {
       church_id: payload.church_id,

@@ -16,12 +16,14 @@ import { Subject, Subscription, firstValueFrom } from 'rxjs';
 import { filter, finalize, take, takeUntil, timeout } from 'rxjs/operators';
 import { LocaleService } from '../../core/localization/locale.service';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
+import { normalizePreferredLanguage } from '../../core/utils/language-preference';
 import { PublicBranch } from '../../core/models/branch.model';
 import { AppToastService } from '../../core/services/app-toast.service';
 import {
   DonationCategory,
   DonationCheckoutRequest,
   DonationFrequency,
+  DonationHostedCheckoutRequest,
   RecurringDonationCreateRequest,
 } from '../../core/models/donation.model';
 import { MemberRecentDonation, SavedChurch } from '../../core/models/user.model';
@@ -493,7 +495,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       return;
     }
 
-    const payload = this.buildPayload();
+    const payload = this.buildHostedCheckoutPayload();
     this.loading = true;
     this.errorMessage = undefined;
     this.nativeError = undefined;
@@ -933,6 +935,13 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       category_id: formValue.categoryId ?? undefined,
       amount: Number(formValue.amount),
       donor_email: formValue.donor_email || undefined,
+    };
+  }
+
+  private buildHostedCheckoutPayload(): DonationHostedCheckoutRequest {
+    return {
+      ...this.buildPayload(),
+      locale: normalizePreferredLanguage(this.localeService.getCurrentLocale()),
     };
   }
 
