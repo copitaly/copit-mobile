@@ -14,6 +14,7 @@ import { LocaleService } from '../../core/localization/locale.service';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { MemberRecentDonation, SavedChurch } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
+import { BibleStudyMetadataService } from '../../core/services/bible-study-metadata.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
 import { DevotionalService } from '../../core/services/devotional.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
@@ -35,6 +36,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   private readonly authService = inject(AuthService);
   private readonly bibleStudyService = inject(BibleStudyService);
+  private readonly bibleStudyMetadataService = inject(BibleStudyMetadataService);
   private readonly devotionalService = inject(DevotionalService);
   private readonly selectedBranchService = inject(SelectedBranchService);
   private readonly router = inject(Router);
@@ -145,12 +147,11 @@ export class HomePage implements OnInit, OnDestroy {
     }
 
     const details = [
-      this.featuredManual.year > 0 ? `${this.featuredManual.year}` : '',
-      this.normalizeText(this.featuredManual.language_display),
-      this.formatWeekRange(this.featuredManual),
+      this.bibleStudyMetadataService.formatPrimaryMetadata(this.featuredManual),
+      this.bibleStudyMetadataService.formatWeekRange(this.featuredManual),
     ].filter(Boolean);
 
-    return details.join(' � ');
+    return details.join(` ${this.localeService.translate('bibleStudy.metadataSeparator')} `);
   }
 
   get featuredHeroActionLabel(): string {
@@ -656,14 +657,6 @@ export class HomePage implements OnInit, OnDestroy {
       default:
         return 'en-GB';
     }
-  }
-
-  private formatWeekRange(manual: Pick<BibleStudyManualListItem, 'start_week' | 'end_week'>): string {
-    if (manual.start_week === null || manual.end_week === null) {
-      return this.localeService.translate('bibleStudy.fullYear');
-    }
-
-    return `Weeks ${manual.start_week}-${manual.end_week}`;
   }
 
   private async navigateTo(target: string | readonly unknown[], byUrl = false): Promise<void> {

@@ -400,7 +400,7 @@
     "startReading": "Inizia a leggere",
     "pageProgress": "Pagina {{current}} di {{total}}",
     "fullYear": "Anno completo",
-    "weeksRange": "Settimane {{start}}-{{end}}",
+    "weeksRange": "Settimane {{start}}\u2013{{end}}",
     "volume": "Volume {{value}}",
     "manualLabel": "Manuale di studio biblico",
     "manualsTitle": "Manuali",
@@ -440,7 +440,10 @@
     "manualTimeoutError": "Il caricamento di questo manuale ha richiesto troppo tempo. Riprova.",
     "manualLoadFailure": "Non siamo riusciti a caricare questo manuale di studio biblico in questo momento.",
     "pdfMissingTitle": "PDF non disponibile",
-    "tryAgain": "Riprova"
+    "tryAgain": "Riprova",
+    "metadataSeparator": "\u00b7",
+    "week": "Settimana",
+    "weeks": "Settimane"
   },
   "devotions": {
     "title": "Devozioni",

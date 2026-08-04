@@ -400,7 +400,7 @@
     "startReading": "Commencer la lecture",
     "pageProgress": "Page {{current}} sur {{total}}",
     "fullYear": "Année complète",
-    "weeksRange": "Semaines {{start}}-{{end}}",
+    "weeksRange": "Semaines {{start}}\u2013{{end}}",
     "volume": "Volume {{value}}",
     "manualLabel": "Manuel d’étude biblique",
     "manualsTitle": "Manuels",
@@ -440,7 +440,10 @@
     "manualTimeoutError": "Le chargement de ce manuel a pris trop de temps. Veuillez réessayer.",
     "manualLoadFailure": "Nous n'avons pas pu charger ce manuel d’étude biblique pour le moment.",
     "pdfMissingTitle": "PDF indisponible",
-    "tryAgain": "Réessayer"
+    "tryAgain": "Réessayer",
+    "metadataSeparator": "\u00b7",
+    "week": "Semaine",
+    "weeks": "Semaines"
   },
   "devotions": {
     "title": "Dévotions",

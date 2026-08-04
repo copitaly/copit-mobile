@@ -400,7 +400,7 @@
     "startReading": "Start Reading",
     "pageProgress": "Page {{current}} of {{total}}",
     "fullYear": "Full year",
-    "weeksRange": "Weeks {{start}}-{{end}}",
+    "weeksRange": "Weeks {{start}}\u2013{{end}}",
     "volume": "Volume {{value}}",
     "manualsTitle": "Manuals",
     "manualsSubtitle": "Choose a manual to read or download.",
@@ -440,7 +440,10 @@
     "manualTimeoutError": "Loading this manual timed out. Please try again.",
     "manualLoadFailure": "We couldn't load this Bible Study manual right now.",
     "pdfMissingTitle": "PDF unavailable",
-    "tryAgain": "Try Again"
+    "tryAgain": "Try Again",
+    "metadataSeparator": "\u00b7",
+    "week": "Week",
+    "weeks": "Weeks"
   },
   "devotions": {
     "title": "Devotions",

@@ -150,6 +150,13 @@ describe('HomePage', () => {
     expect(fixture.nativeElement.textContent).toContain('Start Reading');
   });
 
+  it('formats featured Bible Study metadata with a middle-dot separator and correct week range', async () => {
+    fixture = await createComponent();
+
+    expect(page.featuredHeroMeta).toBe('2026 · English · Weeks 15–22');
+    expect(page.featuredHeroMeta).not.toContain('�');
+  });
+
   it('opens the featured manual detail route from the hero card', async () => {
     fixture = await createComponent();
 

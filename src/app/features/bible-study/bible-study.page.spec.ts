@@ -132,7 +132,9 @@ describe('BibleStudyPage', () => {
     expect(text).toContain('2027');
     expect(text).toContain('English');
     expect(text).toContain('Volume 2');
-    expect(text).toContain('Weeks 27-37');
+    expect(text).toContain('2027 · English');
+    expect(text).toContain('Volume 2');
+    expect(text).toContain('Weeks 27–37');
   });
 
   it('updates the Bible Study heading immediately when the locale changes while preserving backend manual titles', async () => {
@@ -176,6 +178,17 @@ describe('BibleStudyPage', () => {
     await createComponent();
 
     expect(fixture.nativeElement.textContent).toContain('Volume 2');
+  });
+
+  it('renders a single-week label when the manual spans one week', async () => {
+    bibleStudyService.getPublishedManuals.and.returnValue(
+      of(buildResponse([{ ...firstManual, start_week: 27, end_week: 27 }]))
+    );
+
+    await createComponent();
+
+    expect(fixture.nativeElement.textContent).toContain('Week 27');
+    expect(fixture.nativeElement.textContent).not.toContain('Weeks 27–27');
   });
 
   it('renders an empty state when there are no published manuals', async () => {

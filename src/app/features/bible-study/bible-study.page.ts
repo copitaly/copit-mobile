@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
 import { LocaleService } from '../../core/localization/locale.service';
+import { BibleStudyMetadataService } from '../../core/services/bible-study-metadata.service';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { BibleStudyManualListItem } from '../../core/models/bible-study.model';
 import { BibleStudyService } from '../../core/services/bible-study.service';
@@ -37,6 +38,7 @@ export class BibleStudyPage implements OnInit {
   private readonly bibleStudyService = inject(BibleStudyService);
   private readonly router = inject(Router);
   private readonly localeService = inject(LocaleService);
+  private readonly bibleStudyMetadataService = inject(BibleStudyMetadataService);
   private loadRequestId = 0;
   private pendingManualId: number | null = null;
 
@@ -89,7 +91,7 @@ export class BibleStudyPage implements OnInit {
       return '';
     }
 
-    return [`${manual.year}`, manual.language_display].filter(Boolean).join(' • ');
+    return this.bibleStudyMetadataService.formatPrimaryMetadata(manual);
   }
 
   get heroDetail(): string {
@@ -98,7 +100,7 @@ export class BibleStudyPage implements OnInit {
       return '';
     }
 
-    return [this.formatVolume(manual.volume), this.formatWeekRange(manual)].filter(Boolean).join(' • ');
+    return this.bibleStudyMetadataService.formatSecondaryMetadata(manual);
   }
 
   get heroCtaLabel(): string {
@@ -214,36 +216,17 @@ export class BibleStudyPage implements OnInit {
     });
   }
 
-  formatWeekRange(manual: BibleStudyManualListItem): string {
-    if (manual.start_week === null || manual.end_week === null) {
-      return this.localeService.translate('bibleStudy.fullYear');
-    }
-
-    return this.localeService.translate('bibleStudy.weeksRange', {
-      start: manual.start_week,
-      end: manual.end_week,
-    });
-  }
-
-  formatVolume(volume: string | null | undefined): string | null {
-    const trimmed = volume?.trim() ?? '';
-    if (!trimmed) {
-      return null;
-    }
-
-    return /^volume\b/i.test(trimmed) ? trimmed : `Volume ${trimmed}`;
-  }
 
   trackByManualId(_: number, manual: BibleStudyManualListItem): number {
     return manual.id;
   }
 
   buildManualMeta(manual: BibleStudyManualListItem): string {
-    return [`${manual.year}`, manual.language_display].filter(Boolean).join(' Â· ');
+    return this.bibleStudyMetadataService.formatPrimaryMetadata(manual);
   }
 
   buildManualDetail(manual: BibleStudyManualListItem): string {
-    return [this.formatVolume(manual.volume), this.formatWeekRange(manual)].filter(Boolean).join(' • ');
+    return this.bibleStudyMetadataService.formatSecondaryMetadata(manual);
   }
 
   private resolveContinueReadingSnapshot(manuals: BibleStudyManualListItem[]): ContinueReadingSnapshot | null {
