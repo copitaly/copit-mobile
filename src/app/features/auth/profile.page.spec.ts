@@ -174,6 +174,7 @@ describe('ProfilePage', () => {
     await createComponent();
 
     expect(fixture.nativeElement.textContent).toContain('My Prayer Requests');
+    expect(fixture.nativeElement.textContent).not.toContain('Share a request or pray with the community');
   });
 
   it('hides member-only prayer history when the resolved role is not member', async () => {
