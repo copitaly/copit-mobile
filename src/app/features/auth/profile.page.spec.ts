@@ -29,7 +29,7 @@ describe('ProfilePage', () => {
     last_name: 'User',
     role: 'member',
     phone_number: '+39333111222',
-    language: 'english',
+    language: 'en',
     date_joined: '2026-07-01T00:00:00Z',
     donation_summary: {
       total_paid_amount: '0.00',
@@ -439,9 +439,9 @@ describe('ProfilePage', () => {
 
     await createComponent();
 
-    const requestsButton = fixture.nativeElement.querySelector('[data-testid="my-prayer-requests"]') as HTMLButtonElement | null;
-    requestsButton?.click();
-    requestsButton?.click();
+    const prayerButton = fixture.nativeElement.querySelector('[data-testid="my-prayer-requests"]') as HTMLButtonElement | null;
+    prayerButton?.click();
+    prayerButton?.click();
 
     expect(router.navigateByUrl.calls.count()).toBe(1);
     resolveNavigation?.(true);

@@ -3,6 +3,8 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AlertController, IonicModule } from '@ionic/angular';
 
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { RecurringDonationItem } from '../../core/models/donation.model';
 import { AppToastService } from '../../core/services/app-toast.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -14,17 +16,17 @@ type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-recurring-donations',
   template: `
     <ion-page>
       <ion-content fullscreen class="recurring-content cop-content--secondary">
         <div class="recurring-shell cop-secondary-shell">
-          <header class="recurring-header" aria-label="Recurring Giving">
+          <header class="recurring-header" [attr.aria-label]="'donations.recurringTitle' | t">
             <app-mobile-header
-              title="Recurring Giving"
-              subtitle="Manage your monthly support and subscription status."
+              [title]="'donations.recurringTitle' | t"
+              [subtitle]="'donations.recurringSubtitle' | t"
               fallbackRoute="/tabs/profile"
               tone="editorial"
             ></app-mobile-header>
@@ -33,7 +35,7 @@ type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
           <div class="recurring-surface">
             <div class="recurring-surface__content">
               <div *ngIf="!loading && !errorMessage && hasAnyRecurringHistory" class="summary-card">
-                <p class="summary-card__eyebrow">Monthly support</p>
+                <p class="summary-card__eyebrow">{{ 'donations.recurringSummaryEyebrow' | t }}</p>
                 <h2>{{ monthlySupportTotal }}</h2>
                 <p class="summary-card__meta">{{ monthlySupportCountLabel }}</p>
               </div>
@@ -45,7 +47,7 @@ type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
                   [class.selected]="selectedFilter === 'active'"
                   (click)="setFilter('active')"
                 >
-                  Active
+                  {{ 'donations.recurringFilterActive' | t }}
                 </button>
                 <button
                   type="button"
@@ -53,7 +55,7 @@ type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
                   [class.selected]="selectedFilter === 'pending'"
                   (click)="setFilter('pending')"
                 >
-                  Pending
+                  {{ 'donations.recurringFilterPending' | t }}
                 </button>
                 <button
                   type="button"
@@ -61,7 +63,7 @@ type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
                   [class.selected]="selectedFilter === 'cancelled'"
                   (click)="setFilter('cancelled')"
                 >
-                  Cancelled
+                  {{ 'donations.recurringFilterCancelled' | t }}
                 </button>
                 <button
                   type="button"
@@ -69,7 +71,7 @@ type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
                   [class.selected]="selectedFilter === 'all'"
                   (click)="setFilter('all')"
                 >
-                  All
+                  {{ 'donations.recurringFilterAll' | t }}
                 </button>
               </div>
 
@@ -87,10 +89,10 @@ type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
 
               <div *ngIf="!loading && errorMessage" class="state-card error-state">
                 <div class="state-copy">
-                  <h2>We couldn't load recurring donations</h2>
+                  <h2>{{ 'donations.recurringLoadErrorTitle' | t }}</h2>
                   <p>{{ errorMessage }}</p>
                 </div>
-                <ion-button expand="block" class="state-button" (click)="loadRecurringDonations()">Try again</ion-button>
+                <ion-button expand="block" class="state-button" (click)="loadRecurringDonations()">{{ 'common.tryAgain' | t }}</ion-button>
               </div>
 
               <div *ngIf="!loading && !errorMessage && recurringDonations.length === 0" class="state-card empty-state">
@@ -105,7 +107,7 @@ type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
                   (click)="goToDonationFlow()"
                 >
                   <ion-icon name="gift-outline" slot="start" aria-hidden="true"></ion-icon>
-                  <span>Start Monthly Giving</span>
+                  <span>{{ 'donations.recurringStartMonthlyGiving' | t }}</span>
                 </ion-button>
               </div>
 
@@ -114,7 +116,7 @@ type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
                   <div class="recurring-card__top">
                     <div>
                       <p class="recurring-amount">{{ donation.amount }} {{ donation.currency | uppercase }}</p>
-                      <h2>{{ donation.church?.name || 'Church donation' }}</h2>
+                      <h2>{{ donation.church?.name || localeService.translate('donations.recurringChurchFallback') }}</h2>
                     </div>
                     <span class="recurring-status" [class]="statusClass(donation.status)">
                       {{ formatStatus(donation.status) }}
@@ -123,23 +125,23 @@ type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
 
                   <div class="recurring-meta">
                     <div class="meta-row">
-                      <span>Category</span>
+                      <span>{{ 'donations.recurringCategoryLabel' | t }}</span>
                       <strong>{{ formatCategory(donation.category) }}</strong>
                     </div>
                     <div class="meta-row">
-                      <span>Interval</span>
+                      <span>{{ 'donations.recurringIntervalLabel' | t }}</span>
                       <strong>{{ formatInterval(donation.interval) }}</strong>
                     </div>
                     <div class="meta-row" *ngIf="nextChargeText(donation) as nextCharge">
-                      <span>Next charge</span>
+                      <span>{{ 'donations.recurringNextChargeLabel' | t }}</span>
                       <strong>{{ nextCharge }}</strong>
                     </div>
                     <div class="meta-row" *ngIf="donation.last_payment_date">
-                      <span>Last payment</span>
+                      <span>{{ 'donations.recurringLastPaymentLabel' | t }}</span>
                       <strong>{{ formatDate(donation.last_payment_date) }}</strong>
                     </div>
                     <div class="meta-row" *ngIf="isCancelled(donation)">
-                      <span>Ended on</span>
+                      <span>{{ 'donations.recurringEndedOnLabel' | t }}</span>
                       <strong>{{ formatCancelledDate(donation) }}</strong>
                     </div>
                   </div>
@@ -157,7 +159,7 @@ type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
                     (click)="confirmCancel(donation)"
                   >
                     <ion-spinner *ngIf="cancellingIds.has(donation.id)" slot="start" name="crescent"></ion-spinner>
-                    <span>{{ cancellingIds.has(donation.id) ? 'Cancelling...' : 'Cancel monthly donation' }}</span>
+                    <span>{{ cancellingIds.has(donation.id) ? ('donations.recurringCancellingAction' | t) : ('donations.recurringCancelAction' | t) }}</span>
                   </ion-button>
                 </article>
 
@@ -170,7 +172,7 @@ type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
                   (click)="loadMore()"
                 >
                   <ion-spinner *ngIf="loadingMore" slot="start" name="crescent"></ion-spinner>
-                  <span>{{ loadingMore ? 'Loading more...' : 'Load more' }}</span>
+                  <span>{{ loadingMore ? ('donations.loadingMore' | t) : ('donations.loadMore' | t) }}</span>
                 </ion-button>
               </div>
             </div>
@@ -505,7 +507,8 @@ export class RecurringDonationsPage implements OnInit {
     private readonly router: Router,
     private readonly alertController: AlertController,
     private readonly appToast: AppToastService,
-    private readonly sentryTelemetry: SentryTelemetryService
+    private readonly sentryTelemetry: SentryTelemetryService,
+    readonly localeService: LocaleService
   ) {}
 
   ngOnInit(): void {
@@ -562,35 +565,35 @@ export class RecurringDonationsPage implements OnInit {
 
   get emptyStateTitle(): string {
     if (!this.hasAnyRecurringHistory) {
-      return 'No recurring donations yet';
+      return this.localeService.translate('donations.recurringEmptyNoneTitle');
     }
 
     switch (this.selectedFilter) {
       case 'active':
-        return 'No active monthly donations';
+        return this.localeService.translate('donations.recurringEmptyActiveTitle');
       case 'pending':
-        return 'No pending monthly donations';
+        return this.localeService.translate('donations.recurringEmptyPendingTitle');
       case 'cancelled':
-        return 'No cancelled monthly donations';
+        return this.localeService.translate('donations.recurringEmptyCancelledTitle');
       default:
-        return 'No recurring donations yet';
+        return this.localeService.translate('donations.recurringEmptyNoneTitle');
     }
   }
 
   get emptyStateMessage(): string {
     if (!this.hasAnyRecurringHistory) {
-      return 'Set up a monthly gift to support your church consistently.';
+      return this.localeService.translate('donations.recurringEmptyNoneMessage');
     }
 
     switch (this.selectedFilter) {
       case 'active':
-        return 'Your active monthly gifts will appear here.';
+        return this.localeService.translate('donations.recurringEmptyActiveMessage');
       case 'pending':
-        return 'Pending monthly donations will appear here.';
+        return this.localeService.translate('donations.recurringEmptyPendingMessage');
       case 'cancelled':
-        return 'Cancelled monthly donations will appear here.';
+        return this.localeService.translate('donations.recurringEmptyCancelledMessage');
       default:
-        return 'Start a monthly gift to support your local church.';
+        return this.localeService.translate('donations.recurringEmptyFallbackMessage');
     }
   }
 
@@ -605,7 +608,14 @@ export class RecurringDonationsPage implements OnInit {
 
   get monthlySupportCountLabel(): string {
     const count = this.summaryMonthlyDonations.length;
-    return count > 0 ? `${count} active monthly donation${count === 1 ? '' : 's'}` : 'No active monthly donations';
+    if (count === 0) {
+      return this.localeService.translate('donations.recurringMonthlySupportCountNone');
+    }
+
+    return this.localeService.translate(
+      count === 1 ? 'donations.recurringMonthlySupportCountOne' : 'donations.recurringMonthlySupportCountOther',
+      { count }
+    );
   }
 
   private fetchRecurringDonations(): void {
@@ -643,12 +653,12 @@ export class RecurringDonationsPage implements OnInit {
       error: () => {
         if (append) {
           this.loadingMore = false;
-          this.errorMessage = 'Unable to load more recurring donations right now. Please try again.';
+          this.errorMessage = this.localeService.translate('donations.recurringLoadMoreError');
           return;
         }
 
         this.loading = false;
-        this.errorMessage = 'Please check your connection and try again.';
+        this.errorMessage = this.localeService.translate('donations.historyConnectionError');
       },
     });
   }
@@ -656,19 +666,26 @@ export class RecurringDonationsPage implements OnInit {
   async confirmCancel(donation: RecurringDonationItem): Promise<void> {
     const isIncomplete = (donation.status || '').toLowerCase() === 'incomplete';
     const alert = await this.alertController.create({
-      header: isIncomplete ? 'Cancel monthly setup?' : 'Cancel monthly donation?',
+      header: isIncomplete
+        ? this.localeService.translate('donations.recurringCancelSetupTitle')
+        : this.localeService.translate('donations.recurringCancelPromptTitle'),
       message: isIncomplete
-        ? 'This monthly donation setup will be cancelled before it starts.'
-        : `You will stop giving ${this.formatAmountWithCurrency(donation)} every month to ${
-            donation.church?.name || 'this church'
-          }. You can restart anytime.`,
+        ? this.localeService.translate('donations.recurringCancelSetupMessage')
+        : this.localeService.translate('donations.recurringCancelPromptMessage', {
+            amount: this.formatAmountWithCurrency(donation),
+            church: donation.church?.name || this.localeService.translate('donations.recurringChurchFallback'),
+          }),
       buttons: [
         {
-          text: isIncomplete ? 'Keep setup' : 'Keep giving',
+          text: isIncomplete
+            ? this.localeService.translate('donations.recurringKeepSetup')
+            : this.localeService.translate('donations.recurringKeepGiving'),
           role: 'cancel',
         },
         {
-          text: isIncomplete ? 'Cancel setup' : 'Cancel donation',
+          text: isIncomplete
+            ? this.localeService.translate('donations.recurringCancelSetupAction')
+            : this.localeService.translate('donations.recurringCancelDonationAction'),
           role: 'destructive',
           handler: () => {
             void this.cancelDonation(donation);
@@ -691,24 +708,24 @@ export class RecurringDonationsPage implements OnInit {
   formatStatus(status: string): string {
     switch ((status || '').toLowerCase()) {
       case 'active':
-        return 'Active';
+        return this.localeService.translate('donations.recurringStatusActive');
       case 'past_due':
-        return 'Payment issue';
+        return this.localeService.translate('donations.recurringStatusPaymentIssue');
       case 'cancelled':
-        return 'Cancelled';
+        return this.localeService.translate('donations.recurringStatusCancelled');
       case 'incomplete':
-        return 'Pending setup';
+        return this.localeService.translate('donations.recurringStatusPendingSetup');
       default:
-        return status ? status.replace(/_/g, ' ') : 'Unknown';
+        return status ? status.replace(/_/g, ' ') : this.localeService.translate('donations.recurringStatusUnknown');
     }
   }
 
   statusHelperText(status: string): string | null {
     switch ((status || '').toLowerCase()) {
       case 'past_due':
-        return 'Payment issue. We will retry automatically.';
+        return this.localeService.translate('donations.recurringHelperPaymentIssue');
       case 'incomplete':
-        return 'Your monthly donation is still being set up.';
+        return this.localeService.translate('donations.recurringHelperPendingSetup');
       default:
         return null;
     }
@@ -717,17 +734,17 @@ export class RecurringDonationsPage implements OnInit {
   formatInterval(interval: string): string {
     switch ((interval || '').toLowerCase()) {
       case 'monthly':
-        return 'Monthly';
+        return this.localeService.translate('donations.recurringIntervalMonthly');
       case 'weekly':
-        return 'Weekly';
+        return this.localeService.translate('donations.recurringIntervalWeekly');
       default:
-        return interval ? interval.replace(/_/g, ' ') : 'Not set';
+        return interval ? interval.replace(/_/g, ' ') : this.localeService.translate('donations.recurringIntervalNotSet');
     }
   }
 
   formatCategory(category: string): string {
     if (!category) {
-      return 'General';
+      return this.localeService.translate('donations.recurringCategoryFallback');
     }
 
     return category.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
@@ -757,14 +774,14 @@ export class RecurringDonationsPage implements OnInit {
     }
 
     if (status === 'active') {
-      return 'Scheduled soon';
+      return this.localeService.translate('donations.recurringNextChargeSoon');
     }
 
     if (status === 'incomplete') {
-      return 'After setup completes';
+      return this.localeService.translate('donations.recurringNextChargeAfterSetup');
     }
 
-    return 'Scheduled soon';
+    return this.localeService.translate('donations.recurringNextChargeSoon');
   }
 
   formatCancelledDate(donation: RecurringDonationItem): string {
@@ -798,11 +815,11 @@ export class RecurringDonationsPage implements OnInit {
           this.recurringDonations.map((item) => (item.id === updatedDonation.id ? updatedDonation : item))
         );
         this.cancellingIds.delete(donation.id);
-        await this.appToast.success('Monthly donation cancelled');
+        await this.appToast.success(this.localeService.translate('donations.recurringCancelledSuccess'));
       },
       error: async () => {
         this.cancellingIds.delete(donation.id);
-        await this.appToast.error('Unable to cancel the recurring donation right now. Please try again.');
+        await this.appToast.error(this.localeService.translate('donations.recurringCancelError'));
       },
     });
   }

@@ -22,6 +22,8 @@ import {
 } from '../models/user.model';
 import { AuthStorageService } from './auth-storage.service';
 import { SentryTelemetryService } from './sentry-telemetry.service';
+import { LocaleService } from '../localization/locale.service';
+import { normalizePreferredLanguage } from '../utils/language-preference';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -70,9 +72,11 @@ export class AuthService {
 
   setCurrentUser(user: MemberProfile | null): void {
     if (user) {
-      this.currentUserSubject.next(user);
+      const normalizedProfile = this.normalizeMemberProfile(user);
+      this.currentUserSubject.next(normalizedProfile);
       this.isAuthenticatedSubject.next(true);
-      void this.authStorage.setCurrentUser(user);
+      void this.authStorage.setCurrentUser(normalizedProfile);
+      void this.localeService.applyAuthenticatedPreference(normalizedProfile.language);
       return;
     }
 
@@ -257,6 +261,7 @@ export class AuthService {
     this.accessToken = null;
     this.isAuthenticatedSubject.next(false);
     void this.authStorage.removeAccessToken();
+    void this.localeService.handleLogout();
   }
 
   private storeAccessToken(token: string): void {
@@ -285,8 +290,12 @@ export class AuthService {
     ]);
 
     this.accessToken = token;
-    this.currentUserSubject.next(this.normalizeStoredMemberProfile(profile));
+    const normalizedStoredProfile = this.normalizeStoredMemberProfile(profile);
+    this.currentUserSubject.next(normalizedStoredProfile);
     this.isAuthenticatedSubject.next(!!token);
+    if (token && normalizedStoredProfile) {
+      await this.localeService.applyAuthenticatedPreference(normalizedStoredProfile.language);
+    }
 
     if (!token && !profile) {
       return;
@@ -575,7 +584,7 @@ export class AuthService {
     const lastName = this.normalizeText(profile.last_name);
     const phoneNumber = this.normalizeText(profile.phone_number ?? profile.phone);
     const fullName = this.normalizeText(profile.full_name);
-    const language = this.normalizeText(profile.language);
+    const language = normalizePreferredLanguage(profile.language);
     const email = this.normalizeNullableText(profile.email);
     const role = this.normalizeText(profile.role);
 
@@ -589,7 +598,7 @@ export class AuthService {
       role,
       phone: phoneNumber || undefined,
       phone_number: phoneNumber || undefined,
-      language: language || undefined,
+      language,
       date_joined: this.normalizeText(profile.date_joined),
       donation_summary: {
         total_paid_amount: this.normalizeText(profile.donation_summary?.total_paid_amount) || '0.00',
@@ -623,6 +632,10 @@ export class AuthService {
 
   private get sentryTelemetry(): SentryTelemetryService {
     return this.injector.get(SentryTelemetryService);
+  }
+
+  private get localeService(): LocaleService {
+    return this.injector.get(LocaleService);
   }
 
   private getHttpStatus(error: unknown): number | null {

@@ -4,21 +4,22 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
 import { AuthService } from '../../core/services/auth.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { AuthLayoutComponent } from './auth-layout.component';
 import { AUTH_FALLBACK_RETURN_URL, sanitizeAuthReturnUrl } from './auth-form.utils';
 import { LoginFormComponent } from './login-form.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, AuthLayoutComponent, LoginFormComponent],
+  imports: [CommonModule, IonicModule, AuthLayoutComponent, LoginFormComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-login',
   template: `
     <ion-page class="auth-page">
       <ion-content fullscreen class="auth-page-content">
         <app-auth-layout
-          title="Welcome back"
-          subtitle="Sign in to continue"
+          [title]="'auth.loginTitle' | t"
+          [subtitle]="'auth.loginSubtitle' | t"
           fallbackRoute="/tabs/home"
         >
           <app-login-form [returnUrl]="returnUrl" appearance="standalone"></app-login-form>

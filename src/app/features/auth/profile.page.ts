@@ -4,6 +4,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { AuthService } from '../../core/services/auth.service';
 import { MemberProfile } from '../../core/models/user.model';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
@@ -12,23 +14,24 @@ import { LoginFormComponent } from './login-form.component';
 import { RegisterFormComponent } from './register-form.component';
 
 type ProfileAction = {
-  title: string;
-  subtitle: string;
+  titleKey: string;
+  subtitleKey: string;
   icon: string;
   route?: string;
   membersOnly?: boolean;
   destructive?: boolean;
   action?: () => void;
+  testId: string;
 };
 
 type ProfileActionSection = {
-  title: string;
+  titleKey: string;
   actions: ProfileAction[];
 };
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, LoginFormComponent, RegisterFormComponent, ForgotPasswordFormComponent],
+  imports: [CommonModule, IonicModule, LoginFormComponent, RegisterFormComponent, ForgotPasswordFormComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-profile',
   template: `
@@ -36,7 +39,7 @@ type ProfileActionSection = {
       <ion-content fullscreen class="profile-content cop-page cop-page--warm cop-content--tabs">
         <div class="profile-shell cop-page-shell">
           <header class="profile-header cop-page-header" aria-labelledby="profile-title">
-            <p class="profile-header__eyebrow cop-page-header__eyebrow">Account hub</p>
+            <p class="profile-header__eyebrow cop-page-header__eyebrow">{{ 'auth.accountHub' | t }}</p>
             <div class="profile-header__copy">
               <h1 id="profile-title" class="cop-page-header__title">{{ profileHeaderTitle }}</h1>
               <p class="cop-page-header__subtitle">{{ profileHeaderSubtitle }}</p>
@@ -54,17 +57,17 @@ type ProfileActionSection = {
             </div>
 
             <div class="state-copy">
-              <h2>Loading profile</h2>
-              <p>Fetching your member details.</p>
+              <h2>{{ 'profile.loadingTitle' | t }}</h2>
+              <p>{{ 'profile.loadingSubtitle' | t }}</p>
             </div>
           </div>
 
           <div *ngIf="!loading && errorMessage" class="state-card state-card--error">
             <div class="state-copy">
-              <h2>We couldn't load your profile</h2>
+              <h2>{{ 'profile.errorTitle' | t }}</h2>
               <p>{{ errorMessage }}</p>
             </div>
-            <ion-button expand="block" class="state-button" (click)="loadProfile()">Try again</ion-button>
+            <ion-button expand="block" class="state-button" (click)="loadProfile()">{{ 'common.tryAgain' | t }}</ion-button>
           </div>
 
           <div *ngIf="!loading && !errorMessage && profile; else signedOutState" class="profile-stack">
@@ -74,8 +77,8 @@ type ProfileActionSection = {
 
                 <div class="account-copy">
                   <h2 id="account-summary-title">{{ displayName }}</h2>
-                  <p class="account-copy__email">{{ profile.email || 'Not provided' }}</p>
-                  <p class="account-meta">{{ membershipLabel }} <span aria-hidden="true">•</span> Member since {{ memberSinceLabel }}</p>
+                  <p class="account-copy__email">{{ profile.email || ('profile.notProvided' | t) }}</p>
+                  <p class="account-meta">{{ membershipLabel }} <span aria-hidden="true">&middot;</span> {{ 'profile.memberSince' | t:{ year: memberSinceLabel } }}</p>
                 </div>
               </div>
 
@@ -84,9 +87,9 @@ type ProfileActionSection = {
                 class="account-card__edit"
                 data-testid="edit-profile-summary"
                 (click)="goToEditProfile()"
-                aria-label="Edit Profile"
+                [attr.aria-label]="'profile.editProfile' | t"
               >
-                <span>Edit Profile</span>
+                <span>{{ 'profile.editProfile' | t }}</span>
                 <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
               </button>
             </section>
@@ -94,10 +97,10 @@ type ProfileActionSection = {
             <section
               class="profile-group"
               *ngFor="let section of visibleSections"
-              [attr.aria-labelledby]="'profile-section-' + section.title"
+              [attr.aria-labelledby]="'profile-section-' + section.titleKey"
             >
-              <h2 class="profile-group__title" [id]="'profile-section-' + section.title">
-                {{ section.title }}
+              <h2 class="profile-group__title" [id]="'profile-section-' + section.titleKey">
+                {{ section.titleKey | t }}
               </h2>
 
               <div class="profile-group__card cop-card cop-card--soft">
@@ -115,8 +118,8 @@ type ProfileActionSection = {
                   </span>
 
                   <span class="action-row__copy">
-                    <strong>{{ action.title }}</strong>
-                    <small>{{ action.subtitle }}</small>
+                    <strong>{{ action.titleKey | t }}</strong>
+                    <small>{{ action.subtitleKey | t }}</small>
                   </span>
 
                   <span class="action-row__meta" aria-hidden="true">
@@ -132,15 +135,15 @@ type ProfileActionSection = {
                 class="action-row action-row--last action-row--destructive sign-out-row"
                 data-testid="sign-out"
                 (click)="logout()"
-                aria-label="Sign Out"
+                [attr.aria-label]="'profile.signOut' | t"
               >
                 <span class="action-row__icon" aria-hidden="true">
                   <ion-icon name="log-out-outline"></ion-icon>
                 </span>
 
                 <span class="action-row__copy">
-                  <strong>Sign Out</strong>
-                  <small>Log out of your account on this device</small>
+                  <strong>{{ 'profile.signOut' | t }}</strong>
+                  <small>{{ 'profile.signOutSubtitle' | t }}</small>
                 </span>
 
                 <span class="action-row__meta" aria-hidden="true">
@@ -161,7 +164,7 @@ type ProfileActionSection = {
                 <app-login-form
                   appearance="embedded"
                   [returnUrl]="profileTabRoute"
-                  heading="Sign in to your account"
+                  [heading]="'auth.loginHeading' | t"
                 ></app-login-form>
               </div>
 
@@ -170,7 +173,7 @@ type ProfileActionSection = {
                   <app-register-form
                     appearance="embedded"
                     [returnUrl]="profileTabRoute"
-                    heading="Create your account"
+                    [heading]="'auth.registerHeading' | t"
                   ></app-register-form>
                 </div>
               </ng-template>
@@ -187,13 +190,13 @@ type ProfileActionSection = {
                 aria-labelledby="profile-benefits-title"
                 data-testid="profile-benefits"
               >
-                <h2 id="profile-benefits-title" class="profile-benefits__title">Why create an account?</h2>
+                <h2 id="profile-benefits-title" class="profile-benefits__title">{{ 'auth.createAccountBenefitsTitle' | t }}</h2>
 
                 <ul class="profile-benefits__list">
-                  <li><span class="profile-benefits__check" aria-hidden="true">✓</span><span>View your giving history</span></li>
-                  <li><span class="profile-benefits__check" aria-hidden="true">✓</span><span>Read Bible Study manuals</span></li>
-                  <li><span class="profile-benefits__check" aria-hidden="true">✓</span><span>Save churches for quick access</span></li>
-                  <li><span class="profile-benefits__check" aria-hidden="true">✓</span><span>Submit prayer requests</span></li>
+                  <li><span class="profile-benefits__check" aria-hidden="true">&#10003;</span><span>{{ 'auth.benefitGivingHistory' | t }}</span></li>
+                  <li><span class="profile-benefits__check" aria-hidden="true">&#10003;</span><span>{{ 'auth.benefitBibleStudy' | t }}</span></li>
+                  <li><span class="profile-benefits__check" aria-hidden="true">&#10003;</span><span>{{ 'auth.benefitSavedChurches' | t }}</span></li>
+                  <li><span class="profile-benefits__check" aria-hidden="true">&#10003;</span><span>{{ 'auth.benefitPrayerRequests' | t }}</span></li>
                 </ul>
               </section>
             </section>
@@ -223,71 +226,78 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   readonly actionSections: ProfileActionSection[] = [
     {
-      title: 'Personal',
+      titleKey: 'profile.sectionPersonal',
       actions: [
         {
-          title: 'Edit Profile',
-          subtitle: 'Update your name and member details',
+          titleKey: 'profile.editProfile',
+          subtitleKey: 'profile.editProfileSubtitle',
           icon: 'create-outline',
           route: '/profile/account-settings/edit-profile',
+          testId: 'edit-profile',
         },
         {
-          title: 'Account Settings',
-          subtitle: 'Manage your account and privacy',
+          titleKey: 'profile.accountSettings',
+          subtitleKey: 'profile.accountSettingsSubtitle',
           icon: 'settings-outline',
           route: '/profile/account-settings',
+          testId: 'account-settings',
         },
       ],
     },
     {
-      title: 'Prayer & Care',
+      titleKey: 'profile.sectionPrayer',
       actions: [
         {
-          title: 'My Prayer Requests',
-          subtitle: 'Review your submitted prayer history',
+          titleKey: 'profile.myPrayerRequests',
+          subtitleKey: 'profile.myPrayerRequestsSubtitle',
           icon: 'chatbubbles-outline',
           route: '/prayer/my-requests',
           membersOnly: true,
+          testId: 'my-prayer-requests',
         },
       ],
     },
     {
-      title: 'Giving',
+      titleKey: 'profile.sectionGiving',
       actions: [
         {
-          title: 'My Donations',
-          subtitle: 'View your giving history',
+          titleKey: 'profile.myDonations',
+          subtitleKey: 'profile.myDonationsSubtitle',
           icon: 'heart-outline',
           route: '/my-donations',
+          testId: 'my-donations',
         },
         {
-          title: 'Recurring Donations',
-          subtitle: 'Manage scheduled gifts',
+          titleKey: 'profile.recurringDonations',
+          subtitleKey: 'profile.recurringDonationsSubtitle',
           icon: 'repeat-outline',
           route: '/profile/recurring-donations',
+          testId: 'recurring-donations',
         },
       ],
     },
     {
-      title: 'Church',
+      titleKey: 'profile.sectionChurch',
       actions: [
         {
-          title: 'Saved Churches',
-          subtitle: 'Quick access to your churches',
+          titleKey: 'profile.savedChurches',
+          subtitleKey: 'profile.savedChurchesSubtitle',
           icon: 'bookmark-outline',
           route: '/saved-churches',
+          testId: 'saved-churches',
         },
       ],
     },
     {
-      title: 'Account',
+      titleKey: 'profile.sectionAccount',
       actions: [
         {
-          title: 'Delete Account',
-          subtitle: 'Permanently close your member account',
+          titleKey: 'profile.deleteAccount',
+          subtitleKey: 'profile.deleteAccountSubtitle',
           icon: 'trash-outline',
           route: '/profile/account-settings/delete-account',
           destructive: true,
+          testId: 'delete-account',
         },
       ],
     },
@@ -297,7 +307,8 @@ export class ProfilePage implements OnInit, OnDestroy {
     private readonly authService: AuthService,
     private readonly router: Router,
     private readonly route: ActivatedRoute,
-    private readonly sentryTelemetry: SentryTelemetryService
+    private readonly sentryTelemetry: SentryTelemetryService,
+    private readonly localeService: LocaleService
   ) {}
 
   get initials(): string {
@@ -314,18 +325,18 @@ export class ProfilePage implements OnInit, OnDestroy {
 
     const firstName = this.profile?.first_name?.trim() ?? '';
     const lastName = this.profile?.last_name?.trim() ?? '';
-    return `${firstName} ${lastName}`.trim() || 'Your account';
+    return `${firstName} ${lastName}`.trim() || this.localeService.translate('profile.fallbackDisplayName');
   }
 
   get memberSinceLabel(): string {
     const joinedAt = this.profile?.date_joined;
     if (!joinedAt) {
-      return 'recently';
+      return this.localeService.translate('profile.memberSinceFallback');
     }
 
     const joinedDate = new Date(joinedAt);
     if (Number.isNaN(joinedDate.getTime())) {
-      return 'recently';
+      return this.localeService.translate('profile.memberSinceFallback');
     }
 
     return joinedDate.getUTCFullYear().toString();
@@ -333,34 +344,34 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   get membershipLabel(): string {
     if (this.resolvedRole === 'member') {
-      return 'Member account';
+      return this.localeService.translate('profile.memberAccount');
     }
 
-    return this.profile?.role?.trim() || 'Account active';
+    return this.profile?.role?.trim() || this.localeService.translate('profile.accountActive');
   }
 
   get profileHeaderSubtitle(): string {
     if (!this.profile) {
       if (this.authMode === 'register') {
-        return 'Create your account to access your giving, Bible studies, churches, and prayer requests.';
+        return this.localeService.translate('auth.profileRegisterSubtitle');
       }
 
       if (this.authMode === 'forgot-password') {
-        return "Enter your email and we'll send you a reset link.";
+        return this.localeService.translate('auth.forgotPasswordEmbeddedSubtitle');
       }
 
-      return 'Sign in to access your account, giving history, and church connections.';
+      return this.localeService.translate('auth.profileSignedOutSubtitle');
     }
 
-    return 'Manage your details, giving history, and church connections in one place.';
+    return this.localeService.translate('profile.signedInSubtitle');
   }
 
   get profileHeaderTitle(): string {
     if (!this.profile && this.authMode === 'forgot-password') {
-      return 'Forgot password';
+      return this.localeService.translate('auth.profileForgotPasswordTitle');
     }
 
-    return 'Profile';
+    return this.localeService.translate('auth.profileTitle');
   }
 
   get visibleSections(): ProfileActionSection[] {
@@ -427,7 +438,7 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
   actionTestId(action: ProfileAction): string {
-    return action.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    return action.testId;
   }
 
   loadProfile(options?: { preserveCurrent?: boolean }): void {
@@ -453,7 +464,7 @@ export class ProfilePage implements OnInit, OnDestroy {
         this.refreshing = false;
         this.profileRequestInFlight = false;
         if (!preserveCurrent || !this.profile) {
-          this.errorMessage = 'Please check your connection and try again.';
+          this.errorMessage = this.localeService.translate('errors.network');
         }
         this.sentryTelemetry.addFeatureBreadcrumb(
           'profile',

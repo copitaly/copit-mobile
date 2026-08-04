@@ -3,11 +3,12 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { ForgotPasswordFormComponent } from './forgot-password-form.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, IonicModule, ForgotPasswordFormComponent],
+  imports: [CommonModule, ReactiveFormsModule, IonicModule, ForgotPasswordFormComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-forgot-password',
   template: `
@@ -20,12 +21,12 @@ import { ForgotPasswordFormComponent } from './forgot-password-form.component';
               defaultHref="/tabs/profile"
               text=""
               icon="chevron-back"
-              aria-label="Back to Sign In"
+              [attr.aria-label]="'navigation.backToSignIn' | t"
             ></ion-back-button>
 
             <div class="recovery-header__copy">
-              <h1 id="forgot-password-title">Forgot password</h1>
-              <p>Enter your email and we&apos;ll send you instructions to reset your password.</p>
+              <h1 id="forgot-password-title">{{ 'auth.forgotPasswordTitle' | t }}</h1>
+              <p>{{ 'auth.forgotPasswordSubtitle' | t }}</p>
             </div>
           </header>
 

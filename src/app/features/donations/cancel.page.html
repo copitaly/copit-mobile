@@ -3,8 +3,8 @@
     <div class="outcome-shell">
       <app-mobile-header
         class="outcome-header"
-        title="Donation status"
-        subtitle="Review your donation outcome."
+        [title]="'donations.status.title' | t"
+        [subtitle]="'donations.status.subtitle' | t"
         fallbackRoute="/tabs/donate"
         tone="editorial"
       ></app-mobile-header>
@@ -14,20 +14,22 @@
           <span class="outcome-status__icon outcome-status__icon--cancelled" aria-hidden="true">
             <ion-icon name="close-outline"></ion-icon>
           </span>
-          <h1 class="outcome-status__title">Payment cancelled</h1>
-          <p class="outcome-status__subtitle">No payment was taken.</p>
+          <h1 class="outcome-status__title">{{ 'donations.cancelled.title' | t }}</h1>
+          <p class="outcome-status__subtitle">{{ 'donations.cancelled.subtitle' | t }}</p>
         </section>
 
         <section class="outcome-card outcome-card--message cop-card cop-card--soft">
-          <h2 class="outcome-card__title">Your donation was not completed.</h2>
-          <p class="outcome-card__body">You can try again whenever you are ready.</p>
-          <p class="outcome-card__body">Your card or account has not been charged.</p>
+          <h2 class="outcome-card__title">{{ 'donations.cancelled.messageTitle' | t }}</h2>
+          <p class="outcome-card__body">{{ 'donations.cancelled.tryAgainBody' | t }}</p>
+          <p class="outcome-card__body">{{ 'donations.cancelled.notChargedBody' | t }}</p>
         </section>
 
         <div class="outcome-actions">
-          <ion-button expand="block" class="outcome-button--primary" (click)="goToBranches()">Try again</ion-button>
+          <ion-button expand="block" class="outcome-button--primary" (click)="goToBranches()">
+            {{ 'donations.cancelled.tryAgain' | t }}
+          </ion-button>
           <ion-button expand="block" fill="outline" class="outcome-button--secondary" (click)="goHome()">
-            Back to Home
+            {{ 'donations.status.backToHome' | t }}
           </ion-button>
         </div>
       </div>

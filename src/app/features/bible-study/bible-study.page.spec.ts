@@ -5,6 +5,7 @@ import { of, throwError } from 'rxjs';
 import { BibleStudyManualListItem } from '../../core/models/bible-study.model';
 import { AuthService } from '../../core/services/auth.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
+import { LocaleService } from '../../core/localization/locale.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
 import { BibleStudyPage } from './bible-study.page';
 
@@ -15,6 +16,7 @@ describe('BibleStudyPage', () => {
   let bibleStudyService: jasmine.SpyObj<BibleStudyService>;
   let router: jasmine.SpyObj<Router>;
   let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
+  let localeService: LocaleService;
 
   const firstManual: BibleStudyManualListItem = {
     id: 11,
@@ -50,6 +52,7 @@ describe('BibleStudyPage', () => {
     fixture = TestBed.createComponent(BibleStudyPage);
     page = fixture.componentInstance;
     fixture.detectChanges();
+    localeService = TestBed.inject(LocaleService);
   }
 
   beforeEach(() => {
@@ -129,7 +132,26 @@ describe('BibleStudyPage', () => {
     expect(text).toContain('2027');
     expect(text).toContain('English');
     expect(text).toContain('Volume 2');
-    expect(text).toContain('Weeks 27-37');
+    expect(text).toContain('2027 \u00b7 English');
+    expect(text).toContain('Volume 2');
+    expect(text).toContain('Weeks 27\u201337');
+  });
+
+  it('updates the Bible Study heading immediately when the locale changes while preserving backend manual titles', async () => {
+    bibleStudyService.getPublishedManuals.and.returnValue(of(buildResponse([firstManual])));
+
+    await createComponent();
+    await localeService.setLocale('it', { persistGuest: false, source: 'runtime' });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Studio biblico');
+    expect(fixture.nativeElement.textContent).toContain('English Bible Study');
+
+    await localeService.setLocale('fr', { persistGuest: false, source: 'runtime' });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('\u00c9tude biblique');
+    expect(fixture.nativeElement.textContent).toContain('English Bible Study');
   });
 
   it('renders Full year when week range is missing', async () => {
@@ -156,6 +178,17 @@ describe('BibleStudyPage', () => {
     await createComponent();
 
     expect(fixture.nativeElement.textContent).toContain('Volume 2');
+  });
+
+  it('renders a single-week label when the manual spans one week', async () => {
+    bibleStudyService.getPublishedManuals.and.returnValue(
+      of(buildResponse([{ ...firstManual, start_week: 27, end_week: 27 }]))
+    );
+
+    await createComponent();
+
+    expect(fixture.nativeElement.textContent).toContain('Week 27');
+    expect(fixture.nativeElement.textContent).not.toContain('Weeks 27–27');
   });
 
   it('renders an empty state when there are no published manuals', async () => {

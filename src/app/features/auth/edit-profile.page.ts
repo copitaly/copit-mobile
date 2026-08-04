@@ -5,16 +5,19 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Va
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { AppToastService } from '../../core/services/app-toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { HardwareBackCoordinatorService } from '../../core/services/hardware-back-coordinator.service';
 import { MemberProfile } from '../../core/models/user.model';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
+import { SUPPORTED_LANGUAGE_OPTIONS, normalizePreferredLanguage } from '../../core/utils/language-preference';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, ReactiveFormsModule, IonicModule, MobileHeaderComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-edit-profile',
   template: `
@@ -23,8 +26,8 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         <div class="edit-profile-shell cop-secondary-shell">
           <header class="edit-profile-header" aria-label="Edit Profile">
             <app-mobile-header
-              title="Edit Profile"
-              subtitle="Update your member details"
+              [title]="'profile.editPageTitle' | t"
+              [subtitle]="'profile.editPageSubtitle' | t"
               fallbackRoute="/tabs/profile"
               tone="editorial"
             ></app-mobile-header>
@@ -34,62 +37,62 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
             <div *ngIf="loading" class="state-card loading-state" aria-live="polite">
               <ion-spinner name="crescent"></ion-spinner>
               <div class="state-copy">
-                <h2>Loading profile</h2>
-                <p>Checking your member session.</p>
+                <h2>{{ 'profile.editLoadingTitle' | t }}</h2>
+                <p>{{ 'profile.editLoadingSubtitle' | t }}</p>
               </div>
             </div>
 
             <form *ngIf="!loading" [formGroup]="form" (ngSubmit)="save()" class="profile-form">
               <div *ngIf="loadErrorMessage" class="state-card" aria-live="polite">
                 <div class="state-copy">
-                  <h2>We couldn't load your profile</h2>
+                  <h2>{{ 'profile.editLoadErrorTitle' | t }}</h2>
                   <p>{{ loadErrorMessage }}</p>
                 </div>
-                <ion-button expand="block" class="state-button" (click)="loadProfile()">Try again</ion-button>
+                <ion-button expand="block" class="state-button" (click)="loadProfile()">{{ 'common.tryAgain' | t }}</ion-button>
               </div>
 
               <div class="form-card cop-card cop-card--soft">
                 <div class="form-card__section">
                   <div class="field-group">
-                    <label class="form-label" for="edit-first-name">First name</label>
+                    <label class="form-label" for="edit-first-name">{{ 'auth.firstName' | t }}</label>
                     <ion-item fill="solid" class="form-field">
                       <ion-input
                         #firstNameInput
                         id="edit-first-name"
                         formControlName="first_name"
-                        placeholder="First name"
+                        [placeholder]="'auth.firstName' | t"
                         maxlength="150"
                         aria-describedby="edit-first-name-error"
                         autocomplete="given-name"
                       ></ion-input>
                     </ion-item>
-                    <p id="edit-first-name-error" class="field-error" *ngIf="showControlError('first_name')">Enter your first name.</p>
+                    <p id="edit-first-name-error" class="field-error" *ngIf="showControlError('first_name')">{{ 'validation.firstNameRequired' | t }}</p>
                   </div>
 
                   <div class="field-group">
-                    <label class="form-label" for="edit-last-name">Last name</label>
+                    <label class="form-label" for="edit-last-name">{{ 'auth.lastName' | t }}</label>
                     <ion-item fill="solid" class="form-field">
                       <ion-input
                         #lastNameInput
                         id="edit-last-name"
                         formControlName="last_name"
-                        placeholder="Last name"
+                        [placeholder]="'auth.lastName' | t"
                         maxlength="150"
                         aria-describedby="edit-last-name-error"
                         autocomplete="family-name"
                       ></ion-input>
                     </ion-item>
-                    <p id="edit-last-name-error" class="field-error" *ngIf="showControlError('last_name')">Enter your last name.</p>
+                    <p id="edit-last-name-error" class="field-error" *ngIf="showControlError('last_name')">{{ 'validation.lastNameRequired' | t }}</p>
                   </div>
 
                   <div class="field-group">
-                    <label class="form-label" for="edit-phone-number">Phone number</label>
+                    <label class="form-label" for="edit-phone-number">{{ 'profile.phoneLabel' | t }}</label>
                     <ion-item fill="solid" class="form-field">
                       <ion-input
                         #phoneNumberInput
                         id="edit-phone-number"
                         formControlName="phone_number"
-                        placeholder="+39 333 123 4567"
+                        [placeholder]="'auth.phoneNumberPlaceholder' | t"
                         inputmode="tel"
                         autocomplete="tel"
                         maxlength="20"
@@ -102,12 +105,12 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                   </div>
 
                   <div class="field-group">
-                    <label class="form-label" for="edit-language">Preferred language</label>
+                    <label class="form-label" for="edit-language">{{ 'profile.preferredLanguage' | t }}</label>
                     <ion-item fill="solid" class="form-field form-field--select">
                       <ion-select
                         id="edit-language"
-                        formControlName="preferred_language"
-                        placeholder="Select language"
+                        formControlName="language"
+                        [placeholder]="'profile.selectLanguage' | t"
                         interface="action-sheet"
                         justify="space-between"
                       >
@@ -129,7 +132,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
               <ion-button expand="block" type="submit" class="save-button cop-button-primary" [disabled]="!canSubmit">
                 <ion-spinner *ngIf="saving" slot="start" name="crescent"></ion-spinner>
-                <span>{{ saving ? 'Saving...' : 'Save changes' }}</span>
+                <span>{{ saving ? ('common.saving' | t) : ('common.saveChanges' | t) }}</span>
               </ion-button>
             </form>
           </div>
@@ -307,14 +310,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
   ],
 })
 export class EditProfilePage implements OnInit, OnDestroy {
-  readonly languageOptions = [
-    { value: 'english', label: 'English' },
-    { value: 'italian', label: 'Italian' },
-    { value: 'french', label: 'French' },
-    { value: 'spanish', label: 'Spanish' },
-    { value: 'german', label: 'German' },
-    { value: 'portuguese', label: 'Portuguese' },
-  ] as const;
+  readonly languageOptions = SUPPORTED_LANGUAGE_OPTIONS;
 
   profile: MemberProfile | null = null;
   loading = true;
@@ -333,7 +329,7 @@ export class EditProfilePage implements OnInit, OnDestroy {
     first_name: ['', [Validators.required, Validators.maxLength(150), this.trimmedRequiredValidator]],
     last_name: ['', [Validators.required, Validators.maxLength(150), this.trimmedRequiredValidator]],
     phone_number: ['', [Validators.required, this.phoneValidator]],
-    preferred_language: [''],
+    language: ['en'],
   });
 
   constructor(
@@ -341,6 +337,7 @@ export class EditProfilePage implements OnInit, OnDestroy {
     private readonly authService: AuthService,
     private readonly router: Router,
     private readonly appToast: AppToastService,
+    private readonly localeService: LocaleService,
     private readonly sentryTelemetry: SentryTelemetryService,
     private readonly hardwareBackCoordinator: HardwareBackCoordinatorService
   ) {}
@@ -352,12 +349,12 @@ export class EditProfilePage implements OnInit, OnDestroy {
   get phoneErrorMessage(): string {
     const control = this.form.controls.phone_number;
     if (control.hasError('required')) {
-      return 'Enter your phone number.';
+      return this.localeService.translate('validation.requiredField');
     }
     if (control.hasError('invalidPhone')) {
-      return 'Enter a valid phone number.';
+      return this.localeService.translate('validation.phoneInvalid');
     }
-    return 'Enter your phone number.';
+    return this.localeService.translate('validation.requiredField');
   }
 
   ngOnInit(): void {
@@ -397,7 +394,7 @@ export class EditProfilePage implements OnInit, OnDestroy {
           first_name: profile.first_name ?? '',
           last_name: profile.last_name ?? '',
           phone_number: profile.phone_number ?? profile.phone ?? '',
-          preferred_language: this.normalizeLanguage(profile.language),
+          language: normalizePreferredLanguage(profile.language),
         });
         this.loading = false;
         this.loadRequestInFlight = false;
@@ -416,7 +413,7 @@ export class EditProfilePage implements OnInit, OnDestroy {
           return;
         }
 
-        this.loadErrorMessage = 'Unable to load your profile right now. Please try again.';
+        this.loadErrorMessage = this.localeService.translate('profile.editLoadError');
       },
     });
   }
@@ -440,7 +437,7 @@ export class EditProfilePage implements OnInit, OnDestroy {
       first_name: this.form.value.first_name?.trim() || undefined,
       last_name: this.form.value.last_name?.trim() || undefined,
       phone_number: this.form.value.phone_number?.trim() || undefined,
-      preferred_language: this.normalizeLanguage(this.form.value.preferred_language) || null,
+      language: normalizePreferredLanguage(this.form.value.language),
     };
 
     this.authService.updateMemberProfile(payload).subscribe({
@@ -453,7 +450,7 @@ export class EditProfilePage implements OnInit, OnDestroy {
               first_name: resolvedProfile.first_name ?? '',
               last_name: resolvedProfile.last_name ?? '',
               phone_number: resolvedProfile.phone_number ?? resolvedProfile.phone ?? '',
-              preferred_language: this.normalizeLanguage(resolvedProfile.language),
+              language: normalizePreferredLanguage(resolvedProfile.language),
             },
             { emitEvent: false }
           );
@@ -463,7 +460,7 @@ export class EditProfilePage implements OnInit, OnDestroy {
           next: () => undefined,
           error: () => undefined,
         });
-        await this.appToast.success('Profile updated successfully.');
+        await this.appToast.success(this.localeService.translate('profile.saveSuccess'));
       },
       error: (error: unknown) => {
         this.saving = false;
@@ -475,7 +472,7 @@ export class EditProfilePage implements OnInit, OnDestroy {
         this.errorMessage =
           this.extractFirstFieldError(body)
           || (typeof body?.['detail'] === 'string' ? body['detail'] : '')
-          || 'Unable to update your profile right now. Please try again.';
+          || this.localeService.translate('profile.editSaveError');
         this.focusFirstInvalidControl(body);
       },
       complete: () => {
@@ -489,7 +486,7 @@ export class EditProfilePage implements OnInit, OnDestroy {
       return null;
     }
 
-    for (const key of ['first_name', 'last_name', 'phone_number', 'preferred_language']) {
+    for (const key of ['first_name', 'last_name', 'phone_number', 'language']) {
       const value = body[key];
       if (Array.isArray(value) && typeof value[0] === 'string') {
         return value[0];
@@ -526,11 +523,6 @@ export class EditProfilePage implements OnInit, OnDestroy {
       return null;
     }
     return /^\+?[0-9()\-\s]{7,20}$/.test(value) ? null : { invalidPhone: true };
-  }
-
-  private normalizeLanguage(value: unknown): string {
-    const normalized = `${value ?? ''}`.trim().toLowerCase();
-    return this.languageOptions.some((option) => option.value === normalized) ? normalized : '';
   }
 
   private async navigateByUrl(url: string, extras?: { replaceUrl?: boolean }): Promise<void> {

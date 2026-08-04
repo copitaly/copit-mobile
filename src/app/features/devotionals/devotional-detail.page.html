@@ -2,14 +2,14 @@
   <ion-header class="devotional-reader-header" translucent="true">
     <ion-toolbar>
       <ion-buttons slot="start">
-        <ion-back-button defaultHref="/tabs/devotionals" text="" icon="chevron-back" aria-label="Back to Devotions"></ion-back-button>
+        <ion-back-button defaultHref="/tabs/devotionals" text="" icon="chevron-back" [attr.aria-label]="'devotions.detailBackAria' | t"></ion-back-button>
       </ion-buttons>
       <ion-buttons slot="end">
         <ion-button
           fill="clear"
           color="dark"
           [disabled]="!canShareDevotional()"
-          aria-label="Share devotion"
+          [attr.aria-label]="'devotions.detailShareAria' | t"
           (click)="shareDevotionalFromHeader()"
         >
           <ion-icon slot="icon-only" name="share-social-outline" aria-hidden="true"></ion-icon>
@@ -38,20 +38,20 @@
 
       <div *ngIf="!loading && notFound" class="state-card cop-card empty-state" data-testid="not-found-state">
         <div class="state-copy">
-          <h2>Devotion unavailable</h2>
-          <p>This devotion is no longer available.</p>
+          <h2>{{ 'devotions.detailUnavailableTitle' | t }}</h2>
+          <p>{{ 'devotions.detailUnavailableMessage' | t }}</p>
         </div>
         <ion-button expand="block" class="state-button" routerLink="/tabs/devotionals">
-          Back to Devotions
+          {{ 'devotions.detailBackAria' | t }}
         </ion-button>
       </div>
 
       <div *ngIf="!loading && !notFound && errorMessage" class="state-card cop-card error-state" data-testid="error-state">
         <div class="state-copy">
-          <h2>We couldn't load this devotion</h2>
+          <h2>{{ 'devotions.detailLoadErrorTitle' | t }}</h2>
           <p>{{ errorMessage }}</p>
         </div>
-        <ion-button expand="block" class="state-button" (click)="retryLoad()">Try Again</ion-button>
+        <ion-button expand="block" class="state-button" (click)="retryLoad()">{{ 'common.tryAgain' | t }}</ion-button>
       </div>
 
       <article *ngIf="!loading && !notFound && !errorMessage && devotional" class="reader-article cop-card" data-testid="devotional-detail">
@@ -66,7 +66,7 @@
             <p *ngIf="getHeaderMeta()" class="reader-article__meta cop-metadata" data-testid="scripture-reference">{{ getHeaderMeta() }}</p>
           </div>
 
-          <h2 data-testid="scripture-heading">Scripture</h2>
+          <h2 data-testid="scripture-heading">{{ 'devotions.scriptureHeading' | t }}</h2>
           <blockquote
             *ngIf="hasText(devotional.scripture_text)"
             class="scripture-block cop-inset-quote preserve-lines"
@@ -86,7 +86,7 @@
         </section>
 
         <section *ngIf="hasText(devotional.reflection_question)" class="reader-article__section reader-article__section--inset cop-card--reflection" data-testid="reflection-section">
-          <h2 data-testid="reflection-heading">Reflection</h2>
+          <h2 data-testid="reflection-heading">{{ 'devotions.reflectionHeading' | t }}</h2>
           <div class="reading-copy cop-reading-body" data-testid="reflection-question">
             <p *ngFor="let paragraph of reflectionParagraphs" class="reading-paragraph preserve-lines">
               {{ paragraph }}
@@ -95,7 +95,7 @@
         </section>
 
         <section *ngIf="hasText(devotional.prayer)" class="reader-article__section reader-article__section--prayer cop-card--prayer" data-testid="prayer-section">
-          <h2 data-testid="prayer-heading">Prayer</h2>
+          <h2 data-testid="prayer-heading">{{ 'devotions.prayerHeading' | t }}</h2>
           <div class="reading-copy cop-reading-body" data-testid="prayer">
             <p *ngFor="let paragraph of prayerParagraphs" class="reading-paragraph preserve-lines">
               {{ paragraph }}
@@ -108,11 +108,11 @@
           <button
             type="button"
             class="reader-article__footer-share"
-            aria-label="Share devotion"
+            [attr.aria-label]="'devotions.detailShareAria' | t"
             [disabled]="!canShareDevotional()"
             (click)="shareDevotionalFromHeader()"
           >
-            Share this devotion
+            {{ 'devotions.shareFooter' | t }}
           </button>
         </footer>
       </article>

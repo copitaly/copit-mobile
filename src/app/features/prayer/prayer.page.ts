@@ -6,11 +6,12 @@ import { Subject, combineLatest } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { AuthService } from '../../core/services/auth.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 type PrayerAction = {
-  title: string;
-  description: string;
+  titleKey: string;
+  descriptionKey: string;
   icon: string;
   route: string;
   accentClass: string;
@@ -18,7 +19,7 @@ type PrayerAction = {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-prayer',
   templateUrl: './prayer.page.html',
@@ -30,15 +31,15 @@ export class PrayerPage implements OnInit, OnDestroy {
 
   readonly primaryActions: PrayerAction[] = [
     {
-      title: 'Submit a Prayer Request',
-      description: 'Share a prayer need with the church. Guests can submit too.',
+      titleKey: 'prayer.submitActionTitle',
+      descriptionKey: 'prayer.submitActionDescription',
       icon: 'heart-outline',
       route: '/prayer/submit',
       accentClass: 'prayer-action-card--primary',
     },
     {
-      title: 'Community Prayers',
-      description: 'Read approved requests shared with the wider church community.',
+      titleKey: 'prayer.communityActionTitle',
+      descriptionKey: 'prayer.communityActionDescription',
       icon: 'people-outline',
       route: '/community',
       accentClass: 'prayer-action-card--secondary',
@@ -46,8 +47,8 @@ export class PrayerPage implements OnInit, OnDestroy {
   ];
 
   readonly memberAction: PrayerAction = {
-    title: 'My Prayer Requests',
-    description: 'Review the requests you have shared while signed in.',
+    titleKey: 'prayer.myRequestsActionTitle',
+    descriptionKey: 'prayer.myRequestsActionDescription',
     icon: 'document-text-outline',
     route: '/prayer/my-requests',
     accentClass: 'prayer-action-card--member',

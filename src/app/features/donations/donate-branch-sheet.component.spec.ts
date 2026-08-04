@@ -1,5 +1,6 @@
 import { of } from 'rxjs';
 
+import { LocaleService } from '../../core/localization/locale.service';
 import { PublicBranch } from '../../core/models/branch.model';
 import { BranchesService } from '../../core/services/branches.service';
 import { DonateBranchSheetComponent } from './donate-branch-sheet.component';
@@ -7,6 +8,7 @@ import { DonateBranchSheetComponent } from './donate-branch-sheet.component';
 describe('DonateBranchSheetComponent', () => {
   let component: DonateBranchSheetComponent;
   let branchesService: jasmine.SpyObj<BranchesService>;
+  let localeService: jasmine.SpyObj<LocaleService>;
 
   const milanoBranch: PublicBranch = {
     id: 11,
@@ -45,8 +47,10 @@ describe('DonateBranchSheetComponent', () => {
   beforeEach(() => {
     branchesService = jasmine.createSpyObj<BranchesService>('BranchesService', ['getAllBranches']);
     branchesService.getAllBranches.and.returnValue(of([]));
+    localeService = jasmine.createSpyObj<LocaleService>('LocaleService', ['translate']);
+    localeService.translate.and.callFake((key: string) => key);
 
-    component = new DonateBranchSheetComponent(branchesService);
+    component = new DonateBranchSheetComponent(branchesService, localeService);
     component.isOpen = true;
     component.savedBranches = [];
     component.savedBranchIds = [];

@@ -7,6 +7,8 @@ import { IonicModule } from '@ionic/angular';
 import { Subject, combineLatest } from 'rxjs';
 import { takeUntil, timeout } from 'rxjs/operators';
 
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import {
   PublicChurchHierarchy,
   PrayerCategory,
@@ -44,7 +46,7 @@ const SUBMISSION_TIMEOUT_MS = 15000;
 
 @Component({
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, ReactiveFormsModule, IonicModule, MobileHeaderComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-prayer-submit',
   templateUrl: './prayer-submit.page.html',
@@ -56,34 +58,35 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly hardwareBackCoordinator = inject(HardwareBackCoordinatorService);
+  private readonly localeService = inject(LocaleService);
 
   readonly categoryOptions: Array<{ label: string; value: PrayerCategory }> = [
-    { label: 'Personal', value: 'personal' },
-    { label: 'Family', value: 'family' },
-    { label: 'Health', value: 'health' },
-    { label: 'Spiritual', value: 'spiritual' },
-    { label: 'Work', value: 'work' },
-    { label: 'Thanksgiving', value: 'thanksgiving' },
-    { label: 'Other', value: 'other' },
+    { label: 'prayer.personal', value: 'personal' },
+    { label: 'prayer.family', value: 'family' },
+    { label: 'prayer.health', value: 'health' },
+    { label: 'prayer.spiritual', value: 'spiritual' },
+    { label: 'prayer.work', value: 'work' },
+    { label: 'prayer.thanksgiving', value: 'thanksgiving' },
+    { label: 'prayer.other', value: 'other' },
   ];
 
   readonly scopeOptions: Array<{ label: string; value: PrayerScope; helper: string }> = [
-    { label: 'Everyone', value: 'global', helper: 'Shared across COP Italy.' },
-    { label: 'My Area', value: 'area', helper: 'Shared with your Area.' },
-    { label: 'My District', value: 'district', helper: 'Shared with your District.' },
-    { label: 'My Local Church', value: 'local', helper: 'Shared with your local church.' },
+    { label: 'prayer.everyone', value: 'global', helper: 'prayer.copItaly' },
+    { label: 'prayer.myArea', value: 'area', helper: 'prayer.area' },
+    { label: 'prayer.myDistrict', value: 'district', helper: 'prayer.district' },
+    { label: 'prayer.myLocalChurch', value: 'local', helper: 'prayer.local' },
   ];
 
   readonly visibilityOptions: Array<{ label: string; value: PrayerVisibility; helper: string }> = [
     {
-      label: 'Private',
+      label: 'prayer.visibilityPrivate',
       value: 'private',
-      helper: 'Only authorized church administrators or moderators can view this request.',
+      helper: 'prayer.visibilityPrivateHelp',
     },
     {
-      label: 'Public',
+      label: 'prayer.visibilityPublic',
       value: 'public',
-      helper: 'After approval, this request may appear in Community Prayers.',
+      helper: 'prayer.visibilityPublicHelp',
     },
   ];
 
@@ -170,7 +173,9 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
   }
 
   get submitButtonLabel(): string {
-    return this.isSubmitting ? 'Submitting...' : 'Share Prayer Request';
+    return this.isSubmitting
+      ? this.localeService.translate('prayer.submittingButton')
+      : this.localeService.translate('prayer.submitButton');
   }
 
   get canSubmit(): boolean {
@@ -199,10 +204,10 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
 
   get successMessage(): string {
     if (this.lastSubmittedVisibility === 'public') {
-      return 'Your request has been submitted for review. If approved, it may appear in Community Prayers.';
+      return this.localeService.translate('prayer.successPublicMessage');
     }
 
-    return 'Your request has been submitted for prayer and will remain private.';
+    return this.localeService.translate('prayer.successPrivateMessage');
   }
 
   get memberDisplayName(): string {
@@ -332,7 +337,7 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
     this.form.updateValueAndValidity({ emitEvent: false });
 
     if (this.form.invalid) {
-      this.genericErrorMessage = 'Please complete the required prayer request fields.';
+      this.genericErrorMessage = this.localeService.translate('prayer.formIncomplete');
       this.focusFirstInvalidField();
       return;
     }
@@ -413,21 +418,21 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
     if (control.errors['required'] || control.errors['requiredTrimmed']) {
       switch (controlName) {
         case 'request_text':
-          return 'Prayer request text is required.';
+          return this.localeService.translate('prayer.requestTextRequired');
         case 'category':
-          return 'Please choose a category.';
+          return this.localeService.translate('prayer.categoryRequired');
         case 'scope':
-          return 'Please choose a prayer scope.';
+          return this.localeService.translate('prayer.scopeRequired');
         case 'submitter_name':
-          return 'Your name is required when you choose to share it.';
+          return this.localeService.translate('prayer.nameRequired');
         case 'title':
-          return `Keep the title to ${MAX_TITLE_LENGTH} characters or fewer.`;
+          return this.localeService.translate('prayer.titleTooLong', { count: MAX_TITLE_LENGTH });
         case 'selected_area_id':
-          return 'Please select an Area.';
+          return this.localeService.translate('prayer.selectAreaRequired');
         case 'selected_district_id':
-          return 'Please select a District.';
+          return this.localeService.translate('prayer.selectDistrictRequired');
         case 'selected_local_church_id':
-          return 'Please select a Local Church.';
+          return this.localeService.translate('prayer.selectLocalRequired');
         default:
           return 'This field is required.';
       }
@@ -435,11 +440,11 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
 
     if (control.errors['maxlength']) {
       if (controlName === 'title') {
-        return `Keep the title to ${MAX_TITLE_LENGTH} characters or fewer.`;
+        return this.localeService.translate('prayer.titleTooLong', { count: MAX_TITLE_LENGTH });
       }
 
       if (controlName === 'submitter_name') {
-        return `Keep your name to ${MAX_SUBMITTER_NAME_LENGTH} characters or fewer.`;
+        return this.localeService.translate('prayer.nameTooLong', { count: MAX_SUBMITTER_NAME_LENGTH });
       }
     }
 
@@ -481,7 +486,7 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
       error: () => {
         this.areas = [];
         this.isAreasLoading = false;
-        this.areaLoadError = "We couldn't load Areas right now.";
+        this.areaLoadError = this.localeService.translate('prayer.loadAreasError');
       },
     });
   }
@@ -507,7 +512,7 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
 
         this.districts = [];
         this.isDistrictsLoading = false;
-        this.districtLoadError = "We couldn't load Districts right now.";
+        this.districtLoadError = this.localeService.translate('prayer.loadDistrictsError');
       },
     });
   }
@@ -533,7 +538,7 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
 
         this.localChurches = [];
         this.isLocalChurchesLoading = false;
-        this.localChurchLoadError = "We couldn't load Local churches right now.";
+        this.localChurchLoadError = this.localeService.translate('prayer.loadLocalChurchesError');
       },
     });
   }
@@ -595,18 +600,18 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
 
   private applySubmissionError(error: unknown): void {
     if (this.isTimeoutError(error)) {
-      this.genericErrorMessage = 'Submitting your prayer request timed out. Please try again.';
+      this.genericErrorMessage = this.localeService.translate('prayer.submitTimeout');
       return;
     }
 
     if (error instanceof HttpErrorResponse) {
       if (error.status === 0) {
-        this.genericErrorMessage = 'You appear to be offline. Check your connection and try again.';
+        this.genericErrorMessage = this.localeService.translate('prayer.submitOffline');
         return;
       }
 
       if (error.status === 401 || error.status === 403) {
-        this.genericErrorMessage = 'Please sign in again before submitting your prayer request.';
+        this.genericErrorMessage = this.localeService.translate('prayer.submitAuthError');
         return;
       }
 
@@ -616,7 +621,7 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
         this.genericErrorMessage =
           (typeof payload['detail'] === 'string' && payload['detail']) ||
           this.firstFieldError(this.fieldErrors) ||
-          'Please review the highlighted fields and try again.';
+          this.localeService.translate('prayer.submitValidationFallback');
         return;
       }
 
@@ -626,7 +631,7 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
       }
     }
 
-    this.genericErrorMessage = 'We could not submit your prayer request right now. Please try again.';
+    this.genericErrorMessage = this.localeService.translate('prayer.submitFailed');
   }
 
   private extractFieldErrors(payload: Record<string, unknown>): FieldErrorMap {

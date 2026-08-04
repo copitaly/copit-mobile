@@ -111,7 +111,7 @@ export interface MemberProfileUpdateRequest {
   first_name?: string;
   last_name?: string;
   phone_number?: string;
-  preferred_language?: string | null;
+  language?: string | null;
 }
 
 export interface AuthTokenResponse {

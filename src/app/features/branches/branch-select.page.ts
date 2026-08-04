@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -8,6 +8,8 @@ import { catchError } from 'rxjs/operators';
 
 import { PublicBranch } from '../../core/models/branch.model';
 import { SavedChurch } from '../../core/models/user.model';
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { AppToastService } from '../../core/services/app-toast.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -44,7 +46,7 @@ interface SearchResultSection {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, FeaturePageShellComponent],
+  imports: [CommonModule, FormsModule, IonicModule, FeaturePageShellComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-branch-select',
   template: `
@@ -58,7 +60,7 @@ interface SearchResultSection {
             class="branch-shell"
             [class.branch-shell--areas]="useEditorialAreaLayout"
             style="flex:1;min-height:100%"
-            title="Choose Church"
+            [title]="'churchSelector.title' | t"
             [subtitle]="currentHelperText"
             [backFallbackRoute]="backFallbackRoute"
             [headerTone]="useEditorialAreaLayout ? 'editorial' : 'inverse'"
@@ -86,13 +88,13 @@ interface SearchResultSection {
 
             <div *ngIf="!loading && error" class="state-card">
               <ion-text>{{ error }}</ion-text>
-              <ion-button fill="clear" (click)="loadBranches()">Retry</ion-button>
+              <ion-button fill="clear" (click)="loadBranches()">{{ 'churchSelector.retryLoad' | t }}</ion-button>
             </div>
 
             <div *ngIf="!loading && !error && allBranches.length === 0" class="state-card empty-state">
               <div class="empty-copy">
-                <h3>No branches available</h3>
-                <p>There are currently no donation branches available. Please try again later.</p>
+                <h3>{{ 'churchSelector.noBranchesTitle' | t }}</h3>
+                <p>{{ 'churchSelector.noBranchesBody' | t }}</p>
               </div>
             </div>
 
@@ -116,7 +118,7 @@ interface SearchResultSection {
                             <div class="label-top">
                               <h2>{{ item.area.name }}</h2>
                               <p class="hierarchy">
-                                {{ item.area.districts.length }} district{{ item.area.districts.length === 1 ? '' : 's' }}
+                                {{ districtCountLabel(item.area.districts.length) }}
                               </p>
                             </div>
                           </ion-label>
@@ -172,7 +174,7 @@ interface SearchResultSection {
                             [class.save-button--animating-save]="heartAnimationState(item.branch.id) === 'save'"
                             [class.save-button--animating-unsave]="heartAnimationState(item.branch.id) === 'unsave'"
                             [disabled]="isSaving(item.branch.id)"
-                            [attr.aria-label]="isSaved(item.branch.id) ? 'Remove saved church' : 'Save church'"
+                            [attr.aria-label]="savedChurchAriaLabel(item.branch.id)"
                             (click)="toggleSavedChurch(item.branch, $event)"
                           >
                             <ion-icon
@@ -193,7 +195,7 @@ interface SearchResultSection {
 
               <ng-template #hierarchyBrowser>
                 <div *ngIf="savedBranches.length > 0" class="district-section">
-                  <div class="district-header">Saved Churches</div>
+                  <div class="district-header">{{ 'churchSelector.savedChurches' | t }}</div>
                   <ion-list lines="none">
                     <ion-item
                       button
@@ -221,7 +223,7 @@ interface SearchResultSection {
                         [class.save-button--animating-save]="heartAnimationState(branch.id) === 'save'"
                         [class.save-button--animating-unsave]="heartAnimationState(branch.id) === 'unsave'"
                         [disabled]="isSaving(branch.id)"
-                        [attr.aria-label]="isSaved(branch.id) ? 'Remove saved church' : 'Save church'"
+                        [attr.aria-label]="savedChurchAriaLabel(branch.id)"
                         (click)="toggleSavedChurch(branch, $event)"
                       >
                         <ion-icon [name]="isSaved(branch.id) ? 'heart' : 'heart-outline'" aria-hidden="true"></ion-icon>
@@ -243,7 +245,7 @@ interface SearchResultSection {
                     <div>
                       <div class="district-header">{{ currentSectionTitle }}</div>
                       <p class="browse-helper" *ngIf="currentLevel !== 'churches'">{{ currentHelperText }}</p>
-                      <p class="browse-context" *ngIf="currentLevel === 'churches'">{{ currentChurchContext }}</p>
+                      <p class="browse-context" *ngIf="currentLevel === 'churches'">{{ currentChurchContextLabel }}</p>
                     </div>
                     <button
                       *ngIf="currentLevel !== 'areas'"
@@ -252,12 +254,12 @@ interface SearchResultSection {
                       (click)="stepBack()"
                     >
                       <ion-icon name="chevron-back" aria-hidden="true"></ion-icon>
-                      <span>{{ currentLevel === 'churches' ? 'Back to districts' : 'Back to areas' }}</span>
+                      <span>{{ currentLevel === 'churches' ? ('churchSelector.backToDistricts' | t) : ('churchSelector.backToAreas' | t) }}</span>
                     </button>
                   </div>
 
                   <div class="breadcrumb" *ngIf="breadcrumbs.length > 0">
-                    <button type="button" class="breadcrumb__crumb" (click)="resetHierarchy()">Areas</button>
+                    <button type="button" class="breadcrumb__crumb" (click)="resetHierarchy()">{{ 'churchSelector.areasBreadcrumb' | t }}</button>
                     <ng-container *ngFor="let crumb of breadcrumbs">
                       <span class="breadcrumb__divider">&rsaquo;</span>
                       <button
@@ -285,7 +287,7 @@ interface SearchResultSection {
                         <div class="label-top">
                           <h2>{{ area.name }}</h2>
                           <p class="hierarchy">
-                            {{ area.districts.length }} district{{ area.districts.length === 1 ? '' : 's' }}
+                            {{ districtCountLabel(area.districts.length) }}
                           </p>
                         </div>
                       </ion-label>
@@ -309,7 +311,7 @@ interface SearchResultSection {
                         <div class="label-top">
                           <h2>{{ district.name }}</h2>
                           <p class="hierarchy">
-                            {{ district.branches.length }} church{{ district.branches.length === 1 ? '' : 'es' }}
+                            {{ churchCountLabel(district.branches.length) }}
                           </p>
                         </div>
                       </ion-label>
@@ -347,7 +349,7 @@ interface SearchResultSection {
                         [class.save-button--animating-save]="heartAnimationState(branch.id) === 'save'"
                         [class.save-button--animating-unsave]="heartAnimationState(branch.id) === 'unsave'"
                         [disabled]="isSaving(branch.id)"
-                        [attr.aria-label]="isSaved(branch.id) ? 'Remove saved church' : 'Save church'"
+                        [attr.aria-label]="savedChurchAriaLabel(branch.id)"
                         (click)="toggleSavedChurch(branch, $event)"
                       >
                         <ion-icon [name]="isSaved(branch.id) ? 'heart' : 'heart-outline'" aria-hidden="true"></ion-icon>
@@ -365,8 +367,8 @@ interface SearchResultSection {
             <ng-template #noSearchResults>
               <div class="state-card empty-state">
                 <div class="empty-copy">
-                  <h3>No matching churches</h3>
-                  <p>Try a different church, district, or area.</p>
+                  <h3>{{ 'churchSelector.noMatchesTitle' | t }}</h3>
+                  <p>{{ 'churchSelector.noMatchesBody' | t }}</p>
                 </div>
               </div>
             </ng-template>
@@ -374,8 +376,8 @@ interface SearchResultSection {
             <ng-template #noHierarchyBranches>
               <div class="state-card empty-state">
                 <div class="empty-copy">
-                  <h3>No more churches to browse</h3>
-                  <p>All currently available churches may already be in your saved list.</p>
+                  <h3>{{ 'churchSelector.noHierarchyTitle' | t }}</h3>
+                  <p>{{ 'churchSelector.noHierarchyBody' | t }}</p>
                 </div>
               </div>
             </ng-template>
@@ -709,6 +711,7 @@ export class BranchSelectPage implements OnInit {
     private readonly selectedBranchService: SelectedBranchService,
     private readonly activatedRoute: ActivatedRoute,
     private readonly router: Router,
+    private readonly localeService: LocaleService,
     private readonly appToast: AppToastService,
     private readonly analyticsService: AnalyticsService
   ) {}
@@ -741,7 +744,7 @@ export class BranchSelectPage implements OnInit {
         this.loading = false;
       },
       error: () => {
-        this.error = 'Unable to load branches. Please try again.';
+        this.error = this.localeService.translate('churchSelector.loadError');
         this.loading = false;
       },
     });
@@ -771,44 +774,44 @@ export class BranchSelectPage implements OnInit {
 
   get currentSectionTitle(): string {
     if (this.currentLevel === 'churches') {
-      return 'Local Branches';
+      return this.localeService.translate('churchSelector.locals');
     }
     if (this.currentLevel === 'districts') {
-      return 'Districts';
+      return this.localeService.translate('churchSelector.districts');
     }
-    return 'Areas';
+    return this.localeService.translate('churchSelector.areas');
   }
 
   get currentHelperText(): string {
     if (this.currentLevel === 'churches') {
-      return 'Select the church you want to give to';
+      return this.localeService.translate('churchSelector.selectLocal');
     }
     if (this.currentLevel === 'districts') {
-      return 'Select your district';
+      return this.localeService.translate('churchSelector.selectDistrict');
     }
-    return 'Select your area';
+    return this.localeService.translate('churchSelector.selectArea');
   }
 
   get searchPlaceholder(): string {
     if (this.currentLevel === 'churches') {
-      return 'Search churches...';
+      return this.localeService.translate('churchSelector.searchLocalsPlaceholder');
     }
     if (this.currentLevel === 'districts') {
-      return 'Search districts or churches...';
+      return this.localeService.translate('churchSelector.searchDistrictsPlaceholder');
     }
-    return 'Search areas, districts, or churches...';
+    return this.localeService.translate('churchSelector.searchAreasPlaceholder');
   }
 
-  get currentChurchContext(): string {
+  get currentChurchContextLabel(): string {
     const districtName = this.currentDistrictGroup?.name?.trim();
     const areaName = this.currentAreaGroup?.name?.trim();
-    const parts = [];
+    const parts: string[] = [];
 
     if (districtName) {
-      parts.push(`${districtName} District`);
+      parts.push(`${districtName} ${this.localeService.translate('churchSelector.districtLabelSuffix')}`);
     }
     if (areaName) {
-      parts.push(`${areaName} Area`);
+      parts.push(`${areaName} ${this.localeService.translate('churchSelector.areaLabelSuffix')}`);
     }
 
     return parts.join(' · ');
@@ -835,7 +838,7 @@ export class BranchSelectPage implements OnInit {
     const districtMapByArea = new Map<string, Map<string, DistrictBrowseGroup>>();
 
     this.hierarchyBaseBranches.forEach((branch) => {
-      const areaName = branch.area?.name?.trim() || 'Other areas';
+      const areaName = branch.area?.name?.trim() || this.localeService.translate('churchSelector.otherAreas');
       const areaId = branch.area?.id ?? null;
       const areaKey = this.buildHierarchyKey('area', areaId, areaName);
 
@@ -849,7 +852,7 @@ export class BranchSelectPage implements OnInit {
         districtMapByArea.set(areaKey, new Map<string, DistrictBrowseGroup>());
       }
 
-      const districtName = branch.district?.name?.trim() || 'Other districts';
+      const districtName = branch.district?.name?.trim() || this.localeService.translate('churchSelector.otherDistricts');
       const districtId = branch.district?.id ?? null;
       const districtKey = this.buildHierarchyKey('district', districtId, `${areaKey}:${districtName}`);
       const districtsForArea = districtMapByArea.get(areaKey)!;
@@ -960,14 +963,14 @@ export class BranchSelectPage implements OnInit {
 
     if (areas.length > 0) {
       sections.push({
-        title: 'Areas',
+        title: this.localeService.translate('churchSelector.areas'),
         items: areas.map((area) => ({ kind: 'area' as const, area })),
       });
     }
 
     if (districts.length > 0) {
       sections.push({
-        title: 'Districts',
+        title: this.localeService.translate('churchSelector.districts'),
         items: districts.map((entry) => ({
           kind: 'district' as const,
           area: entry.area,
@@ -978,7 +981,7 @@ export class BranchSelectPage implements OnInit {
 
     if (churches.length > 0) {
       sections.push({
-        title: 'Local Branches',
+        title: this.localeService.translate('churchSelector.locals'),
         items: churches.map((branch) => ({ kind: 'church' as const, branch })),
       });
     }
@@ -1055,12 +1058,32 @@ export class BranchSelectPage implements OnInit {
   getHierarchy(branch: PublicBranch): string {
     const parts = [];
     if (branch.district?.name) {
-      parts.push(`${branch.district.name} District`);
+      parts.push(`${branch.district.name} ${this.localeService.translate('churchSelector.districtLabelSuffix')}`);
     }
     if (branch.area?.name) {
-      parts.push(`${branch.area.name} Area`);
+      parts.push(`${branch.area.name} ${this.localeService.translate('churchSelector.areaLabelSuffix')}`);
     }
     return parts.join(' - ');
+  }
+
+  districtCountLabel(count: number): string {
+    return this.localeService.translate(
+      count === 1 ? 'churchSelector.districtCountOne' : 'churchSelector.districtCountOther',
+      { count }
+    );
+  }
+
+  churchCountLabel(count: number): string {
+    return this.localeService.translate(
+      count === 1 ? 'churchSelector.churchCountOne' : 'churchSelector.churchCountOther',
+      { count }
+    );
+  }
+
+  savedChurchAriaLabel(branchId: number): string {
+    return this.localeService.translate(
+      this.isSaved(branchId) ? 'churchSelector.removeSavedChurchAria' : 'churchSelector.saveChurchAria'
+    );
   }
 
   getBranchCardSecondaryText(branch: PublicBranch): string {
@@ -1102,14 +1125,14 @@ export class BranchSelectPage implements OnInit {
       this.authService.unsaveChurch(existingSavedChurchId).subscribe({
         next: async () => {
           this.savingBranchIds.delete(branch.id);
-          await this.appToast.success('Removed from saved');
+          await this.appToast.success(this.localeService.translate('savedChurches.removedSuccess'));
         },
         error: async () => {
           this.savedChurchIdsByBranchId.set(branch.id, existingSavedChurchId);
           this.animateHeart(branch.id, 'save');
           this.savingBranchIds.delete(branch.id);
           this.ensureHierarchySelectionIsValid();
-          await this.appToast.error('Could not update saved church');
+          await this.appToast.error(this.localeService.translate('savedChurches.removeFailed'));
         },
       });
       return;
@@ -1124,14 +1147,14 @@ export class BranchSelectPage implements OnInit {
         this.savedChurchIdsByBranchId.set(branch.id, savedChurch.id);
         this.savingBranchIds.delete(branch.id);
         this.ensureHierarchySelectionIsValid();
-        await this.appToast.success('Church saved');
+        await this.appToast.success(this.localeService.translate('savedChurches.savedSuccess'));
       },
       error: async () => {
         this.savedChurchIdsByBranchId.delete(branch.id);
         this.animateHeart(branch.id, 'unsave');
         this.savingBranchIds.delete(branch.id);
         this.ensureHierarchySelectionIsValid();
-        await this.appToast.error('Could not update saved church');
+        await this.appToast.error(this.localeService.translate('savedChurches.saveFailed'));
       },
     });
   }
@@ -1163,7 +1186,7 @@ export class BranchSelectPage implements OnInit {
   }
 
   private async handleUnauthenticatedSaveAttempt(): Promise<void> {
-    await this.appToast.warning('Sign in to save churches');
+    await this.appToast.warning(this.localeService.translate('churchSelector.signInToSave'));
     void this.router.navigate(['/login'], {
       queryParams: { returnUrl: '/branches' },
     });

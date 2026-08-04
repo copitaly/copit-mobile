@@ -14,6 +14,8 @@ import { DonationAnalyticsContextService } from '../../core/services/donation-an
 import { DonationFlowStateService } from '../../core/services/donation-flow-state.service';
 import { DonationsService } from '../../core/services/donations.service';
 import { HardwareBackCoordinatorService } from '../../core/services/hardware-back-coordinator.service';
+import { LocaleService } from '../../core/localization/locale.service';
+import { SupportedLanguageCode } from '../../core/utils/language-preference';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { StripePaymentService } from '../../core/services/stripe-payment.service';
@@ -27,6 +29,7 @@ describe('DonatePage', () => {
   let donationFlowState: jasmine.SpyObj<DonationFlowStateService>;
   let stripePaymentService: jasmine.SpyObj<StripePaymentService>;
   let appToast: jasmine.SpyObj<AppToastService>;
+  let localeService: jasmine.SpyObj<LocaleService>;
   let selectedBranch$: BehaviorSubject<PublicBranch | null>;
   let queryParamMap$: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
   let authServiceMock: {
@@ -96,6 +99,8 @@ describe('DonatePage', () => {
     donationFlowState = jasmine.createSpyObj<DonationFlowStateService>('DonationFlowStateService', ['setSummary']);
     stripePaymentService = jasmine.createSpyObj<StripePaymentService>('StripePaymentService', ['presentPaymentSheet']);
     appToast = jasmine.createSpyObj<AppToastService>('AppToastService', ['success', 'error', 'warning', 'info', 'show']);
+    localeService = jasmine.createSpyObj<LocaleService>('LocaleService', ['translate', 'getCurrentLocale']);
+    localeService.getCurrentLocale.and.returnValue('en');
     appToast.error.and.resolveTo();
     appToast.warning.and.resolveTo();
     selectedBranch$ = new BehaviorSubject<PublicBranch | null>(null);
@@ -127,6 +132,7 @@ describe('DonatePage', () => {
       router,
       stripePaymentService,
       appToast,
+      localeService,
       {} as AlertController,
       {
         addFeatureBreadcrumb(): void {},
@@ -243,9 +249,123 @@ describe('DonatePage', () => {
         church_id: branch.id,
         category_id: category.id,
         amount: 45,
+        locale: 'en',
       })
     );
     expect(donationsService.createMobileCheckout).not.toHaveBeenCalled();
+  });
+
+  it('sends the current Italian locale for hosted checkout after a runtime switch', () => {
+    (Capacitor.isNativePlatform as jasmine.Spy).and.returnValue(false);
+    localeService.getCurrentLocale.and.returnValue('it');
+    donationsService.createCheckout.and.returnValue(
+      of({
+        checkout_url: 'https://example.com/checkout-it',
+        donation_id: 78,
+        transaction_reference: 'TRX-WEB-IT',
+      })
+    );
+
+    page.startNativePayment();
+
+    expect(donationsService.createCheckout).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        locale: 'it',
+      })
+    );
+  });
+
+  it('sends the current French locale for hosted checkout after a runtime switch', () => {
+    (Capacitor.isNativePlatform as jasmine.Spy).and.returnValue(false);
+    localeService.getCurrentLocale.and.returnValue('fr');
+    donationsService.createCheckout.and.returnValue(
+      of({
+        checkout_url: 'https://example.com/checkout-fr',
+        donation_id: 79,
+        transaction_reference: 'TRX-WEB-FR',
+      })
+    );
+
+    page.startNativePayment();
+
+    expect(donationsService.createCheckout).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        locale: 'fr',
+      })
+    );
+  });
+
+  it('reads the hosted checkout locale at submit time instead of caching it', () => {
+    (Capacitor.isNativePlatform as jasmine.Spy).and.returnValue(false);
+    let currentLocale: SupportedLanguageCode | 'es' | '' = 'en';
+    localeService.getCurrentLocale.and.callFake(() => currentLocale as SupportedLanguageCode);
+    donationsService.createCheckout.and.returnValue(
+      of({
+        checkout_url: 'https://example.com/checkout-current',
+        donation_id: 80,
+        transaction_reference: 'TRX-WEB-CURRENT',
+      })
+    );
+
+    currentLocale = 'fr';
+    page.startNativePayment();
+
+    expect(donationsService.createCheckout).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        locale: 'fr',
+      })
+    );
+  });
+
+  it('falls back to English when the hosted checkout locale is unexpectedly invalid', () => {
+    (Capacitor.isNativePlatform as jasmine.Spy).and.returnValue(false);
+    localeService.getCurrentLocale.and.returnValue('es' as SupportedLanguageCode);
+    donationsService.createCheckout.and.returnValue(
+      of({
+        checkout_url: 'https://example.com/checkout-default',
+        donation_id: 81,
+        transaction_reference: 'TRX-WEB-DEFAULT',
+      })
+    );
+
+    page.startNativePayment();
+
+    expect(donationsService.createCheckout).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        locale: 'en',
+      })
+    );
+  });
+
+  it('keeps the recurring native PaymentSheet request unchanged when locale switches', async () => {
+    localeService.getCurrentLocale.and.returnValue('fr');
+    donationsService.createRecurringDonation.and.returnValue(
+      of({
+        recurring_donation_id: 91,
+        subscription_id: 'sub_123',
+        client_secret: 'pi_secret_recurring_123',
+        status: 'incomplete',
+      })
+    );
+    (page as unknown as { selectedFrequencyState: 'one_time' | 'monthly' }).selectedFrequencyState = 'monthly';
+
+    page.submitDonation();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(donationsService.createRecurringDonation).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        church_id: branch.id,
+        category_id: category.id,
+        amount: 45,
+        interval: 'monthly',
+      })
+    );
+    expect(donationsService.createRecurringDonation.calls.mostRecent().args[0]).not.toEqual(
+      jasmine.objectContaining({
+        locale: jasmine.anything(),
+      })
+    );
   });
 
   it('stores and forwards the transaction reference for successful native payments', async () => {

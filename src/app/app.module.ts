@@ -13,9 +13,13 @@ import { environment } from '../environments/environment';
 import { SentryHttpInterceptor } from './core/interceptors/sentry-http.interceptor';
 import { SentryTelemetryService } from './core/services/sentry-telemetry.service';
 import { AnalyticsService } from './core/services/analytics.service';
+import { LocaleService } from './core/localization/locale.service';
 
-function initializeAuth(authService: AuthService): () => Promise<void> {
-  return () => authService.initialize();
+function initializeLocalization(localeService: LocaleService, authService: AuthService): () => Promise<void> {
+  return async () => {
+    await localeService.initialize();
+    await authService.initialize();
+  };
 }
 
 function initializeSentryTelemetry(sentryTelemetry: SentryTelemetryService): () => void {
@@ -44,8 +48,8 @@ function initializeAnalytics(analyticsService: AnalyticsService): () => Promise<
     },
     {
       provide: APP_INITIALIZER,
-      useFactory: initializeAuth,
-      deps: [AuthService],
+      useFactory: initializeLocalization,
+      deps: [LocaleService, AuthService],
       multi: true,
     },
     {

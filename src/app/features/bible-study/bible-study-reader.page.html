@@ -5,7 +5,7 @@
         <ion-back-button
           defaultHref="/tabs/bible-study"
           text=""
-          aria-label="Back to Bible Study"
+          [attr.aria-label]="'bibleStudy.backToList' | t"
         ></ion-back-button>
       </ion-buttons>
 
@@ -28,27 +28,27 @@
       <div *ngIf="isLoading && !showPdfSurface" class="reader-state reader-state--loading" data-testid="reader-loading-state">
         <ion-spinner name="crescent"></ion-spinner>
         <div class="reader-state__copy">
-          <h2>Preparing your Bible Study</h2>
+          <h2>{{ 'bibleStudy.loadingTitle' | t }}</h2>
           <p>{{ readerLoadingMessage }}</p>
         </div>
       </div>
 
       <div *ngIf="isNotFoundState" class="reader-state" data-testid="reader-not-found-state">
         <div class="reader-state__copy">
-          <h2>Manual not found</h2>
-          <p>This Bible Study manual is no longer available or may not be published.</p>
+          <h2>{{ 'bibleStudy.manualNotFoundTitle' | t }}</h2>
+          <p>{{ 'bibleStudy.manualNotFoundMessage' | t }}</p>
         </div>
         <ion-button expand="block" class="reader-state__button" (click)="goBackToList()">
-          Back to Bible Study
+          {{ 'bibleStudy.backToList' | t }}
         </ion-button>
       </div>
 
       <div *ngIf="isGenericErrorState" class="reader-state" data-testid="reader-error-state">
         <div class="reader-state__copy">
-          <h2>We couldn't load this manual</h2>
+          <h2>{{ 'bibleStudy.manualLoadError' | t }}</h2>
           <p>{{ errorMessage }}</p>
         </div>
-        <ion-button expand="block" class="reader-state__button" (click)="retryLoad()">Try Again</ion-button>
+        <ion-button expand="block" class="reader-state__button" (click)="retryLoad()">{{ 'bibleStudy.tryAgain' | t }}</ion-button>
       </div>
 
       <div
@@ -57,11 +57,11 @@
         data-testid="reader-no-pdf-state"
       >
         <div class="reader-state__copy">
-          <h2>PDF unavailable</h2>
-          <p>This manual does not currently have a readable PDF link.</p>
+          <h2>{{ 'bibleStudy.pdfMissingTitle' | t }}</h2>
+          <p>{{ 'bibleStudy.pdfMissingMessage' | t }}</p>
         </div>
         <ion-button expand="block" class="reader-state__button" (click)="goBackToManual()">
-          Back to Bible Study
+          {{ 'bibleStudy.backToList' | t }}
         </ion-button>
       </div>
 
@@ -71,10 +71,10 @@
         data-testid="reader-pdf-error-state"
       >
         <div class="reader-state__copy">
-          <h2>PDF unavailable</h2>
+          <h2>{{ 'bibleStudy.readerUnavailableTitle' | t }}</h2>
           <p>{{ errorMessage }}</p>
         </div>
-        <ion-button expand="block" class="reader-state__button" (click)="retryPdfLoad()">Retry</ion-button>
+        <ion-button expand="block" class="reader-state__button" (click)="retryPdfLoad()">{{ 'bibleStudy.tryAgain' | t }}</ion-button>
         <ion-button
           expand="block"
           fill="outline"
@@ -82,7 +82,7 @@
           [disabled]="downloadDisabled"
           (click)="downloadPdf()"
         >
-          Download PDF
+          {{ 'bibleStudy.downloadPdf' | t }}
         </ion-button>
         <ion-button
           expand="block"
@@ -91,7 +91,7 @@
           [disabled]="openExternallyDisabled"
           (click)="openPdfExternally()"
         >
-          Open PDF externally
+          {{ 'bibleStudy.openPdfExternally' | t }}
         </ion-button>
       </div>
 
@@ -104,7 +104,7 @@
         <div *ngIf="showReaderLoadingShell" class="reader-viewer__loading" data-testid="pdf-loading-state">
           <ion-spinner name="crescent"></ion-spinner>
           <div class="reader-state__copy">
-            <h2>Preparing your Bible Study</h2>
+            <h2>{{ 'bibleStudy.loadingTitle' | t }}</h2>
             <p>{{ readerLoadingMessage }}</p>
           </div>
         </div>
@@ -114,7 +114,7 @@
           class="reader-viewer__native-frame"
           [class.reader-viewer__native-frame--ready]="isReaderReady"
           [src]="pdfEmbedUrl"
-          title="Bible Study PDF"
+          [title]="'bibleStudy.pdfIframeTitle' | t"
           loading="eager"
           data-testid="pdf-native-frame"
           (load)="handleIframeLoad()"

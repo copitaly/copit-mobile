@@ -3,6 +3,9 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit, inject } from '@angular/core
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
+import { LocaleService } from '../../core/localization/locale.service';
+import { BibleStudyMetadataService } from '../../core/services/bible-study-metadata.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { BibleStudyManualListItem } from '../../core/models/bible-study.model';
 import { BibleStudyService } from '../../core/services/bible-study.service';
 import { MobileContentRowComponent } from '../../shared/mobile-content-row.component';
@@ -20,6 +23,7 @@ interface ContinueReadingSnapshot {
   imports: [
     CommonModule,
     IonicModule,
+    TranslatePipe,
     MobileHeroCardComponent,
     MobileSectionHeaderComponent,
     MobileContentRowComponent,
@@ -33,6 +37,8 @@ export class BibleStudyPage implements OnInit {
   private static readonly CONTINUE_READING_STORAGE_KEY = 'copit.bible-study.progress';
   private readonly bibleStudyService = inject(BibleStudyService);
   private readonly router = inject(Router);
+  private readonly localeService = inject(LocaleService);
+  private readonly bibleStudyMetadataService = inject(BibleStudyMetadataService);
   private loadRequestId = 0;
   private pendingManualId: number | null = null;
 
@@ -71,12 +77,12 @@ export class BibleStudyPage implements OnInit {
 
   get heroSectionSubtitle(): string {
     return this.hasContinueReading
-      ? 'Pick up where you left off in your current manual.'
-      : 'Start with the newest published manual available to read now.';
+      ? this.localeService.translate('bibleStudy.continueReadingIntro')
+      : this.localeService.translate('bibleStudy.featuredIntro');
   }
 
   get heroTitle(): string {
-    return this.heroManual?.title ?? 'Bible Study';
+    return this.heroManual?.title ?? this.localeService.translate('bibleStudy.title');
   }
 
   get heroMeta(): string {
@@ -85,7 +91,7 @@ export class BibleStudyPage implements OnInit {
       return '';
     }
 
-    return [`${manual.year}`, manual.language_display].filter(Boolean).join(' · ');
+    return this.bibleStudyMetadataService.formatPrimaryMetadata(manual);
   }
 
   get heroDetail(): string {
@@ -94,11 +100,11 @@ export class BibleStudyPage implements OnInit {
       return '';
     }
 
-    return [this.formatVolume(manual.volume), this.formatWeekRange(manual)].filter(Boolean).join(' · ');
+    return this.bibleStudyMetadataService.formatSecondaryMetadata(manual);
   }
 
   get heroCtaLabel(): string {
-    return this.hasContinueReading ? 'Resume Reading' : 'Start Reading';
+    return this.localeService.translate(this.hasContinueReading ? 'bibleStudy.resumeReading' : 'bibleStudy.startReading');
   }
 
   get heroProgressLabel(): string {
@@ -106,7 +112,10 @@ export class BibleStudyPage implements OnInit {
       return '';
     }
 
-    return `Page ${this.continueReadingSnapshot.currentPage} of ${this.continueReadingSnapshot.totalPages}`;
+    return this.localeService.translate('bibleStudy.pageProgress', {
+      current: this.continueReadingSnapshot.currentPage,
+      total: this.continueReadingSnapshot.totalPages,
+    });
   }
 
   get heroProgressPercent(): number | null {
@@ -124,8 +133,8 @@ export class BibleStudyPage implements OnInit {
 
   get heroAriaLabel(): string {
     return this.hasContinueReading
-      ? `Resume reading ${this.heroTitle}`
-      : `Open featured Bible Study manual ${this.heroTitle}`;
+      ? this.localeService.translate('bibleStudy.resumeFeaturedAria', { title: this.heroTitle })
+      : this.localeService.translate('bibleStudy.openFeaturedAria', { title: this.heroTitle });
   }
 
   loadManuals(options?: { preserveExisting?: boolean; complete?: () => void }): void {
@@ -161,9 +170,9 @@ export class BibleStudyPage implements OnInit {
         this.loading = false;
         this.refreshing = false;
         if (preserveExisting) {
-          this.loadMoreErrorMessage = "We couldn't refresh Bible Study manuals right now. Please try again.";
+          this.loadMoreErrorMessage = this.localeService.translate('bibleStudy.refreshError');
         } else {
-          this.errorMessage = "We couldn't load Bible Study manuals right now.";
+          this.errorMessage = this.localeService.translate('bibleStudy.errorTitle');
         }
         options?.complete?.();
       },
@@ -207,33 +216,17 @@ export class BibleStudyPage implements OnInit {
     });
   }
 
-  formatWeekRange(manual: BibleStudyManualListItem): string {
-    if (manual.start_week === null || manual.end_week === null) {
-      return 'Full year';
-    }
-
-    return `Weeks ${manual.start_week}-${manual.end_week}`;
-  }
-
-  formatVolume(volume: string | null | undefined): string | null {
-    const trimmed = volume?.trim() ?? '';
-    if (!trimmed) {
-      return null;
-    }
-
-    return /^volume\b/i.test(trimmed) ? trimmed : `Volume ${trimmed}`;
-  }
 
   trackByManualId(_: number, manual: BibleStudyManualListItem): number {
     return manual.id;
   }
 
   buildManualMeta(manual: BibleStudyManualListItem): string {
-    return [`${manual.year}`, manual.language_display].filter(Boolean).join(' · ');
+    return this.bibleStudyMetadataService.formatPrimaryMetadata(manual);
   }
 
   buildManualDetail(manual: BibleStudyManualListItem): string {
-    return [this.formatVolume(manual.volume), this.formatWeekRange(manual)].filter(Boolean).join(' · ');
+    return this.bibleStudyMetadataService.formatSecondaryMetadata(manual);
   }
 
   private resolveContinueReadingSnapshot(manuals: BibleStudyManualListItem[]): ContinueReadingSnapshot | null {
@@ -277,3 +270,4 @@ export class BibleStudyPage implements OnInit {
     return Array.from(manualMap.values());
   }
 }
+

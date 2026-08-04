@@ -3,12 +3,14 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit, inject } from '@angular/core
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { DevotionalPublicListItem } from '../../core/models/devotional.model';
 import { DevotionalService } from '../../core/services/devotional.service';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonicModule, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-devotionals',
   templateUrl: './devotionals.page.html',
@@ -17,11 +19,7 @@ import { DevotionalService } from '../../core/services/devotional.service';
 export class DevotionalsPage implements OnInit {
   private readonly devotionalService = inject(DevotionalService);
   private readonly router = inject(Router);
-  private readonly publicationDateFormatter = new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  private readonly localeService = inject(LocaleService);
 
   devotionals: DevotionalPublicListItem[] = [];
   loading = true;
@@ -179,7 +177,7 @@ export class DevotionalsPage implements OnInit {
       parts.push(devotional.scripture_reference.trim());
     }
     if (this.hasAuthor(devotional)) {
-      parts.push(`by ${devotional.author_name!.trim()}`);
+      parts.push(this.localeService.translate('devotions.byAuthor', { author: devotional.author_name!.trim() }));
     }
     parts.push(this.formatPublicationDate(devotional.publication_date));
     return parts.join(', ');
@@ -195,7 +193,7 @@ export class DevotionalsPage implements OnInit {
 
   formatPublicationDate(value: string | null): string {
     if (!value) {
-      return 'Available now';
+      return this.localeService.translate('devotions.availableNow');
     }
 
     const parsed = this.parsePublicationDate(value);
@@ -203,7 +201,11 @@ export class DevotionalsPage implements OnInit {
       return value;
     }
 
-    return this.publicationDateFormatter.format(parsed);
+    return new Intl.DateTimeFormat(this.getDateLocale(), {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }).format(parsed);
   }
 
   shouldShowCoverImage(devotional: DevotionalPublicListItem): boolean {
@@ -216,20 +218,20 @@ export class DevotionalsPage implements OnInit {
 
   getCoverImageAlt(devotional: DevotionalPublicListItem): string {
     const title = devotional.title?.trim();
-    return title ? `${title} cover image` : 'Devotion cover image';
+    return title ? `${title} ${this.localeService.translate('common.coverImage')}` : `${this.localeService.translate('devotions.title')} ${this.localeService.translate('common.coverImage')}`;
   }
 
   getCardMeta(devotional: DevotionalPublicListItem): string {
     const parts = [
       this.hasAuthor(devotional) ? devotional.author_name?.trim() ?? '' : '',
-      this.hasAuthor(devotional) ? 'COP Italy' : '',
+      this.hasAuthor(devotional) ? this.localeService.translate('devotions.publisherFallback') : '',
     ].filter(Boolean);
 
     return parts.join(' • ');
   }
 
   getPublisherLabel(devotional: DevotionalPublicListItem): string {
-    return devotional.author_name?.trim() || 'COP Italy';
+    return devotional.author_name?.trim() || this.localeService.translate('devotions.publisherFallback');
   }
 
   private parsePublicationDate(value: string): Date | null {
@@ -257,28 +259,39 @@ export class DevotionalsPage implements OnInit {
   }
 
   private resolveLoadErrorMessage(error: unknown): string {
-    return this.resolveErrorMessage(error, "We couldn't load devotions right now.");
+    return this.resolveErrorMessage(error, this.localeService.translate('devotions.errorTitle'));
   }
 
   private resolveRefreshErrorMessage(error: unknown): string {
-    return this.resolveErrorMessage(error, "We couldn't refresh devotions right now. Please try again.");
+    return this.resolveErrorMessage(error, this.localeService.translate('devotions.refreshError'));
   }
 
   private resolveLoadMoreErrorMessage(error: unknown): string {
-    return this.resolveErrorMessage(error, "We couldn't load more devotions right now. Please try again.");
+    return this.resolveErrorMessage(error, this.localeService.translate('devotions.loadMoreError'));
   }
 
   private resolveErrorMessage(error: unknown, fallback: string): string {
     const message = String((error as { message?: string } | undefined)?.message ?? '').toLowerCase();
     if (message.includes('timeout')) {
-      return 'Loading devotions timed out. Please try again.';
+      return this.localeService.translate('devotions.timeoutError');
     }
 
     if (message.includes('offline') || message.includes('network')) {
-      return 'You appear to be offline. Check your connection and try again.';
+      return this.localeService.translate('devotions.offlineError');
     }
 
     return fallback;
+  }
+
+  private getDateLocale(): string {
+    switch (this.localeService.getCurrentLocale()) {
+      case 'it':
+        return 'it-IT';
+      case 'fr':
+        return 'fr-FR';
+      default:
+        return 'en-GB';
+    }
   }
 
   private mergeUniqueDevotionals(
