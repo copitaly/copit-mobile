@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -800,21 +800,6 @@ export class BranchSelectPage implements OnInit {
       return this.localeService.translate('churchSelector.searchDistrictsPlaceholder');
     }
     return this.localeService.translate('churchSelector.searchAreasPlaceholder');
-  }
-
-  get currentChurchContext(): string {
-    const districtName = this.currentDistrictGroup?.name?.trim();
-    const areaName = this.currentAreaGroup?.name?.trim();
-    const parts = [];
-
-    if (districtName) {
-      parts.push(`${districtName} ${this.localeService.translate('churchSelector.districtLabelSuffix')}`);
-    }
-    if (areaName) {
-      parts.push(`${areaName} ${this.localeService.translate('churchSelector.areaLabelSuffix')}`);
-    }
-
-    return parts.join(' · ');
   }
 
   get currentChurchContextLabel(): string {

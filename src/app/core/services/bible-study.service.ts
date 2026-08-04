@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+import { LocaleService } from '../localization/locale.service';
 import { PaginatedResponse } from '../models/pagination.model';
 import {
   BibleStudyManualDetail,
@@ -14,6 +15,7 @@ import { ApiService } from './api.service';
 @Injectable({ providedIn: 'root' })
 export class BibleStudyService {
   private readonly api = inject(ApiService);
+  private readonly locale = inject(LocaleService);
   private readonly publicManualsEndpoint = 'public/bible-study/manuals/';
   private readonly supportedStatuses = new Set<BibleStudyPublicationStatus>(['draft', 'published', 'archived']);
 
@@ -118,8 +120,9 @@ export class BibleStudyService {
   }
 
   private normalizeTitle(value: unknown): string {
-    const normalized = this.normalizeText(value, 'Bible Study Manual');
-    return normalized || 'Bible Study Manual';
+    const fallback = this.locale.translate('bibleStudy.manualLabel');
+    const normalized = this.normalizeText(value, fallback);
+    return normalized || fallback;
   }
 
   private normalizeText(value: unknown, fallback = ''): string {

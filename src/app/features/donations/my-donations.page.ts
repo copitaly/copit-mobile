@@ -3,23 +3,25 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { AuthService } from '../../core/services/auth.service';
 import { MemberRecentDonation } from '../../core/models/user.model';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-my-donations',
   template: `
     <ion-page>
       <ion-content fullscreen class="donations-content cop-content--secondary">
         <div class="donations-shell cop-secondary-shell">
-          <header class="donations-header" aria-label="Giving History">
+          <header class="donations-header" [attr.aria-label]="'donations.historyTitle' | t">
             <app-mobile-header
-              title="Giving History"
-              subtitle="Review the gifts you've already made."
+              [title]="'donations.historyTitle' | t"
+              [subtitle]="'donations.historySubtitle' | t"
               fallbackRoute="/tabs/profile"
               tone="editorial"
             ></app-mobile-header>
@@ -41,27 +43,27 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
             <div *ngIf="!loading && errorMessage" class="state-card error-state">
               <div class="state-copy">
-                <h2>We couldn't load your donations</h2>
+                <h2>{{ 'donations.historyLoadErrorTitle' | t }}</h2>
                 <p>{{ errorMessage }}</p>
               </div>
-              <ion-button expand="block" class="state-button" (click)="loadInitialDonations()">Try again</ion-button>
+              <ion-button expand="block" class="state-button" (click)="loadInitialDonations()">{{ 'common.tryAgain' | t }}</ion-button>
             </div>
 
             <div *ngIf="!loading && !errorMessage && donations.length === 0" class="state-card empty-state">
               <div class="empty-state__icon" aria-hidden="true">Gift</div>
               <div class="state-copy">
-                <h2>No donations yet</h2>
-                <p>Your giving history will appear here after your first donation.</p>
+                <h2>{{ 'donations.historyEmptyTitle' | t }}</h2>
+                <p>{{ 'donations.historyEmptySubtitle' | t }}</p>
               </div>
               <ion-button expand="block" class="give-now-button" (click)="goToDonationFlow()">
                 <ion-icon name="gift-outline" slot="start" aria-hidden="true"></ion-icon>
-                <span>Give now</span>
+                <span>{{ 'donations.giveNow' | t }}</span>
               </ion-button>
             </div>
 
             <div *ngIf="!loading && !errorMessage && donations.length > 0" class="donations-stack">
               <article class="donation-card" *ngFor="let donation of donations">
-                <div class="donation-card__action" tabindex="0" [attr.aria-label]="'Donation to ' + displayChurchName(donation)">
+                <div class="donation-card__action" tabindex="0" [attr.aria-label]="localeService.translate('donations.historyCardAria', { church: displayChurchName(donation) })">
                   <div class="donation-card__amount-block">
                     <p class="donation-amount">{{ formatAmount(donation.amount, donation.currency) }}</p>
                     <span class="donation-status" [class]="statusClass(donation.status)">{{ formatStatus(donation.status) }}</span>
@@ -73,16 +75,16 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
                   <div class="donation-meta">
                     <div class="meta-row">
-                      <span>Donation Type</span>
+                      <span>{{ 'donations.historyTypeLabel' | t }}</span>
                       <strong>{{ formatDonationType(donation.category) }}</strong>
                     </div>
                     <div class="meta-row">
-                      <span>Date</span>
+                      <span>{{ 'donations.historyDateLabel' | t }}</span>
                       <strong>{{ formatDate(donation.created_at) }}</strong>
                     </div>
                     <div class="meta-row">
-                      <span>Reference</span>
-                      <strong class="meta-row__reference">{{ donation.transaction_reference || 'Pending' }}</strong>
+                      <span>{{ 'donations.historyReferenceLabel' | t }}</span>
+                      <strong class="meta-row__reference">{{ donation.transaction_reference || ('donations.historyReferencePending' | t) }}</strong>
                     </div>
                   </div>
                 </div>
@@ -97,12 +99,12 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                 (click)="loadMore()"
               >
                 <ion-spinner *ngIf="loadingMore" slot="start" name="crescent"></ion-spinner>
-                <span>{{ loadingMore ? 'Loading more...' : 'Load more' }}</span>
+                <span>{{ loadingMore ? ('donations.loadingMore' | t) : ('donations.loadMore' | t) }}</span>
               </ion-button>
 
               <ion-button expand="block" class="give-now-button give-now-button--footer" (click)="goToDonationFlow()">
                 <ion-icon name="gift-outline" slot="start" aria-hidden="true"></ion-icon>
-                <span>Give now</span>
+                <span>{{ 'donations.giveNow' | t }}</span>
               </ion-button>
             </div>
           </div>
@@ -416,7 +418,11 @@ export class MyDonationsPage implements OnInit {
   nextPageUrl: string | null = null;
   readonly skeletonItems = [1, 2, 3];
 
-  constructor(private readonly authService: AuthService, private readonly router: Router) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly router: Router,
+    readonly localeService: LocaleService
+  ) {}
 
   ngOnInit(): void {
     this.loadInitialDonations();
@@ -457,7 +463,7 @@ export class MyDonationsPage implements OnInit {
       },
       error: () => {
         this.loadingMore = false;
-        this.errorMessage = 'Unable to load more donations right now. Please try again.';
+        this.errorMessage = this.localeService.translate('donations.historyLoadMoreError');
       },
     });
   }
@@ -466,14 +472,14 @@ export class MyDonationsPage implements OnInit {
     switch ((status || '').toLowerCase()) {
       case 'checkout_created':
       case 'pending':
-        return 'Pending';
+        return this.localeService.translate('donations.historyStatusPending');
       case 'paid':
-        return 'Completed';
+        return this.localeService.translate('donations.historyStatusCompleted');
       case 'failed':
       case 'cancelled':
-        return 'Failed';
+        return this.localeService.translate('donations.historyStatusFailed');
       default:
-        return status ? status.replace(/_/g, ' ') : 'Pending';
+        return status ? status.replace(/_/g, ' ') : this.localeService.translate('donations.historyStatusPending');
     }
   }
 
@@ -510,7 +516,7 @@ export class MyDonationsPage implements OnInit {
   formatDonationType(category: string): string {
     const normalized = `${category || ''}`.trim();
     if (!normalized) {
-      return 'General';
+      return this.localeService.translate('donations.historyTypeFallback');
     }
 
     return normalized
@@ -523,7 +529,7 @@ export class MyDonationsPage implements OnInit {
   displayChurchName(donation: MemberRecentDonation): string {
     const rawName = donation.church?.name?.trim();
     if (!rawName) {
-      return 'Church donation';
+      return this.localeService.translate('donations.historyChurchFallback');
     }
 
     const normalized = rawName.toLowerCase();
@@ -543,7 +549,7 @@ export class MyDonationsPage implements OnInit {
       },
       error: () => {
         this.loading = false;
-        this.errorMessage = 'Please check your connection and try again.';
+        this.errorMessage = this.localeService.translate('donations.historyConnectionError');
       },
     });
   }

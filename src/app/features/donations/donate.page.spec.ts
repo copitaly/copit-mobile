@@ -14,6 +14,7 @@ import { DonationAnalyticsContextService } from '../../core/services/donation-an
 import { DonationFlowStateService } from '../../core/services/donation-flow-state.service';
 import { DonationsService } from '../../core/services/donations.service';
 import { HardwareBackCoordinatorService } from '../../core/services/hardware-back-coordinator.service';
+import { LocaleService } from '../../core/localization/locale.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { StripePaymentService } from '../../core/services/stripe-payment.service';
@@ -127,6 +128,7 @@ describe('DonatePage', () => {
       router,
       stripePaymentService,
       appToast,
+      jasmine.createSpyObj<LocaleService>('LocaleService', ['translate']),
       {} as AlertController,
       {
         addFeatureBreadcrumb(): void {},

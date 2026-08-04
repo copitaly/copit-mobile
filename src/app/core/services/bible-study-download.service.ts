@@ -3,6 +3,8 @@ import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 
+import { LocaleService } from '../localization/locale.service';
+
 export interface BibleStudyDownloadResult {
   fileName: string;
   locationLabel: string;
@@ -13,6 +15,8 @@ export interface BibleStudyDownloadResult {
 @Injectable({ providedIn: 'root' })
 export class BibleStudyDownloadService {
   private static readonly DOWNLOAD_DIRECTORY = 'COP/BibleStudy';
+
+  constructor(private readonly localeService: LocaleService) {}
 
   async downloadPdf(pdfUrl: string, fileName: string): Promise<BibleStudyDownloadResult> {
     const normalizedUrl = this.normalizeDocumentUrl(pdfUrl);
@@ -131,7 +135,7 @@ export class BibleStudyDownloadService {
 
     await Share.share({
       title: fileName,
-      text: 'Bible Study PDF',
+      text: this.localeService.translate('bibleStudy.pdfIframeTitle'),
       url: uri,
       dialogTitle: 'Open or save PDF',
     });
