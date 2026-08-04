@@ -218,13 +218,13 @@ export class DevotionalsPage implements OnInit {
 
   getCoverImageAlt(devotional: DevotionalPublicListItem): string {
     const title = devotional.title?.trim();
-    return title ? `${title} cover image` : 'Devotion cover image';
+    return title ? `${title} ${this.localeService.translate('common.coverImage')}` : `${this.localeService.translate('devotions.title')} ${this.localeService.translate('common.coverImage')}`;
   }
 
   getCardMeta(devotional: DevotionalPublicListItem): string {
     const parts = [
       this.hasAuthor(devotional) ? devotional.author_name?.trim() ?? '' : '',
-      this.hasAuthor(devotional) ? 'COP Italy' : '',
+      this.hasAuthor(devotional) ? this.localeService.translate('devotions.publisherFallback') : '',
     ].filter(Boolean);
 
     return parts.join(' • ');
@@ -259,15 +259,15 @@ export class DevotionalsPage implements OnInit {
   }
 
   private resolveLoadErrorMessage(error: unknown): string {
-    return this.resolveErrorMessage(error, "We couldn't load devotions right now.");
+    return this.resolveErrorMessage(error, this.localeService.translate('devotions.errorTitle'));
   }
 
   private resolveRefreshErrorMessage(error: unknown): string {
-    return this.resolveErrorMessage(error, "We couldn't refresh devotions right now. Please try again.");
+    return this.resolveErrorMessage(error, this.localeService.translate('devotions.refreshError'));
   }
 
   private resolveLoadMoreErrorMessage(error: unknown): string {
-    return this.resolveErrorMessage(error, "We couldn't load more devotions right now. Please try again.");
+    return this.resolveErrorMessage(error, this.localeService.translate('devotions.loadMoreError'));
   }
 
   private resolveErrorMessage(error: unknown, fallback: string): string {

@@ -27,7 +27,8 @@
     "seeMore": "See more",
     "refresh": "Refresh",
     "requiredField": "This field is required.",
-    "noResults": "No results found."
+    "noResults": "No results found.",
+    "coverImage": "cover image"
   },
   "navigation": {
     "home": "Home",
@@ -76,7 +77,7 @@
     "benefitSavedChurches": "Save churches for quick access",
     "benefitPrayerRequests": "Submit prayer requests",
     "profileSignedOutSubtitle": "Sign in to access your account, giving history, and church connections.",
-    "profileRegisterSubtitle": "Create your account to access your giving, Bible studies, churches, and prayer requests.",
+    "profileRegisterSubtitle": "Create your account to access your giving, Bible Study, churches, and prayer requests.",
     "profileForgotPasswordTitle": "Forgot password",
     "profileTitle": "Profile",
     "accountHub": "Account hub",
@@ -162,6 +163,7 @@
     "title": "Welcome back",
     "subtitle": "Find today's reading, prayer, and church updates in one place.",
     "personalizedSubtitle": "Peace be with you, {{name}}.",
+    "greetingAria": "Home greeting",
     "featuredEyebrow": "Latest Bible Study",
     "featuredFallbackEyebrow": "Bible Study",
     "featuredFallbackTitle": "Bible Study manuals",
@@ -185,6 +187,7 @@
     "communitySubtitle": "Connect with your church family or share a prayer request.",
     "requestPrayer": "Request Prayer",
     "communityCta": "Community",
+    "communityAria": "Community and Prayer",
     "refreshing": "Refreshing home content.",
     "refreshed": "Home content refreshed.",
     "refreshedNoDevotion": "Home refreshed. No devotion is available right now.",
@@ -340,6 +343,7 @@
     "volume": "Volume {{value}}",
     "manualsTitle": "Manuals",
     "manualsSubtitle": "Choose a manual to read or download.",
+    "manualLabel": "Bible Study Manual",
     "errorTitle": "We couldn't load Bible Study manuals right now.",
     "refreshError": "We couldn't refresh Bible Study manuals right now. Please try again.",
     "emptyTitle": "No Bible Studies Available",

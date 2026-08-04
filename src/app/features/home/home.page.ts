@@ -150,7 +150,7 @@ export class HomePage implements OnInit, OnDestroy {
       this.formatWeekRange(this.featuredManual),
     ].filter(Boolean);
 
-    return details.join(' • ');
+    return details.join(' ï¿½ ');
   }
 
   get featuredHeroActionLabel(): string {
@@ -158,12 +158,12 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   get featuredHeroImageAlt(): string {
-    return this.featuredManual?.title ? `${this.featuredManual.title} cover image` : 'Bible Study cover image';
+    return this.featuredManual?.title ? `${this.featuredManual.title} ${this.localeService.translate('common.coverImage')}` : this.localeService.translate('home.featuredImageAltFallback');
   }
 
   get featuredHeroAriaLabel(): string {
     if (this.featuredManual?.title) {
-      return `Open Bible Study manual ${this.featuredManual.title}`;
+      return this.localeService.translate('bibleStudy.openManualAria', { title: this.featuredManual.title });
     }
 
     return this.localeService.translate('home.featuredAriaFallback');
@@ -362,7 +362,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   getTodayDevotionalImageAlt(): string {
     const title = this.getTodayDevotionalTitle();
-    return title ? `${title} cover image` : 'Devotion cover image';
+    return title ? `${title} ${this.localeService.translate('common.coverImage')}` : this.localeService.translate('home.dailyImageAltFallback');
   }
 
   getEmptyDevotionalAriaLabel(): string {

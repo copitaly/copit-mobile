@@ -11,6 +11,7 @@ import { BibleStudyService } from '../../core/services/bible-study.service';
 import { DevotionalService } from '../../core/services/devotional.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
+import { LocaleService } from '../../core/localization/locale.service';
 import { HomePage } from './home.page';
 
 describe('HomePage', () => {
@@ -20,6 +21,7 @@ describe('HomePage', () => {
   let authState$: BehaviorSubject<boolean>;
   let devotionalService: jasmine.SpyObj<DevotionalService>;
   let bibleStudyService: jasmine.SpyObj<BibleStudyService>;
+  let localeService: LocaleService;
   let authServiceStub: {
     isAuthenticated$: ReturnType<BehaviorSubject<boolean>['asObservable']>;
     isAuthenticatedSnapshot: boolean;
@@ -123,6 +125,7 @@ describe('HomePage', () => {
     });
 
     page = TestBed.runInInjectionContext(() => new HomePage());
+    localeService = TestBed.inject(LocaleService);
   });
 
   it('renders the new greeting header and supporting copy', async () => {
@@ -245,6 +248,27 @@ describe('HomePage', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="request-prayer-button"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="community-button"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.utility')?.className).toContain('cop-card');
+  });
+
+  it('updates Home feature labels immediately when the locale changes while preserving backend titles', async () => {
+    devotionalService.getTodayDevotional.and.returnValue(of(todayDevotional));
+
+    fixture = await createComponent();
+    await localeService.setLocale('it', { persistGuest: false, source: 'runtime' });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Ultimo studio biblico');
+    expect(fixture.nativeElement.textContent).toContain('Devozione quotidiana');
+    expect(fixture.nativeElement.textContent).toContain('Comunità');
+    expect(fixture.nativeElement.textContent).toContain('Walking in Wisdom');
+
+    await localeService.setLocale('fr', { persistGuest: false, source: 'runtime' });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Dernière étude biblique');
+    expect(fixture.nativeElement.textContent).toContain('Dévotion quotidienne');
+    expect(fixture.nativeElement.textContent).toContain('Communauté');
+    expect(fixture.nativeElement.textContent).toContain('Steady Grace for Today');
   });
 
   it('opens Prayer and Community from the utility card', async () => {

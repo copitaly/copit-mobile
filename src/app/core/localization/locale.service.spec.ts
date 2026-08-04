@@ -162,6 +162,24 @@ describe('LocaleService', () => {
     expect(enKeys).toEqual(frKeys);
   });
 
+  it('exposes the canonical Bible Study, Devotions, and Community terminology in Italian and French', async () => {
+    await service.initialize();
+
+    await service.setLocale('it', { persistGuest: false, source: 'runtime' });
+    expect(service.translate('bibleStudy.title')).toBe('Studio biblico');
+    expect(service.translate('home.featuredEyebrow')).toBe('Ultimo studio biblico');
+    expect(service.translate('devotions.title')).toBe('Devozioni');
+    expect(service.translate('home.dailyFallbackTitle')).toBe('Devozione di oggi');
+    expect(service.translate('home.communityLabel')).toBe('Comunità');
+
+    await service.setLocale('fr', { persistGuest: false, source: 'runtime' });
+    expect(service.translate('bibleStudy.title')).toBe('Étude biblique');
+    expect(service.translate('home.featuredEyebrow')).toBe('Dernière étude biblique');
+    expect(service.translate('devotions.title')).toBe('Dévotions');
+    expect(service.translate('home.dailyFallbackTitle')).toBe('Dévotion du jour');
+    expect(service.translate('home.communityLabel')).toBe('Communauté');
+  });
+
   it('falls back to English when the active locale is missing a key', async () => {
     await service.initialize();
     await service.setLocale('fr', { persistGuest: false, source: 'runtime' });

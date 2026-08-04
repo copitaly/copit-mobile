@@ -78,7 +78,7 @@
               [detail]="heroDetail"
               [ctaLabel]="heroCtaLabel"
               [imageSrc]="heroManual.cover_image_url"
-              [imageAlt]="heroTitle + ' cover'"
+              [imageAlt]="heroTitle + ' ' + ('common.coverImage' | t)"
               [ariaLabel]="heroAriaLabel"
               [progressPercent]="heroProgressPercent"
               [progressLabel]="heroProgressLabel"
@@ -101,7 +101,7 @@
                 [meta]="buildManualMeta(manual)"
                 [detail]="buildManualDetail(manual)"
                 [thumbnailSrc]="manual.cover_image_url"
-                [thumbnailAlt]="manual.title + ' cover'"
+                [thumbnailAlt]="manual.title + ' ' + ('common.coverImage' | t)"
                 [ariaLabel]="'bibleStudy.openManualAria' | t:{ title: manual.title }"
                 (rowClick)="openManual(manual)"
               ></app-mobile-content-row>

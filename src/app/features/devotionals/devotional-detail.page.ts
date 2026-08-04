@@ -133,7 +133,7 @@ export class DevotionalDetailPage implements OnInit {
 
   getCoverImageAlt(): string {
     const title = this.devotional?.title?.trim();
-    return title ? `${title} cover image` : 'Devotion cover preview';
+    return title ? `${title} ${this.localeService.translate('common.coverImage')}` : `${this.localeService.translate('devotions.title')} ${this.localeService.translate('common.coverImage')}`;
   }
 
   getHeaderMeta(): string {

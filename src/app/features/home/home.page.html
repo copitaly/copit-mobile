@@ -3,7 +3,7 @@
     <p class="sr-only" aria-live="polite">{{ liveStatusMessage }}</p>
 
     <div class="home-shell cop-page-shell">
-      <section class="greet cop-page-header" aria-label="Home greeting">
+      <section class="greet cop-page-header" [attr.aria-label]="'home.greetingAria' | t">
         <div class="greet__copy">
           <p class="gold-kicker cop-page-header__eyebrow">{{ greeting }}</p>
           <h1 class="cop-page-header__title">{{ 'home.title' | t }}</h1>
@@ -111,7 +111,7 @@
         </div>
       </section>
 
-      <section class="utility cop-card" aria-label="Community and Prayer">
+      <section class="utility cop-card" [attr.aria-label]="'home.communityAria' | t">
         <div class="utility__head">
           <span class="utility__icon" aria-hidden="true"><ion-icon name="people-outline"></ion-icon></span>
           <div>
