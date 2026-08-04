@@ -3,6 +3,8 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit, inject } from '@angular/core
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import {
   CommunityPrayerRequest,
   PrayerCategory,
@@ -19,7 +21,7 @@ type CommunityPrayerScopeFilter = PrayerScope | 'all';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-prayer-community',
   templateUrl: './prayer-community.page.html',
@@ -28,6 +30,7 @@ type CommunityPrayerScopeFilter = PrayerScope | 'all';
 export class PrayerCommunityPage implements OnInit {
   private readonly prayerService = inject(PrayerService);
   private readonly router = inject(Router);
+  private readonly localeService = inject(LocaleService);
 
   prayers: CommunityPrayerRequest[] = [];
   loading = true;
@@ -43,21 +46,21 @@ export class PrayerCommunityPage implements OnInit {
 
   readonly skeletonItems = [1, 2, 3];
   readonly categoryOptions: ReadonlyArray<{ value: CommunityPrayerCategoryFilter; label: string }> = [
-    { value: 'all', label: 'All Categories' },
-    { value: 'personal', label: 'Personal' },
-    { value: 'family', label: 'Family' },
-    { value: 'health', label: 'Health' },
-    { value: 'spiritual', label: 'Spiritual' },
-    { value: 'work', label: 'Work' },
-    { value: 'thanksgiving', label: 'Thanksgiving' },
-    { value: 'other', label: 'Other' },
+    { value: 'all', label: 'prayer.allCategories' },
+    { value: 'personal', label: 'prayer.personal' },
+    { value: 'family', label: 'prayer.family' },
+    { value: 'health', label: 'prayer.health' },
+    { value: 'spiritual', label: 'prayer.spiritual' },
+    { value: 'work', label: 'prayer.work' },
+    { value: 'thanksgiving', label: 'prayer.thanksgiving' },
+    { value: 'other', label: 'prayer.other' },
   ];
   readonly scopeOptions: ReadonlyArray<{ value: CommunityPrayerScopeFilter; label: string }> = [
-    { value: 'all', label: 'All' },
-    { value: 'global', label: 'Global' },
-    { value: 'area', label: 'Area' },
-    { value: 'district', label: 'District' },
-    { value: 'local', label: 'Local Church' },
+    { value: 'all', label: 'common.viewAll' },
+    { value: 'global', label: 'prayer.global' },
+    { value: 'area', label: 'prayer.area' },
+    { value: 'district', label: 'prayer.district' },
+    { value: 'local', label: 'prayer.local' },
   ];
 
   ngOnInit(): void {
@@ -69,11 +72,11 @@ export class PrayerCommunityPage implements OnInit {
   }
 
   get selectedCategoryLabel(): string {
-    return this.categoryOptions.find((option) => option.value === this.selectedCategory)?.label ?? 'All Categories';
+    return this.translateOptionLabel(this.categoryOptions, this.selectedCategory, 'prayer.allCategories');
   }
 
   get selectedScopeLabel(): string {
-    return this.scopeOptions.find((option) => option.value === this.selectedScope)?.label ?? 'All';
+    return this.translateOptionLabel(this.scopeOptions, this.selectedScope, 'common.viewAll');
   }
 
   loadInitialPrayers(options?: { preserveExisting?: boolean; complete?: () => void }): void {
@@ -111,9 +114,9 @@ export class PrayerCommunityPage implements OnInit {
         this.loading = false;
         this.refreshing = false;
         if (preserveExisting) {
-          this.loadMoreErrorMessage = "We couldn't refresh community prayers right now. Please try again.";
+          this.loadMoreErrorMessage = this.localeService.translate('prayer.communityRefreshError');
         } else {
-          this.errorMessage = "We couldn't load community prayers right now.";
+          this.errorMessage = this.localeService.translate('prayer.communityLoadError');
         }
         options?.complete?.();
       },
@@ -184,7 +187,7 @@ export class PrayerCommunityPage implements OnInit {
         }
 
         this.loadingMore = false;
-        this.loadMoreErrorMessage = "We couldn't load more community prayers right now. Please try again.";
+        this.loadMoreErrorMessage = this.localeService.translate('prayer.communityLoadMoreError');
       },
     });
   }
@@ -198,46 +201,48 @@ export class PrayerCommunityPage implements OnInit {
   }
 
   formatCategoryLabel(category: PrayerCategory): string {
-    return this.categoryOptions.find((option) => option.value === category)?.label ?? 'Other';
+    return this.translateOptionLabel(this.categoryOptions, category, 'prayer.other');
   }
 
   formatScopeContext(prayer: CommunityPrayerRequest): string {
     switch (prayer.scope) {
       case 'global':
-        return 'COP Italy';
+        return this.localeService.translate('prayer.copItaly');
       case 'area':
-        return prayer.church?.name ? `${prayer.church.name} Area` : 'Area';
+        return prayer.church?.name
+          ? `${prayer.church.name} ${this.localeService.translate('prayer.area')}`
+          : this.localeService.translate('prayer.area');
       case 'district': {
-        const parts = prayer.church?.name ? [`${prayer.church.name} District`] : [];
+        const parts = prayer.church?.name ? [`${prayer.church.name} ${this.localeService.translate('prayer.district')}`] : [];
         if (prayer.church?.area?.name) {
-          parts.push(`${prayer.church.area.name} Area`);
+          parts.push(`${prayer.church.area.name} ${this.localeService.translate('prayer.area')}`);
         }
-        return parts.join(' - ') || 'District';
+        return parts.join(' - ') || this.localeService.translate('prayer.district');
       }
       case 'local': {
         const parts = prayer.church?.name ? [prayer.church.name] : [];
         if (prayer.church?.district?.name) {
-          parts.push(`${prayer.church.district.name} District`);
+          parts.push(`${prayer.church.district.name} ${this.localeService.translate('prayer.district')}`);
         }
         if (prayer.church?.area?.name) {
-          parts.push(`${prayer.church.area.name} Area`);
+          parts.push(`${prayer.church.area.name} ${this.localeService.translate('prayer.area')}`);
         }
-        return parts.join(' - ') || 'Local Church';
+        return parts.join(' - ') || this.localeService.translate('prayer.local');
       }
       case 'unknown':
-        return 'Prayer scope unavailable';
+        return this.localeService.translate('prayer.scopeUnavailable');
       default:
-        return 'COP Italy';
+        return this.localeService.translate('prayer.copItaly');
     }
   }
 
   formatDate(value: string): string {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
-      return 'Date unavailable';
+      return this.localeService.translate('prayer.dateUnavailable');
     }
 
-    return new Intl.DateTimeFormat('en-GB', {
+    return new Intl.DateTimeFormat(this.localeTag, {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -246,13 +251,15 @@ export class PrayerCommunityPage implements OnInit {
 
   formatDateLabel(value: string): string {
     const formatted = this.formatDate(value);
-    return formatted === 'Date unavailable' ? formatted : `Shared on ${formatted}`;
+    return formatted === this.localeService.translate('prayer.dateUnavailable')
+      ? formatted
+      : this.localeService.translate('prayer.submittedOn', { date: formatted });
   }
 
   requestPreview(requestText: string, limit = 240): string {
     const normalized = String(requestText ?? '').trim();
     if (!normalized) {
-      return 'Prayer details are unavailable right now.';
+      return this.localeService.translate('prayer.requestUnavailable');
     }
 
     if (normalized.length <= limit) {
@@ -298,5 +305,25 @@ export class PrayerCommunityPage implements OnInit {
     }
 
     return Array.from(prayersById.values());
+  }
+
+  private get localeTag(): string {
+    switch (this.localeService.getCurrentLocale()) {
+      case 'it':
+        return 'it-IT';
+      case 'fr':
+        return 'fr-FR';
+      default:
+        return 'en-GB';
+    }
+  }
+
+  private translateOptionLabel<T extends string>(
+    options: ReadonlyArray<{ value: T; label: string }>,
+    value: T,
+    fallbackKey: string
+  ): string {
+    const option = options.find((entry) => entry.value === value);
+    return this.localeService.translate(option?.label ?? fallbackKey);
   }
 }

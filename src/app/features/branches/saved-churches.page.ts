@@ -4,6 +4,8 @@ import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, OnInit, Vi
 import { Router } from '@angular/router';
 import { AlertController, IonicModule } from '@ionic/angular';
 
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { PublicBranch } from '../../core/models/branch.model';
 import { SavedChurch } from '../../core/models/user.model';
 import { AppToastService } from '../../core/services/app-toast.service';
@@ -17,17 +19,17 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, MobileHeaderComponent, DonateBranchSheetComponent],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent, DonateBranchSheetComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-saved-churches',
   template: `
     <ion-page>
       <ion-content fullscreen class="saved-content cop-content--secondary">
         <div class="saved-shell cop-secondary-shell">
-          <header class="saved-header" aria-label="My Churches">
+          <header class="saved-header" [attr.aria-label]="'savedChurches.title' | t">
             <app-mobile-header
-              title="My Churches"
-              subtitle="Keep your saved churches close for faster access."
+              [title]="'savedChurches.title' | t"
+              [subtitle]="'savedChurches.subtitle' | t"
               fallbackRoute="/tabs/profile"
               tone="editorial"
             ></app-mobile-header>
@@ -35,11 +37,11 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
               *ngIf="showAddAction"
               type="button"
               class="saved-header__add"
-              aria-label="Add another church"
+              [attr.aria-label]="'savedChurches.addAria' | t"
               (click)="openChurchSelector()"
             >
               <ion-icon name="add" aria-hidden="true"></ion-icon>
-              <span>Add</span>
+              <span>{{ 'savedChurches.addAction' | t }}</span>
             </button>
           </header>
 
@@ -56,20 +58,20 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
               <div *ngIf="!loading && errorMessage" class="state-card error-state">
                 <div class="state-copy">
-                  <h2>We couldn't load your saved churches</h2>
+                  <h2>{{ 'savedChurches.loadErrorTitle' | t }}</h2>
                   <p>{{ errorMessage }}</p>
                 </div>
-                <ion-button expand="block" class="state-button" (click)="loadSavedChurches()">Try again</ion-button>
+                <ion-button expand="block" class="state-button" (click)="loadSavedChurches()">{{ 'common.tryAgain' | t }}</ion-button>
               </div>
 
               <div *ngIf="!loading && !errorMessage && savedChurches.length === 0" class="state-card empty-state">
                 <div class="state-copy">
-                  <h2>You haven't saved any churches yet.</h2>
-                  <p>Save a church to make giving and future access faster.</p>
+                  <h2>{{ 'savedChurches.emptyTitle' | t }}</h2>
+                  <p>{{ 'savedChurches.emptyBody' | t }}</p>
                 </div>
                 <ion-button expand="block" class="choose-church-button" (click)="openChurchSelector()">
                   <ion-icon name="location-outline" slot="start" aria-hidden="true"></ion-icon>
-                  <span>Browse churches</span>
+                  <span>{{ 'savedChurches.browseAction' | t }}</span>
                 </ion-button>
               </div>
 
@@ -82,28 +84,28 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                   (keydown.space)="donateToSavedChurch(saved, $event)"
                   tabindex="0"
                   role="link"
-                  [attr.aria-label]="'Donate to saved church ' + saved.church.name"
+                  [attr.aria-label]="'savedChurches.cardAria' | t:{ name: saved.church.name }"
                 >
                   <div class="saved-card__content">
                     <div class="saved-copy">
                       <h2>{{ saved.church.name }}</h2>
                       <p *ngIf="saved.church.district?.name" class="saved-copy__line">
-                        {{ saved.church.district?.name }} District
+                        {{ saved.church.district?.name }} {{ 'savedChurches.districtSuffix' | t }}
                       </p>
                       <p *ngIf="saved.church.area?.name" class="saved-copy__line">
-                        {{ saved.church.area?.name }} Area
+                        {{ saved.church.area?.name }} {{ 'savedChurches.areaSuffix' | t }}
                       </p>
-                      <p class="saved-copy__support">Saved for quick access</p>
+                      <p class="saved-copy__support">{{ 'savedChurches.savedQuickAccess' | t }}</p>
                     </div>
 
                     <div class="saved-meta">
                       <div class="meta-row" *ngIf="saved.church.branch_code">
-                        <span>Branch code</span>
+                        <span>{{ 'savedChurches.branchCode' | t }}</span>
                         <strong>{{ saved.church.branch_code }}</strong>
                       </div>
                       <div class="meta-row" *ngIf="!saved.church.donations_enabled || !saved.church.is_active">
-                        <span>Status</span>
-                        <strong>Unavailable</strong>
+                        <span>{{ 'savedChurches.status' | t }}</span>
+                        <strong>{{ 'savedChurches.unavailable' | t }}</strong>
                       </div>
                     </div>
 
@@ -114,7 +116,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                         [disabled]="savingBranchId === saved.church.id"
                         (click)="confirmUnsave(saved, $event)"
                       >
-                        Remove
+                        {{ 'savedChurches.remove' | t }}
                       </button>
                       <button
                         type="button"
@@ -122,7 +124,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                         [disabled]="savingBranchId === saved.church.id"
                         (click)="donateToSavedChurch(saved, $event)"
                       >
-                        Donate
+                        {{ 'savedChurches.donate' | t }}
                       </button>
                     </div>
                   </div>
@@ -472,7 +474,8 @@ export class SavedChurchesPage implements OnInit, AfterViewInit, OnDestroy {
     private readonly analyticsService: AnalyticsService,
     private readonly alertController: AlertController,
     private readonly appToast: AppToastService,
-    private readonly hardwareBackCoordinator: HardwareBackCoordinatorService
+    private readonly hardwareBackCoordinator: HardwareBackCoordinatorService,
+    private readonly localeService: LocaleService
   ) {}
 
   ngOnInit(): void {
@@ -507,8 +510,8 @@ export class SavedChurchesPage implements OnInit, AfterViewInit, OnDestroy {
             { reason: 'missing_profile' },
             'warning'
           );
-          void this.router.navigate(['/login']);
-          return;
+      void this.router.navigate(['/login']);
+      return;
         }
 
         this.fetchSavedChurches();
@@ -573,7 +576,7 @@ export class SavedChurchesPage implements OnInit, AfterViewInit, OnDestroy {
     }
 
     if (this.savedBranchIds.includes(branch.id)) {
-      void this.appToast.info('Church already saved');
+      void this.appToast.info(this.localeService.translate('savedChurches.alreadySaved'));
       return;
     }
 
@@ -582,12 +585,12 @@ export class SavedChurchesPage implements OnInit, AfterViewInit, OnDestroy {
       next: async () => {
         this.savingBranchId = null;
         this.isChurchSelectorOpen = false;
-        await this.appToast.success('Church saved');
+        await this.appToast.success(this.localeService.translate('savedChurches.savedSuccess'));
         this.fetchSavedChurches();
       },
       error: async () => {
         this.savingBranchId = null;
-        await this.appToast.error('Could not update saved church');
+        await this.appToast.error(this.localeService.translate('savedChurches.saveFailed'));
       },
     });
   }
@@ -596,12 +599,12 @@ export class SavedChurchesPage implements OnInit, AfterViewInit, OnDestroy {
     event?.stopPropagation();
 
     const alert = await this.alertController.create({
-      header: 'Remove church?',
-      message: `Remove ${saved.church.name} from My Churches?`,
+      header: this.localeService.translate('savedChurches.confirmRemoveTitle'),
+      message: this.localeService.translate('savedChurches.confirmRemoveMessage', { name: saved.church.name }),
       buttons: [
-        { text: 'Cancel', role: 'cancel' },
+        { text: this.localeService.translate('common.cancel'), role: 'cancel' },
         {
-          text: 'Remove',
+          text: this.localeService.translate('savedChurches.remove'),
           role: 'destructive',
           handler: () => {
             this.unsaveChurch(saved);
@@ -625,7 +628,7 @@ export class SavedChurchesPage implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (error: unknown) => {
         this.loading = false;
-        this.errorMessage = 'Please check your connection and try again.';
+        this.errorMessage = this.localeService.translate('savedChurches.loadErrorBody');
         const httpError = error instanceof HttpErrorResponse ? error : null;
         this.sentryTelemetry.addFeatureBreadcrumb(
           'saved_churches',
@@ -650,11 +653,11 @@ export class SavedChurchesPage implements OnInit, AfterViewInit, OnDestroy {
       next: async () => {
         this.savingBranchId = null;
         this.savedChurches = this.savedChurches.filter((item) => item.id !== saved.id);
-        await this.appToast.success('Removed from saved');
+        await this.appToast.success(this.localeService.translate('savedChurches.removedSuccess'));
       },
       error: async () => {
         this.savingBranchId = null;
-        await this.appToast.error('Could not update saved church');
+        await this.appToast.error(this.localeService.translate('savedChurches.removeFailed'));
       },
     });
   }
