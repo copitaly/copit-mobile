@@ -29,6 +29,8 @@ export class StripePaymentService {
             country: DEFAULT_BILLING_COUNTRY,
           },
         },
+        enableGooglePay: true,
+        GooglePayIsTesting: this.isStripeTestMode(),
         countryCode: DEFAULT_BILLING_COUNTRY,
         currencyCode: DEFAULT_CURRENCY_CODE,
       });
@@ -73,6 +75,10 @@ export class StripePaymentService {
       default:
         return 'failed';
     }
+  }
+
+  private isStripeTestMode(): boolean {
+    return environment.stripePublishableKey.trim().startsWith('pk_test_');
   }
 
   private get sentryTelemetry(): SentryTelemetryService {
