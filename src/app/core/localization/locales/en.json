@@ -249,6 +249,52 @@
     "monthlyStartError": "Unable to start monthly giving. Please try again.",
     "monthlyPaymentStartError": "Unable to start monthly payment. Please try again.",
     "paymentFailed": "Payment failed. Please try again.",
+    "status": {
+      "title": "Donation status",
+      "subtitle": "Review your donation outcome.",
+      "backToHome": "Back to Home"
+    },
+    "success": {
+      "title": "Thank you",
+      "received": "Your gift has been received",
+      "appreciation": "We appreciate your support for the ministry and your local church.",
+      "confirmationEmail": "A confirmation email has been sent if provided.",
+      "giveAgain": "Give again",
+      "noConfirmation": "No donation confirmation is available right now.",
+      "summary": {
+        "church": "Church",
+        "donationType": "Donation Type",
+        "frequency": "Frequency",
+        "amount": "Amount",
+        "reference": "Reference"
+      }
+    },
+    "cancelled": {
+      "title": "Payment cancelled",
+      "subtitle": "No payment was taken.",
+      "messageTitle": "Your donation was not completed.",
+      "tryAgainBody": "You can try again whenever you are ready.",
+      "notChargedBody": "Your card or account has not been charged.",
+      "tryAgain": "Try again"
+    },
+    "failed": {
+      "nativeStartError": "Unable to start native payment. Please try again.",
+      "sheetOpenError": "Payment sheet failed to open."
+    },
+    "processing": {
+      "title": "Checking donation",
+      "pendingTitle": "Donation pending",
+      "secureConfirmation": "We are confirming your payment securely.",
+      "waitFinalConfirmation": "Please wait for final confirmation.",
+      "monthlyPending": "Your monthly donation is being confirmed. Please check recurring donations shortly.",
+      "verificationPending": "We could not confirm this donation yet. Please check again shortly.",
+      "checkHistory": "We could not confirm this donation yet. Please check your donation history.",
+      "checkHistoryBeforeRetry": "We could not confirm this donation yet. Please check your donation history before donating again.",
+      "timeout": "We are still checking your donation status. Please try again shortly.",
+      "doNotResubmit": "Do not submit another donation until the status check is complete.",
+      "handoffUnconfirmed": "We could not confirm the payment handoff. Please check your donation history before trying again.",
+      "checkStatus": "Check status"
+    },
     "monthlyPromptTitle": "Monthly giving",
     "monthlyPromptMessage": "Monthly giving requires a free account so you can manage and cancel your recurring donations.",
     "monthlyPromptSignIn": "Sign in",

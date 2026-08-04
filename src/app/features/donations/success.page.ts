@@ -4,6 +4,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { Subscription, tap } from 'rxjs';
 
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { DonationFlowStateService, DonationCheckoutSummary } from '../../core/services/donation-flow-state.service';
 import { ApiService } from '../../core/services/api.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
@@ -46,7 +48,7 @@ type DonationVerificationState = 'verifying' | 'confirmed' | 'pending';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-donate-success',
   templateUrl: './success.page.html',
@@ -71,7 +73,8 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     private readonly sentryTelemetry: SentryTelemetryService,
     private readonly analyticsService: AnalyticsService,
-    private readonly donationAnalyticsContext: DonationAnalyticsContextService
+    private readonly donationAnalyticsContext: DonationAnalyticsContextService,
+    private readonly localeService: LocaleService
   ) {}
 
   ngOnInit(): void {
@@ -80,7 +83,7 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
     const recurringDonationIdParam = this.route.snapshot.queryParamMap.get('recurring_donation_id');
 
     if (!sessionId && !donationIdParam && !recurringDonationIdParam) {
-      this.applyPendingStoredSummary('No donation confirmation is available right now.');
+      this.applyPendingStoredSummary(this.localeService.translate('donations.success.noConfirmation'));
       return;
     }
 
@@ -91,7 +94,7 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
 
     if (recurringDonationIdParam) {
       this.applyPendingStoredSummary(
-        'Your monthly donation is being confirmed. Please check recurring donations shortly.'
+        this.localeService.translate('donations.processing.monthlyPending')
       );
       return;
     }
@@ -108,7 +111,7 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
       }
     }
 
-    this.applyPendingStoredSummary('No donation confirmation is available right now.');
+    this.applyPendingStoredSummary(this.localeService.translate('donations.success.noConfirmation'));
   }
 
   ngOnDestroy(): void {
@@ -137,7 +140,7 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
             this.donationAnalyticsContext.clearContext();
             this.donationFlowState.clear();
           } else {
-            this.applyPendingStoredSummary('We could not confirm this donation yet. Please check again shortly.');
+            this.applyPendingStoredSummary(this.localeService.translate('donations.processing.verificationPending'));
           }
         },
         error: error => {
@@ -152,7 +155,7 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
 
   private verifyNative(donationId: number, transactionReference: string | null): void {
     if (!transactionReference) {
-      this.applyPendingStoredSummary('We could not confirm this donation yet. Please check your donation history.');
+      this.applyPendingStoredSummary(this.localeService.translate('donations.processing.checkHistory'));
       return;
     }
 
@@ -178,7 +181,7 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
             this.donationAnalyticsContext.clearContext();
             this.donationFlowState.clear();
           } else {
-            this.applyPendingStoredSummary('We could not confirm this donation yet. Please check again shortly.');
+            this.applyPendingStoredSummary(this.localeService.translate('donations.processing.verificationPending'));
           }
         },
         error: error => {
@@ -276,7 +279,9 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
   }
 
   formatInterval(interval: string): string {
-    return interval === 'monthly' ? 'Monthly' : 'One-time';
+    return interval === 'monthly'
+      ? this.localeService.translate('donations.monthly')
+      : this.localeService.translate('donations.oneTime');
   }
 
   private startVerification(): void {
@@ -310,10 +315,10 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
 
   private resolvePendingMessage(error: unknown): string {
     if (error && typeof error === 'object' && 'name' in error && (error as { name?: string }).name === 'TimeoutError') {
-      return 'We are still checking your donation status. Please try again shortly.';
+      return this.localeService.translate('donations.processing.timeout');
     }
 
-    return 'We could not confirm this donation yet. Please check your donation history before donating again.';
+    return this.localeService.translate('donations.processing.checkHistoryBeforeRetry');
   }
 
   get statusIcon(): string {
@@ -322,28 +327,30 @@ export class DonateSuccessPage implements OnInit, OnDestroy {
 
   get statusTitle(): string {
     if (this.verificationState === 'confirmed') {
-      return 'Thank you';
+      return this.localeService.translate('donations.success.title');
     }
 
-    return this.verificationState === 'verifying' ? 'Checking donation' : 'Donation pending';
+    return this.verificationState === 'verifying'
+      ? this.localeService.translate('donations.processing.title')
+      : this.localeService.translate('donations.processing.pendingTitle');
   }
 
   get statusSubtitle(): string {
     if (this.verificationState === 'confirmed') {
-      return 'Your gift has been received';
+      return this.localeService.translate('donations.success.received');
     }
 
     return this.verificationState === 'verifying'
-      ? 'We are confirming your payment securely.'
-      : 'Please wait for final confirmation.';
+      ? this.localeService.translate('donations.processing.secureConfirmation')
+      : this.localeService.translate('donations.processing.waitFinalConfirmation');
   }
 
   get primaryCopy(): string {
     if (this.verificationState === 'confirmed') {
-      return 'We appreciate your support for the ministry and your local church.';
+      return this.localeService.translate('donations.success.appreciation');
     }
 
-    return 'Do not submit another donation until the status check is complete.';
+    return this.localeService.translate('donations.processing.doNotResubmit');
   }
 
   get showConfirmationNote(): boolean {

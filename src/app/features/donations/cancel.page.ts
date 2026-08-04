@@ -2,6 +2,7 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { DonationFlowStateService, DonationCheckoutSummary } from '../../core/services/donation-flow-state.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import {
@@ -12,7 +13,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-donate-cancel',
   templateUrl: './cancel.page.html',

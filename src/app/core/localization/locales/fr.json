@@ -249,6 +249,52 @@
     "monthlyStartError": "Impossible de démarrer le don mensuel. Veuillez réessayer.",
     "monthlyPaymentStartError": "Impossible de démarrer le paiement mensuel. Veuillez réessayer.",
     "paymentFailed": "Le paiement a échoué. Veuillez réessayer.",
+    "status": {
+      "title": "Statut du don",
+      "subtitle": "Consultez le résultat de votre don.",
+      "backToHome": "Retour à l'accueil"
+    },
+    "success": {
+      "title": "Merci",
+      "received": "Votre don a bien été reçu",
+      "appreciation": "Nous apprécions votre soutien au ministère et à votre église locale.",
+      "confirmationEmail": "Un e-mail de confirmation a été envoyé si vous en avez fourni un.",
+      "giveAgain": "Donner à nouveau",
+      "noConfirmation": "Aucune confirmation de don n'est disponible pour le moment.",
+      "summary": {
+        "church": "Église",
+        "donationType": "Type de don",
+        "frequency": "Fréquence",
+        "amount": "Montant",
+        "reference": "Référence"
+      }
+    },
+    "cancelled": {
+      "title": "Paiement annulé",
+      "subtitle": "Aucun paiement n'a été effectué.",
+      "messageTitle": "Votre don n'a pas été finalisé.",
+      "tryAgainBody": "Vous pouvez réessayer quand vous serez prêt.",
+      "notChargedBody": "Votre carte ou votre compte n'a pas été débité.",
+      "tryAgain": "Réessayer"
+    },
+    "failed": {
+      "nativeStartError": "Impossible de démarrer le paiement natif. Veuillez réessayer.",
+      "sheetOpenError": "Impossible d'ouvrir la feuille de paiement."
+    },
+    "processing": {
+      "title": "Vérification du don",
+      "pendingTitle": "Don en attente",
+      "secureConfirmation": "Nous confirmons votre paiement en toute sécurité.",
+      "waitFinalConfirmation": "Veuillez patienter jusqu'à la confirmation finale.",
+      "monthlyPending": "Votre don mensuel est en cours de confirmation. Consultez bientôt les dons récurrents.",
+      "verificationPending": "Nous ne pouvons pas encore confirmer ce don. Veuillez réessayer sous peu.",
+      "checkHistory": "Nous ne pouvons pas encore confirmer ce don. Veuillez consulter votre historique des dons.",
+      "checkHistoryBeforeRetry": "Nous ne pouvons pas encore confirmer ce don. Veuillez consulter votre historique des dons avant de réessayer.",
+      "timeout": "Nous vérifions toujours le statut de votre don. Veuillez réessayer sous peu.",
+      "doNotResubmit": "N'envoyez pas un autre don tant que la vérification du statut n'est pas terminée.",
+      "handoffUnconfirmed": "Nous n'avons pas pu confirmer la transmission du paiement. Veuillez consulter votre historique des dons avant de réessayer.",
+      "checkStatus": "Vérifier le statut"
+    },
     "monthlyPromptTitle": "Don mensuel",
     "monthlyPromptMessage": "Le don mensuel nécessite un compte gratuit afin de gérer et d'annuler vos dons récurrents.",
     "monthlyPromptSignIn": "Se connecter",

@@ -249,6 +249,52 @@
     "monthlyStartError": "Impossibile avviare la donazione mensile. Riprova.",
     "monthlyPaymentStartError": "Impossibile avviare il pagamento mensile. Riprova.",
     "paymentFailed": "Pagamento non riuscito. Riprova.",
+    "status": {
+      "title": "Stato della donazione",
+      "subtitle": "Controlla l'esito della tua donazione.",
+      "backToHome": "Torna alla Home"
+    },
+    "success": {
+      "title": "Grazie",
+      "received": "La tua donazione è stata ricevuta",
+      "appreciation": "Apprezziamo il tuo sostegno al ministero e alla tua chiesa locale.",
+      "confirmationEmail": "Se hai fornito un'email, ti abbiamo inviato una conferma.",
+      "giveAgain": "Dona di nuovo",
+      "noConfirmation": "Nessuna conferma di donazione è disponibile in questo momento.",
+      "summary": {
+        "church": "Chiesa",
+        "donationType": "Tipologia di donazione",
+        "frequency": "Frequenza",
+        "amount": "Importo",
+        "reference": "Riferimento"
+      }
+    },
+    "cancelled": {
+      "title": "Pagamento annullato",
+      "subtitle": "Nessun pagamento è stato effettuato.",
+      "messageTitle": "La tua donazione non è stata completata.",
+      "tryAgainBody": "Puoi riprovare quando vuoi.",
+      "notChargedBody": "Nessun addebito è stato effettuato sulla tua carta o sul tuo conto.",
+      "tryAgain": "Riprova"
+    },
+    "failed": {
+      "nativeStartError": "Impossibile avviare il pagamento nativo. Riprova.",
+      "sheetOpenError": "Impossibile aprire il foglio di pagamento."
+    },
+    "processing": {
+      "title": "Verifica della donazione",
+      "pendingTitle": "Donazione in attesa",
+      "secureConfirmation": "Stiamo confermando il tuo pagamento in modo sicuro.",
+      "waitFinalConfirmation": "Attendi la conferma finale.",
+      "monthlyPending": "La tua donazione mensile è in fase di conferma. Controlla presto le donazioni ricorrenti.",
+      "verificationPending": "Non siamo ancora riusciti a confermare questa donazione. Riprova a breve.",
+      "checkHistory": "Non siamo ancora riusciti a confermare questa donazione. Controlla la cronologia delle tue donazioni.",
+      "checkHistoryBeforeRetry": "Non siamo ancora riusciti a confermare questa donazione. Controlla la cronologia delle tue donazioni prima di riprovare.",
+      "timeout": "Stiamo ancora verificando lo stato della tua donazione. Riprova a breve.",
+      "doNotResubmit": "Non inviare un'altra donazione finché il controllo dello stato non è completato.",
+      "handoffUnconfirmed": "Non siamo riusciti a confermare il passaggio del pagamento. Controlla la cronologia delle tue donazioni prima di riprovare.",
+      "checkStatus": "Controlla stato"
+    },
     "monthlyPromptTitle": "Donazione mensile",
     "monthlyPromptMessage": "La donazione mensile richiede un account gratuito per poter gestire e annullare le donazioni ricorrenti.",
     "monthlyPromptSignIn": "Accedi",

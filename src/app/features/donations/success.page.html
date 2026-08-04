@@ -3,8 +3,8 @@
     <div class="outcome-shell">
       <app-mobile-header
         class="outcome-header"
-        title="Donation status"
-        subtitle="Review your donation outcome."
+        [title]="'donations.status.title' | t"
+        [subtitle]="'donations.status.subtitle' | t"
         fallbackRoute="/tabs/donate"
         tone="editorial"
       ></app-mobile-header>
@@ -27,34 +27,34 @@
         <section class="outcome-card outcome-card--message cop-card cop-card--soft" *ngIf="summary">
           <div class="outcome-summary">
             <ng-container *ngIf="summary.branchName">
-              <p class="outcome-summary__label">Church</p>
+              <p class="outcome-summary__label">{{ 'donations.success.summary.church' | t }}</p>
               <p class="outcome-summary__value">{{ summary.branchName }}</p>
             </ng-container>
 
             <ng-container *ngIf="summary.category">
-              <p class="outcome-summary__label">Donation Type</p>
+              <p class="outcome-summary__label">{{ 'donations.success.summary.donationType' | t }}</p>
               <p class="outcome-summary__value">{{ summary.category }}</p>
             </ng-container>
 
             <ng-container *ngIf="summary.interval">
-              <p class="outcome-summary__label">Frequency</p>
+              <p class="outcome-summary__label">{{ 'donations.success.summary.frequency' | t }}</p>
               <p class="outcome-summary__value">{{ formatInterval(summary.interval) }}</p>
             </ng-container>
 
             <ng-container *ngIf="summary.amount !== undefined">
-              <p class="outcome-summary__label">Amount</p>
+              <p class="outcome-summary__label">{{ 'donations.success.summary.amount' | t }}</p>
               <p class="outcome-summary__value">{{ formatAmount(summary.amount, summary.currency) }}</p>
             </ng-container>
 
             <ng-container *ngIf="summary.transactionReference">
-              <p class="outcome-summary__label">Reference</p>
+              <p class="outcome-summary__label">{{ 'donations.success.summary.reference' | t }}</p>
               <p class="outcome-summary__value outcome-summary__value--reference">{{ summary.transactionReference }}</p>
             </ng-container>
           </div>
         </section>
 
         <p class="outcome-note" *ngIf="showConfirmationNote">
-          A confirmation email has been sent if provided.
+          {{ 'donations.success.confirmationEmail' | t }}
         </p>
 
         <div class="outcome-actions">
@@ -64,7 +64,7 @@
             class="outcome-button--primary"
             (click)="retryVerification()"
           >
-            Check status
+            {{ 'donations.processing.checkStatus' | t }}
           </ion-button>
 
           <ion-button
@@ -73,7 +73,7 @@
             class="outcome-button--primary"
             (click)="goToBranches()"
           >
-            Give again
+            {{ 'donations.success.giveAgain' | t }}
           </ion-button>
 
           <ion-button
@@ -82,7 +82,7 @@
             class="outcome-button--secondary"
             (click)="goHome()"
           >
-            Back to Home
+            {{ 'donations.status.backToHome' | t }}
           </ion-button>
         </div>
       </div>

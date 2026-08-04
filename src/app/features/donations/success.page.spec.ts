@@ -11,6 +11,7 @@ import { DonationFlowStateService } from '../../core/services/donation-flow-stat
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { DonateSuccessPage } from './success.page';
+import { LocaleService } from '../../core/localization/locale.service';
 
 describe('DonateSuccessPage', () => {
   function createPage(queryParams: Record<string, string | null>, storedSummary?: unknown) {
@@ -45,7 +46,10 @@ describe('DonateSuccessPage', () => {
       {
         clearContext: jasmine.createSpy(),
         peekContext: jasmine.createSpy().and.returnValue(null),
-      } as unknown as DonationAnalyticsContextService
+      } as unknown as DonationAnalyticsContextService,
+      {
+        translate: jasmine.createSpy('translate').and.callFake((key: string) => key),
+      } as unknown as LocaleService
     );
 
     return { page, api, donationFlowState, router };
@@ -188,6 +192,12 @@ describe('DonateSuccessPage', () => {
           useValue: {
             clearContext: jasmine.createSpy('clearContext'),
             peekContext: jasmine.createSpy('peekContext').and.returnValue(null),
+          },
+        },
+        {
+          provide: LocaleService,
+          useValue: {
+            translate: jasmine.createSpy('translate').and.callFake((key: string) => key),
           },
         },
         {

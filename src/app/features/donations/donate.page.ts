@@ -559,7 +559,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
           if (!response.client_secret?.trim()) {
             this.nativeLoading = false;
             this.clearPendingPaymentState();
-            this.nativeError = 'Unable to start native payment. Please try again.';
+            this.nativeError = this.localeService.translate('donations.failed.nativeStartError');
             return;
           }
           this.persistOneTimeSummary(payload, response.transaction_reference);
@@ -578,7 +578,10 @@ export class DonatePage implements AfterViewInit, OnDestroy {
           this.donationAnalyticsContext.clearContext();
           this.nativeLoading = false;
           this.clearPendingPaymentState();
-          this.nativeError = this.resolveCheckoutErrorMessage(error, 'Unable to start native payment. Please try again.');
+          this.nativeError = this.resolveCheckoutErrorMessage(
+            error,
+            this.localeService.translate('donations.failed.nativeStartError')
+          );
           void this.showPaymentFailureToast(this.nativeError);
         },
       });
@@ -614,8 +617,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       if (!queryParams) {
         this.nativeLoading = false;
         this.clearPendingPaymentState();
-        this.nativeError =
-          'We could not confirm the payment handoff. Please check your donation history before trying again.';
+        this.nativeError = this.localeService.translate('donations.processing.handoffUnconfirmed');
         return;
       }
 
@@ -636,7 +638,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       this.donationAnalyticsContext.clearContext();
       this.nativeLoading = false;
       this.clearPendingPaymentState();
-      this.nativeError = result.errorMessage ?? 'Payment failed. Please try again.';
+      this.nativeError = result.errorMessage ?? this.localeService.translate('donations.paymentFailed');
     }
   }
 
@@ -1461,7 +1463,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
   private resolveCheckoutErrorMessage(error: unknown, fallbackMessage: string): string {
     if (this.isTimeoutError(error)) {
-      return 'The payment request timed out. Please try again.';
+      return this.localeService.translate('donations.timeoutError');
     }
 
     if (error instanceof HttpErrorResponse) {
@@ -1471,7 +1473,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       }
 
       if (error.status === 0) {
-        return "You're offline. Check your connection and try again.";
+        return this.localeService.translate('donations.offlineError');
       }
     }
 
