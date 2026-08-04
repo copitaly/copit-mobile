@@ -5,10 +5,13 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonInput, IonicModule } from '@ionic/angular';
 
+import { TranslatePipe } from '../../core/localization/translate.pipe';
+import { LocaleService } from '../../core/localization/locale.service';
 import { AuthService } from '../../core/services/auth.service';
 import {
   AUTH_FALLBACK_RETURN_URL,
-  getAuthNetworkMessage,
+  getAuthTranslatedNetworkMessage,
+  mapKnownAuthError,
   sanitizeAuthReturnUrl,
   trimmedRequiredValidator,
 } from './auth-form.utils';
@@ -16,7 +19,7 @@ import {
 @Component({
   standalone: true,
   selector: 'app-login-form',
-  imports: [CommonModule, ReactiveFormsModule, IonicModule],
+  imports: [CommonModule, ReactiveFormsModule, IonicModule, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div class="login-form-shell" [class.login-form-shell--embedded]="appearance === 'embedded'" data-testid="login-form-shell">
@@ -26,13 +29,13 @@ import {
 
       <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form" novalidate>
         <div class="field-group">
-          <label class="auth-label" [attr.for]="identifierInputId">Email or phone number</label>
+          <label class="auth-label" [attr.for]="identifierInputId">{{ 'auth.emailOrPhone' | t }}</label>
           <ion-item fill="solid" class="auth-field auth-field--pill">
             <ion-input
               #identifierInput
               [id]="identifierInputId"
               formControlName="identifier"
-              placeholder="you@example.com"
+              [placeholder]="'auth.emailPlaceholder' | t"
               autocomplete="username"
               autocapitalize="off"
               autocorrect="off"
@@ -43,19 +46,19 @@ import {
             ></ion-input>
           </ion-item>
           <p class="field-error" *ngIf="showIdentifierError" aria-live="polite">
-            Enter your email or phone number.
+            {{ 'validation.identifierRequired' | t }}
           </p>
         </div>
 
         <div class="field-group">
-          <label class="auth-label" [attr.for]="passwordInputId">Password</label>
+          <label class="auth-label" [attr.for]="passwordInputId">{{ 'auth.password' | t }}</label>
           <ion-item fill="solid" class="auth-field auth-field--pill">
             <ion-input
               #passwordInput
               [id]="passwordInputId"
               formControlName="password"
               [type]="showPassword ? 'text' : 'password'"
-              placeholder="Password"
+              [placeholder]="'auth.passwordPlaceholder' | t"
               autocomplete="current-password"
               autocapitalize="off"
               autocorrect="off"
@@ -74,13 +77,13 @@ import {
             </button>
           </ion-item>
           <p class="field-error" *ngIf="showPasswordError" aria-live="polite">
-            Enter your password.
+            {{ 'validation.passwordRequired' | t }}
           </p>
         </div>
 
         <div class="forgot-row">
           <button type="button" class="forgot-link" (click)="onForgotPassword()">
-            Forgot password?
+            {{ 'auth.forgotPasswordQuestion' | t }}
           </button>
         </div>
 
@@ -92,7 +95,7 @@ import {
 
         <ion-button expand="block" type="submit" class="auth-submit" [disabled]="!canSubmit">
           <ion-spinner *ngIf="loading" slot="start" name="crescent"></ion-spinner>
-          <span>{{ loading ? 'Signing in...' : 'Sign In' }}</span>
+          <span>{{ loading ? ('auth.signingIn' | t) : ('auth.signInAction' | t) }}</span>
         </ion-button>
       </form>
 
@@ -103,12 +106,12 @@ import {
         data-testid="login-footer"
       >
         <p class="auth-register-copy">
-          Don't have an account?
-          <button class="auth-link" type="button" (click)="goToRegister()">Create an account</button>
+          {{ 'auth.dontHaveAccount' | t }}
+          <button class="auth-link" type="button" (click)="goToRegister()">{{ 'auth.createAccount' | t }}</button>
         </p>
 
         <p class="auth-legal">
-          By continuing you agree to our Terms &amp; Privacy Policy.
+          {{ 'auth.termsPrivacyContinue' | t }}
         </p>
       </div>
     </div>
@@ -226,7 +229,8 @@ export class LoginFormComponent implements OnDestroy {
   constructor(
     private readonly authService: AuthService,
     private readonly formBuilder: FormBuilder,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly localeService: LocaleService
   ) {}
 
   get identifierInputId(): string {
@@ -253,7 +257,9 @@ export class LoginFormComponent implements OnDestroy {
   }
 
   get passwordToggleLabel(): string {
-    return this.showPassword ? 'Hide password' : 'Show password';
+    return this.showPassword
+      ? this.localeService.translate('auth.hidePassword')
+      : this.localeService.translate('auth.showPassword');
   }
 
   ngOnDestroy(): void {
@@ -351,11 +357,10 @@ export class LoginFormComponent implements OnDestroy {
   }
 
   private getLoginErrorMessage(error: unknown): string {
-    if (this.isCredentialError(error)) {
-      return 'Incorrect email or password.';
-    }
-
-    return getAuthNetworkMessage('sign you in', error);
+    return (
+      mapKnownAuthError(this.localeService, 'login', error) ??
+      getAuthTranslatedNetworkMessage(this.localeService, 'sign-in', error)
+    );
   }
 
   private setErrorMessage(message: string): void {

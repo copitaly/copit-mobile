@@ -6,6 +6,10 @@ export interface DonationCheckoutRequest {
   donor_email?: string;
 }
 
+export interface DonationHostedCheckoutRequest extends DonationCheckoutRequest {
+  locale: 'en' | 'it' | 'fr';
+}
+
 export interface DonationCategory {
   id: number;
   name: string;

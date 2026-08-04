@@ -5,12 +5,15 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors } f
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { AuthService } from '../../core/services/auth.service';
 import {
   AUTH_PASSWORD_MIN_LENGTH,
   AUTH_FALLBACK_RETURN_URL,
   extractFirstFieldError,
-  getAuthNetworkMessage,
+  getAuthTranslatedNetworkMessage,
+  mapKnownAuthError,
   passwordStrengthValidator,
   sanitizeAuthReturnUrl,
   trimmedRequiredValidator,
@@ -29,7 +32,7 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
 @Component({
   standalone: true,
   selector: 'app-register-form',
-  imports: [CommonModule, ReactiveFormsModule, IonicModule],
+  imports: [CommonModule, ReactiveFormsModule, IonicModule, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div
@@ -44,48 +47,48 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
       <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form" novalidate>
         <div class="name-grid" data-testid="register-name-grid">
           <div class="field-group">
-            <label class="auth-label" for="register-first-name">First name</label>
+            <label class="auth-label" for="register-first-name">{{ 'auth.firstName' | t }}</label>
             <ion-item fill="solid" class="auth-field">
               <ion-input
                 id="register-first-name"
                 formControlName="first_name"
-                placeholder="Kwame"
+                [placeholder]="'auth.firstNamePlaceholder' | t"
                 autocomplete="given-name"
                 enterkeyhint="next"
                 (ionInput)="clearErrorMessage()"
               ></ion-input>
             </ion-item>
             <p class="field-error" *ngIf="showControlError('first_name')" aria-live="polite">
-              Enter your first name.
+              {{ 'validation.firstNameRequired' | t }}
             </p>
           </div>
 
           <div class="field-group">
-            <label class="auth-label" for="register-last-name">Last name</label>
+            <label class="auth-label" for="register-last-name">{{ 'auth.lastName' | t }}</label>
             <ion-item fill="solid" class="auth-field">
               <ion-input
                 id="register-last-name"
                 formControlName="last_name"
-                placeholder="Asante"
+                [placeholder]="'auth.lastNamePlaceholder' | t"
                 autocomplete="family-name"
                 enterkeyhint="next"
                 (ionInput)="clearErrorMessage()"
               ></ion-input>
             </ion-item>
             <p class="field-error" *ngIf="showControlError('last_name')" aria-live="polite">
-              Enter your last name.
+              {{ 'validation.lastNameRequired' | t }}
             </p>
           </div>
         </div>
 
         <div class="field-group">
-          <label class="auth-label" for="register-email">Email *</label>
+          <label class="auth-label" for="register-email">{{ 'auth.email' | t }} *</label>
           <ion-item fill="solid" class="auth-field">
             <ion-input
               id="register-email"
               formControlName="email"
               type="email"
-              placeholder="you@example.com"
+              [placeholder]="'auth.emailPlaceholder' | t"
               autocomplete="email"
               inputmode="email"
               autocapitalize="off"
@@ -99,12 +102,12 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
         </div>
 
         <div class="field-group">
-          <label class="auth-label" for="register-phone">Phone number (optional)</label>
+          <label class="auth-label" for="register-phone">{{ 'auth.phoneNumberOptional' | t }}</label>
           <ion-item fill="solid" class="auth-field">
             <ion-input
               id="register-phone"
               formControlName="phone_number"
-              placeholder="+39 333 123 4567"
+              [placeholder]="'auth.phoneNumberPlaceholder' | t"
               autocomplete="tel"
               inputmode="tel"
               enterkeyhint="next"
@@ -115,13 +118,13 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
         </div>
 
         <div class="field-group">
-          <label class="auth-label" for="register-password">Password</label>
+          <label class="auth-label" for="register-password">{{ 'auth.password' | t }}</label>
           <ion-item fill="solid" class="auth-field">
             <ion-input
               id="register-password"
               formControlName="password"
               [type]="showPassword ? 'text' : 'password'"
-              placeholder="At least 6 characters"
+              [placeholder]="'auth.passwordPlaceholder' | t"
               autocomplete="new-password"
               autocapitalize="off"
               autocorrect="off"
@@ -142,13 +145,13 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
         </div>
 
         <div class="field-group">
-          <label class="auth-label" for="register-confirm-password">Confirm password</label>
+          <label class="auth-label" for="register-confirm-password">{{ 'auth.confirmPassword' | t }}</label>
           <ion-item fill="solid" class="auth-field">
             <ion-input
               id="register-confirm-password"
               formControlName="confirm_password"
               [type]="showConfirmPassword ? 'text' : 'password'"
-              placeholder="Re-enter password"
+              [placeholder]="'auth.confirmPasswordPlaceholder' | t"
               autocomplete="new-password"
               autocapitalize="off"
               autocorrect="off"
@@ -165,8 +168,8 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
               <ion-icon [name]="showConfirmPassword ? 'eye-off-outline' : 'eye-outline'" aria-hidden="true"></ion-icon>
             </button>
           </ion-item>
-          <p class="field-error" *ngIf="showConfirmRequiredError" aria-live="polite">Confirm your password.</p>
-          <p class="field-error" *ngIf="showPasswordMismatchError" aria-live="polite">Your passwords do not match.</p>
+          <p class="field-error" *ngIf="showConfirmRequiredError" aria-live="polite">{{ 'validation.confirmPasswordRequired' | t }}</p>
+          <p class="field-error" *ngIf="showPasswordMismatchError" aria-live="polite">{{ 'validation.passwordMismatch' | t }}</p>
         </div>
 
         <div class="auth-feedback" [class.auth-feedback--visible]="!!errorMessage" aria-live="polite">
@@ -177,7 +180,7 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
 
         <ion-button expand="block" type="submit" class="auth-submit" [disabled]="!canSubmit">
           <ion-spinner *ngIf="loading" slot="start" name="crescent"></ion-spinner>
-          <span>{{ loading ? 'Creating account...' : 'Create Account' }}</span>
+          <span>{{ loading ? ('auth.creatingAccount' | t) : ('auth.createAccountAction' | t) }}</span>
         </ion-button>
       </form>
 
@@ -188,12 +191,12 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
         data-testid="register-footer"
       >
         <p class="auth-login-copy">
-          Already have an account?
-          <button class="auth-link" type="button" (click)="goToLogin()">Sign in</button>
+          {{ 'auth.alreadyHaveAccount' | t }}
+          <button class="auth-link" type="button" (click)="goToLogin()">{{ 'auth.signIn' | t }}</button>
         </p>
 
         <p class="auth-legal">
-          By creating an account you agree to our Terms &amp; Privacy Policy.
+          {{ 'auth.termsPrivacyCreateAccount' | t }}
         </p>
       </div>
     </div>
@@ -318,7 +321,8 @@ export class RegisterFormComponent implements OnDestroy {
   constructor(
     private readonly authService: AuthService,
     private readonly formBuilder: FormBuilder,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly localeService: LocaleService
   ) {}
 
   get canSubmit(): boolean {
@@ -333,10 +337,10 @@ export class RegisterFormComponent implements OnDestroy {
   get emailErrorMessage(): string {
     const control = this.form.controls.email;
     if (control.hasError('required')) {
-      return 'Enter your email address.';
+      return this.localeService.translate('validation.emailRequired');
     }
 
-    return 'Enter a valid email address.';
+    return this.localeService.translate('validation.emailInvalid');
   }
 
   get showPhoneError(): boolean {
@@ -345,7 +349,7 @@ export class RegisterFormComponent implements OnDestroy {
   }
 
   get phoneErrorMessage(): string {
-    return 'Enter a valid phone number.';
+    return this.localeService.translate('validation.phoneInvalid');
   }
 
   get showPasswordError(): boolean {
@@ -356,10 +360,10 @@ export class RegisterFormComponent implements OnDestroy {
   get passwordErrorMessage(): string {
     const control = this.form.controls.password;
     if (control.hasError('required')) {
-      return 'Enter a password to continue.';
+      return this.localeService.translate('validation.passwordRequired');
     }
 
-    return `Use at least ${AUTH_PASSWORD_MIN_LENGTH} characters.`;
+    return this.localeService.translate('validation.passwordTooShort', { count: AUTH_PASSWORD_MIN_LENGTH });
   }
 
   get showConfirmRequiredError(): boolean {
@@ -373,11 +377,15 @@ export class RegisterFormComponent implements OnDestroy {
   }
 
   get passwordToggleLabel(): string {
-    return this.showPassword ? 'Hide password' : 'Show password';
+    return this.showPassword
+      ? this.localeService.translate('auth.hidePassword')
+      : this.localeService.translate('auth.showPassword');
   }
 
   get confirmPasswordToggleLabel(): string {
-    return this.showConfirmPassword ? 'Hide password' : 'Show password';
+    return this.showConfirmPassword
+      ? this.localeService.translate('auth.hidePassword')
+      : this.localeService.translate('auth.showPassword');
   }
 
   ngOnDestroy(): void {
@@ -452,13 +460,13 @@ export class RegisterFormComponent implements OnDestroy {
     if (error instanceof HttpErrorResponse && error.status === 400) {
       const phoneError = extractFirstFieldError(error.error, 'phone_number');
       if (phoneError) {
-        return phoneError || 'Enter a valid phone number.';
+        return phoneError || this.localeService.translate('validation.phoneInvalid');
       }
 
       const emailError = extractFirstFieldError(error.error, 'email');
       if (emailError) {
         return emailError.toLowerCase().includes('exist')
-          ? 'An account already exists for this email.'
+          ? this.localeService.translate('errors.authRegisterFailed')
           : emailError;
       }
 
@@ -469,10 +477,10 @@ export class RegisterFormComponent implements OnDestroy {
         return passwordError;
       }
 
-      return 'Please review your details and try again.';
+      return this.localeService.translate('validation.correctHighlighted');
     }
 
-    return getAuthNetworkMessage('create your account', error);
+    return getAuthTranslatedNetworkMessage(this.localeService, 'register', error);
   }
 
   private setErrorMessage(message: string): void {

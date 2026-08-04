@@ -11,6 +11,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 
+import { LocaleService } from '../../core/localization/locale.service';
 import { PublicBranch } from '../../core/models/branch.model';
 import { BranchesService } from '../../core/services/branches.service';
 
@@ -90,7 +91,7 @@ interface DonateBranchSheetRow {
               [(ngModel)]="searchTerm"
               [placeholder]="searchPlaceholder"
               debounce="250"
-              aria-label="Search churches"
+              [attr.aria-label]="searchPlaceholder"
               class="donate-branch-sheet__search"
               (ionInput)="onSearchChange()"
             ></ion-searchbar>
@@ -413,7 +414,10 @@ export class DonateBranchSheetComponent implements OnChanges {
   private selectedAreaKey: string | null = null;
   private selectedDistrictKey: string | null = null;
 
-  constructor(private readonly branchesService: BranchesService) {}
+  constructor(
+    private readonly branchesService: BranchesService,
+    private readonly localeService: LocaleService
+  ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (!changes['isOpen']) {
@@ -453,52 +457,56 @@ export class DonateBranchSheetComponent implements OnChanges {
 
   get searchPlaceholder(): string {
     if (this.currentLevel === 'churches') {
-      return 'Search churches...';
+      return this.localeService.translate('churchSelector.searchLocalsPlaceholder');
     }
 
     if (this.currentLevel === 'districts') {
-      return 'Search districts...';
+      return this.localeService.translate('churchSelector.searchDistrictsPlaceholder');
     }
 
-    return 'Search saved churches or areas...';
+    return this.localeService.translate('churchSelector.searchAreasPlaceholder');
   }
 
   get sectionLabel(): string {
     if (this.currentLevel === 'churches') {
-      return 'Churches';
+      return this.localeService.translate('churchSelector.locals');
     }
 
     if (this.currentLevel === 'districts') {
-      return 'Districts';
+      return this.localeService.translate('churchSelector.districts');
     }
 
-    return this.mode === 'donate' ? 'Browse by Area' : 'Areas';
+    return this.mode === 'donate'
+      ? this.localeService.translate('churchSelector.browseByArea')
+      : this.localeService.translate('churchSelector.areas');
   }
 
   get sectionCopy(): string {
     if (this.currentLevel === 'churches') {
       return this.mode === 'save'
-        ? 'Select a church to add to My Churches.'
-        : 'Select the church you want to support.';
+        ? this.localeService.translate('churchSelector.selectChurchToSave')
+        : this.localeService.translate('churchSelector.selectLocal');
     }
 
     if (this.currentLevel === 'districts') {
-      return 'Choose a district in this area.';
+      return this.localeService.translate('churchSelector.selectDistrict');
     }
 
-    return this.mode === 'donate' ? 'Browse all churches by area.' : 'Select your area.';
+    return this.mode === 'donate'
+      ? this.localeService.translate('churchSelector.browseAllByArea')
+      : this.localeService.translate('churchSelector.selectArea');
   }
 
   get emptyMessage(): string {
     if (this.currentLevel === 'churches') {
-      return 'No matching churches found.';
+      return this.localeService.translate('churchSelector.noMatchesBody');
     }
 
     if (this.currentLevel === 'districts') {
-      return 'No matching districts found.';
+      return this.localeService.translate('churchSelector.noDistrictMatchesBody');
     }
 
-    return 'No matching saved churches or areas found.';
+    return this.localeService.translate('churchSelector.noSavedOrAreaMatchesBody');
   }
 
   get showSavedChurchesSection(): boolean {

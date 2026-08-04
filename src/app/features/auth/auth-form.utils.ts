@@ -1,6 +1,8 @@
 import { AbstractControl, ValidationErrors } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 
+import { LocaleService } from '../../core/localization/locale.service';
+
 export const AUTH_PASSWORD_MIN_LENGTH = 6;
 export const AUTH_FALLBACK_RETURN_URL = '/tabs/home';
 
@@ -84,6 +86,66 @@ export function getAuthNetworkMessage(actionLabel: string, error: unknown): stri
   }
 
   return `We couldn't ${actionLabel} right now. Please try again.`;
+}
+
+export function getAuthTranslatedNetworkMessage(
+  localeService: LocaleService,
+  action: 'sign-in' | 'register' | 'forgot-password' | 'reset-password',
+  error: unknown
+): string {
+  if (isTimeoutError(error)) {
+    return localeService.translate('errors.timeout');
+  }
+
+  if (isNetworkError(error)) {
+    return localeService.translate('errors.network');
+  }
+
+  switch (action) {
+    case 'sign-in':
+      return localeService.translate('errors.authSignInFailed');
+    case 'register':
+      return localeService.translate('errors.authRegisterFailed');
+    case 'forgot-password':
+      return localeService.translate('errors.authForgotPasswordFailed');
+    case 'reset-password':
+      return localeService.translate('errors.authResetPasswordFailed');
+    default:
+      return localeService.translate('errors.generic');
+  }
+}
+
+export function mapKnownAuthError(
+  localeService: LocaleService,
+  flow: 'login' | 'forgot-password' | 'reset-password',
+  error: unknown
+): string | null {
+  if (!(error instanceof HttpErrorResponse)) {
+    return null;
+  }
+
+  if (flow === 'login' && (error.status === 400 || error.status === 401)) {
+    return localeService.translate('errors.authInvalidCredentials');
+  }
+
+  if (flow === 'forgot-password' && error.status === 400) {
+    return localeService.translate('validation.emailInvalid');
+  }
+
+  const detail = extractErrorDetail(error).toLowerCase();
+  const tokenError = extractFirstFieldError(error.error, 'token').toLowerCase();
+  const combined = `${detail} ${tokenError}`.trim();
+
+  if (flow === 'reset-password') {
+    if (combined.includes('expired')) {
+      return localeService.translate('auth.expiredResetLinkMessage');
+    }
+    if (combined.includes('invalid')) {
+      return localeService.translate('auth.invalidResetLinkMessage');
+    }
+  }
+
+  return null;
 }
 
 export function sanitizeAuthReturnUrl(

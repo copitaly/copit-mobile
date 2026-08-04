@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+import { LocaleService } from '../localization/locale.service';
 import { DevotionalListFilters, DevotionalPublicDetail, DevotionalPublicListItem } from '../models/devotional.model';
 import { PaginatedResponse } from '../models/pagination.model';
 import { ApiService } from './api.service';
@@ -9,6 +10,7 @@ import { ApiService } from './api.service';
 @Injectable({ providedIn: 'root' })
 export class DevotionalService {
   private readonly api = inject(ApiService);
+  private readonly locale = inject(LocaleService);
   private readonly publicDevotionalsEndpoint = 'public/devotionals/';
 
   getDevotionals(
@@ -80,9 +82,10 @@ export class DevotionalService {
   private normalizeDetailResponse(
     response: DevotionalPublicDetail | null | undefined
   ): DevotionalPublicDetail {
+    const fallbackTitle = this.locale.translate('devotions.itemLabel');
     const normalizedBase = this.normalizeListItem(response) ?? {
       id: 0,
-      title: 'Devotion',
+      title: fallbackTitle,
       slug: '',
       scripture_reference: '',
       author_name: null,
@@ -105,9 +108,11 @@ export class DevotionalService {
       return null;
     }
 
+    const fallbackTitle = this.locale.translate('devotions.itemLabel');
+
     return {
       id,
-      title: this.normalizeOptionalText(item?.title) ?? 'Devotion',
+      title: this.normalizeOptionalText(item?.title) ?? fallbackTitle,
       slug: this.normalizeOptionalText(item?.slug) ?? '',
       scripture_reference: this.normalizeOptionalText(item?.scripture_reference) ?? '',
       author_name: this.normalizeOptionalText(item?.author_name),

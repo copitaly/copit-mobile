@@ -10,8 +10,11 @@ import { AnalyticsService } from '../../core/services/analytics.service';
 import { BibleStudyManualListItem } from '../../core/models/bible-study.model';
 import { PublicBranch } from '../../core/models/branch.model';
 import { DevotionalPublicDetail } from '../../core/models/devotional.model';
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { MemberRecentDonation, SavedChurch } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
+import { BibleStudyMetadataService } from '../../core/services/bible-study-metadata.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
 import { DevotionalService } from '../../core/services/devotional.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
@@ -22,7 +25,7 @@ import {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, BuildSafetyLabelComponent],
+  imports: [CommonModule, IonicModule, BuildSafetyLabelComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-home',
   templateUrl: './home.page.html',
@@ -33,10 +36,12 @@ export class HomePage implements OnInit, OnDestroy {
 
   private readonly authService = inject(AuthService);
   private readonly bibleStudyService = inject(BibleStudyService);
+  private readonly bibleStudyMetadataService = inject(BibleStudyMetadataService);
   private readonly devotionalService = inject(DevotionalService);
   private readonly selectedBranchService = inject(SelectedBranchService);
   private readonly router = inject(Router);
   private readonly analyticsService = inject(AnalyticsService);
+  private readonly localeService = inject(LocaleService);
 
   readonly isAuthenticated$: Observable<boolean>;
   readonly showBuildSafetyLabel = shouldShowBuildSafetyLabel();
@@ -106,34 +111,22 @@ export class HomePage implements OnInit, OnDestroy {
   get greeting(): string {
     const hour = new Date().getHours();
     if (hour < 12) {
-      return 'Good Morning';
+      return this.localeService.translate('home.greeting.morning');
     }
     if (hour < 18) {
-      return 'Good Afternoon';
+      return this.localeService.translate('home.greeting.afternoon');
     }
-    return 'Good Evening';
+    return this.localeService.translate('home.greeting.evening');
   }
 
   get greetingSupportText(): string {
     const firstName = this.normalizeText(this.authService.currentUserSnapshot?.first_name);
     if (!firstName) {
-      return 'Find today\'s reading, prayer, and church updates in one place.';
+      return this.localeService.translate('home.subtitle');
     }
 
     const shortenedName = firstName.length > 24 ? `${firstName.slice(0, 24).trim()}...` : firstName;
-    return `Peace be with you, ${shortenedName}.`;
-  }
-
-  get selectedBranchName(): string | null {
-    return this.defaultBranch?.name?.trim() || null;
-  }
-
-  get accountActionLabel(): string {
-    return this.authService.isAuthenticatedSnapshot ? 'Open profile' : 'Open account';
-  }
-
-  get accountIconName(): string {
-    return this.authService.isAuthenticatedSnapshot ? 'person-circle-outline' : 'person-outline';
+    return this.localeService.translate('home.personalizedSubtitle', { name: shortenedName });
   }
 
   get hasTodayDevotionalRefreshMessage(): boolean {
@@ -141,41 +134,35 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   get featuredHeroEyebrow(): string {
-    return this.featuredManual ? 'Latest Bible Study' : 'Bible Study';
+    return this.localeService.translate(this.featuredManual ? 'home.featuredEyebrow' : 'home.featuredFallbackEyebrow');
   }
 
   get featuredHeroTitle(): string {
-    return this.featuredManual?.title || 'Bible Study manuals';
+    return this.featuredManual?.title || this.localeService.translate('home.featuredFallbackTitle');
   }
 
   get featuredHeroMeta(): string {
     if (!this.featuredManual) {
-      return 'Read the latest published Bible Study manual from COP Italy.';
+      return this.localeService.translate('home.featuredFallbackMeta');
     }
 
-    const details = [
-      this.featuredManual.year > 0 ? `${this.featuredManual.year}` : '',
-      this.normalizeText(this.featuredManual.language_display),
-      this.formatWeekRange(this.featuredManual),
-    ].filter(Boolean);
-
-    return details.join(' • ');
+    return this.bibleStudyMetadataService.formatMetadata(this.featuredManual);
   }
 
   get featuredHeroActionLabel(): string {
-    return 'Start Reading';
+    return this.localeService.translate('home.featuredCta');
   }
 
   get featuredHeroImageAlt(): string {
-    return this.featuredManual?.title ? `${this.featuredManual.title} cover image` : 'Bible Study cover image';
+    return this.featuredManual?.title ? `${this.featuredManual.title} ${this.localeService.translate('common.coverImage')}` : this.localeService.translate('home.featuredImageAltFallback');
   }
 
   get featuredHeroAriaLabel(): string {
     if (this.featuredManual?.title) {
-      return `Open Bible Study manual ${this.featuredManual.title}`;
+      return this.localeService.translate('bibleStudy.openManualAria', { title: this.featuredManual.title });
     }
 
-    return 'Open Bible Study manuals';
+    return this.localeService.translate('home.featuredAriaFallback');
   }
 
   get todayDevotionalDateLabel(): string | null {
@@ -189,7 +176,7 @@ export class HomePage implements OnInit, OnDestroy {
       return null;
     }
 
-    return new Intl.DateTimeFormat('en-GB', {
+    return new Intl.DateTimeFormat(this.getIntlLocale(), {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -223,7 +210,7 @@ export class HomePage implements OnInit, OnDestroy {
     }
 
     this.homeRefreshInFlight = true;
-    this.liveStatusMessage = 'Refreshing home content.';
+    this.liveStatusMessage = this.localeService.translate('home.refreshing');
 
     try {
       await Promise.all([
@@ -334,14 +321,14 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   getTodayDevotionalTitle(): string {
-    return this.normalizeText(this.todayDevotional?.title) || 'Today\'s devotion';
+    return this.normalizeText(this.todayDevotional?.title) || this.localeService.translate('home.dailyFallbackTitle');
   }
 
   getTodayDevotionalPreview(): string {
     const content = this.normalizeText(this.todayDevotional?.content).replace(/\s+/g, ' ');
 
     if (!content) {
-      return 'Read today\'s devotion for encouragement and scripture reflection.';
+      return this.localeService.translate('home.dailyFallbackPreview');
     }
 
     if (content.length <= this.devotionalPreviewMaxLength) {
@@ -358,10 +345,10 @@ export class HomePage implements OnInit, OnDestroy {
 
   buildTodayDevotionalAriaLabel(): string {
     if (!this.todayDevotional) {
-      return 'Read today\'s devotion';
+      return this.localeService.translate('home.dailyAriaFallback');
     }
 
-    const parts = ['Read today\'s devotion', this.getTodayDevotionalTitle()];
+    const parts = [this.localeService.translate('home.dailyAriaFallback'), this.getTodayDevotionalTitle()];
     if (this.hasTodayScriptureReference()) {
       parts.push(this.normalizeText(this.todayDevotional?.scripture_reference));
     }
@@ -371,11 +358,11 @@ export class HomePage implements OnInit, OnDestroy {
 
   getTodayDevotionalImageAlt(): string {
     const title = this.getTodayDevotionalTitle();
-    return title ? `${title} cover image` : 'Devotion cover image';
+    return title ? `${title} ${this.localeService.translate('common.coverImage')}` : this.localeService.translate('home.dailyImageAltFallback');
   }
 
   getEmptyDevotionalAriaLabel(): string {
-    return 'No devotion is available right now.';
+    return this.localeService.translate('home.dailyEmptyAria');
   }
 
   goToAccount(isAuthenticated: boolean | null): void {
@@ -518,7 +505,7 @@ export class HomePage implements OnInit, OnDestroy {
       this.todayDevotionalEmpty = false;
       this.todayDevotionalStatusMessage = '';
       this.todayDevotionalImageFailed = false;
-      this.liveStatusMessage = options?.isRefresh ? 'Home content refreshed.' : '';
+      this.liveStatusMessage = options?.isRefresh ? this.localeService.translate('home.refreshed') : '';
     } catch (error: unknown) {
       if (requestId !== this.todayDevotionalRequestId) {
         return;
@@ -538,7 +525,7 @@ export class HomePage implements OnInit, OnDestroy {
         this.hasTodayDevotional = false;
         this.liveStatusMessage = this.todayDevotionalStatusMessage;
       } else {
-        this.liveStatusMessage = 'Refresh failed. Showing previously loaded devotion content.';
+        this.liveStatusMessage = this.localeService.translate('home.refreshFailed');
       }
     } finally {
       if (requestId === this.todayDevotionalRequestId) {
@@ -557,20 +544,20 @@ export class HomePage implements OnInit, OnDestroy {
     this.todayDevotionalStatusMessage = '';
     this.todayDevotionalImageFailed = false;
     this.liveStatusMessage = isRefresh
-      ? 'Home refreshed. No devotion is available right now.'
-      : 'No devotion is available right now.';
+      ? this.localeService.translate('home.refreshedNoDevotion')
+      : this.localeService.translate('home.noDevotion');
   }
 
   private getTodayDevotionalFailureMessage(error: unknown): string {
     if (this.isTimeoutError(error)) {
-      return 'Today\'s devotion is taking too long to load. Please try again.';
+      return this.localeService.translate('home.devotionTimeout');
     }
 
     if (error instanceof HttpErrorResponse && error.status === 0) {
-      return 'You\'re offline. Check your connection and try again.';
+      return this.localeService.translate('home.devotionOffline');
     }
 
-    return 'Today\'s devotion could not be loaded.';
+    return this.localeService.translate('home.devotionLoadError');
   }
 
   private isTimeoutError(error: unknown): boolean {
@@ -656,12 +643,15 @@ export class HomePage implements OnInit, OnDestroy {
     return typeof value === 'string' ? value.trim() : '';
   }
 
-  private formatWeekRange(manual: Pick<BibleStudyManualListItem, 'start_week' | 'end_week'>): string {
-    if (manual.start_week === null || manual.end_week === null) {
-      return 'Full year';
+  private getIntlLocale(): string {
+    switch (this.localeService.getCurrentLocale()) {
+      case 'it':
+        return 'it-IT';
+      case 'fr':
+        return 'fr-FR';
+      default:
+        return 'en-GB';
     }
-
-    return `Weeks ${manual.start_week}-${manual.end_week}`;
   }
 
   private async navigateTo(target: string | readonly unknown[], byUrl = false): Promise<void> {
@@ -689,3 +679,4 @@ export class HomePage implements OnInit, OnDestroy {
     }
   }
 }
+

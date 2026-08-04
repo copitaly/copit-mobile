@@ -2,12 +2,13 @@ import { CommonModule } from '@angular/common';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, inject } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 
 type PrimaryTabKey = 'home' | 'bible-study' | 'devotionals' | 'donate' | 'profile';
 
 type PrimaryTab = {
   key: PrimaryTabKey;
-  label: string;
+  labelKey: string;
   route: string;
   activePrefix: string;
   inactiveIcon: string;
@@ -17,7 +18,7 @@ type PrimaryTab = {
 @Component({
   standalone: true,
   selector: 'app-tabs',
-  imports: [CommonModule, IonicModule, RouterModule],
+  imports: [CommonModule, IonicModule, RouterModule, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <ion-tabs class="app-tabs" data-testid="tabs-shell">
@@ -36,7 +37,7 @@ type PrimaryTab = {
             [name]="isActiveTab(tab.key) ? tab.activeIcon : tab.inactiveIcon"
             aria-hidden="true"
           ></ion-icon>
-          <ion-label>{{ tab.label }}</ion-label>
+          <ion-label>{{ tab.labelKey | t }}</ion-label>
         </ion-tab-button>
       </ion-tab-bar>
     </ion-tabs>
@@ -121,7 +122,7 @@ export class TabsPage {
   readonly tabs: ReadonlyArray<PrimaryTab> = [
     {
       key: 'home',
-      label: 'Home',
+      labelKey: 'navigation.home',
       route: '/tabs/home',
       activePrefix: '/tabs/home',
       inactiveIcon: 'home-outline',
@@ -129,7 +130,7 @@ export class TabsPage {
     },
     {
       key: 'bible-study',
-      label: 'Study',
+      labelKey: 'navigation.study',
       route: '/tabs/bible-study',
       activePrefix: '/tabs/bible-study',
       inactiveIcon: 'book-outline',
@@ -137,7 +138,7 @@ export class TabsPage {
     },
     {
       key: 'devotionals',
-      label: 'Daily',
+      labelKey: 'navigation.daily',
       route: '/tabs/devotionals',
       activePrefix: '/tabs/devotionals',
       inactiveIcon: 'reader-outline',
@@ -145,7 +146,7 @@ export class TabsPage {
     },
     {
       key: 'donate',
-      label: 'Donate',
+      labelKey: 'navigation.donate',
       route: '/tabs/donate',
       activePrefix: '/tabs/donate',
       inactiveIcon: 'gift-outline',
@@ -153,7 +154,7 @@ export class TabsPage {
     },
     {
       key: 'profile',
-      label: 'Profile',
+      labelKey: 'navigation.profile',
       route: '/tabs/profile',
       activePrefix: '/tabs/profile',
       inactiveIcon: 'person-outline',

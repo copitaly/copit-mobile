@@ -1,10 +1,10 @@
 <ion-page>
   <ion-content fullscreen class="prayer-submit-content cop-content--secondary">
     <div class="prayer-submit-shell cop-secondary-shell">
-      <header class="prayer-submit-header" aria-label="Submit prayer request">
+      <header class="prayer-submit-header" [attr.aria-label]="'prayer.submitPageTitle' | t">
         <app-mobile-header
-          title="Prayer Request"
-          subtitle="Share what is on your heart with your church."
+          [title]="'prayer.submitPageTitle' | t"
+          [subtitle]="'prayer.submitPageSubtitle' | t"
           fallbackRoute="/prayer"
           tone="editorial"
         ></app-mobile-header>
@@ -16,7 +16,7 @@
             <form [formGroup]="form" (ngSubmit)="submit()" class="prayer-form" novalidate>
               <section class="prayer-form-panel">
                 <div class="prayer-form-intro">
-                  <h2>What would you like us to pray for?</h2>
+                  <h2>{{ 'prayer.submitIntroTitle' | t }}</h2>
                 </div>
 
                 <ion-item fill="solid" class="prayer-field prayer-field--textarea">
@@ -25,8 +25,8 @@
                     formControlName="request_text"
                     autoGrow="true"
                     rows="7"
-                    placeholder="Write your prayer request here..."
-                    aria-label="Prayer request text"
+                    [placeholder]="'prayer.requestTextPlaceholder' | t"
+                    [attr.aria-label]="'prayer.requestTextAria' | t"
                     aria-describedby="prayer-request-text-error"
                     (ionInput)="onFieldInput('request_text')"
                   ></ion-textarea>
@@ -44,16 +44,16 @@
                 <div class="prayer-form-divider" aria-hidden="true"></div>
 
                 <section class="prayer-optional">
-                  <h3>Optional details</h3>
+                  <h3>{{ 'prayer.optionalDetails' | t }}</h3>
 
                   <div class="prayer-form-group">
-                    <label class="prayer-label" for="prayer-title">Title</label>
+                    <label class="prayer-label" for="prayer-title">{{ 'prayer.titleLabel' | t }}</label>
                     <ion-item fill="solid" class="prayer-field">
                       <ion-input
                         id="prayer-title"
                         formControlName="title"
-                        placeholder="Short title for your request"
-                        aria-label="Prayer request title"
+                        [placeholder]="'prayer.titlePlaceholder' | t"
+                        [attr.aria-label]="'prayer.titleAria' | t"
                         [maxlength]="maxTitleLength"
                         (ionInput)="onFieldInput('title')"
                       ></ion-input>
@@ -64,18 +64,18 @@
                   </div>
 
                   <div class="prayer-form-group">
-                    <label class="prayer-label" for="prayer-category">Category</label>
+                    <label class="prayer-label" for="prayer-category">{{ 'prayer.categoryLabel' | t }}</label>
                     <ion-item fill="solid" class="prayer-field">
                       <ion-select
                         id="prayer-category"
                         interface="action-sheet"
                         formControlName="category"
-                        placeholder="Choose a category"
-                        aria-label="Prayer request category"
+                        [placeholder]="'prayer.categoryPlaceholder' | t"
+                        [attr.aria-label]="'prayer.categoryAria' | t"
                         (ionChange)="onFieldInput('category')"
                       >
                         <ion-select-option *ngFor="let category of categoryOptions" [value]="category.value">
-                          {{ category.label }}
+                          {{ category.label | t }}
                         </ion-select-option>
                       </ion-select>
                     </ion-item>
@@ -85,19 +85,19 @@
                   </div>
 
                   <div class="prayer-form-group">
-                    <label class="prayer-label" for="prayer-scope">Who should see this?</label>
-                    <p class="prayer-helper">Choose who can view and pray for this request.</p>
+                    <label class="prayer-label" for="prayer-scope">{{ 'prayer.whoShouldSeeThis' | t }}</label>
+                    <p class="prayer-helper">{{ 'prayer.scopeHelper' | t }}</p>
                     <ion-item fill="solid" class="prayer-field">
                       <ion-select
                         id="prayer-scope"
                         interface="action-sheet"
                         formControlName="scope"
-                        placeholder="Choose who should see this"
-                        aria-label="Prayer request scope"
+                        [placeholder]="'prayer.scopePlaceholder' | t"
+                        [attr.aria-label]="'prayer.scopeAria' | t"
                         (ionChange)="onFieldInput('scope')"
                       >
                         <ion-select-option *ngFor="let scope of scopeOptions" [value]="scope.value">
-                          {{ scope.label }}
+                          {{ scope.label | t }}
                         </ion-select-option>
                       </ion-select>
                     </ion-item>
@@ -107,13 +107,13 @@
                   </div>
 
                   <div *ngIf="showAreaSelector" class="prayer-form-group">
-                    <label class="prayer-label">Area</label>
+                    <label class="prayer-label">{{ 'prayer.areaLabel' | t }}</label>
                     <ion-item fill="solid" class="prayer-field">
                       <ion-select
                         interface="action-sheet"
                         formControlName="selected_area_id"
-                        placeholder="Choose an Area"
-                        aria-label="Prayer request area"
+                        [placeholder]="'prayer.areaPlaceholder' | t"
+                        [attr.aria-label]="'prayer.areaAria' | t"
                         [disabled]="isAreasLoading || areas.length === 0"
                         (ionChange)="onAreaSelectionChanged($any($event.detail).value)"
                       >
@@ -122,13 +122,13 @@
                         </ion-select-option>
                       </ion-select>
                     </ion-item>
-                    <p *ngIf="isAreasLoading" class="prayer-inline-state">Loading Areas...</p>
+                    <p *ngIf="isAreasLoading" class="prayer-inline-state">{{ 'prayer.loadingAreas' | t }}</p>
                     <div *ngIf="areaLoadError" class="prayer-inline-state prayer-inline-state--error">
                       <span>{{ areaLoadError }}</span>
-                      <button type="button" class="prayer-inline-action" (click)="retryAreaLoad()">Retry</button>
+                      <button type="button" class="prayer-inline-action" (click)="retryAreaLoad()">{{ 'common.retry' | t }}</button>
                     </div>
                     <p *ngIf="!isAreasLoading && !areaLoadError && areas.length === 0" class="prayer-inline-state">
-                      No Areas are available right now.
+                      {{ 'prayer.noAreasAvailable' | t }}
                     </p>
                     <ion-text color="danger" *ngIf="controlError('selected_area_id')" class="prayer-error" role="alert">
                       {{ controlError('selected_area_id') }}
@@ -136,13 +136,13 @@
                   </div>
 
                   <div *ngIf="showDistrictSelector" class="prayer-form-group">
-                    <label class="prayer-label">District</label>
+                    <label class="prayer-label">{{ 'prayer.districtLabel' | t }}</label>
                     <ion-item fill="solid" class="prayer-field">
                       <ion-select
                         interface="action-sheet"
                         formControlName="selected_district_id"
-                        placeholder="Choose a District"
-                        aria-label="Prayer request district"
+                        [placeholder]="'prayer.districtPlaceholder' | t"
+                        [attr.aria-label]="'prayer.districtAria' | t"
                         [disabled]="!selectedAreaId || isDistrictsLoading || districts.length === 0"
                         (ionChange)="onDistrictSelectionChanged($any($event.detail).value)"
                       >
@@ -151,17 +151,17 @@
                         </ion-select-option>
                       </ion-select>
                     </ion-item>
-                    <p *ngIf="!selectedAreaId" class="prayer-inline-state">Choose an Area first.</p>
-                    <p *ngIf="selectedAreaId && isDistrictsLoading" class="prayer-inline-state">Loading Districts...</p>
+                    <p *ngIf="!selectedAreaId" class="prayer-inline-state">{{ 'prayer.chooseAreaFirst' | t }}</p>
+                    <p *ngIf="selectedAreaId && isDistrictsLoading" class="prayer-inline-state">{{ 'prayer.loadingDistricts' | t }}</p>
                     <div *ngIf="districtLoadError" class="prayer-inline-state prayer-inline-state--error">
                       <span>{{ districtLoadError }}</span>
-                      <button type="button" class="prayer-inline-action" (click)="retryDistrictLoad()">Retry</button>
+                      <button type="button" class="prayer-inline-action" (click)="retryDistrictLoad()">{{ 'common.retry' | t }}</button>
                     </div>
                     <p
                       *ngIf="selectedAreaId && !isDistrictsLoading && !districtLoadError && districts.length === 0"
                       class="prayer-inline-state"
                     >
-                      No districts are available for this Area.
+                      {{ 'prayer.noDistrictsAvailable' | t }}
                     </p>
                     <ion-text color="danger" *ngIf="controlError('selected_district_id')" class="prayer-error" role="alert">
                       {{ controlError('selected_district_id') }}
@@ -169,13 +169,13 @@
                   </div>
 
                   <div *ngIf="showLocalChurchSelector" class="prayer-form-group">
-                    <label class="prayer-label">Local Church</label>
+                    <label class="prayer-label">{{ 'prayer.localChurchLabel' | t }}</label>
                     <ion-item fill="solid" class="prayer-field">
                       <ion-select
                         interface="action-sheet"
                         formControlName="selected_local_church_id"
-                        placeholder="Choose a Local Church"
-                        aria-label="Prayer request local church"
+                        [placeholder]="'prayer.localChurchPlaceholder' | t"
+                        [attr.aria-label]="'prayer.localChurchAria' | t"
                         [disabled]="!selectedDistrictId || isLocalChurchesLoading || localChurches.length === 0"
                         (ionChange)="onLocalChurchSelectionChanged($any($event.detail).value)"
                       >
@@ -184,17 +184,17 @@
                         </ion-select-option>
                       </ion-select>
                     </ion-item>
-                    <p *ngIf="!selectedDistrictId" class="prayer-inline-state">Choose a District first.</p>
-                    <p *ngIf="selectedDistrictId && isLocalChurchesLoading" class="prayer-inline-state">Loading Local churches...</p>
+                    <p *ngIf="!selectedDistrictId" class="prayer-inline-state">{{ 'prayer.chooseDistrictFirst' | t }}</p>
+                    <p *ngIf="selectedDistrictId && isLocalChurchesLoading" class="prayer-inline-state">{{ 'prayer.loadingLocalChurches' | t }}</p>
                     <div *ngIf="localChurchLoadError" class="prayer-inline-state prayer-inline-state--error">
                       <span>{{ localChurchLoadError }}</span>
-                      <button type="button" class="prayer-inline-action" (click)="retryLocalChurchLoad()">Retry</button>
+                      <button type="button" class="prayer-inline-action" (click)="retryLocalChurchLoad()">{{ 'common.retry' | t }}</button>
                     </div>
                     <p
                       *ngIf="selectedDistrictId && !isLocalChurchesLoading && !localChurchLoadError && localChurches.length === 0"
                       class="prayer-inline-state"
                     >
-                      No local churches are available for this District.
+                      {{ 'prayer.noLocalsAvailable' | t }}
                     </p>
                     <ion-text color="danger" *ngIf="controlError('selected_local_church_id')" class="prayer-error" role="alert">
                       {{ controlError('selected_local_church_id') }}
@@ -202,7 +202,7 @@
                   </div>
 
                   <div class="prayer-form-group">
-                    <label class="prayer-label">Visibility</label>
+                    <label class="prayer-label">{{ 'prayer.visibilityLabel' | t }}</label>
                     <div class="choice-stack choice-stack--split">
                       <button
                         *ngFor="let option of visibilityOptions"
@@ -210,31 +210,31 @@
                         class="choice-card"
                         [class.choice-card--selected]="form.controls.visibility.value === option.value"
                         [attr.aria-pressed]="form.controls.visibility.value === option.value"
-                        [attr.aria-label]="'Prayer visibility ' + option.label"
+                        [attr.aria-label]="('prayer.visibilityLabel' | t) + ' ' + (option.label | t)"
                         (click)="form.controls.visibility.setValue(option.value); onFieldInput('visibility')"
                       >
                         <span class="choice-card__copy">
-                          <strong>{{ option.label }}</strong>
-                          <small>{{ option.helper }}</small>
+                          <strong>{{ option.label | t }}</strong>
+                          <small>{{ option.helper | t }}</small>
                         </span>
                       </button>
                     </div>
                   </div>
 
                   <div class="prayer-form-group">
-                    <label class="prayer-label">How should your name appear?</label>
+                    <label class="prayer-label">{{ 'prayer.nameAppearanceLabel' | t }}</label>
                     <div class="choice-stack choice-stack--compact">
                       <button
                         type="button"
                         class="choice-card"
                         [class.choice-card--selected]="form.controls.is_anonymous_publicly.value"
                         [attr.aria-pressed]="form.controls.is_anonymous_publicly.value"
-                        aria-label="Submit prayer request anonymously"
+                        [attr.aria-label]="'prayer.anonymousAria' | t"
                         (click)="form.controls.is_anonymous_publicly.setValue(true); onFieldInput('is_anonymous_publicly')"
                       >
                         <span class="choice-card__copy">
-                          <strong>Submit anonymously</strong>
-                          <small>Your public request would show as Anonymous.</small>
+                          <strong>{{ 'prayer.anonymousOption' | t }}</strong>
+                          <small>{{ 'prayer.anonymousHelp' | t }}</small>
                         </span>
                       </button>
 
@@ -243,25 +243,25 @@
                         class="choice-card"
                         [class.choice-card--selected]="!form.controls.is_anonymous_publicly.value"
                         [attr.aria-pressed]="!form.controls.is_anonymous_publicly.value"
-                        aria-label="Share my name with this prayer request"
+                        [attr.aria-label]="'prayer.namedAria' | t"
                         (click)="form.controls.is_anonymous_publicly.setValue(false); onFieldInput('is_anonymous_publicly')"
                       >
                         <span class="choice-card__copy">
-                          <strong>Share my name</strong>
-                          <small>Your name may be shown if your public request is approved.</small>
+                          <strong>{{ 'prayer.namedOption' | t }}</strong>
+                          <small>{{ 'prayer.namedHelp' | t }}</small>
                         </span>
                       </button>
                     </div>
 
                     <div *ngIf="isNamedSubmission" class="named-field">
-                      <label class="prayer-label" for="prayer-submitter-name">Your name</label>
-                      <p class="prayer-helper">This is the name that may be shown if your public request is approved.</p>
+                      <label class="prayer-label" for="prayer-submitter-name">{{ 'prayer.submitterNameLabel' | t }}</label>
+                      <p class="prayer-helper">{{ 'prayer.submitterNameHelper' | t }}</p>
                       <ion-item fill="solid" class="prayer-field">
                         <ion-input
                           id="prayer-submitter-name"
                           formControlName="submitter_name"
-                          placeholder="Enter the name to display"
-                          aria-label="Submitter name"
+                          [placeholder]="'prayer.submitterNamePlaceholder' | t"
+                          [attr.aria-label]="'prayer.submitterNameAria' | t"
                           [maxlength]="maxSubmitterNameLength"
                           (ionInput)="onFieldInput('submitter_name')"
                         ></ion-input>
@@ -290,15 +290,15 @@
               <div class="prayer-success-card__icon" aria-hidden="true">
                 <ion-icon name="checkmark-circle"></ion-icon>
               </div>
-              <h2>Prayer request received</h2>
-              <p>Thank you for sharing your prayer request.</p>
+              <h2>{{ 'prayer.successTitle' | t }}</h2>
+              <p>{{ 'prayer.successIntro' | t }}</p>
               <p>{{ successMessage }}</p>
 
               <ion-button expand="block" class="prayer-submit-button" (click)="resetForAnotherRequest()">
-                Submit Another Request
+                {{ 'prayer.submitAnother' | t }}
               </ion-button>
               <ion-button expand="block" fill="outline" class="prayer-secondary-button" (click)="goBackToPrayer()">
-                Back to Prayer &amp; Care
+                {{ 'prayer.backToPrayerCare' | t }}
               </ion-button>
               <ion-button
                 *ngIf="isAuthenticatedMember"
@@ -307,7 +307,7 @@
                 class="prayer-link-button"
                 (click)="goToMyPrayerRequests()"
               >
-                View My Prayer Requests
+                {{ 'prayer.viewMyRequests' | t }}
               </ion-button>
             </section>
           </ng-template>

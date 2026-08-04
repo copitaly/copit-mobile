@@ -4,13 +4,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
 import { AuthService } from '../../core/services/auth.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { AUTH_FALLBACK_RETURN_URL, sanitizeAuthReturnUrl } from './auth-form.utils';
 import { RegisterFormComponent } from './register-form.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, MobileHeaderComponent, RegisterFormComponent],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent, RegisterFormComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-register',
   template: `
@@ -18,8 +19,8 @@ import { RegisterFormComponent } from './register-form.component';
       <ion-content fullscreen class="auth-content">
         <div class="auth-hero app-header app-header--inner">
           <app-mobile-header
-            title="Create account"
-            subtitle="Start giving with your profile"
+            [title]="'auth.registerTitle' | t"
+            [subtitle]="'auth.registerSubtitle' | t"
             [fallbackRoute]="loginRoute"
           ></app-mobile-header>
         </div>
@@ -29,7 +30,7 @@ import { RegisterFormComponent } from './register-form.component';
             <div class="auth-card">
               <app-register-form
                 [returnUrl]="returnUrl"
-                heading="Create your account"
+                [heading]="'auth.registerHeading' | t"
               ></app-register-form>
             </div>
           </div>

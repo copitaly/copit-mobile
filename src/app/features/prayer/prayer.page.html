@@ -1,29 +1,29 @@
 <ion-page>
   <ion-content fullscreen class="prayer-content cop-content--secondary">
     <div class="prayer-shell cop-secondary-shell">
-      <header class="prayer-header" aria-label="Prayer">
+      <header class="prayer-header" [attr.aria-label]="'prayer.title' | t">
         <app-mobile-header
-          title="Prayer"
-          subtitle="Share a prayer request or pray with the community."
+          [title]="'prayer.title' | t"
+          [subtitle]="'prayer.subtitle' | t"
           fallbackRoute="/tabs/home"
           tone="editorial"
         ></app-mobile-header>
       </header>
 
-      <section class="prayer-actions" aria-label="Prayer actions">
+      <section class="prayer-actions" [attr.aria-label]="'prayer.actionsLabel' | t">
         <button
           *ngFor="let action of primaryActions"
           type="button"
           class="prayer-action-card"
-          [attr.aria-label]="action.title"
+          [attr.aria-label]="action.titleKey | t"
           (click)="openAction(action.route)"
         >
           <span class="prayer-action-card__icon" aria-hidden="true">
             <ion-icon [name]="action.icon"></ion-icon>
           </span>
           <span class="prayer-action-card__copy">
-            <strong>{{ action.title }}</strong>
-            <small>{{ action.description }}</small>
+            <strong>{{ action.titleKey | t }}</strong>
+            <small>{{ action.descriptionKey | t }}</small>
           </span>
           <ion-icon class="prayer-action-card__chevron" name="chevron-forward" aria-hidden="true"></ion-icon>
         </button>
@@ -32,15 +32,15 @@
           *ngIf="showMemberAction"
           type="button"
           class="prayer-action-card"
-          [attr.aria-label]="memberAction.title"
+          [attr.aria-label]="memberAction.titleKey | t"
           (click)="openAction(memberAction.route)"
         >
           <span class="prayer-action-card__icon" aria-hidden="true">
             <ion-icon [name]="memberAction.icon"></ion-icon>
           </span>
           <span class="prayer-action-card__copy">
-            <strong>{{ memberAction.title }}</strong>
-            <small>{{ memberAction.description }}</small>
+            <strong>{{ memberAction.titleKey | t }}</strong>
+            <small>{{ memberAction.descriptionKey | t }}</small>
           </span>
           <ion-icon class="prayer-action-card__chevron" name="chevron-forward" aria-hidden="true"></ion-icon>
         </button>

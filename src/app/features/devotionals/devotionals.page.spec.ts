@@ -6,6 +6,7 @@ import { DevotionalPublicListItem } from '../../core/models/devotional.model';
 import { PaginatedResponse } from '../../core/models/pagination.model';
 import { AuthService } from '../../core/services/auth.service';
 import { DevotionalService } from '../../core/services/devotional.service';
+import { LocaleService } from '../../core/localization/locale.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
 import { DevotionalsPage } from './devotionals.page';
 
@@ -15,6 +16,7 @@ describe('DevotionalsPage', () => {
   let devotionalService: jasmine.SpyObj<DevotionalService>;
   let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
   let router: jasmine.SpyObj<Router>;
+  let localeService: LocaleService;
 
   const firstDevotional: DevotionalPublicListItem = {
     id: 11,
@@ -60,6 +62,7 @@ describe('DevotionalsPage', () => {
     fixture = TestBed.createComponent(DevotionalsPage);
     page = fixture.componentInstance;
     fixture.detectChanges();
+    localeService = TestBed.inject(LocaleService);
   }
 
   beforeEach(() => {
@@ -124,6 +127,25 @@ describe('DevotionalsPage', () => {
     const image = fixture.nativeElement.querySelector('img') as HTMLImageElement | null;
     expect(image?.getAttribute('src')).toBe('https://example.com/cover.jpg');
     expect(image?.getAttribute('alt')).toBe('Morning Grace cover image');
+  });
+
+  it('updates Devotions headings immediately when the locale changes while preserving backend titles', async () => {
+    devotionalService.getDevotionals.and.returnValue(of(buildResponse([firstDevotional, secondDevotional])));
+
+    await createComponent();
+    await localeService.setLocale('it', { persistGuest: false, source: 'runtime' });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Devozioni');
+    expect(fixture.nativeElement.textContent).toContain('Devozione in evidenza');
+    expect(fixture.nativeElement.textContent).toContain('Morning Grace');
+
+    await localeService.setLocale('fr', { persistGuest: false, source: 'runtime' });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Dévotions');
+    expect(fixture.nativeElement.textContent).toContain('Dévotion mise en avant');
+    expect(fixture.nativeElement.textContent).toContain('Morning Grace');
   });
 
   it('uses the fallback treatment when the cover image is missing', async () => {

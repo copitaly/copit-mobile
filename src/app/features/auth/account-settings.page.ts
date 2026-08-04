@@ -4,6 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { AuthService } from '../../core/services/auth.service';
 import { MemberProfile } from '../../core/models/user.model';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
@@ -11,7 +12,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-account-settings',
   template: `
@@ -20,8 +21,8 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
         <div class="account-settings-shell cop-secondary-shell">
           <header class="account-settings-header" aria-label="Account Settings">
             <app-mobile-header
-              title="Account Settings"
-              subtitle="Manage your account and privacy"
+              [title]="'profile.accountSettingsPageTitle' | t"
+              [subtitle]="'profile.accountSettingsPageSubtitle' | t"
               fallbackRoute="/tabs/profile"
               tone="editorial"
             ></app-mobile-header>
@@ -31,19 +32,16 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
             <div *ngIf="loading" class="state-card loading-state" aria-live="polite">
               <ion-spinner name="crescent"></ion-spinner>
               <div class="state-copy">
-                <h2>Loading account</h2>
-                <p>Checking your member session.</p>
+                <h2>{{ 'profile.accountSettingsLoadingTitle' | t }}</h2>
+                <p>{{ 'profile.accountSettingsLoadingSubtitle' | t }}</p>
               </div>
             </div>
 
             <section *ngIf="!loading && profile" class="settings-card cop-card cop-card--soft">
-              <p class="settings-card__eyebrow">Privacy</p>
+              <p class="settings-card__eyebrow">{{ 'profile.privacyLabel' | t }}</p>
               <div class="settings-card__copy">
-                <h2>Delete account</h2>
-                <p>
-                  Permanently remove your member access from this device and app. Donation records may still be
-                  retained where required for legal and accounting reasons.
-                </p>
+                <h2>{{ 'profile.deleteAccountTitle' | t }}</h2>
+                <p>{{ 'profile.deleteAccountSummary' | t }}</p>
               </div>
 
               <button type="button" class="danger-row" (click)="goToDeleteAccount()">
@@ -51,8 +49,8 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                   <ion-icon name="trash-outline"></ion-icon>
                 </span>
                 <span class="danger-row__copy">
-                  <strong>Delete account</strong>
-                  <small>Review the warning and confirm</small>
+                  <strong>{{ 'profile.deleteAccountTitle' | t }}</strong>
+                  <small>{{ 'profile.deleteAccountActionSubtitle' | t }}</small>
                 </span>
                 <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
               </button>

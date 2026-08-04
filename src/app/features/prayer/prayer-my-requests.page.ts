@@ -3,6 +3,8 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit, inject } from '@angular/core
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
+import { LocaleService } from '../../core/localization/locale.service';
+import { TranslatePipe } from '../../core/localization/translate.pipe';
 import {
   MemberPrayerRequest,
   PrayerScope,
@@ -20,7 +22,7 @@ type PrayerScopeFilter = PrayerScope | 'all';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, IonicModule, MobileHeaderComponent],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'app-prayer-my-requests',
   templateUrl: './prayer-my-requests.page.html',
@@ -31,6 +33,7 @@ export class PrayerMyRequestsPage implements OnInit {
   private readonly router = inject(Router);
   private readonly overlayDiagnostics = inject(OverlayDiagnosticsService);
   private readonly detailState = new OverlayStateController();
+  private readonly localeService = inject(LocaleService);
 
   prayers: MemberPrayerRequest[] = [];
   loading = true;
@@ -51,23 +54,23 @@ export class PrayerMyRequestsPage implements OnInit {
 
   readonly skeletonItems = [1, 2, 3];
   readonly statusOptions: ReadonlyArray<{ value: PrayerStatusFilter; label: string }> = [
-    { value: 'all', label: 'All Statuses' },
-    { value: 'pending', label: 'Pending Review' },
-    { value: 'approved', label: 'Approved' },
-    { value: 'rejected', label: 'Not Approved' },
-    { value: 'resolved', label: 'Resolved' },
+    { value: 'all', label: 'prayer.allStatuses' },
+    { value: 'pending', label: 'prayer.pendingReview' },
+    { value: 'approved', label: 'prayer.approved' },
+    { value: 'rejected', label: 'prayer.notApproved' },
+    { value: 'resolved', label: 'prayer.resolved' },
   ];
   readonly visibilityOptions: ReadonlyArray<{ value: PrayerVisibilityFilter; label: string }> = [
-    { value: 'all', label: 'All Visibility' },
-    { value: 'private', label: 'Private' },
-    { value: 'public', label: 'Public' },
+    { value: 'all', label: 'prayer.allVisibility' },
+    { value: 'private', label: 'prayer.visibilityPrivate' },
+    { value: 'public', label: 'prayer.visibilityPublic' },
   ];
   readonly scopeOptions: ReadonlyArray<{ value: PrayerScopeFilter; label: string }> = [
-    { value: 'all', label: 'All Scopes' },
-    { value: 'global', label: 'Global' },
-    { value: 'area', label: 'Area' },
-    { value: 'district', label: 'District' },
-    { value: 'local', label: 'Local Church' },
+    { value: 'all', label: 'prayer.allScopes' },
+    { value: 'global', label: 'prayer.global' },
+    { value: 'area', label: 'prayer.area' },
+    { value: 'district', label: 'prayer.district' },
+    { value: 'local', label: 'prayer.local' },
   ];
 
   private listRequestId = 0;
@@ -86,15 +89,15 @@ export class PrayerMyRequestsPage implements OnInit {
   }
 
   get selectedStatusLabel(): string {
-    return this.statusOptions.find((option) => option.value === this.selectedStatus)?.label ?? 'Status';
+    return this.translateOptionLabel(this.statusOptions, this.selectedStatus, 'prayer.statusFilter');
   }
 
   get selectedVisibilityLabel(): string {
-    return this.visibilityOptions.find((option) => option.value === this.selectedVisibility)?.label ?? 'Visibility';
+    return this.translateOptionLabel(this.visibilityOptions, this.selectedVisibility, 'prayer.visibilityFilter');
   }
 
   get selectedScopeLabel(): string {
-    return this.scopeOptions.find((option) => option.value === this.selectedScope)?.label ?? 'Scope';
+    return this.translateOptionLabel(this.scopeOptions, this.selectedScope, 'prayer.scopeFilter');
   }
 
   get hasActiveFilters(): boolean {
@@ -140,9 +143,9 @@ export class PrayerMyRequestsPage implements OnInit {
         this.loading = false;
         this.refreshing = false;
         if (preserveExisting) {
-          this.loadMoreErrorMessage = "We couldn't refresh your prayer requests right now. Please try again.";
+          this.loadMoreErrorMessage = this.localeService.translate('prayer.myRequestsRefreshError');
         } else {
-          this.errorMessage = "We couldn't load your prayer requests right now.";
+          this.errorMessage = this.localeService.translate('prayer.myRequestsLoadError');
         }
         options?.complete?.();
       },
@@ -224,7 +227,7 @@ export class PrayerMyRequestsPage implements OnInit {
         }
 
         this.loadingMore = false;
-        this.loadMoreErrorMessage = "We couldn't load more prayer requests right now. Please try again.";
+        this.loadMoreErrorMessage = this.localeService.translate('prayer.myRequestsLoadMoreError');
       },
     });
   }
@@ -276,36 +279,36 @@ export class PrayerMyRequestsPage implements OnInit {
   formatCategoryLabel(category: MemberPrayerRequest['category']): string {
     switch (category) {
       case 'personal':
-        return 'Personal';
+        return this.localeService.translate('prayer.personal');
       case 'family':
-        return 'Family';
+        return this.localeService.translate('prayer.family');
       case 'health':
-        return 'Health';
+        return this.localeService.translate('prayer.health');
       case 'spiritual':
-        return 'Spiritual';
+        return this.localeService.translate('prayer.spiritual');
       case 'work':
-        return 'Work';
+        return this.localeService.translate('prayer.work');
       case 'thanksgiving':
-        return 'Thanksgiving';
+        return this.localeService.translate('prayer.thanksgiving');
       default:
-        return 'Other';
+        return this.localeService.translate('prayer.other');
     }
   }
 
   formatStatusLabel(status: PrayerStatus): string {
     switch (status) {
       case 'pending':
-        return 'Pending Review';
+        return this.localeService.translate('prayer.pendingReview');
       case 'approved':
-        return 'Approved';
+        return this.localeService.translate('prayer.approved');
       case 'rejected':
-        return 'Not Approved';
+        return this.localeService.translate('prayer.notApproved');
       case 'resolved':
-        return 'Resolved';
+        return this.localeService.translate('prayer.resolved');
       case 'unknown':
-        return 'Status unavailable';
+        return this.localeService.translate('prayer.statusUnavailable');
       default:
-        return 'Status unavailable';
+        return this.localeService.translate('prayer.statusUnavailable');
     }
   }
 
@@ -315,69 +318,71 @@ export class PrayerMyRequestsPage implements OnInit {
 
   formatVisibilityLabel(visibility: PrayerVisibility): string {
     if (visibility === 'public') {
-      return 'Public';
+      return this.localeService.translate('prayer.visibilityPublic');
     }
 
     if (visibility === 'private') {
-      return 'Private';
+      return this.localeService.translate('prayer.visibilityPrivate');
     }
 
-    return 'Visibility unavailable';
+    return this.localeService.translate('prayer.visibilityUnavailable');
   }
 
   formatVisibilityHelper(visibility: PrayerVisibility): string {
     if (visibility === 'public') {
-      return 'May appear in Community Prayers after approval.';
+      return this.localeService.translate('prayer.publicVisibilityHelper');
     }
 
     if (visibility === 'private') {
-      return 'Visible only to authorized prayer administrators.';
+      return this.localeService.translate('prayer.privateVisibilityHelper');
     }
 
-    return 'Visibility information is unavailable right now.';
+    return this.localeService.translate('prayer.visibilityUnavailable');
   }
 
   formatScopeContext(prayer: Pick<MemberPrayerRequest, 'scope' | 'church'>): string {
     switch (prayer.scope) {
       case 'global':
-        return 'COP Italy';
+        return this.localeService.translate('prayer.copItaly');
       case 'area':
-        return prayer.church?.name ? `${prayer.church.name} Area` : 'Area';
+        return prayer.church?.name
+          ? `${prayer.church.name} ${this.localeService.translate('prayer.area')}`
+          : this.localeService.translate('prayer.area');
       case 'district': {
-        const parts = prayer.church?.name ? [`${prayer.church.name} District`] : [];
+        const parts = prayer.church?.name ? [`${prayer.church.name} ${this.localeService.translate('prayer.district')}`] : [];
         if (prayer.church?.area?.name) {
-          parts.push(`${prayer.church.area.name} Area`);
+          parts.push(`${prayer.church.area.name} ${this.localeService.translate('prayer.area')}`);
         }
-        return parts.join(' - ') || 'District';
+        return parts.join(' - ') || this.localeService.translate('prayer.district');
       }
       case 'local': {
         const parts = prayer.church?.name ? [prayer.church.name] : [];
         if (prayer.church?.district?.name) {
-          parts.push(`${prayer.church.district.name} District`);
+          parts.push(`${prayer.church.district.name} ${this.localeService.translate('prayer.district')}`);
         }
         if (prayer.church?.area?.name) {
-          parts.push(`${prayer.church.area.name} Area`);
+          parts.push(`${prayer.church.area.name} ${this.localeService.translate('prayer.area')}`);
         }
-        return parts.join(' - ') || 'Local Church';
+        return parts.join(' - ') || this.localeService.translate('prayer.local');
       }
       case 'unknown':
-        return 'Prayer scope unavailable';
+        return this.localeService.translate('prayer.scopeUnavailable');
       default:
-        return 'COP Italy';
+        return this.localeService.translate('prayer.copItaly');
     }
   }
 
   formatDate(value: string | null): string {
     if (!value) {
-      return 'Date unavailable';
+      return this.localeService.translate('prayer.dateUnavailable');
     }
 
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
-      return 'Date unavailable';
+      return this.localeService.translate('prayer.dateUnavailable');
     }
 
-    return new Intl.DateTimeFormat('en-GB', {
+    return new Intl.DateTimeFormat(this.localeTag, {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -387,7 +392,7 @@ export class PrayerMyRequestsPage implements OnInit {
   requestPreview(requestText: string, limit = 165): string {
     const normalized = String(requestText ?? '').trim();
     if (!normalized) {
-      return 'Prayer details are unavailable right now.';
+      return this.localeService.translate('prayer.requestUnavailable');
     }
 
     if (normalized.length <= limit) {
@@ -435,7 +440,7 @@ export class PrayerMyRequestsPage implements OnInit {
         }
 
         this.detailLoading = false;
-        this.detailErrorMessage = "We couldn't load this prayer request right now.";
+        this.detailErrorMessage = this.localeService.translate('prayer.detailLoadError');
       },
     });
   }
@@ -463,5 +468,25 @@ export class PrayerMyRequestsPage implements OnInit {
     }
 
     return Array.from(prayersById.values());
+  }
+
+  private get localeTag(): string {
+    switch (this.localeService.getCurrentLocale()) {
+      case 'it':
+        return 'it-IT';
+      case 'fr':
+        return 'fr-FR';
+      default:
+        return 'en-GB';
+    }
+  }
+
+  private translateOptionLabel<T extends string>(
+    options: ReadonlyArray<{ value: T; label: string }>,
+    value: T,
+    fallbackKey: string
+  ): string {
+    const option = options.find((entry) => entry.value === value);
+    return this.localeService.translate(option?.label ?? fallbackKey);
   }
 }

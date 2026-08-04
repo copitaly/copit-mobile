@@ -1,5 +1,6 @@
 import { Injectable, Injector } from '@angular/core';
 import { Stripe, PaymentSheetEventsEnum } from '@capacitor-community/stripe';
+import { LocaleService } from '../localization/locale.service';
 import { environment } from '../../../environments/environment';
 import { SentryTelemetryService } from './sentry-telemetry.service';
 
@@ -46,11 +47,14 @@ export class StripePaymentService {
       );
       return {
         status,
-        errorMessage: paymentResult === PaymentSheetEventsEnum.Failed ? 'Payment failed. Please try again.' : undefined,
+        errorMessage:
+          paymentResult === PaymentSheetEventsEnum.Failed
+            ? this.localeService.translate('donations.paymentFailed')
+            : undefined,
       };
     } catch (error) {
       this.sentryTelemetry.captureFeatureError('donations', 'PaymentSheet failed', error, { flow });
-      return { status: 'failed', errorMessage: 'Payment sheet failed to open.' };
+      return { status: 'failed', errorMessage: this.localeService.translate('donations.failed.sheetOpenError') };
     }
   }
 
@@ -77,5 +81,9 @@ export class StripePaymentService {
 
   private get sentryTelemetry(): SentryTelemetryService {
     return this.injector.get(SentryTelemetryService);
+  }
+
+  private get localeService(): LocaleService {
+    return this.injector.get(LocaleService);
   }
 }
