@@ -666,19 +666,26 @@ export class RecurringDonationsPage implements OnInit {
   async confirmCancel(donation: RecurringDonationItem): Promise<void> {
     const isIncomplete = (donation.status || '').toLowerCase() === 'incomplete';
     const alert = await this.alertController.create({
-      header: isIncomplete ? 'Cancel monthly setup?' : 'Cancel monthly donation?',
+      header: isIncomplete
+        ? this.localeService.translate('donations.recurringCancelSetupTitle')
+        : this.localeService.translate('donations.recurringCancelPromptTitle'),
       message: isIncomplete
-        ? 'This monthly donation setup will be cancelled before it starts.'
-        : `You will stop giving ${this.formatAmountWithCurrency(donation)} every month to ${
-            donation.church?.name || 'this church'
-          }. You can restart anytime.`,
+        ? this.localeService.translate('donations.recurringCancelSetupMessage')
+        : this.localeService.translate('donations.recurringCancelPromptMessage', {
+            amount: this.formatAmountWithCurrency(donation),
+            church: donation.church?.name || this.localeService.translate('donations.recurringChurchFallback'),
+          }),
       buttons: [
         {
-          text: isIncomplete ? 'Keep setup' : 'Keep giving',
+          text: isIncomplete
+            ? this.localeService.translate('donations.recurringKeepSetup')
+            : this.localeService.translate('donations.recurringKeepGiving'),
           role: 'cancel',
         },
         {
-          text: isIncomplete ? 'Cancel setup' : 'Cancel donation',
+          text: isIncomplete
+            ? this.localeService.translate('donations.recurringCancelSetupAction')
+            : this.localeService.translate('donations.recurringCancelDonationAction'),
           role: 'destructive',
           handler: () => {
             void this.cancelDonation(donation);
@@ -767,14 +774,14 @@ export class RecurringDonationsPage implements OnInit {
     }
 
     if (status === 'active') {
-      return 'Scheduled soon';
+      return this.localeService.translate('donations.recurringNextChargeSoon');
     }
 
     if (status === 'incomplete') {
-      return 'After setup completes';
+      return this.localeService.translate('donations.recurringNextChargeAfterSetup');
     }
 
-    return 'Scheduled soon';
+    return this.localeService.translate('donations.recurringNextChargeSoon');
   }
 
   formatCancelledDate(donation: RecurringDonationItem): string {
@@ -808,11 +815,11 @@ export class RecurringDonationsPage implements OnInit {
           this.recurringDonations.map((item) => (item.id === updatedDonation.id ? updatedDonation : item))
         );
         this.cancellingIds.delete(donation.id);
-        await this.appToast.success('Monthly donation cancelled');
+        await this.appToast.success(this.localeService.translate('donations.recurringCancelledSuccess'));
       },
       error: async () => {
         this.cancellingIds.delete(donation.id);
-        await this.appToast.error('Unable to cancel the recurring donation right now. Please try again.');
+        await this.appToast.error(this.localeService.translate('donations.recurringCancelError'));
       },
     });
   }

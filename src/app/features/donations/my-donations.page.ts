@@ -476,8 +476,9 @@ export class MyDonationsPage implements OnInit {
       case 'paid':
         return this.localeService.translate('donations.historyStatusCompleted');
       case 'failed':
-      case 'cancelled':
         return this.localeService.translate('donations.historyStatusFailed');
+      case 'cancelled':
+        return this.localeService.translate('donations.historyStatusCancelled');
       default:
         return status ? status.replace(/_/g, ' ') : this.localeService.translate('donations.historyStatusPending');
     }

@@ -295,6 +295,10 @@
       "handoffUnconfirmed": "Nous n'avons pas pu confirmer la transmission du paiement. Veuillez consulter votre historique des dons avant de réessayer.",
       "checkStatus": "Vérifier le statut"
     },
+    "receipt": {
+      "title": "Don effectuÃ© avec succÃ¨s",
+      "subtitle": "Les dÃ©tails de votre don sont prÃªts Ã  Ãªtre consultÃ©s."
+    },
     "monthlyPromptTitle": "Don mensuel",
     "monthlyPromptMessage": "Le don mensuel nécessite un compte gratuit afin de gérer et d'annuler vos dons récurrents.",
     "monthlyPromptSignIn": "Se connecter",
@@ -326,6 +330,7 @@
     "historyStatusPending": "En attente",
     "historyStatusCompleted": "Termin?",
     "historyStatusFailed": "?chou?",
+    "historyStatusCancelled": "AnnulÃ©",
     "historyTypeLabel": "Type de don",
     "historyDateLabel": "Date",
     "historyReferenceLabel": "R?f?rence",
@@ -372,7 +377,19 @@
     "recurringIntervalMonthly": "Mensuel",
     "recurringIntervalWeekly": "Hebdomadaire",
     "recurringIntervalNotSet": "Non d?fini",
-    "recurringCategoryFallback": "G?n?ral"
+    "recurringCategoryFallback": "G?n?ral",
+    "recurringCancelPromptTitle": "Annuler le don mensuel ?",
+    "recurringCancelPromptMessage": "Vous cesserez de donner {{amount}} chaque mois Ã  {{church}}. Vous pourrez le reprendre Ã  tout moment.",
+    "recurringCancelSetupTitle": "Annuler la mise en place mensuelle ?",
+    "recurringCancelSetupMessage": "Cette mise en place du don mensuel sera annulÃ©e avant de commencer.",
+    "recurringKeepSetup": "Conserver la mise en place",
+    "recurringKeepGiving": "Continuer Ã  donner",
+    "recurringCancelSetupAction": "Annuler la mise en place",
+    "recurringCancelDonationAction": "Annuler le don",
+    "recurringNextChargeSoon": "PrÃ©vu prochainement",
+    "recurringNextChargeAfterSetup": "AprÃ¨s la fin de la mise en place",
+    "recurringCancelledSuccess": "Don mensuel annulÃ©",
+    "recurringCancelError": "Impossible d'annuler le don rÃ©current pour le moment. Veuillez rÃ©essayer."
   },
   "profile": {
     "signedInSubtitle": "Gérez vos informations, votre historique de dons et vos liens avec l'église au même endroit.",

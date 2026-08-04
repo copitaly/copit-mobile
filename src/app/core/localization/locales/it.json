@@ -295,6 +295,10 @@
       "handoffUnconfirmed": "Non siamo riusciti a confermare il passaggio del pagamento. Controlla la cronologia delle tue donazioni prima di riprovare.",
       "checkStatus": "Controlla stato"
     },
+    "receipt": {
+      "title": "Donazione completata",
+      "subtitle": "I dettagli della tua donazione sono pronti da consultare."
+    },
     "monthlyPromptTitle": "Donazione mensile",
     "monthlyPromptMessage": "La donazione mensile richiede un account gratuito per poter gestire e annullare le donazioni ricorrenti.",
     "monthlyPromptSignIn": "Accedi",
@@ -326,6 +330,7 @@
     "historyStatusPending": "In attesa",
     "historyStatusCompleted": "Completata",
     "historyStatusFailed": "Non riuscita",
+    "historyStatusCancelled": "Annullata",
     "historyTypeLabel": "Tipo di donazione",
     "historyDateLabel": "Data",
     "historyReferenceLabel": "Riferimento",
@@ -372,7 +377,19 @@
     "recurringIntervalMonthly": "Mensile",
     "recurringIntervalWeekly": "Settimanale",
     "recurringIntervalNotSet": "Non impostato",
-    "recurringCategoryFallback": "Generale"
+    "recurringCategoryFallback": "Generale",
+    "recurringCancelPromptTitle": "Annullare la donazione mensile?",
+    "recurringCancelPromptMessage": "Smetterai di donare {{amount}} ogni mese a {{church}}. Potrai riattivarla in qualsiasi momento.",
+    "recurringCancelSetupTitle": "Annullare la configurazione mensile?",
+    "recurringCancelSetupMessage": "Questa configurazione della donazione mensile verrà annullata prima dell'inizio.",
+    "recurringKeepSetup": "Mantieni configurazione",
+    "recurringKeepGiving": "Continua a donare",
+    "recurringCancelSetupAction": "Annulla configurazione",
+    "recurringCancelDonationAction": "Annulla donazione",
+    "recurringNextChargeSoon": "Programmato a breve",
+    "recurringNextChargeAfterSetup": "Dopo il completamento della configurazione",
+    "recurringCancelledSuccess": "Donazione mensile annullata",
+    "recurringCancelError": "Impossibile annullare la donazione ricorrente in questo momento. Riprova."
   },
   "profile": {
     "signedInSubtitle": "Gestisci i tuoi dati, la cronologia delle donazioni e i collegamenti alla chiesa in un unico posto.",

@@ -295,6 +295,10 @@
       "handoffUnconfirmed": "We could not confirm the payment handoff. Please check your donation history before trying again.",
       "checkStatus": "Check status"
     },
+    "receipt": {
+      "title": "Donation complete",
+      "subtitle": "Your donation details are ready to review."
+    },
     "monthlyPromptTitle": "Monthly giving",
     "monthlyPromptMessage": "Monthly giving requires a free account so you can manage and cancel your recurring donations.",
     "monthlyPromptSignIn": "Sign in",
@@ -326,6 +330,7 @@
     "historyStatusPending": "Pending",
     "historyStatusCompleted": "Completed",
     "historyStatusFailed": "Failed",
+    "historyStatusCancelled": "Cancelled",
     "historyTypeLabel": "Donation Type",
     "historyDateLabel": "Date",
     "historyReferenceLabel": "Reference",
@@ -372,7 +377,19 @@
     "recurringIntervalMonthly": "Monthly",
     "recurringIntervalWeekly": "Weekly",
     "recurringIntervalNotSet": "Not set",
-    "recurringCategoryFallback": "General"
+    "recurringCategoryFallback": "General",
+    "recurringCancelPromptTitle": "Cancel monthly donation?",
+    "recurringCancelPromptMessage": "You will stop giving {{amount}} every month to {{church}}. You can restart anytime.",
+    "recurringCancelSetupTitle": "Cancel monthly setup?",
+    "recurringCancelSetupMessage": "This monthly donation setup will be cancelled before it starts.",
+    "recurringKeepSetup": "Keep setup",
+    "recurringKeepGiving": "Keep giving",
+    "recurringCancelSetupAction": "Cancel setup",
+    "recurringCancelDonationAction": "Cancel donation",
+    "recurringNextChargeSoon": "Scheduled soon",
+    "recurringNextChargeAfterSetup": "After setup completes",
+    "recurringCancelledSuccess": "Monthly donation cancelled",
+    "recurringCancelError": "Unable to cancel the recurring donation right now. Please try again."
   },
   "profile": {
     "signedInSubtitle": "Manage your details, giving history, and church connections in one place.",
