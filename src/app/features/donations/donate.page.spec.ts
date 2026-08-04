@@ -17,6 +17,7 @@ import { HardwareBackCoordinatorService } from '../../core/services/hardware-bac
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { StripePaymentService } from '../../core/services/stripe-payment.service';
+import { OverlayDiagnosticsService } from '../../core/services/overlay-diagnostics.service';
 import { SavedChurch } from '../../core/models/user.model';
 import { DonatePage } from './donate.page';
 
@@ -144,7 +145,8 @@ describe('DonatePage', () => {
         clearContext: jasmine.createSpy(),
         peekContext: jasmine.createSpy().and.returnValue(null),
       } as unknown as DonationAnalyticsContextService,
-      jasmine.createSpyObj<HardwareBackCoordinatorService>('HardwareBackCoordinatorService', ['registerSelectorHandler'])
+      jasmine.createSpyObj<HardwareBackCoordinatorService>('HardwareBackCoordinatorService', ['registerSelectorHandler']),
+      jasmine.createSpyObj<OverlayDiagnosticsService>('OverlayDiagnosticsService', ['capture'])
     );
 
     (page as unknown as { branch: PublicBranch | null }).branch = branch;
@@ -368,6 +370,7 @@ describe('DonatePage', () => {
   it('opens the church selector by adding the selector query param', () => {
     page.openChurchSelector();
 
+    expect(page.isBranchSheetOpen).toBeTrue();
     expect(router.navigate).toHaveBeenCalledWith([], {
       relativeTo: jasmine.anything(),
       queryParams: { churchSelector: '1' },
@@ -376,9 +379,11 @@ describe('DonatePage', () => {
   });
 
   it('closes the selector and updates the selected branch when a church is chosen', () => {
+    page.isBranchSheetOpen = true;
     page.handleBranchSelected(branch);
 
     expect(selectedBranchServiceMock.setBranch).toHaveBeenCalledWith(branch);
+    expect(page.isBranchSheetOpen).toBeFalse();
     expect(router.navigate).toHaveBeenCalledWith([], {
       relativeTo: jasmine.anything(),
       queryParams: { churchSelector: null },
@@ -388,15 +393,27 @@ describe('DonatePage', () => {
   });
 
   it('closes the selector without resetting form state when the current church is selected again', () => {
+    page.isBranchSheetOpen = true;
     page.handleBranchSelected(branch);
 
     expect(selectedBranchServiceMock.setBranch).not.toHaveBeenCalled();
+    expect(page.isBranchSheetOpen).toBeFalse();
     expect(router.navigate).toHaveBeenCalledWith([], {
       relativeTo: jasmine.anything(),
       queryParams: { churchSelector: null },
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
+  });
+
+  it('handles dismiss callbacks without issuing a second route close', () => {
+    page.isBranchSheetOpen = false;
+    router.navigate.calls.reset();
+
+    page.handleBranchSheetDismissed();
+
+    expect(page.isBranchSheetOpen).toBeFalse();
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 
   it('does not prefill when no saved branches exist', () => {

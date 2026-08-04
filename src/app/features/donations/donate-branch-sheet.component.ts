@@ -399,6 +399,7 @@ export class DonateBranchSheetComponent implements OnChanges {
   @Input() savedBranches: PublicBranch[] = [];
   @Input() selectedBranchId: number | null = null;
 
+  @Output() closeRequested = new EventEmitter<void>();
   @Output() dismissed = new EventEmitter<void>();
   @Output() branchSelected = new EventEmitter<PublicBranch>();
 
@@ -708,7 +709,7 @@ export class DonateBranchSheetComponent implements OnChanges {
   }
 
   requestDismiss(): void {
-    this.dismissed.emit();
+    this.closeRequested.emit();
   }
 
   async handleHardwareBack(): Promise<boolean> {

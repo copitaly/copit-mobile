@@ -10,6 +10,8 @@ import {
   PrayerVisibility,
 } from '../../core/models/prayer.model';
 import { MyPrayerRequestFilters, PrayerService } from '../../core/services/prayer.service';
+import { OverlayDiagnosticsService } from '../../core/services/overlay-diagnostics.service';
+import { OverlayStateController } from '../../core/utils/overlay-state.controller';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
 type PrayerStatusFilter = PrayerStatus | 'all';
@@ -27,6 +29,8 @@ type PrayerScopeFilter = PrayerScope | 'all';
 export class PrayerMyRequestsPage implements OnInit {
   private readonly prayerService = inject(PrayerService);
   private readonly router = inject(Router);
+  private readonly overlayDiagnostics = inject(OverlayDiagnosticsService);
+  private readonly detailState = new OverlayStateController();
 
   prayers: MemberPrayerRequest[] = [];
   loading = true;
@@ -40,7 +44,6 @@ export class PrayerMyRequestsPage implements OnInit {
   selectedVisibility: PrayerVisibilityFilter = 'all';
   selectedScope: PrayerScopeFilter = 'all';
 
-  isDetailOpen = false;
   detailLoading = false;
   detailErrorMessage = '';
   selectedPrayerDetailId: number | null = null;
@@ -69,6 +72,14 @@ export class PrayerMyRequestsPage implements OnInit {
 
   private listRequestId = 0;
   private detailRequestId = 0;
+
+  get isDetailOpen(): boolean {
+    return this.detailState.isOpen;
+  }
+
+  set isDetailOpen(value: boolean) {
+    this.detailState.sync(value);
+  }
 
   ngOnInit(): void {
     this.loadInitialPrayers();
@@ -231,18 +242,29 @@ export class PrayerMyRequestsPage implements OnInit {
       return;
     }
 
-    this.isDetailOpen = true;
+    this.detailState.openOverlay();
+    this.overlayDiagnostics.capture('prayer.detail.open', { prayerId: prayer.id });
     this.selectedPrayerDetailId = prayer.id;
     this.selectedPrayerDetail = prayer;
     this.loadPrayerDetail(prayer.id);
   }
 
   closePrayerDetail(): void {
-    this.isDetailOpen = false;
+    this.detailState.closeOverlay();
     this.detailLoading = false;
     this.detailErrorMessage = '';
     this.selectedPrayerDetailId = null;
     this.selectedPrayerDetail = null;
+    this.overlayDiagnostics.capture('prayer.detail.close');
+  }
+
+  handlePrayerDetailDismissed(): void {
+    this.detailState.handleDidDismiss();
+    this.detailLoading = false;
+    this.detailErrorMessage = '';
+    this.selectedPrayerDetailId = null;
+    this.selectedPrayerDetail = null;
+    this.overlayDiagnostics.capture('prayer.detail.did-dismiss');
   }
 
   retryDetailLoad(): void {

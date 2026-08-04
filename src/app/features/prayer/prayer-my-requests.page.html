@@ -186,7 +186,7 @@
   </ion-content>
 </ion-page>
 
-<ion-modal [isOpen]="isDetailOpen" (didDismiss)="closePrayerDetail()">
+<ion-modal [isOpen]="isDetailOpen" (didDismiss)="handlePrayerDetailDismissed()">
   <ng-template>
     <ion-header>
       <ion-toolbar>

@@ -9,6 +9,7 @@ import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
 import { BranchesService } from '../../core/services/branches.service';
 import { HardwareBackCoordinatorService } from '../../core/services/hardware-back-coordinator.service';
+import { OverlayDiagnosticsService } from '../../core/services/overlay-diagnostics.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { SavedChurchesPage } from './saved-churches.page';
@@ -76,6 +77,10 @@ describe('SavedChurchesPage', () => {
           provide: HardwareBackCoordinatorService,
           useValue: jasmine.createSpyObj<HardwareBackCoordinatorService>('HardwareBackCoordinatorService', ['registerSelectorHandler']),
         },
+        {
+          provide: OverlayDiagnosticsService,
+          useValue: jasmine.createSpyObj<OverlayDiagnosticsService>('OverlayDiagnosticsService', ['capture']),
+        },
       ],
     }).compileComponents();
 
@@ -122,6 +127,15 @@ describe('SavedChurchesPage', () => {
     expect(page.isChurchSelectorOpen).toBeTrue();
     const selector = fixture.nativeElement.querySelector('app-donate-branch-sheet');
     expect(selector).not.toBeNull();
+  });
+
+  it('closes the selector locally when the shared sheet requests dismissal', async () => {
+    await createComponent([toSavedChurch(1, 'Milano Assembly')]);
+    page.openChurchSelector();
+
+    page.handleChurchSelectorCloseRequested();
+
+    expect(page.isChurchSelectorOpen).toBeFalse();
   });
 
   it('saves a selected church from selector save mode and refreshes the list', async () => {

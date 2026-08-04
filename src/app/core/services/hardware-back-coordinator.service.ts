@@ -14,6 +14,7 @@ import { Subscription } from 'rxjs';
 
 import { AUTH_FALLBACK_RETURN_URL, sanitizeAuthReturnUrl } from '../../features/auth/auth-form.utils';
 import { AppToastService } from './app-toast.service';
+import { OverlayDiagnosticsService } from './overlay-diagnostics.service';
 
 interface ProgressiveSelectorBackHandler {
   isOpen: () => boolean;
@@ -45,7 +46,8 @@ export class HardwareBackCoordinatorService implements OnDestroy {
     private readonly alertController: AlertController,
     private readonly actionSheetController: ActionSheetController,
     private readonly popoverController: PopoverController,
-    private readonly appToast: AppToastService
+    private readonly appToast: AppToastService,
+    private readonly overlayDiagnostics: OverlayDiagnosticsService
   ) {}
 
   initialize(routerOutlet?: IonRouterOutlet): void {
@@ -150,6 +152,7 @@ export class HardwareBackCoordinatorService implements OnDestroy {
       return false;
     }
 
+    this.overlayDiagnostics.capture('hardware-back.dismiss-alert');
     await alert.dismiss();
     return true;
   }
@@ -160,6 +163,7 @@ export class HardwareBackCoordinatorService implements OnDestroy {
       return false;
     }
 
+    this.overlayDiagnostics.capture('hardware-back.dismiss-action-sheet');
     await actionSheet.dismiss();
     return true;
   }
@@ -170,6 +174,7 @@ export class HardwareBackCoordinatorService implements OnDestroy {
       return false;
     }
 
+    this.overlayDiagnostics.capture('hardware-back.dismiss-popover');
     await popover.dismiss();
     return true;
   }
@@ -180,6 +185,7 @@ export class HardwareBackCoordinatorService implements OnDestroy {
       return false;
     }
 
+    this.overlayDiagnostics.capture('hardware-back.dismiss-modal');
     await modal.dismiss();
     return true;
   }
@@ -190,6 +196,7 @@ export class HardwareBackCoordinatorService implements OnDestroy {
       return false;
     }
 
+    this.overlayDiagnostics.capture('hardware-back.dismiss-selector');
     return !!(await activeHandler.handleBack());
   }
 

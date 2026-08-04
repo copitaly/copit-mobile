@@ -7,6 +7,7 @@ import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 import { AppRoutingModule } from '../../app-routing.module';
 import { AuthService } from '../../core/services/auth.service';
 import { PrayerService } from '../../core/services/prayer.service';
+import { OverlayDiagnosticsService } from '../../core/services/overlay-diagnostics.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
 import { MemberPrayerRequest } from '../../core/models/prayer.model';
@@ -180,6 +181,10 @@ describe('PrayerMyRequestsPage', () => {
         {
           provide: NavController,
           useValue: jasmine.createSpyObj<NavController>('NavController', ['navigateBack']),
+        },
+        {
+          provide: OverlayDiagnosticsService,
+          useValue: jasmine.createSpyObj<OverlayDiagnosticsService>('OverlayDiagnosticsService', ['capture']),
         },
       ],
     }).compileComponents();
@@ -682,6 +687,19 @@ describe('PrayerMyRequestsPage', () => {
 
     expect(page.isDetailOpen).toBeTrue();
     expect(page.selectedPrayerDetail?.id).toBe(basePrayer.id);
+  });
+
+  it('handles detail modal dismissal without leaving the modal state open', async () => {
+    prayerService.getMyPrayerRequests.and.returnValue(of(buildResponse([basePrayer])));
+    prayerService.getMyPrayerRequest.and.returnValue(of(basePrayer));
+
+    await createComponent();
+
+    page.openPrayerDetails(basePrayer);
+    page.handlePrayerDetailDismissed();
+
+    expect(page.isDetailOpen).toBeFalse();
+    expect(page.selectedPrayerDetail).toBeNull();
   });
 
   it('does not render user email, phone, or moderated_by identity', async () => {

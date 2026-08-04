@@ -10,8 +10,10 @@ import { AppToastService } from '../../core/services/app-toast.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
 import { HardwareBackCoordinatorService } from '../../core/services/hardware-back-coordinator.service';
+import { OverlayDiagnosticsService } from '../../core/services/overlay-diagnostics.service';
 import { SelectedBranchService } from '../../core/services/selected-branch.service';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
+import { OverlayStateController } from '../../core/utils/overlay-state.controller';
 import { DonateBranchSheetComponent } from '../donations/donate-branch-sheet.component';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 
@@ -136,6 +138,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
           mode="save"
           [savingBranchId]="savingBranchId"
           [savedBranchIds]="savedBranchIds"
+          (closeRequested)="handleChurchSelectorCloseRequested()"
           (dismissed)="handleChurchSelectorDismissed()"
           (branchSelected)="handleChurchSelectedForSave($event)"
         ></app-donate-branch-sheet>
@@ -458,11 +461,19 @@ export class SavedChurchesPage implements OnInit, AfterViewInit, OnDestroy {
   savedChurches: SavedChurch[] = [];
   loading = true;
   errorMessage = '';
-  isChurchSelectorOpen = false;
+  private readonly churchSelectorState = new OverlayStateController();
   savingBranchId: number | null = null;
   readonly skeletonItems = [1, 2, 3];
   @ViewChild(DonateBranchSheetComponent) private donateBranchSheet?: DonateBranchSheetComponent;
   private unregisterHardwareBackSelector?: () => void;
+
+  get isChurchSelectorOpen(): boolean {
+    return this.churchSelectorState.isOpen;
+  }
+
+  set isChurchSelectorOpen(value: boolean) {
+    this.churchSelectorState.sync(value);
+  }
 
   constructor(
     private readonly authService: AuthService,
@@ -472,7 +483,8 @@ export class SavedChurchesPage implements OnInit, AfterViewInit, OnDestroy {
     private readonly analyticsService: AnalyticsService,
     private readonly alertController: AlertController,
     private readonly appToast: AppToastService,
-    private readonly hardwareBackCoordinator: HardwareBackCoordinatorService
+    private readonly hardwareBackCoordinator: HardwareBackCoordinatorService,
+    private readonly overlayDiagnostics: OverlayDiagnosticsService
   ) {}
 
   ngOnInit(): void {
@@ -560,11 +572,18 @@ export class SavedChurchesPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openChurchSelector(): void {
-    this.isChurchSelectorOpen = true;
+    this.churchSelectorState.openOverlay();
+    this.overlayDiagnostics.capture('saved-churches.selector.open');
+  }
+
+  handleChurchSelectorCloseRequested(): void {
+    this.churchSelectorState.closeOverlay();
+    this.overlayDiagnostics.capture('saved-churches.selector.close-requested');
   }
 
   handleChurchSelectorDismissed(): void {
-    this.isChurchSelectorOpen = false;
+    this.churchSelectorState.handleDidDismiss();
+    this.overlayDiagnostics.capture('saved-churches.selector.did-dismiss');
   }
 
   handleChurchSelectedForSave(branch: PublicBranch): void {
@@ -581,7 +600,7 @@ export class SavedChurchesPage implements OnInit, AfterViewInit, OnDestroy {
     this.authService.saveChurch(branch.id).subscribe({
       next: async () => {
         this.savingBranchId = null;
-        this.isChurchSelectorOpen = false;
+        this.churchSelectorState.closeOverlay();
         await this.appToast.success('Church saved');
         this.fetchSavedChurches();
       },

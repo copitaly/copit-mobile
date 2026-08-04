@@ -114,6 +114,24 @@ describe('DonateBranchSheetComponent', () => {
     expect(component.branchSelected.emit).toHaveBeenCalledWith(milanoBranch);
   });
 
+  it('emits closeRequested before the modal actually dismisses', () => {
+    spyOn(component.closeRequested, 'emit');
+    spyOn(component.dismissed, 'emit');
+
+    component.requestDismiss();
+
+    expect(component.closeRequested.emit).toHaveBeenCalled();
+    expect(component.dismissed.emit).not.toHaveBeenCalled();
+  });
+
+  it('emits dismissed only from didDismiss', () => {
+    spyOn(component.dismissed, 'emit');
+
+    component.handleDidDismiss();
+
+    expect(component.dismissed.emit).toHaveBeenCalled();
+  });
+
   it('does not show saved church shortcuts in save mode', () => {
     component.mode = 'save';
     component.savedBranches = [milanoBranch];

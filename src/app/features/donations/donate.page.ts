@@ -32,7 +32,9 @@ import { SentryTelemetryService } from '../../core/services/sentry-telemetry.ser
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { DonationAnalyticsContextService } from '../../core/services/donation-analytics-context.service';
 import { HardwareBackCoordinatorService } from '../../core/services/hardware-back-coordinator.service';
+import { OverlayDiagnosticsService } from '../../core/services/overlay-diagnostics.service';
 import { DonateBranchSheetComponent } from './donate-branch-sheet.component';
+import { OverlayStateController } from '../../core/utils/overlay-state.controller';
 
 const EURO_SYMBOL = '\u20AC';
 const AMOUNT_PATTERN = /^\d+(\.\d+)?$/;
@@ -323,6 +325,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
         mode="donate"
         [savedBranches]="savedBranchesForSelector"
         [selectedBranchId]="branch?.id ?? null"
+        (closeRequested)="handleBranchSheetCloseRequested()"
         (dismissed)="handleBranchSheetDismissed()"
         (branchSelected)="handleBranchSelected($event)"
       ></app-donate-branch-sheet>
@@ -339,7 +342,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
 export class DonatePage implements AfterViewInit, OnDestroy {
   readonly categorySkeletonItems = [1, 2, 3, 4, 5, 6];
   categories: DonationCategory[] = [];
-  isBranchSheetOpen = false;
+  private readonly branchSheetState = new OverlayStateController();
 
   form = this.fb.group({
     categoryId: this.fb.control<number | null>(null, Validators.required),
@@ -388,6 +391,14 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   private savedBranchPrefillInFlight = false;
   private unregisterHardwareBackSelector?: () => void;
 
+  get isBranchSheetOpen(): boolean {
+    return this.branchSheetState.isOpen;
+  }
+
+  set isBranchSheetOpen(value: boolean) {
+    this.branchSheetState.sync(value);
+  }
+
   constructor(
     private readonly fb: FormBuilder,
     private readonly donationsService: DonationsService,
@@ -402,7 +413,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     private readonly sentryTelemetry: SentryTelemetryService,
     private readonly analyticsService: AnalyticsService,
     private readonly donationAnalyticsContext: DonationAnalyticsContextService,
-    private readonly hardwareBackCoordinator: HardwareBackCoordinatorService
+    private readonly hardwareBackCoordinator: HardwareBackCoordinatorService,
+    private readonly overlayDiagnostics: OverlayDiagnosticsService
   ) {
     this.branchSub = this.selectedBranchService.selectedBranch$.subscribe(branch => {
       this.branch = branch;
@@ -461,7 +473,11 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     this.prefillDonorEmailOnce();
 
     this.activatedRoute.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe((params) => {
-      this.isBranchSheetOpen = params.get(this.churchSelectorQueryParam) === '1';
+      const shouldOpen = params.get(this.churchSelectorQueryParam) === '1';
+      const changed = this.branchSheetState.sync(shouldOpen);
+      if (changed) {
+        this.overlayDiagnostics.capture('donate.church-selector.route-sync', { shouldOpen });
+      }
     });
   }
 
@@ -641,6 +657,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
   openChurchSelector(): void {
     this.shouldRestoreChurchSelectorFocus = true;
+    this.branchSheetState.openOverlay();
+    this.overlayDiagnostics.capture('donate.church-selector.open');
     void this.router.navigate([], {
       relativeTo: this.activatedRoute,
       queryParams: { [this.churchSelectorQueryParam]: '1' },
@@ -648,12 +666,13 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     });
   }
 
-  handleBranchSheetDismissed(): void {
-    if (this.isBranchSheetOpen) {
-      this.closeChurchSelector();
-      return;
-    }
+  handleBranchSheetCloseRequested(): void {
+    void this.closeChurchSelector();
+  }
 
+  handleBranchSheetDismissed(): void {
+    this.branchSheetState.handleDidDismiss();
+    this.overlayDiagnostics.capture('donate.church-selector.did-dismiss');
     this.restoreChurchSelectorFocusIfNeeded();
   }
 
@@ -1469,6 +1488,8 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   private closeChurchSelector(): void {
+    this.branchSheetState.closeOverlay();
+    this.overlayDiagnostics.capture('donate.church-selector.close-requested');
     void this.router.navigate([], {
       relativeTo: this.activatedRoute,
       queryParams: { [this.churchSelectorQueryParam]: null },
@@ -1482,13 +1503,14 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       return;
     }
 
+    this.branchSheetState.closeOverlay();
+    this.overlayDiagnostics.capture('donate.church-selector.ensure-closed');
     await this.router.navigate([], {
       relativeTo: this.activatedRoute,
       queryParams: { [this.churchSelectorQueryParam]: null },
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
-    this.isBranchSheetOpen = false;
   }
 
   private isNativePaymentSheetRuntime(): boolean {
