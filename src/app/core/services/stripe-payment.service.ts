@@ -9,6 +9,7 @@ export type PaymentSheetOutcome = 'completed' | 'canceled' | 'failed';
 
 const DEFAULT_BILLING_COUNTRY = 'IT';
 const DEFAULT_CURRENCY_CODE = 'EUR';
+const APPLE_PAY_MERCHANT_ID_PATTERN = /^merchant\.[A-Za-z0-9.-]+$/;
 
 @Injectable({ providedIn: 'root' })
 export class StripePaymentService {
@@ -20,16 +21,8 @@ export class StripePaymentService {
     flow: 'one_time' | 'recurring' = 'one_time'
   ): Promise<{ status: PaymentSheetOutcome; errorMessage?: string }> {
     try {
-      const googlePayEnabled = true;
-      const googlePayIsTesting = this.isStripeTestMode();
       const platform = Capacitor.getPlatform();
-      const applePayMerchantId = this.getApplePayMerchantId();
-      const applePayEnabled =
-        Capacitor.isNativePlatform() && platform === 'ios' && applePayMerchantId.length > 0;
-      const googlePayAvailability =
-        Capacitor.isNativePlatform() && platform === 'android'
-          ? await this.getGooglePayAvailability()
-          : null;
+      const walletConfiguration = await this.getWalletConfiguration(platform);
 
       this.logDiagnostics('PaymentSheet configuration prepared', {
         flow,
@@ -37,12 +30,15 @@ export class StripePaymentService {
         isNativePlatform: Capacitor.isNativePlatform(),
         connectedAccountMode: 'destination_charge',
         connectedAccountIdSuffix: null,
-        googlePayEnabled,
-        googlePayIsTesting,
-        applePayEnabled,
+        googlePayEnabled: walletConfiguration.googlePayEnabled,
+        googlePayIsTesting: walletConfiguration.googlePayIsTesting,
+        applePayEnabled: walletConfiguration.applePayEnabled,
+        applePayMerchantConfigured: walletConfiguration.applePayMerchantConfigured,
+        applePayMerchantValid: walletConfiguration.applePayMerchantValid,
+        applePayAvailable: walletConfiguration.applePayAvailable,
         countryCode: DEFAULT_BILLING_COUNTRY,
         currencyCode: DEFAULT_CURRENCY_CODE,
-        googlePayAvailable: googlePayAvailability,
+        googlePayAvailable: walletConfiguration.googlePayAvailable,
       });
 
       this.sentryTelemetry.addFeatureBreadcrumb('donations', 'PaymentSheet init started', { flow });
@@ -51,10 +47,10 @@ export class StripePaymentService {
       await Stripe.createPaymentSheet({
         paymentIntentClientSecret: clientSecret,
         merchantDisplayName: environment.stripeMerchantDisplayName,
-        enableGooglePay: googlePayEnabled,
-        GooglePayIsTesting: googlePayIsTesting,
-        enableApplePay: applePayEnabled,
-        applePayMerchantId: applePayMerchantId || undefined,
+        enableGooglePay: walletConfiguration.googlePayEnabled,
+        GooglePayIsTesting: walletConfiguration.googlePayIsTesting,
+        enableApplePay: walletConfiguration.applePayEnabled,
+        applePayMerchantId: walletConfiguration.applePayMerchantId || undefined,
         defaultBillingDetails: {
           address: {
             country: DEFAULT_BILLING_COUNTRY,
@@ -89,10 +85,11 @@ export class StripePaymentService {
         isNativePlatform: Capacitor.isNativePlatform(),
         connectedAccountMode: 'destination_charge',
         connectedAccountIdSuffix: null,
-        googlePayEnabled: true,
+        googlePayEnabled: Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android',
         googlePayIsTesting: this.isStripeTestMode(),
-        applePayEnabled:
-          Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios' && this.getApplePayMerchantId().length > 0,
+        applePayEnabled: this.isApplePayEnabledForPlatform(Capacitor.getPlatform()),
+        applePayMerchantConfigured: this.getRawApplePayMerchantId().length > 0,
+        applePayMerchantValid: this.getApplePayMerchantId().length > 0,
         countryCode: DEFAULT_BILLING_COUNTRY,
         currencyCode: DEFAULT_CURRENCY_CODE,
         error: this.describeError(error),
@@ -109,6 +106,8 @@ export class StripePaymentService {
     this.logDiagnostics('Stripe.initialize called', {
       publishableKeyMode: this.isStripeTestMode() ? 'test' : 'live',
       stripeAccountConfigured: false,
+      applePayMerchantConfigured: this.getRawApplePayMerchantId().length > 0,
+      applePayMerchantValid: this.getApplePayMerchantId().length > 0,
     });
     await Stripe.initialize({
       publishableKey: environment.stripePublishableKey,
@@ -131,9 +130,58 @@ export class StripePaymentService {
     return environment.stripePublishableKey.trim().startsWith('pk_test_');
   }
 
+  private async getWalletConfiguration(platform: string): Promise<{
+    googlePayEnabled: boolean;
+    googlePayIsTesting: boolean;
+    googlePayAvailable: boolean | null;
+    applePayEnabled: boolean;
+    applePayMerchantId: string;
+    applePayMerchantConfigured: boolean;
+    applePayMerchantValid: boolean;
+    applePayAvailable: boolean | null;
+  }> {
+    const googlePayEnabled = Capacitor.isNativePlatform() && platform === 'android';
+    const googlePayIsTesting = this.isStripeTestMode();
+    const rawApplePayMerchantId = this.getRawApplePayMerchantId();
+    const applePayMerchantId = this.getApplePayMerchantId();
+    const applePayMerchantConfigured = rawApplePayMerchantId.length > 0;
+    const applePayMerchantValid = applePayMerchantId.length > 0;
+    const applePayEnabled = Capacitor.isNativePlatform() && platform === 'ios' && applePayMerchantValid;
+    const googlePayAvailable = googlePayEnabled ? await this.getGooglePayAvailability() : null;
+    const applePayAvailable =
+      Capacitor.isNativePlatform() && platform === 'ios' && applePayMerchantConfigured
+        ? await this.getApplePayAvailability()
+        : null;
+
+    if (Capacitor.isNativePlatform() && platform === 'ios' && applePayMerchantConfigured && !applePayMerchantValid) {
+      this.logDiagnostics('Apple Pay merchant identifier is configured but invalid', {
+        expectedFormat: 'merchant.<reverse-domain-name>',
+      });
+    }
+
+    return {
+      googlePayEnabled,
+      googlePayIsTesting,
+      googlePayAvailable,
+      applePayEnabled,
+      applePayMerchantId,
+      applePayMerchantConfigured,
+      applePayMerchantValid,
+      applePayAvailable,
+    };
+  }
+
+  private isApplePayEnabledForPlatform(platform: string): boolean {
+    return Capacitor.isNativePlatform() && platform === 'ios' && this.getApplePayMerchantId().length > 0;
+  }
+
+  private getRawApplePayMerchantId(): string {
+    return environment.stripeApplePayMerchantId.trim();
+  }
+
   private getApplePayMerchantId(): string {
-    const merchantId = (environment as { stripeApplePayMerchantId?: string }).stripeApplePayMerchantId;
-    return typeof merchantId === 'string' ? merchantId.trim() : '';
+    const merchantId = this.getRawApplePayMerchantId();
+    return APPLE_PAY_MERCHANT_ID_PATTERN.test(merchantId) ? merchantId : '';
   }
 
   private async getGooglePayAvailability(): Promise<boolean | null> {
@@ -159,6 +207,28 @@ export class StripePaymentService {
         error: this.describeError(error),
       });
       return null;
+    }
+  }
+
+  private async getApplePayAvailability(): Promise<boolean | null> {
+    if (!('isApplePayAvailable' in Stripe) || typeof Stripe.isApplePayAvailable !== 'function') {
+      this.logDiagnostics('Stripe.isApplePayAvailable unavailable in installed plugin', {});
+      return null;
+    }
+
+    try {
+      const availability = (await Stripe.isApplePayAvailable()) as unknown;
+
+      if (typeof availability === 'boolean') {
+        return availability;
+      }
+
+      return true;
+    } catch (error) {
+      this.logDiagnostics('Stripe.isApplePayAvailable failed', {
+        error: this.describeError(error),
+      });
+      return false;
     }
   }
 

@@ -1,9 +1,10 @@
 import { appVersion, sentryRelease } from './app-version';
 import type { FirebaseOptions } from 'firebase/app';
+import type { CopitMobileEnvironment } from './environment.model';
 
 const firebaseConfig: FirebaseOptions | null = null;
 
-export const environment = {
+export const environment: CopitMobileEnvironment = {
   production: false,
   apiBaseUrl: 'https://copit-api-staging.up.railway.app/api',
   appOrigin: 'https://copit-staging.web.app',
