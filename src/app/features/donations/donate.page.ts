@@ -98,7 +98,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
                         {{ branch.district?.name }} {{ 'donations.districtSuffix' | t }}
                       </ng-container>
                       <ng-container *ngIf="branch.district?.name && branch.area?.name">
-                        <span aria-hidden="true">&middot;</span>
+                        <span aria-hidden="true">·</span>
                       </ng-container>
                       <ng-container *ngIf="branch.area?.name">
                         {{ branch.area?.name }} {{ 'donations.areaSuffix' | t }}
@@ -946,7 +946,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     if (branch.area?.name) {
       parts.push(`${branch.area.name} ${this.localeService.translate('donations.areaSuffix')}`);
     }
-    return parts.join(' • ');
+    return parts.join(' · ');
   }
 
   private buildPayload(): DonationCheckoutRequest {

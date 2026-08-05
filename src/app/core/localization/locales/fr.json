@@ -3,8 +3,8 @@
     "name": "COP Italy"
   },
   "splash": {
-    "taglineLineOne": "Étude biblique • Dévotions",
-    "taglineLineTwo": "Pri?re ? Offrandes",
+    "taglineLineOne": "Étude biblique · Dévotions",
+    "taglineLineTwo": "Prière · Offrandes",
     "logoAlt": "Logo COP Italy",
     "ariaLabel": "Écran de démarrage COP Italy"
   },
@@ -36,7 +36,7 @@
   },
   "navigation": {
     "home": "Accueil",
-    "study": "Etude",
+    "study": "?tude",
     "daily": "Jour",
     "donate": "Offrande",
     "profile": "Profil",
@@ -767,8 +767,8 @@
     "removedSuccess": "Supprimée des enregistrées",
     "saveFailed": "Échec de l'enregistrement de l'église",
     "removeFailed": "Échec de la suppression de l'église",
-    "confirmRemoveTitle": "Supprimer l'église ?",
-    "confirmRemoveMessage": "Supprimer {{name}} de Mes églises ?"
+    "confirmRemoveTitle": "Supprimer l'?glise ?",
+    "confirmRemoveMessage": "Supprimer {{name}} de Mes ?glises ?"
   },
   "churchSelector": {
     "title": "Choisir une église",

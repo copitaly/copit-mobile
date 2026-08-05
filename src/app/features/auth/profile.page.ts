@@ -78,7 +78,7 @@ type ProfileActionSection = {
                 <div class="account-copy">
                   <h2 id="account-summary-title">{{ displayName }}</h2>
                   <p class="account-copy__email">{{ profile.email || ('profile.notProvided' | t) }}</p>
-                  <p class="account-meta">{{ membershipLabel }} <span aria-hidden="true">&middot;</span> {{ 'profile.memberSince' | t:{ year: memberSinceLabel } }}</p>
+                  <p class="account-meta">{{ membershipLabel }} <span aria-hidden="true">·</span> {{ 'profile.memberSince' | t:{ year: memberSinceLabel } }}</p>
                 </div>
               </div>
 

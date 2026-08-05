@@ -227,7 +227,7 @@ export class DevotionalsPage implements OnInit {
       this.hasAuthor(devotional) ? this.localeService.translate('devotions.publisherFallback') : '',
     ].filter(Boolean);
 
-    return parts.join(' • ');
+    return parts.join(' · ');
   }
 
   getPublisherLabel(devotional: DevotionalPublicListItem): string {

@@ -3,8 +3,8 @@
     "name": "COP Italy"
   },
   "splash": {
-    "taglineLineOne": "Studio biblico • Devozioni",
-    "taglineLineTwo": "Preghiera ? Offerte",
+    "taglineLineOne": "Studio biblico · Devozioni",
+    "taglineLineTwo": "Preghiera · Offerte",
     "logoAlt": "Logo COP Italy",
     "ariaLabel": "Schermata iniziale COP Italy"
   },
@@ -57,7 +57,7 @@
     "forgotPasswordQuestion": "Password dimenticata?",
     "rememberedPassword": "Hai ricordato la password?",
     "dontHaveAccount": "Non hai un account?",
-    "alreadyHaveAccount": "Hai già un account?",
+    "alreadyHaveAccount": "Hai gi? un account?",
     "signIn": "Accedi",
     "signInAction": "Accedi",
     "signingIn": "Accesso in corso...",
@@ -75,7 +75,7 @@
     "checkEmailTitle": "Controlla la tua email",
     "checkEmailMessage": "Abbiamo inviato le istruzioni per reimpostare la password se esiste un account associato a questo indirizzo.",
     "checkEmailSupport": "Apri la tua email e segui il link per creare una nuova password.",
-    "createAccountBenefitsTitle": "Perché creare un account?",
+    "createAccountBenefitsTitle": "Perch? creare un account?",
     "benefitGivingHistory": "Visualizza la cronologia delle tue offerte",
     "benefitBibleStudy": "Leggi i manuali di studio biblico",
     "benefitSavedChurches": "Salva le chiese per un accesso rapido",

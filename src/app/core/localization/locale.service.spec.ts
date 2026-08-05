@@ -184,16 +184,16 @@ describe('LocaleService', () => {
     await service.initialize();
 
     expect(service.translate('app.name')).toBe('COP Italy');
-    expect(service.translate('splash.taglineLineOne')).toBe('Bible Study • Devotions');
-    expect(service.translate('splash.taglineLineTwo')).toBe('Prayer • Giving');
+    expect(service.translate('splash.taglineLineOne')).toBe('Bible Study · Devotions');
+    expect(service.translate('splash.taglineLineTwo')).toBe('Prayer · Offerings');
 
     await service.setLocale('it', { persistGuest: false, source: 'runtime' });
-    expect(service.translate('splash.taglineLineOne')).toBe('Studio biblico • Devozioni');
-    expect(service.translate('splash.taglineLineTwo')).toBe('Preghiera • Donazioni');
+    expect(service.translate('splash.taglineLineOne')).toBe('Studio biblico · Devozioni');
+    expect(service.translate('splash.taglineLineTwo')).toBe('Preghiera · Offerte');
 
     await service.setLocale('fr', { persistGuest: false, source: 'runtime' });
-    expect(service.translate('splash.taglineLineOne')).toBe('Étude biblique • Dévotions');
-    expect(service.translate('splash.taglineLineTwo')).toBe('Prière • Dons');
+    expect(service.translate('splash.taglineLineOne')).toBe('Étude biblique · Dévotions');
+    expect(service.translate('splash.taglineLineTwo')).toBe('Prière · Offrandes');
   });
 
   it('falls back to English when the active locale is missing a key', async () => {
