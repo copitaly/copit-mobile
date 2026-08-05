@@ -23,6 +23,9 @@ export class StripePaymentService {
       const googlePayEnabled = true;
       const googlePayIsTesting = this.isStripeTestMode();
       const platform = Capacitor.getPlatform();
+      const applePayMerchantId = this.getApplePayMerchantId();
+      const applePayEnabled =
+        Capacitor.isNativePlatform() && platform === 'ios' && applePayMerchantId.length > 0;
       const googlePayAvailability =
         Capacitor.isNativePlatform() && platform === 'android'
           ? await this.getGooglePayAvailability()
@@ -36,6 +39,7 @@ export class StripePaymentService {
         connectedAccountIdSuffix: null,
         googlePayEnabled,
         googlePayIsTesting,
+        applePayEnabled,
         countryCode: DEFAULT_BILLING_COUNTRY,
         currencyCode: DEFAULT_CURRENCY_CODE,
         googlePayAvailable: googlePayAvailability,
@@ -49,6 +53,8 @@ export class StripePaymentService {
         merchantDisplayName: environment.stripeMerchantDisplayName,
         enableGooglePay: googlePayEnabled,
         GooglePayIsTesting: googlePayIsTesting,
+        enableApplePay: applePayEnabled,
+        applePayMerchantId: applePayMerchantId || undefined,
         defaultBillingDetails: {
           address: {
             country: DEFAULT_BILLING_COUNTRY,
@@ -85,6 +91,8 @@ export class StripePaymentService {
         connectedAccountIdSuffix: null,
         googlePayEnabled: true,
         googlePayIsTesting: this.isStripeTestMode(),
+        applePayEnabled:
+          Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios' && this.getApplePayMerchantId().length > 0,
         countryCode: DEFAULT_BILLING_COUNTRY,
         currencyCode: DEFAULT_CURRENCY_CODE,
         error: this.describeError(error),
@@ -121,6 +129,11 @@ export class StripePaymentService {
 
   private isStripeTestMode(): boolean {
     return environment.stripePublishableKey.trim().startsWith('pk_test_');
+  }
+
+  private getApplePayMerchantId(): string {
+    const merchantId = (environment as { stripeApplePayMerchantId?: string }).stripeApplePayMerchantId;
+    return typeof merchantId === 'string' ? merchantId.trim() : '';
   }
 
   private async getGooglePayAvailability(): Promise<boolean | null> {

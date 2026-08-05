@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Injector } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
 import { Stripe, PaymentSheetEventsEnum } from '@capacitor-community/stripe';
 
 import { StripePaymentService } from './stripe-payment.service';
@@ -20,10 +21,12 @@ describe('StripePaymentService', () => {
   let service: StripePaymentService;
   let originalPublishableKey: string;
   let originalMerchantDisplayName: string;
+  let originalApplePayMerchantId: string | undefined;
 
   beforeEach(() => {
     originalPublishableKey = environment.stripePublishableKey;
     originalMerchantDisplayName = environment.stripeMerchantDisplayName;
+    originalApplePayMerchantId = (environment as { stripeApplePayMerchantId?: string }).stripeApplePayMerchantId;
 
     TestBed.configureTestingModule({
       providers: [
@@ -49,6 +52,7 @@ describe('StripePaymentService', () => {
   afterEach(() => {
     environment.stripePublishableKey = originalPublishableKey;
     environment.stripeMerchantDisplayName = originalMerchantDisplayName;
+    (environment as { stripeApplePayMerchantId?: string }).stripeApplePayMerchantId = originalApplePayMerchantId;
   });
 
   it('passes Google Pay and Italy/EUR configuration into PaymentSheet', async () => {
@@ -94,6 +98,23 @@ describe('StripePaymentService', () => {
     expect(Stripe.createPaymentSheet).toHaveBeenCalledWith(
       jasmine.objectContaining({
         GooglePayIsTesting: false,
+      })
+    );
+  });
+
+  it('enables Apple Pay on native iOS when a merchant identifier is configured', async () => {
+    environment.stripePublishableKey = 'pk_live_applepay';
+    (environment as { stripeApplePayMerchantId?: string }).stripeApplePayMerchantId = 'merchant.org.copitaly.copit';
+    spyOn(Capacitor, 'getPlatform').and.returnValue('ios');
+    spyOn(Capacitor, 'isNativePlatform').and.returnValue(true);
+
+    await service.presentPaymentSheet('pi_live_secret');
+
+    expect(Stripe.createPaymentSheet).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        enableApplePay: true,
+        applePayMerchantId: 'merchant.org.copitaly.copit',
+        countryCode: 'IT',
       })
     );
   });
