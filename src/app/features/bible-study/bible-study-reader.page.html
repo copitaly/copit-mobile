@@ -9,15 +9,15 @@
         ></ion-back-button>
       </ion-buttons>
 
-      <ion-buttons slot="end" *ngIf="showToolbarDownload">
+      <ion-buttons slot="end">
         <ion-button
           fill="clear"
           class="reader-toolbar__action"
-          [attr.aria-label]="downloadActionAriaLabel"
-          [disabled]="downloadDisabled"
-          (click)="downloadPdf()"
+          [attr.aria-label]="shareActionAriaLabel"
+          [disabled]="shareDisabled"
+          (click)="sharePdf()"
         >
-          <ion-icon slot="icon-only" name="download-outline"></ion-icon>
+          <ion-icon slot="icon-only" name="share-social-outline"></ion-icon>
         </ion-button>
       </ion-buttons>
     </ion-toolbar>
@@ -77,18 +77,9 @@
       >
         <div class="reader-state__copy">
           <h2>{{ 'bibleStudy.readerUnavailableTitle' | t }}</h2>
-          <p>{{ errorMessage }}</p>
+          <p>{{ 'bibleStudy.readerUnavailableBody' | t }}</p>
         </div>
         <ion-button expand="block" class="reader-state__button" (click)="retryPdfLoad()">{{ 'bibleStudy.tryAgain' | t }}</ion-button>
-        <ion-button
-          expand="block"
-          fill="outline"
-          class="reader-state__button reader-state__button--secondary"
-          [disabled]="downloadDisabled"
-          (click)="downloadPdf()"
-        >
-          {{ 'bibleStudy.downloadPdf' | t }}
-        </ion-button>
         <ion-button
           expand="block"
           fill="outline"

@@ -1,11 +1,11 @@
 import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of, throwError, BehaviorSubject } from 'rxjs';
+import { Capacitor } from '@capacitor/core';
 
 import { LocaleService, TranslationParams } from '../../core/localization/locale.service';
 import { BibleStudyManualDetail } from '../../core/models/bible-study.model';
 import { AppToastService } from '../../core/services/app-toast.service';
-import { BibleStudyDownloadService } from '../../core/services/bible-study-download.service';
 import { BibleStudyPdfRendererService } from '../../core/services/bible-study-pdf-renderer.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
 import { ExternalBrowserService } from '../../core/services/external-browser.service';
@@ -26,10 +26,15 @@ class MockLocaleService {
     'bibleStudy.pageIndicatorCompact': 'Page {{current}} / {{total}}',
     'bibleStudy.backToList': 'Back to Bible Study',
     'bibleStudy.tryAgain': 'Try Again',
-    'bibleStudy.downloadPdf': 'Download PDF',
-    'bibleStudy.downloadingPdf': 'Downloading PDF',
+    'bibleStudy.sharePdf': 'Share PDF',
+    'bibleStudy.sharingPdf': 'Sharing PDF',
+    'bibleStudy.shareDialogTitle': 'Share Bible Study',
+    'bibleStudy.shareCopied': 'Bible Study PDF link copied to clipboard.',
+    'bibleStudy.shareUnavailable': "This PDF can't be shared right now.",
+    'bibleStudy.shareFailed': "Sharing isn't available right now.",
     'bibleStudy.openPdfExternally': 'Open PDF externally',
     'bibleStudy.pdfMissingMessage': 'This manual does not currently have a readable PDF link.',
+    'bibleStudy.readerUnavailableBody': 'The PDF reader failed to start.',
     'bibleStudy.readerUnavailableMessage': 'We could not open this PDF on your device right now.',
     'bibleStudy.manualLoadFailure': "We couldn't load this Bible Study manual right now.",
     'bibleStudy.invalidId': 'Invalid Bible Study manual ID.',
@@ -67,7 +72,6 @@ describe('BibleStudyReaderPage', () => {
   let page: BibleStudyReaderPage;
   let routeId = '14';
   let bibleStudyService: jasmine.SpyObj<BibleStudyService>;
-  let downloadService: jasmine.SpyObj<BibleStudyDownloadService>;
   let pdfRendererService: jasmine.SpyObj<BibleStudyPdfRendererService>;
   let externalBrowserService: jasmine.SpyObj<ExternalBrowserService>;
   let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
@@ -114,7 +118,6 @@ describe('BibleStudyReaderPage', () => {
       return candidate ? candidate : null;
     });
 
-    downloadService = jasmine.createSpyObj<BibleStudyDownloadService>('BibleStudyDownloadService', ['downloadPdf']);
     pdfRendererService = jasmine.createSpyObj<BibleStudyPdfRendererService>('BibleStudyPdfRendererService', [
       'loadDocument',
       'renderPage',
@@ -154,7 +157,6 @@ describe('BibleStudyReaderPage', () => {
       imports: [BibleStudyReaderPage],
       providers: [
         { provide: BibleStudyService, useValue: bibleStudyService },
-        { provide: BibleStudyDownloadService, useValue: downloadService },
         { provide: BibleStudyPdfRendererService, useValue: pdfRendererService },
         { provide: ExternalBrowserService, useValue: externalBrowserService },
         { provide: StackNavigationService, useValue: stackNavigationService },
@@ -282,26 +284,38 @@ describe('BibleStudyReaderPage', () => {
     expect(pdfRendererService.renderPage.calls.count()).toBeGreaterThan(initialRenderCalls);
   }));
 
-  it('downloads from a refreshed manual URL and reports success through the toast service', fakeAsync(() => {
-    const refreshedManual = { ...manual, pdf_url: 'https://example.com/manual.pdf?X-Amz-Signature=fresh-download' };
-    bibleStudyService.getPublishedManualDetail.and.returnValues(of(manual), of(refreshedManual));
-    downloadService.downloadPdf.and.resolveTo({
-      fileName: 'manual.pdf',
-      locationLabel: 'your device share sheet',
-      shared: true,
+  it('shares the current pdf url from the header action without downloading first', fakeAsync(() => {
+    const navigatorShare = jasmine.createSpy('share').and.resolveTo();
+    spyOn(Capacitor, 'isNativePlatform').and.returnValue(false);
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      writable: true,
+      value: navigatorShare,
     });
 
     createComponent();
     flushReader();
-    page.downloadPdf();
+    page.sharePdf();
     flushReader();
 
-    expect(bibleStudyService.getPublishedManualDetail.calls.count()).toBe(2);
-    expect(downloadService.downloadPdf).toHaveBeenCalledWith(
-      'https://example.com/manual.pdf?X-Amz-Signature=fresh-download',
-      jasmine.stringMatching(/bible-study-manual-2026-english\.pdf/)
-    );
-    expect(appToast.success).toHaveBeenCalledWith('manual.pdf is ready from your device share sheet.');
+    expect(navigatorShare).toHaveBeenCalledWith({
+      title: 'Bible Study Manual',
+      url: 'https://example.com/manual.pdf?X-Amz-Signature=fresh',
+    });
+  }));
+
+  it('shows only try again and open externally actions in the pdf unavailable state', fakeAsync(() => {
+    bibleStudyService.getPublishedManualDetail.and.returnValue(of(manual));
+    pdfRendererService.loadDocument.and.rejectWith(new Error('Failed to fetch PDF'));
+
+    createComponent();
+    flushReader();
+
+    const pdfErrorState = fixture.nativeElement.querySelector('[data-testid="reader-pdf-error-state"]');
+    const renderedText = pdfErrorState?.textContent ?? '';
+    expect(renderedText).toContain('Try Again');
+    expect(renderedText).toContain('Open PDF externally');
+    expect(renderedText).not.toContain('Download PDF');
   }));
 
   it('uses the shared stack navigation fallback for back navigation', fakeAsync(() => {

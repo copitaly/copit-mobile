@@ -1,5 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share';
 import {
   AfterViewInit,
   ChangeDetectorRef,
@@ -19,7 +21,6 @@ import { LocaleService } from '../../core/localization/locale.service';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { BibleStudyManualDetail } from '../../core/models/bible-study.model';
 import { AppToastService } from '../../core/services/app-toast.service';
-import { BibleStudyDownloadService } from '../../core/services/bible-study-download.service';
 import { BibleStudyPdfRendererService } from '../../core/services/bible-study-pdf-renderer.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
 import { ExternalBrowserService } from '../../core/services/external-browser.service';
@@ -60,7 +61,6 @@ export class BibleStudyReaderPage implements AfterViewInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly bibleStudyService = inject(BibleStudyService);
-  private readonly bibleStudyDownloadService = inject(BibleStudyDownloadService);
   private readonly bibleStudyPdfRendererService = inject(BibleStudyPdfRendererService);
   private readonly externalBrowserService = inject(ExternalBrowserService);
   private readonly stackNavigation = inject(StackNavigationService);
@@ -83,7 +83,7 @@ export class BibleStudyReaderPage implements AfterViewInit, OnDestroy {
 
   manual: BibleStudyManualDetail | null = null;
   pdfSourceUrl: string | null = null;
-  downloadingPdf = false;
+  sharingPdf = false;
   errorMessage = '';
   viewerState: ReaderViewState = 'loading';
   loadingStage: ReaderLoadingStage = 'manual';
@@ -200,21 +200,57 @@ export class BibleStudyReaderPage implements AfterViewInit, OnDestroy {
     await this.stackNavigation.backWithFallback('/tabs/bible-study');
   }
 
-  async downloadPdf(): Promise<void> {
-    if (!this.manual?.id || this.downloadingPdf) {
+  async sharePdf(): Promise<void> {
+    if (!this.pdfSourceUrl || this.sharingPdf) {
       return;
     }
 
-    this.downloadingPdf = true;
+    const shareTitle = this.manual?.title?.trim() || this.localeService.translate('bibleStudy.manualLabel');
+    const shareUrl = this.pdfSourceUrl;
+    this.sharingPdf = true;
 
     try {
-      const freshManual = await this.loadFreshManual(this.manual.id);
-      this.manual = freshManual;
-      await this.downloadFromManual(freshManual, false);
+      if (this.isNativePlatform()) {
+        const canShare = await Share.canShare();
+        if (!canShare.value) {
+          throw new Error('native-share-unavailable');
+        }
+
+        await Share.share({
+          title: shareTitle,
+          url: shareUrl,
+          dialogTitle: this.localeService.translate('bibleStudy.shareDialogTitle'),
+        });
+        return;
+      }
+
+      const navigatorShare = this.getNavigatorShare();
+      if (navigatorShare) {
+        await navigatorShare({ title: shareTitle, url: shareUrl });
+        return;
+      }
+
+      const copied = await this.copyShareUrlToClipboard(shareUrl);
+      if (copied) {
+        await this.appToast.success(this.localeService.translate('bibleStudy.shareCopied'));
+        return;
+      }
+
+      await this.appToast.error(this.localeService.translate('bibleStudy.shareUnavailable'));
     } catch (error) {
-      await this.appToast.error(this.resolveDownloadErrorMessage(error));
+      if (this.isShareCancelError(error)) {
+        return;
+      }
+
+      const copied = await this.copyShareUrlToClipboard(shareUrl);
+      if (copied) {
+        await this.appToast.success(this.localeService.translate('bibleStudy.shareCopied'));
+        return;
+      }
+
+      await this.appToast.error(this.localeService.translate('bibleStudy.shareFailed'));
     } finally {
-      this.downloadingPdf = false;
+      this.sharingPdf = false;
     }
   }
 
@@ -262,8 +298,8 @@ export class BibleStudyReaderPage implements AfterViewInit, OnDestroy {
     return this.isErrorState && ['pdf-unavailable', 'invalid-document', 'render', 'worker', 'network', 'cors'].includes(this.errorKind);
   }
 
-  get showToolbarDownload(): boolean {
-    return !this.isPdfUnavailableState;
+  get shareDisabled(): boolean {
+    return this.sharingPdf || !this.pdfSourceUrl;
   }
 
   get showPdfSurface(): boolean {
@@ -292,18 +328,14 @@ export class BibleStudyReaderPage implements AfterViewInit, OnDestroy {
     }
   }
 
-  get downloadDisabled(): boolean {
-    return this.downloadingPdf || !this.manual?.id || !this.pdfSourceUrl;
-  }
-
   get openExternallyDisabled(): boolean {
     return !this.pdfSourceUrl;
   }
 
-  get downloadActionAriaLabel(): string {
-    return this.downloadingPdf
-      ? this.localeService.translate('bibleStudy.downloadingPdf')
-      : this.localeService.translate('bibleStudy.downloadPdf');
+  get shareActionAriaLabel(): string {
+    return this.sharingPdf
+      ? this.localeService.translate('bibleStudy.sharingPdf')
+      : this.localeService.translate('bibleStudy.sharePdf');
   }
 
   get showDocumentControls(): boolean {
@@ -330,7 +362,7 @@ export class BibleStudyReaderPage implements AfterViewInit, OnDestroy {
     this.firstPageRendered = false;
     this.lastKnownScrollTop = 0;
     this.pdfSourceUrl = null;
-    this.downloadingPdf = false;
+    this.sharingPdf = false;
     this.pages = [];
     this.totalPages = 0;
     this.currentPageNumber = 1;
@@ -432,96 +464,6 @@ export class BibleStudyReaderPage implements AfterViewInit, OnDestroy {
       status: 'pending',
     }));
     this.queueRenderPass();
-  }
-
-  private async loadFreshManual(id: number): Promise<BibleStudyManualDetail> {
-    return new Promise<BibleStudyManualDetail>((resolve, reject) => {
-      this.bibleStudyService.getPublishedManualDetail(id).subscribe({
-        next: resolve,
-        error: reject,
-      });
-    });
-  }
-
-  private async downloadFromManual(manual: BibleStudyManualDetail, hasRetried: boolean): Promise<void> {
-    const pdfUrl = this.bibleStudyService.normalizeDocumentUrl(manual.pdf_url);
-    if (!pdfUrl) {
-      await this.appToast.error(this.localeService.translate('bibleStudy.pdfMissingMessage'));
-      return;
-    }
-
-    const fileName = this.buildDownloadFileName(manual);
-
-    try {
-      const result = await this.bibleStudyDownloadService.downloadPdf(pdfUrl, fileName);
-      const successMessage = result.shared
-        ? `${result.fileName} is ready from your device share sheet.`
-        : `${result.fileName} saved to ${result.locationLabel}.`;
-      await this.appToast.success(successMessage);
-    } catch (error) {
-      if (!hasRetried && this.shouldRetryExpiredLink(error)) {
-        const refreshedManual = await this.loadFreshManual(manual.id);
-        this.manual = refreshedManual;
-        await this.downloadFromManual(refreshedManual, true);
-        return;
-      }
-
-      throw error;
-    }
-  }
-
-  private buildDownloadFileName(manual: BibleStudyManualDetail): string {
-    const title = this.slugifySegment(manual.title, 'bible-study-manual');
-    const language = this.slugifySegment(manual.language_display || manual.language, 'manual');
-    return `${title}-${manual.year}-${language}.pdf`;
-  }
-
-  private slugifySegment(value: string | null | undefined, fallback: string): string {
-    const normalized = (value ?? '')
-      .normalize('NFKD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .toLowerCase();
-
-    return normalized || fallback;
-  }
-
-  private shouldRetryExpiredLink(error: unknown): boolean {
-    const message = String((error as { message?: string } | undefined)?.message ?? '').toLowerCase();
-    return (
-      message.includes('401') ||
-      message.includes('403') ||
-      message.includes('expired') ||
-      message.includes('unauthorized') ||
-      message.includes('signature')
-    );
-  }
-
-  private resolveDownloadErrorMessage(error: unknown): string {
-    const message = String((error as { message?: string } | undefined)?.message ?? '').toLowerCase();
-
-    if (message.includes('permission')) {
-      return this.localeService.translate('bibleStudy.storagePermissionError');
-    }
-
-    if (message.includes('unauthorized') || message.includes('401') || message.includes('403') || message.includes('expired')) {
-      return this.localeService.translate('bibleStudy.expiredPdfError');
-    }
-
-    if (message.includes('timeout')) {
-      return this.localeService.translate('bibleStudy.downloadTimeoutError');
-    }
-
-    if (message.includes('offline') || message.includes('network')) {
-      return this.localeService.translate('bibleStudy.offlineError');
-    }
-
-    if (message.includes('invalid') || message.includes('unsupported')) {
-      return this.localeService.translate('bibleStudy.invalidPdfError');
-    }
-
-    return this.localeService.translate('bibleStudy.downloadError');
   }
 
   private resolveManualLoadErrorMessage(error: unknown): string {
@@ -737,5 +679,47 @@ export class BibleStudyReaderPage implements AfterViewInit, OnDestroy {
     }
 
     return this.localeService.translate('bibleStudy.readerUnavailableMessage');
+  }
+
+  private isNativePlatform(): boolean {
+    return Capacitor.isNativePlatform();
+  }
+
+  private getNavigatorShare():
+    | ((data: { title?: string; text?: string; url?: string }) => Promise<void>)
+    | null {
+    const navigatorRef = globalThis.navigator as Navigator & {
+      share?: (data: { title?: string; text?: string; url?: string }) => Promise<void>;
+    };
+
+    return typeof navigatorRef.share === 'function' ? navigatorRef.share.bind(navigatorRef) : null;
+  }
+
+  private async copyShareUrlToClipboard(url: string): Promise<boolean> {
+    const clipboard = globalThis.navigator?.clipboard;
+    if (!clipboard?.writeText) {
+      return false;
+    }
+
+    try {
+      await clipboard.writeText(url);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private isShareCancelError(error: unknown): boolean {
+    if (!error) {
+      return false;
+    }
+
+    const message = typeof error === 'string'
+      ? error
+      : error instanceof Error
+        ? error.message
+        : '';
+
+    return /cancel/i.test(message);
   }
 }
