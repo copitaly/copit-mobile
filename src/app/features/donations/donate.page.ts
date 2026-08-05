@@ -80,7 +80,7 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
     <ion-page>
       <ion-content fullscreen class="donate-content cop-content--tabs" scrollY="true">
         <div class="donate-shell">
-        <header class="cop-page-header donate-page-header" aria-label="Donate">
+        <header class="cop-page-header donate-page-header" [attr.aria-label]="'donations.title' | t">
           <h1 class="cop-page-header__title">{{ 'donations.title' | t }}</h1>
           <p class="cop-page-header__subtitle">{{ 'donations.subtitle' | t }}</p>
         </header>
