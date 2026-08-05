@@ -39,6 +39,11 @@
                 "glob": "**/*",
                 "input": "src/web/iccs",
                 "output": "web/iccs"
+              },
+              {
+                "glob": "pdf.worker.min.mjs",
+                "input": "node_modules/pdfjs-dist/legacy/build",
+                "output": "assets/pdfjs"
               }
             ],
             "styles": ["src/global.scss", "src/theme/variables.scss"],
@@ -153,6 +158,11 @@
                 "glob": "**/*",
                 "input": "src/web/iccs",
                 "output": "web/iccs"
+              },
+              {
+                "glob": "pdf.worker.min.mjs",
+                "input": "node_modules/pdfjs-dist/legacy/build",
+                "output": "assets/pdfjs"
               }
             ],
             "styles": ["src/global.scss", "src/theme/variables.scss"],

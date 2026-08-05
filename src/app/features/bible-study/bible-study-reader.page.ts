@@ -1,10 +1,18 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, NgZone, OnDestroy, inject } from '@angular/core';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  OnDestroy,
+  QueryList,
+  ViewChild,
+  ViewChildren,
+  inject,
+} from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Capacitor } from '@capacitor/core';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule, IonContent } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 
 import { LocaleService } from '../../core/localization/locale.service';
@@ -12,19 +20,34 @@ import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { BibleStudyManualDetail } from '../../core/models/bible-study.model';
 import { AppToastService } from '../../core/services/app-toast.service';
 import { BibleStudyDownloadService } from '../../core/services/bible-study-download.service';
+import { BibleStudyPdfRendererService } from '../../core/services/bible-study-pdf-renderer.service';
 import { BibleStudyService } from '../../core/services/bible-study.service';
 import { ExternalBrowserService } from '../../core/services/external-browser.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
 
 type ReaderViewState = 'loading' | 'ready' | 'error';
-type ReaderLoadingStage = 'manual' | 'pdf';
+type ReaderLoadingStage = 'manual' | 'document' | 'render';
 type ReaderErrorKind =
   | 'none'
   | 'invalid-id'
   | 'manual-not-found'
   | 'manual-load'
   | 'pdf-missing'
+  | 'invalid-document'
+  | 'render'
+  | 'worker'
+  | 'network'
+  | 'cors'
   | 'pdf-unavailable';
+
+interface ReaderPageState {
+  pageNumber: number;
+  status: 'pending' | 'rendering' | 'ready' | 'error';
+  width: number;
+  height: number;
+  renderedZoom: number | null;
+  hasRendered: boolean;
+}
 
 @Component({
   standalone: true,
@@ -33,34 +56,49 @@ type ReaderErrorKind =
   templateUrl: './bible-study-reader.page.html',
   styleUrls: ['./bible-study-reader.page.scss'],
 })
-export class BibleStudyReaderPage implements OnDestroy {
-  private static readonly IFRAME_LOAD_TIMEOUT_MS = 7000;
-
+export class BibleStudyReaderPage implements AfterViewInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
-  private readonly ngZone = inject(NgZone);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly bibleStudyService = inject(BibleStudyService);
   private readonly bibleStudyDownloadService = inject(BibleStudyDownloadService);
+  private readonly bibleStudyPdfRendererService = inject(BibleStudyPdfRendererService);
   private readonly externalBrowserService = inject(ExternalBrowserService);
   private readonly stackNavigation = inject(StackNavigationService);
   private readonly appToast = inject(AppToastService);
-  private readonly sanitizer = inject(DomSanitizer);
   private readonly localeService = inject(LocaleService);
 
-  private iframeLoadTimeoutId: ReturnType<typeof setTimeout> | undefined;
+  @ViewChild(IonContent) private readonly ionContent?: IonContent;
+  @ViewChildren('pageCanvas') private readonly pageCanvasRefs?: QueryList<ElementRef<HTMLCanvasElement>>;
+  @ViewChildren('pageFrame') private readonly pageFrameRefs?: QueryList<ElementRef<HTMLElement>>;
+
   private manualRequestSubscription?: Subscription;
+  private canvasRefsSubscription?: Subscription;
   private isViewActive = false;
   private loadRequestId = 0;
-  private pendingReadyTransition = false;
-  private nativeViewerOpenedForRequest = false;
+  private renderPassScheduled = false;
+  private renderPassInFlight = false;
+  private renderGeneration = 0;
+  private firstPageRendered = false;
+  private lastKnownScrollTop = 0;
 
   manual: BibleStudyManualDetail | null = null;
   pdfSourceUrl: string | null = null;
-  pdfEmbedUrl: SafeResourceUrl | null = null;
   downloadingPdf = false;
   errorMessage = '';
   viewerState: ReaderViewState = 'loading';
   loadingStage: ReaderLoadingStage = 'manual';
   errorKind: ReaderErrorKind = 'none';
+  totalPages = 0;
+  currentPageNumber = 1;
+  zoomLevel = 1;
+  pages: ReaderPageState[] = [];
+
+  ngAfterViewInit(): void {
+    this.canvasRefsSubscription = this.pageCanvasRefs?.changes.subscribe(() => {
+      this.queueRenderPass();
+      this.updateCurrentPageFromScroll(this.lastKnownScrollTop);
+    });
+  }
 
   ionViewWillEnter(): void {
     this.isViewActive = true;
@@ -76,6 +114,8 @@ export class BibleStudyReaderPage implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.canvasRefsSubscription?.unsubscribe();
+    this.canvasRefsSubscription = undefined;
     this.teardownActiveSession();
   }
 
@@ -96,7 +136,9 @@ export class BibleStudyReaderPage implements OnDestroy {
     this.errorKind = 'none';
     this.errorMessage = '';
     this.manual = null;
-    this.nativeViewerOpenedForRequest = false;
+    this.totalPages = 0;
+    this.currentPageNumber = 1;
+    this.zoomLevel = 1;
 
     const requestId = ++this.loadRequestId;
     this.manualRequestSubscription = this.bibleStudyService.getPublishedManualDetail(rawId).subscribe({
@@ -114,18 +156,10 @@ export class BibleStudyReaderPage implements OnDestroy {
           return;
         }
 
-        this.loadingStage = 'pdf';
+        this.loadingStage = 'document';
         this.errorKind = 'none';
         this.errorMessage = '';
-
-        if (this.usesNativeExternalViewer) {
-          void this.openPdfExternally(true);
-          return;
-        }
-
-        this.pdfEmbedUrl = this.buildPdfEmbedUrl(pdfSourceUrl);
-        this.viewerState = 'loading';
-        this.startIframeLoadTimeout();
+        void this.loadPdfDocument(pdfSourceUrl, requestId);
       },
       error: (error: unknown) => {
         if (!this.isViewActive || requestId !== this.loadRequestId) {
@@ -152,32 +186,10 @@ export class BibleStudyReaderPage implements OnDestroy {
     this.loadManual();
   }
 
-  handleIframeLoad(): void {
-    if (!this.isViewActive || !this.pdfSourceUrl || this.viewerState === 'ready' || this.pendingReadyTransition) {
-      return;
-    }
-
-    this.clearIframeLoadTimeout();
-    this.pendingReadyTransition = true;
-
-    queueMicrotask(() => {
-      this.ngZone.run(() => {
-        this.pendingReadyTransition = false;
-        if (!this.isViewActive || !this.pdfSourceUrl || this.viewerState !== 'loading' || this.errorKind !== 'none') {
-          return;
-        }
-
-        this.viewerState = 'ready';
-      });
-    });
-  }
-
-  handleIframeError(): void {
-    if (!this.isViewActive || !this.pdfSourceUrl) {
-      return;
-    }
-
-    this.setErrorState('pdf-unavailable', this.localeService.translate('bibleStudy.readerUnavailableEmbedded'));
+  handleReaderScroll(event: CustomEvent<{ scrollTop: number }>): void {
+    this.lastKnownScrollTop = event.detail.scrollTop;
+    this.updateCurrentPageFromScroll(this.lastKnownScrollTop);
+    this.queueRenderPass();
   }
 
   async goBackToManual(): Promise<void> {
@@ -206,29 +218,14 @@ export class BibleStudyReaderPage implements OnDestroy {
     }
   }
 
-  async openPdfExternally(isAutomatic = false): Promise<void> {
+  async openPdfExternally(): Promise<void> {
     if (!this.pdfSourceUrl) {
       return;
     }
 
-    if (isAutomatic) {
-      if (this.nativeViewerOpenedForRequest) {
-        return;
-      }
-
-      this.nativeViewerOpenedForRequest = true;
-    }
-
     try {
       await this.externalBrowserService.openUrl(this.pdfSourceUrl);
-      if (isAutomatic) {
-        await this.exitNativeLaunchSurface();
-      }
     } catch {
-      if (isAutomatic) {
-        this.nativeViewerOpenedForRequest = false;
-        this.setErrorState('pdf-unavailable', this.localeService.translate('bibleStudy.readerUnavailableMessage'));
-      }
       await this.appToast.error(this.localeService.translate('bibleStudy.externalOpenError'));
     }
   }
@@ -262,15 +259,19 @@ export class BibleStudyReaderPage implements OnDestroy {
   }
 
   get isPdfUnavailableState(): boolean {
-    return this.isErrorState && this.errorKind === 'pdf-unavailable';
+    return this.isErrorState && ['pdf-unavailable', 'invalid-document', 'render', 'worker', 'network', 'cors'].includes(this.errorKind);
+  }
+
+  get showToolbarDownload(): boolean {
+    return !this.isPdfUnavailableState;
   }
 
   get showPdfSurface(): boolean {
-    return !this.usesNativeExternalViewer && !!this.manual && !!this.pdfEmbedUrl && !this.isPdfMissingState;
+    return !!this.manual && this.totalPages > 0 && !this.isPdfMissingState && !this.isErrorState;
   }
 
   get showReaderLoadingShell(): boolean {
-    return this.showPdfSurface && this.isLoading;
+    return this.showPdfSurface && this.isLoading && !this.firstPageRendered;
   }
 
   get readerLoadingTitle(): string {
@@ -278,9 +279,17 @@ export class BibleStudyReaderPage implements OnDestroy {
   }
 
   get readerLoadingMessage(): string {
-    return this.loadingStage === 'pdf'
-      ? this.localeService.translate('bibleStudy.loadingPdfMessage')
-      : this.localeService.translate('bibleStudy.requestingSignedLink');
+    switch (this.loadingStage) {
+      case 'document':
+        return this.localeService.translate('bibleStudy.loadingDocumentMessage');
+      case 'render':
+        return this.localeService.translate('bibleStudy.renderingPageMessage', {
+          current: this.loadingRenderPageNumber,
+          total: this.totalPages || 1,
+        });
+      default:
+        return this.localeService.translate('bibleStudy.requestingSignedLink');
+    }
   }
 
   get downloadDisabled(): boolean {
@@ -297,29 +306,16 @@ export class BibleStudyReaderPage implements OnDestroy {
       : this.localeService.translate('bibleStudy.downloadPdf');
   }
 
-  get usesNativeExternalViewer(): boolean {
-    return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+  get showDocumentControls(): boolean {
+    return this.showPdfSurface;
   }
 
-  private startIframeLoadTimeout(): void {
-    this.clearIframeLoadTimeout();
-    this.iframeLoadTimeoutId = setTimeout(() => {
-      this.iframeLoadTimeoutId = undefined;
-      if (!this.isViewActive || !this.pdfSourceUrl || this.viewerState !== 'loading') {
-        return;
-      }
-
-      this.setErrorState('pdf-unavailable', this.localeService.translate('bibleStudy.readerUnavailableEmbedded'));
-    }, BibleStudyReaderPage.IFRAME_LOAD_TIMEOUT_MS);
+  get canZoomOut(): boolean {
+    return this.showDocumentControls && this.zoomLevel > 0.71;
   }
 
-  private clearIframeLoadTimeout(): void {
-    if (!this.iframeLoadTimeoutId) {
-      return;
-    }
-
-    clearTimeout(this.iframeLoadTimeoutId);
-    this.iframeLoadTimeoutId = undefined;
+  get canZoomIn(): boolean {
+    return this.showDocumentControls && this.zoomLevel < 1.79;
   }
 
   private cancelManualRequest(): void {
@@ -328,12 +324,17 @@ export class BibleStudyReaderPage implements OnDestroy {
   }
 
   private resetPdfSurface(): void {
-    this.clearIframeLoadTimeout();
-    this.pendingReadyTransition = false;
-    this.nativeViewerOpenedForRequest = false;
+    this.renderGeneration += 1;
+    this.renderPassScheduled = false;
+    this.renderPassInFlight = false;
+    this.firstPageRendered = false;
+    this.lastKnownScrollTop = 0;
     this.pdfSourceUrl = null;
-    this.pdfEmbedUrl = null;
     this.downloadingPdf = false;
+    this.pages = [];
+    this.totalPages = 0;
+    this.currentPageNumber = 1;
+    void this.bibleStudyPdfRendererService.destroy();
   }
 
   private teardownActiveSession(): void {
@@ -350,25 +351,87 @@ export class BibleStudyReaderPage implements OnDestroy {
     return this.bibleStudyService.normalizeDocumentUrl(value);
   }
 
-  private buildPdfEmbedUrl(sourceUrl: string): SafeResourceUrl {
-    const separator = sourceUrl.includes('#') ? '&' : '#';
-    return this.sanitizer.bypassSecurityTrustResourceUrl(`${sourceUrl}${separator}view=FitH`);
-  }
-
   private setErrorState(kind: ReaderErrorKind, message = ''): void {
-    this.clearIframeLoadTimeout();
-    this.pendingReadyTransition = false;
+    this.bibleStudyPdfRendererService.cancelAllRenders();
     this.viewerState = 'error';
     this.errorKind = kind;
     this.errorMessage = message;
   }
 
-  private async exitNativeLaunchSurface(): Promise<void> {
-    if (!this.isViewActive) {
+  private async loadPdfDocument(pdfSourceUrl: string, requestId: number): Promise<void> {
+    try {
+      const { totalPages } = await this.bibleStudyPdfRendererService.loadDocument(pdfSourceUrl);
+      if (!this.isViewActive || requestId !== this.loadRequestId) {
+        return;
+      }
+
+      this.totalPages = totalPages;
+      this.pages = Array.from({ length: totalPages }, (_, index) => ({
+        pageNumber: index + 1,
+        status: 'pending',
+        width: 0,
+        height: 0,
+        renderedZoom: null,
+        hasRendered: false,
+      }));
+      this.loadingStage = 'render';
+      this.loadingRenderPageNumber = 1;
+      this.viewerState = 'loading';
+      this.errorKind = 'none';
+      this.errorMessage = '';
+      this.firstPageRendered = false;
+      this.changeDetectorRef.detectChanges();
+      this.queueRenderPass();
+    } catch (error) {
+      if (!this.isViewActive || requestId !== this.loadRequestId) {
+        return;
+      }
+
+      const kind = this.resolvePdfLoadErrorKind(error);
+      this.setErrorState(kind, this.resolvePdfLoadErrorMessage(error));
+    }
+  }
+
+  zoomOut(): void {
+    this.applyZoom(this.zoomLevel - 0.15);
+  }
+
+  zoomIn(): void {
+    this.applyZoom(this.zoomLevel + 0.15);
+  }
+
+  resetZoom(): void {
+    this.applyZoom(1);
+  }
+
+  retryPage(pageNumber: number): void {
+    const page = this.pages.find((item) => item.pageNumber === pageNumber);
+    if (!page) {
       return;
     }
 
-    await this.stackNavigation.backWithFallback('/tabs/bible-study');
+    page.status = 'pending';
+    this.queueRenderPass();
+  }
+
+  trackPage(_index: number, page: ReaderPageState): number {
+    return page.pageNumber;
+  }
+
+  private applyZoom(nextZoomLevel: number): void {
+    const normalizedZoomLevel = Math.min(1.75, Math.max(0.7, Number(nextZoomLevel.toFixed(2))));
+    if (Math.abs(normalizedZoomLevel - this.zoomLevel) < 0.001) {
+      return;
+    }
+
+    this.zoomLevel = normalizedZoomLevel;
+    this.renderGeneration += 1;
+    this.bibleStudyPdfRendererService.cancelAllRenders();
+    this.pages = this.pages.map((page) => ({
+      ...page,
+      status: 'pending',
+    }));
+    this.queueRenderPass();
   }
 
   private async loadFreshManual(id: number): Promise<BibleStudyManualDetail> {
@@ -480,4 +543,199 @@ export class BibleStudyReaderPage implements OnDestroy {
     return this.localeService.translate('bibleStudy.manualLoadFailure');
   }
 
+  private get loadingRenderPageNumber(): number {
+    return this.currentPageNumber || 1;
+  }
+
+  private set loadingRenderPageNumber(value: number) {
+    this.currentPageNumber = Math.max(1, value);
+  }
+
+  private queueRenderPass(): void {
+    if (!this.isViewActive || this.renderPassScheduled || !this.pages.length) {
+      return;
+    }
+
+    this.renderPassScheduled = true;
+    requestAnimationFrame(() => {
+      this.renderPassScheduled = false;
+      void this.runRenderPass();
+    });
+  }
+
+  private async runRenderPass(): Promise<void> {
+    if (!this.isViewActive || this.renderPassInFlight) {
+      return;
+    }
+
+    const targetPage = this.findNextPageToRender();
+    if (!targetPage) {
+      return;
+    }
+
+    const canvas = this.getCanvasElement(targetPage.pageNumber);
+    const frame = this.getPageFrameElement(targetPage.pageNumber);
+    if (!canvas || !frame) {
+      return;
+    }
+
+    const renderGeneration = this.renderGeneration;
+    const containerWidth = frame.clientWidth;
+    if (containerWidth <= 0) {
+      return;
+    }
+
+    targetPage.status = 'rendering';
+    this.loadingRenderPageNumber = targetPage.pageNumber;
+    this.renderPassInFlight = true;
+
+    try {
+      const result = await this.bibleStudyPdfRendererService.renderPage(
+        targetPage.pageNumber,
+        canvas,
+        containerWidth,
+        this.zoomLevel
+      );
+
+      if (!this.isViewActive || renderGeneration !== this.renderGeneration) {
+        return;
+      }
+
+      targetPage.status = 'ready';
+      targetPage.width = result.width;
+      targetPage.height = result.height;
+      targetPage.renderedZoom = this.zoomLevel;
+      targetPage.hasRendered = true;
+
+      if (!this.firstPageRendered && targetPage.pageNumber === 1) {
+        this.firstPageRendered = true;
+        this.viewerState = 'ready';
+      }
+
+      if (!this.firstPageRendered) {
+        this.viewerState = 'ready';
+        this.firstPageRendered = true;
+      }
+
+      this.changeDetectorRef.detectChanges();
+      this.updateCurrentPageFromScroll(this.lastKnownScrollTop);
+    } catch (error) {
+      if (this.bibleStudyPdfRendererService.isRenderCancellationError(error) || renderGeneration !== this.renderGeneration) {
+        return;
+      }
+
+      targetPage.status = 'error';
+      if (!this.firstPageRendered && targetPage.pageNumber === 1) {
+        this.setErrorState('render', this.resolvePdfLoadErrorMessage(error));
+      }
+    } finally {
+      this.renderPassInFlight = false;
+      if (this.isViewActive) {
+        this.queueRenderPass();
+      }
+    }
+  }
+
+  private findNextPageToRender(): ReaderPageState | undefined {
+    const candidates = new Set<number>();
+    const currentPage = this.currentPageNumber || 1;
+
+    [1, 2, currentPage - 1, currentPage, currentPage + 1, currentPage + 2].forEach((pageNumber) => {
+      if (pageNumber >= 1 && pageNumber <= this.totalPages) {
+        candidates.add(pageNumber);
+      }
+    });
+
+    const nextSequentialPending = this.pages.find((page) => page.status === 'pending');
+    if (nextSequentialPending) {
+      candidates.add(nextSequentialPending.pageNumber);
+    }
+
+    return Array.from(candidates)
+      .sort((left, right) => left - right)
+      .map((pageNumber) => this.pages.find((page) => page.pageNumber === pageNumber))
+      .find((page): page is ReaderPageState => !!page && page.status === 'pending');
+  }
+
+  private getCanvasElement(pageNumber: number): HTMLCanvasElement | null {
+    return (
+      this.pageCanvasRefs?.find(
+        (canvasRef) => Number(canvasRef.nativeElement.dataset['pageNumber']) === pageNumber
+      )?.nativeElement ?? null
+    );
+  }
+
+  private getPageFrameElement(pageNumber: number): HTMLElement | null {
+    return (
+      this.pageFrameRefs?.find(
+        (frameRef) => Number(frameRef.nativeElement.dataset['pageNumber']) === pageNumber
+      )?.nativeElement ?? null
+    );
+  }
+
+  private updateCurrentPageFromScroll(scrollTop: number): void {
+    if (!this.pageFrameRefs?.length) {
+      return;
+    }
+
+    const viewportProbe = scrollTop + 120;
+    let activePage = 1;
+
+    for (const frameRef of this.pageFrameRefs.toArray()) {
+      const pageNumber = Number(frameRef.nativeElement.dataset['pageNumber']) || 1;
+      if (frameRef.nativeElement.offsetTop <= viewportProbe) {
+        activePage = pageNumber;
+      } else {
+        break;
+      }
+    }
+
+    this.currentPageNumber = activePage;
+  }
+
+  private resolvePdfLoadErrorKind(error: unknown): ReaderErrorKind {
+    const name = String((error as { name?: string } | undefined)?.name ?? '').toLowerCase();
+    const message = String((error as { message?: string } | undefined)?.message ?? '').toLowerCase();
+
+    if (message.includes('worker')) {
+      return 'worker';
+    }
+
+    if (message.includes('cors')) {
+      return 'cors';
+    }
+
+    if (message.includes('network') || message.includes('failed to fetch')) {
+      return 'network';
+    }
+
+    if (name.includes('invalidpdf') || message.includes('invalid pdf') || message.includes('corrupt')) {
+      return 'invalid-document';
+    }
+
+    return 'pdf-unavailable';
+  }
+
+  private resolvePdfLoadErrorMessage(error: unknown): string {
+    const name = String((error as { name?: string } | undefined)?.name ?? '').toLowerCase();
+    const message = String((error as { message?: string } | undefined)?.message ?? '').toLowerCase();
+
+    if (name.includes('missingpdf') || message.includes('missingpdf')) {
+      return this.localeService.translate('bibleStudy.pdfMissingMessage');
+    }
+
+    if (name.includes('invalidpdf') || message.includes('invalid pdf') || message.includes('corrupt')) {
+      return this.localeService.translate('bibleStudy.invalidPdfReaderError');
+    }
+
+    if (message.includes('worker')) {
+      return this.localeService.translate('bibleStudy.readerWorkerError');
+    }
+
+    if (message.includes('cors') || message.includes('network') || message.includes('failed to fetch')) {
+      return this.localeService.translate('bibleStudy.readerLoadError');
+    }
+
+    return this.localeService.translate('bibleStudy.readerUnavailableMessage');
+  }
 }

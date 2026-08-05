@@ -9,7 +9,7 @@
         ></ion-back-button>
       </ion-buttons>
 
-      <ion-buttons slot="end">
+      <ion-buttons slot="end" *ngIf="showToolbarDownload">
         <ion-button
           fill="clear"
           class="reader-toolbar__action"
@@ -23,7 +23,12 @@
     </ion-toolbar>
   </ion-header>
 
-  <ion-content fullscreen class="reader-content cop-content--secondary" [scrollY]="false">
+  <ion-content
+    fullscreen
+    class="reader-content cop-content--secondary"
+    [scrollEvents]="true"
+    (ionScroll)="handleReaderScroll($event)"
+  >
     <div class="reader-shell">
       <div *ngIf="isLoading && !showPdfSurface" class="reader-state reader-state--loading" data-testid="reader-loading-state">
         <ion-spinner name="crescent"></ion-spinner>
@@ -86,7 +91,7 @@
         </ion-button>
         <ion-button
           expand="block"
-          fill="clear"
+          fill="outline"
           class="reader-state__button reader-state__button--link"
           [disabled]="openExternallyDisabled"
           (click)="openPdfExternally()"
@@ -98,9 +103,45 @@
       <section
         *ngIf="showPdfSurface"
         class="reader-viewer reader-viewer--immersive"
-        [class.reader-viewer--ready]="isReaderReady"
         data-testid="reader-viewer"
       >
+        <div class="reader-controls" *ngIf="showDocumentControls">
+          <div class="reader-controls__page" data-testid="pdf-page-indicator">
+            {{ 'bibleStudy.pageIndicatorCompact' | t: { current: currentPageNumber, total: totalPages } }}
+          </div>
+
+          <div class="reader-controls__zoom">
+            <ion-button
+              fill="clear"
+              class="reader-controls__zoom-button"
+              [disabled]="!canZoomOut"
+              [attr.aria-label]="'bibleStudy.zoomOut' | t"
+              (click)="zoomOut()"
+            >
+              <ion-icon slot="icon-only" name="remove-outline"></ion-icon>
+            </ion-button>
+
+            <ion-button
+              fill="clear"
+              class="reader-controls__zoom-button reader-controls__zoom-button--label"
+              [attr.aria-label]="'bibleStudy.fitWidth' | t"
+              (click)="resetZoom()"
+            >
+              {{ 'bibleStudy.fitWidth' | t }}
+            </ion-button>
+
+            <ion-button
+              fill="clear"
+              class="reader-controls__zoom-button"
+              [disabled]="!canZoomIn"
+              [attr.aria-label]="'bibleStudy.zoomIn' | t"
+              (click)="zoomIn()"
+            >
+              <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+
         <div *ngIf="showReaderLoadingShell" class="reader-viewer__loading" data-testid="pdf-loading-state">
           <ion-spinner name="crescent"></ion-spinner>
           <div class="reader-state__copy">
@@ -109,17 +150,38 @@
           </div>
         </div>
 
-        <iframe
-          *ngIf="pdfEmbedUrl"
-          class="reader-viewer__native-frame"
-          [class.reader-viewer__native-frame--ready]="isReaderReady"
-          [src]="pdfEmbedUrl"
-          [title]="'bibleStudy.pdfIframeTitle' | t"
-          loading="eager"
-          data-testid="pdf-native-frame"
-          (load)="handleIframeLoad()"
-          (error)="handleIframeError()"
-        ></iframe>
+        <div class="reader-document" data-testid="pdf-canvas-document">
+          <article
+            *ngFor="let pageModel of pages; trackBy: trackPage"
+            #pageFrame
+            class="reader-page"
+            [attr.data-page-number]="pageModel.pageNumber"
+            [class.reader-page--error]="pageModel.status === 'error'"
+          >
+            <canvas
+              #pageCanvas
+              class="reader-page__canvas"
+              [attr.data-page-number]="pageModel.pageNumber"
+              [attr.aria-label]="'bibleStudy.readerPageAria' | t: { current: pageModel.pageNumber, total: totalPages }"
+            ></canvas>
+
+            <div
+              *ngIf="pageModel.status === 'rendering' && !pageModel.hasRendered"
+              class="reader-page__placeholder"
+              data-testid="pdf-page-placeholder"
+            >
+              <ion-spinner name="crescent"></ion-spinner>
+              <p>{{ 'bibleStudy.renderingSinglePageMessage' | t: { current: pageModel.pageNumber, total: totalPages } }}</p>
+            </div>
+
+            <div *ngIf="pageModel.status === 'error'" class="reader-page__error" data-testid="pdf-page-error">
+              <p>{{ 'bibleStudy.pageRenderError' | t: { page: pageModel.pageNumber } }}</p>
+              <ion-button fill="clear" size="small" (click)="retryPage(pageModel.pageNumber)">
+                {{ 'bibleStudy.tryAgain' | t }}
+              </ion-button>
+            </div>
+          </article>
+        </div>
       </section>
     </div>
   </ion-content>
