@@ -5,6 +5,7 @@ import { IonicModule } from '@ionic/angular';
 import { Subject, combineLatest } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
+import { canUseMemberApp } from '../../core/auth/member-app-access';
 import { AuthService } from '../../core/services/auth.service';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
@@ -61,7 +62,7 @@ export class PrayerPage implements OnInit, OnDestroy {
     combineLatest([this.authService.isAuthenticated$, this.authService.currentUser$])
       .pipe(takeUntil(this.destroy$))
       .subscribe(([isAuthenticated, user]) => {
-        this.showMemberAction = !!isAuthenticated && this.normalizeRole(user?.role) === 'member';
+        this.showMemberAction = !!isAuthenticated && canUseMemberApp(user);
       });
   }
 
@@ -72,9 +73,5 @@ export class PrayerPage implements OnInit, OnDestroy {
 
   openAction(route: string): void {
     void this.router.navigateByUrl(route);
-  }
-
-  private normalizeRole(role: string | null | undefined): string | null {
-    return typeof role === 'string' && role.trim() ? role.trim().toLowerCase() : null;
   }
 }

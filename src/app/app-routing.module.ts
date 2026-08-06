@@ -1,12 +1,10 @@
 import { inject, NgModule } from '@angular/core';
 import { CanActivateFn, CanMatchFn, PreloadAllModules, Router, RouterModule, Routes } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
+import { canUseMemberApp, hasMemberRole } from './core/auth/member-app-access';
 import { AuthService } from './core/services/auth.service';
 import { FeatureArea, SentryTelemetryService } from './core/services/sentry-telemetry.service';
 import { AUTH_FALLBACK_RETURN_URL, sanitizeAuthReturnUrl } from './features/auth/auth-form.utils';
-
-const normalizeRole = (role: string | null | undefined): string | null =>
-  typeof role === 'string' && role.trim() ? role.trim().toLowerCase() : null;
 
 const redirectAuthenticatedAwayFromAuthPages: CanMatchFn = () => {
   const authService = inject(AuthService);
@@ -35,7 +33,7 @@ const redirectUnauthenticatedToLogin = (router: Router, returnUrl: string) =>
     },
   });
 
-const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
+const allowAuthenticatedMemberAppUsersOnly: CanMatchFn = (route) => {
   const authService = inject(AuthService);
   const router = inject(Router);
   const sentryTelemetry = inject(SentryTelemetryService);
@@ -70,9 +68,8 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
   }
 
   if (user?.role) {
-    const normalizedRole = normalizeRole(user.role);
-    const allowed = normalizedRole === 'member';
-    const deniedReason = allowed ? null : 'non-member-role';
+    const allowed = canUseMemberApp(user);
+    const deniedReason = allowed ? null : 'member-app-capability-false';
     if (deniedReason) {
       sentryTelemetry.addFeatureBreadcrumb(feature, 'Route guard denied member access', {
         route: deniedRoute,
@@ -85,7 +82,8 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
       isAuthenticated,
       memberProfileLoaded: true,
       memberProfileId: user.id ?? null,
-      role: normalizedRole,
+      role: user.role ?? null,
+      canUseMemberApp: user.can_use_member_app ?? null,
       deniedReason,
       allowed,
     });
@@ -96,8 +94,7 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
 
   return authService.getCurrentUser().pipe(
     map((resolvedProfile) => {
-      const normalizedRole = normalizeRole(resolvedProfile?.role);
-      const allowed = normalizedRole === 'member';
+      const allowed = canUseMemberApp(resolvedProfile);
       if (allowed) {
         sentryTelemetry.addFeatureBreadcrumb(feature, 'Route guard allowed member access', {
           route: deniedRoute,
@@ -108,14 +105,15 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
           isAuthenticated: true,
           memberProfileLoaded: true,
           memberProfileId: resolvedProfile?.id ?? null,
-          role: normalizedRole,
+          role: resolvedProfile?.role ?? null,
+          canUseMemberApp: resolvedProfile?.can_use_member_app ?? null,
           deniedReason: null,
           allowed: true,
         });
         return true;
       }
 
-      const deniedReason = !resolvedProfile ? 'missing-profile' : 'non-member-role';
+      const deniedReason = !resolvedProfile ? 'missing-profile' : 'member-app-capability-false';
       sentryTelemetry.addFeatureBreadcrumb(feature, 'Route guard denied member access', {
         route: deniedRoute,
         reason: deniedReason,
@@ -126,7 +124,8 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
         isAuthenticated: true,
         memberProfileLoaded: !!resolvedProfile,
         memberProfileId: resolvedProfile?.id ?? null,
-        role: normalizedRole,
+        role: resolvedProfile?.role ?? null,
+        canUseMemberApp: resolvedProfile?.can_use_member_app ?? null,
         deniedReason,
         allowed: false,
       });
@@ -157,6 +156,32 @@ const allowAuthenticatedMembersOnly: CanMatchFn = (route) => {
           : router.parseUrl(unauthenticatedRedirect)
       );
     })
+  );
+};
+
+const allowAuthenticatedMemberRoleOnly: CanMatchFn = (route) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+  const sentryTelemetry = inject(SentryTelemetryService);
+  const user = authService.currentUserSnapshot;
+  const isAuthenticated = authService.isAuthenticatedSnapshot || !!authService.accessTokenSnapshot;
+  const routePath = `/${route.path ?? 'profile/account-settings/delete-account'}`;
+
+  if (!isAuthenticated) {
+    sentryTelemetry.addFeatureBreadcrumb('profile', 'Route guard denied member-only access', {
+      route: routePath,
+      reason: 'unauthenticated',
+    }, 'warning');
+    return redirectUnauthenticatedToLogin(router, routePath);
+  }
+
+  if (user?.role) {
+    return hasMemberRole(user) ? true : router.parseUrl('/tabs/profile');
+  }
+
+  return authService.getCurrentUser().pipe(
+    map((resolvedProfile) => (hasMemberRole(resolvedProfile) ? true : router.parseUrl('/tabs/profile'))),
+    catchError(() => of(router.parseUrl('/tabs/profile')))
   );
 };
 
@@ -254,24 +279,26 @@ export const routes: Routes = [
   },
   {
     path: 'profile/account-settings/edit-profile',
-    canMatch: [allowAuthenticatedMembersOnly],
+    canMatch: [allowAuthenticatedMemberAppUsersOnly],
     data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/tabs/profile' },
     loadComponent: () => import('./features/auth/edit-profile.page').then(m => m.EditProfilePage)
   },
   {
     path: 'profile/account-settings/delete-account',
-    canMatch: [allowAuthenticatedMembersOnly],
+    canMatch: [allowAuthenticatedMemberRoleOnly],
     data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/tabs/profile' },
     loadComponent: () => import('./features/auth/delete-account.page').then(m => m.DeleteAccountPage)
   },
   {
     path: 'profile/account-settings',
-    canMatch: [allowAuthenticatedMembersOnly],
+    canMatch: [allowAuthenticatedMemberAppUsersOnly],
     data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/tabs/profile' },
     loadComponent: () => import('./features/auth/account-settings.page').then(m => m.AccountSettingsPage)
   },
   {
     path: 'profile/recurring-donations',
+    canMatch: [allowAuthenticatedMemberAppUsersOnly],
+    data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/tabs/profile' },
     loadComponent: () => import('./features/donations/recurring-donations.page').then(m => m.RecurringDonationsPage)
   },
   {
@@ -281,6 +308,8 @@ export const routes: Routes = [
   },
   {
     path: 'my-donations',
+    canMatch: [allowAuthenticatedMemberAppUsersOnly],
+    data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/tabs/profile' },
     loadComponent: () => import('./features/donations/my-donations.page').then(m => m.MyDonationsPage)
   },
   {
@@ -295,6 +324,8 @@ export const routes: Routes = [
   },
   {
     path: 'saved-churches',
+    canMatch: [allowAuthenticatedMemberAppUsersOnly],
+    data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/tabs/profile' },
     loadComponent: () => import('./features/branches/saved-churches.page').then(m => m.SavedChurchesPage)
   },
   {
@@ -345,7 +376,7 @@ export const routes: Routes = [
   },
   {
     path: 'prayer/my-requests',
-    canMatch: [allowAuthenticatedMembersOnly],
+    canMatch: [allowAuthenticatedMemberAppUsersOnly],
     data: { memberFeature: 'app', unauthenticatedRedirect: '/login', forbiddenRedirect: '/prayer' },
     loadComponent: () => import('./features/prayer/prayer-my-requests.page').then(m => m.PrayerMyRequestsPage)
   },

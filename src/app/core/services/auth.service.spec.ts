@@ -47,6 +47,7 @@ describe('AuthService', () => {
     first_name: 'Member',
     last_name: 'User',
     role: 'member',
+    can_use_member_app: true,
     date_joined: '2026-07-01T00:00:00Z',
     donation_summary: {
       total_paid_amount: '0.00',
@@ -258,6 +259,44 @@ describe('AuthService', () => {
     );
     expect(localeService.applyAuthenticatedPreference).toHaveBeenCalledWith('en');
   });
+
+  it('fails closed when current user state lacks member-app capability', () => {
+    service.setCurrentUser({
+      ...profile,
+      can_use_member_app: false,
+    });
+
+    expect(service.currentUserSnapshot).toBeNull();
+    expect(service.isAuthenticatedSnapshot).toBeFalse();
+    expect(storage.removeCurrentUser).toHaveBeenCalled();
+    expect(storage.removeAccessToken).toHaveBeenCalled();
+    expect(localeService.handleLogout).toHaveBeenCalled();
+  });
+
+  it('rejects member profile responses that do not expose member-app capability', fakeAsync(() => {
+    (service as unknown as { accessToken: string | null }).accessToken = 'active-token';
+
+    let receivedError: HttpErrorResponse | null = null;
+    service.getCurrentUser().subscribe({
+      error: (error) => {
+        receivedError = error;
+      },
+    });
+    flushMicrotasks();
+
+    const request = httpMock.expectOne(api('members/me'));
+    request.flush({
+      ...profile,
+      can_use_member_app: false,
+    });
+
+    flushMicrotasks();
+
+    expect(receivedError).toEqual(jasmine.any(HttpErrorResponse));
+    expect((receivedError as unknown as HttpErrorResponse).status).toBe(403);
+    expect(service.currentUserSnapshot).toBeNull();
+    expect(service.accessTokenSnapshot).toBeNull();
+  }));
 
   it('sends canonical language in the member profile update payload', fakeAsync(() => {
     (service as unknown as { accessToken: string | null }).accessToken = 'active-token';

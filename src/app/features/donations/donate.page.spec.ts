@@ -36,7 +36,12 @@ describe('DonatePage', () => {
   let authServiceMock: {
     isAuthenticatedSnapshot: boolean;
     accessTokenSnapshot: string | null;
-    currentUserSnapshot: { recent_donations?: Array<{ church: { id: number; name: string } | null }> } | null;
+    currentUserSnapshot: {
+      id?: number;
+      role?: string;
+      can_use_member_app?: boolean;
+      recent_donations?: Array<{ church: { id: number; name: string } | null }>;
+    } | null;
     isAuthenticated$: unknown;
     currentUser$: unknown;
     getCurrentUser: jasmine.Spy;
@@ -340,6 +345,12 @@ describe('DonatePage', () => {
   });
 
   it('keeps the recurring native PaymentSheet request unchanged when locale switches', async () => {
+    authServiceMock.isAuthenticatedSnapshot = true;
+    authServiceMock.currentUserSnapshot = {
+      id: 8,
+      role: 'member',
+      can_use_member_app: true,
+    };
     localeService.getCurrentLocale.and.returnValue('fr');
     donationsService.createRecurringDonation.and.returnValue(
       of({
@@ -368,6 +379,32 @@ describe('DonatePage', () => {
         locale: jasmine.anything(),
       })
     );
+  });
+
+  it('allows eligible admin-role users to start recurring offerings', async () => {
+    authServiceMock.isAuthenticatedSnapshot = true;
+    authServiceMock.currentUserSnapshot = {
+      id: 9,
+      role: 'branch_admin',
+      can_use_member_app: true,
+    };
+    donationsService.createRecurringDonation.and.returnValue(
+      of({
+        recurring_donation_id: 92,
+        subscription_id: 'sub_admin_123',
+        client_secret: 'pi_secret_recurring_admin_123',
+        status: 'incomplete',
+      })
+    );
+    (page as unknown as { selectedFrequencyState: 'one_time' | 'monthly' }).selectedFrequencyState = 'monthly';
+    page['memberProfileLoaded'] = true;
+    (page as unknown as { resolvedMemberAppCapability: boolean }).resolvedMemberAppCapability = true;
+
+    page.submitDonation();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(donationsService.createRecurringDonation).toHaveBeenCalled();
   });
 
   it('stores and forwards the transaction reference for successful native payments', async () => {

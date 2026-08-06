@@ -14,6 +14,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AlertController, IonContent, IonInput, IonicModule } from '@ionic/angular';
 import { Subject, Subscription, firstValueFrom } from 'rxjs';
 import { filter, finalize, take, takeUntil, timeout } from 'rxjs/operators';
+import { canUseMemberApp } from '../../core/auth/member-app-access';
 import { LocaleService } from '../../core/localization/locale.service';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { normalizePreferredLanguage } from '../../core/utils/language-preference';
@@ -387,7 +388,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   private emailWasAuthPrefilled = false;
   private lastAuthPrefilledEmail = '';
   memberProfileLoaded = !!this.authService.currentUserSnapshot;
-  private resolvedUserRole: string | null = this.normalizeRole(this.authService.currentUserSnapshot?.role);
+  private resolvedMemberAppCapability = canUseMemberApp(this.authService.currentUserSnapshot);
   private readonly destroy$ = new Subject<void>();
   private lastTrackedDonationFormChurchId: number | null = null;
   private shouldRestoreChurchSelectorFocus = false;
@@ -447,13 +448,13 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
     this.authService.isAuthenticated$
       .pipe(takeUntil(this.destroy$))
-      .subscribe((isAuthenticated) => {
-        if (!isAuthenticated) {
-          this.memberProfileLoaded = false;
-          this.resolvedUserRole = null;
-          this.savedBranchPrefillAttempted = false;
-          this.savedBranchPrefillInFlight = false;
-          this.savedBranchesForSelector = [];
+        .subscribe((isAuthenticated) => {
+          if (!isAuthenticated) {
+            this.memberProfileLoaded = false;
+            this.resolvedMemberAppCapability = false;
+            this.savedBranchPrefillAttempted = false;
+            this.savedBranchPrefillInFlight = false;
+            this.savedBranchesForSelector = [];
           this.branchPrefillLoading = false;
           this.ensureRecurringFrequencyAllowed();
           this.clearAuthPrefilledDonorEmail();
@@ -466,13 +467,13 @@ export class DonatePage implements AfterViewInit, OnDestroy {
         this.tryPrefillSavedBranch();
       });
 
-    this.authService.currentUser$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((user) => {
-        this.memberProfileLoaded = !!user;
-        this.resolvedUserRole = this.normalizeRole(user?.role);
-        this.ensureRecurringFrequencyAllowed();
-      });
+      this.authService.currentUser$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((user) => {
+          this.memberProfileLoaded = !!user;
+          this.resolvedMemberAppCapability = canUseMemberApp(user);
+          this.ensureRecurringFrequencyAllowed();
+        });
 
     this.ensureMemberProfileResolved();
     this.prefillDonorEmailOnce();
@@ -880,7 +881,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   }
 
   get canUseRecurring(): boolean {
-    return this.authService.isAuthenticatedSnapshot && this.resolvedUserRole === 'member';
+    return this.authService.isAuthenticatedSnapshot && this.resolvedMemberAppCapability;
   }
 
   get showMonthlyOption(): boolean {
@@ -1343,23 +1344,19 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     await this.appToast.error(message);
   }
 
-  private normalizeRole(role: string | null | undefined): string | null {
-    return typeof role === 'string' && role.trim() ? role.trim().toLowerCase() : null;
-  }
-
   private ensureMemberProfileResolved(): void {
     if (!this.authService.isAuthenticatedSnapshot) {
       return;
     }
 
-    if (this.memberProfileLoaded && this.resolvedUserRole) {
+    if (this.memberProfileLoaded && this.resolvedMemberAppCapability) {
       return;
     }
 
     this.authService.getCurrentUser().pipe(take(1), takeUntil(this.destroy$)).subscribe({
       next: (user) => {
         this.memberProfileLoaded = !!user;
-        this.resolvedUserRole = this.normalizeRole(user?.role);
+        this.resolvedMemberAppCapability = canUseMemberApp(user);
         this.ensureRecurringFrequencyAllowed();
       },
       error: () => undefined,

@@ -4,6 +4,7 @@ import { Inject, Injectable, Injector } from '@angular/core';
 import { BehaviorSubject, EMPTY, Observable, firstValueFrom, from, of, throwError } from 'rxjs';
 import { catchError, finalize, map, switchMap, tap, timeout } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
+import { canUseMemberApp } from '../auth/member-app-access';
 
 import {
   AuthTokenResponse,
@@ -73,6 +74,10 @@ export class AuthService {
   setCurrentUser(user: MemberProfile | null): void {
     if (user) {
       const normalizedProfile = this.normalizeMemberProfile(user);
+      if (!canUseMemberApp(normalizedProfile)) {
+        this.invalidateMemberAppSession();
+        return;
+      }
       this.currentUserSubject.next(normalizedProfile);
       this.isAuthenticatedSubject.next(true);
       void this.authStorage.setCurrentUser(normalizedProfile);
@@ -126,9 +131,9 @@ export class AuthService {
           })
           .pipe(
             timeout(AuthService.authRequestTimeoutMs),
-            tap((response) => this.storeAccessToken(this.extractAccessToken(response))),
-            map((response) => this.toMemberProfileFromAuthResponse(response)),
-            tap((profile) => this.setAuthenticatedProfile(profile)),
+            map((response) => this.extractAccessToken(response)),
+            tap((token) => this.storeAccessToken(token)),
+            switchMap((token) => this.fetchCurrentUser(token)),
             tap((profile) => {
               this.sentryTelemetry.addFeatureBreadcrumb('auth', 'Register succeeded', {
                 member_id: profile.id,
@@ -264,6 +269,15 @@ export class AuthService {
     void this.localeService.handleLogout();
   }
 
+  private invalidateMemberAppSession(): void {
+    this.currentUserSubject.next(null);
+    this.accessToken = null;
+    this.isAuthenticatedSubject.next(false);
+    void this.authStorage.removeCurrentUser();
+    void this.authStorage.removeAccessToken();
+    void this.localeService.handleLogout();
+  }
+
   private storeAccessToken(token: string): void {
     this.accessToken = token;
     this.isAuthenticatedSubject.next(true);
@@ -365,7 +379,19 @@ export class AuthService {
         withCredentials: true,
       })
       .pipe(
-        map((profile) => this.normalizeMemberProfile(profile)),
+        map((profile) => {
+          const normalizedProfile = this.normalizeMemberProfile(profile);
+          if (!canUseMemberApp(normalizedProfile)) {
+            this.invalidateMemberAppSession();
+            throw new HttpErrorResponse({
+              status: 403,
+              statusText: 'Forbidden',
+              error: { detail: 'This account cannot use the member app.' },
+            });
+          }
+
+          return normalizedProfile;
+        }),
         tap((profile) => this.setAuthenticatedProfile(profile))
       );
   }
@@ -562,22 +588,6 @@ export class AuthService {
     return error instanceof HttpErrorResponse && error.status === 401;
   }
 
-  private toMemberProfileFromAuthResponse(response: AuthTokenResponse): MemberProfile {
-    return this.normalizeMemberProfile({
-      ...response.user,
-      phone: response.user.phone_number ?? response.user.phone ?? '',
-      phone_number: response.user.phone_number ?? response.user.phone ?? '',
-      date_joined: '',
-      donation_summary: {
-        total_paid_amount: '0.00',
-        total_paid_count: 0,
-        currency: 'eur',
-        last_donation_at: null,
-      },
-      recent_donations: [],
-    });
-  }
-
   private normalizeMemberProfile(profile: MemberProfile): MemberProfile {
     const id = typeof profile.id === 'number' && Number.isInteger(profile.id) && profile.id > 0 ? profile.id : 0;
     const firstName = this.normalizeText(profile.first_name);
@@ -596,6 +606,7 @@ export class AuthService {
       last_name: lastName,
       full_name: fullName || undefined,
       role,
+      can_use_member_app: profile.can_use_member_app === true,
       phone: phoneNumber || undefined,
       phone_number: phoneNumber || undefined,
       language,

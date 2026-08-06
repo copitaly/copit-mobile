@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 
+import { canUseMemberApp, hasMemberRole, normalizeUserRole } from '../../core/auth/member-app-access';
 import { LocaleService } from '../../core/localization/locale.service';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { AuthService } from '../../core/services/auth.service';
@@ -18,7 +19,8 @@ type ProfileAction = {
   subtitleKey: string;
   icon: string;
   route?: string;
-  membersOnly?: boolean;
+  requiresMemberAppCapability?: boolean;
+  requiresExactMemberRole?: boolean;
   destructive?: boolean;
   action?: () => void;
   testId: string;
@@ -252,7 +254,7 @@ export class ProfilePage implements OnInit, OnDestroy {
           subtitleKey: 'profile.myPrayerRequestsSubtitle',
           icon: 'chatbubbles-outline',
           route: '/prayer/my-requests',
-          membersOnly: true,
+          requiresMemberAppCapability: true,
           testId: 'my-prayer-requests',
         },
       ],
@@ -296,6 +298,7 @@ export class ProfilePage implements OnInit, OnDestroy {
           subtitleKey: 'profile.deleteAccountSubtitle',
           icon: 'trash-outline',
           route: '/profile/account-settings/delete-account',
+          requiresExactMemberRole: true,
           destructive: true,
           testId: 'delete-account',
         },
@@ -343,7 +346,7 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
   get membershipLabel(): string {
-    if (this.resolvedRole === 'member') {
+    if (this.hasExactMemberRole) {
       return this.localeService.translate('profile.memberAccount');
     }
 
@@ -378,7 +381,17 @@ export class ProfilePage implements OnInit, OnDestroy {
     return this.actionSections
       .map((section) => ({
         ...section,
-        actions: section.actions.filter((action) => !action.membersOnly || this.resolvedRole === 'member'),
+        actions: section.actions.filter((action) => {
+          if (action.requiresExactMemberRole && !this.hasExactMemberRole) {
+            return false;
+          }
+
+          if (action.requiresMemberAppCapability && !this.hasMemberAppCapability) {
+            return false;
+          }
+
+          return true;
+        }),
       }))
       .filter((section) => section.actions.length > 0);
   }
@@ -388,7 +401,15 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
   get resolvedRole(): string | null {
-    return this.normalizeRole(this.profile?.role);
+    return normalizeUserRole(this.profile?.role);
+  }
+
+  get hasMemberAppCapability(): boolean {
+    return canUseMemberApp(this.profile);
+  }
+
+  get hasExactMemberRole(): boolean {
+    return hasMemberRole(this.profile);
   }
 
   ngOnInit(): void {
@@ -509,10 +530,6 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   goToEditProfile(): void {
     void this.navigateByUrl('/profile/account-settings/edit-profile');
-  }
-
-  private normalizeRole(role: string | null | undefined): string | null {
-    return typeof role === 'string' && role.trim() ? role.trim().toLowerCase() : null;
   }
 
   private async navigateByUrl(url: string): Promise<void> {

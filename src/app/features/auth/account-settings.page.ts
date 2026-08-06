@@ -4,6 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
+import { canUseMemberApp, hasMemberRole } from '../../core/auth/member-app-access';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { AuthService } from '../../core/services/auth.service';
 import { MemberProfile } from '../../core/models/user.model';
@@ -37,7 +38,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
               </div>
             </div>
 
-            <section *ngIf="!loading && profile" class="settings-card cop-card cop-card--soft">
+            <section *ngIf="!loading && profile && canDeleteAccount; else deleteUnavailableState" class="settings-card cop-card cop-card--soft">
               <p class="settings-card__eyebrow">{{ 'profile.privacyLabel' | t }}</p>
               <div class="settings-card__copy">
                 <h2>{{ 'profile.deleteAccountTitle' | t }}</h2>
@@ -55,6 +56,16 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
                 <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
               </button>
             </section>
+
+            <ng-template #deleteUnavailableState>
+              <section *ngIf="!loading && profile" class="settings-card cop-card cop-card--soft">
+                <p class="settings-card__eyebrow">{{ 'profile.privacyLabel' | t }}</p>
+                <div class="settings-card__copy">
+                  <h2>{{ 'profile.deleteUnavailableTitle' | t }}</h2>
+                  <p>{{ 'profile.deleteUnavailableBody' | t }}</p>
+                </div>
+              </section>
+            </ng-template>
           </div>
         </div>
       </ion-content>
@@ -246,6 +257,10 @@ export class AccountSettingsPage implements OnInit {
     private readonly sentryTelemetry: SentryTelemetryService
   ) {}
 
+  get canDeleteAccount(): boolean {
+    return hasMemberRole(this.profile);
+  }
+
   ngOnInit(): void {
     const wasAuthenticated =
       this.authService.isAuthenticatedSnapshot || !!this.authService.accessTokenSnapshot;
@@ -253,14 +268,14 @@ export class AccountSettingsPage implements OnInit {
     this.authService.getCurrentUser().subscribe({
       next: (profile) => {
         const memberProfileLoaded = !!profile?.id;
-        const allowed = memberProfileLoaded;
+        const allowed = canUseMemberApp(profile);
 
         if (!allowed) {
-          const redirectReason = wasAuthenticated ? 'missing-member-profile' : 'unauthenticated';
+          const redirectReason = wasAuthenticated ? 'member-app-capability-denied' : 'unauthenticated';
           this.sentryTelemetry.addFeatureBreadcrumb('profile', 'Account settings page redirected', {
             reason: redirectReason,
           }, 'warning');
-          void this.navigateByUrl(wasAuthenticated ? '/tabs/more' : '/login', { replaceUrl: true });
+          void this.navigateByUrl(wasAuthenticated ? '/tabs/profile' : '/login', { replaceUrl: true });
           return;
         }
 
@@ -273,7 +288,7 @@ export class AccountSettingsPage implements OnInit {
           httpError?.status === 401
             ? 'unauthenticated'
             : httpError?.status === 403 || httpError?.status === 404
-              ? 'member-profile-denied'
+              ? 'member-app-capability-denied'
               : 'profile-load-error';
         this.sentryTelemetry.addFeatureBreadcrumb('profile', 'Account settings page redirected', {
           reason: redirectReason,
@@ -281,7 +296,7 @@ export class AccountSettingsPage implements OnInit {
         }, redirectReason === 'profile-load-error' ? 'error' : 'warning');
 
         void this.navigateByUrl(
-          redirectReason === 'unauthenticated' ? '/login' : '/tabs/more',
+          redirectReason === 'unauthenticated' ? '/login' : '/tabs/profile',
           { replaceUrl: true }
         );
       },

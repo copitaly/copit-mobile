@@ -7,6 +7,7 @@ import { IonicModule } from '@ionic/angular';
 import { Subject, combineLatest } from 'rxjs';
 import { takeUntil, timeout } from 'rxjs/operators';
 
+import { canUseMemberApp } from '../../core/auth/member-app-access';
 import { LocaleService } from '../../core/localization/locale.service';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
 import {
@@ -140,7 +141,7 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
       .subscribe(([isAuthenticated, user]) => {
         this.isAuthenticatedUser = !!isAuthenticated;
         this.currentUserRole = user?.role ?? null;
-        if (this.isAuthenticatedMember && this.isNamedSubmission && !this.form.controls.submitter_name.value) {
+        if (this.isAuthenticatedMemberAppUser && this.isNamedSubmission && !this.form.controls.submitter_name.value) {
           this.form.controls.submitter_name.setValue(this.memberDisplayName);
         }
       });
@@ -160,8 +161,8 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  get isAuthenticatedMember(): boolean {
-    return this.isAuthenticatedUser && this.currentUserRole === 'member';
+  get isAuthenticatedMemberAppUser(): boolean {
+    return this.isAuthenticatedUser && canUseMemberApp(this.authService.currentUserSnapshot);
   }
 
   get isNamedSubmission(): boolean {
@@ -577,7 +578,7 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
 
     if (this.isNamedSubmission) {
       submitterControl.addValidators([requiredTrimmedValidator()]);
-      if (this.isAuthenticatedMember && !submitterControl.value && this.memberDisplayName) {
+      if (this.isAuthenticatedMemberAppUser && !submitterControl.value && this.memberDisplayName) {
         submitterControl.setValue(this.memberDisplayName, { emitEvent: false });
       }
     }

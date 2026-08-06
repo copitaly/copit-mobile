@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonicModule, NavController } from '@ionic/angular';
 
+import { canUseMemberApp, hasMemberRole } from '../../core/auth/member-app-access';
 import { LocaleService } from '../../core/localization/locale.service';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { AppToastService } from '../../core/services/app-toast.service';
@@ -330,9 +331,8 @@ export class DeleteAccountPage implements OnInit {
       next: (profile) => {
         const memberProfileLoaded = !!profile?.id;
 
-        if (!memberProfileLoaded) {
-          const redirectReason = wasAuthenticated ? 'missing-member-profile' : 'unauthenticated';
-          void this.navigateByUrl(wasAuthenticated ? '/tabs/more' : '/login', { replaceUrl: true });
+        if (!memberProfileLoaded || !canUseMemberApp(profile) || !hasMemberRole(profile)) {
+          void this.navigateByUrl(wasAuthenticated ? '/tabs/profile' : '/login', { replaceUrl: true });
           return;
         }
 
@@ -345,10 +345,10 @@ export class DeleteAccountPage implements OnInit {
           httpError?.status === 401
             ? 'unauthenticated'
             : httpError?.status === 403 || httpError?.status === 404
-              ? 'member-profile-denied'
+              ? 'member-role-required'
               : 'profile-load-error';
         void this.navigateByUrl(
-          redirectReason === 'unauthenticated' ? '/login' : '/tabs/more',
+          redirectReason === 'unauthenticated' ? '/login' : '/tabs/profile',
           { replaceUrl: true }
         );
       },

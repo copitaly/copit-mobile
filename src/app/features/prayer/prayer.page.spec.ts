@@ -15,11 +15,11 @@ describe('PrayerPage', () => {
   let router: jasmine.SpyObj<{ navigateByUrl: (url: string) => Promise<boolean> }>;
   let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
   let authState$: BehaviorSubject<boolean>;
-  let currentUser$: BehaviorSubject<{ role: string } | null>;
+  let currentUser$: BehaviorSubject<{ id: number; role: string; can_use_member_app?: boolean } | null>;
 
   beforeEach(() => {
     authState$ = new BehaviorSubject<boolean>(false);
-    currentUser$ = new BehaviorSubject<{ role: string } | null>(null);
+    currentUser$ = new BehaviorSubject<{ id: number; role: string; can_use_member_app?: boolean } | null>(null);
     router = jasmine.createSpyObj('Router', ['navigateByUrl']);
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
     stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
@@ -67,7 +67,7 @@ describe('PrayerPage', () => {
   it('shows my prayer requests for authenticated members', () => {
     page.ngOnInit();
     authState$.next(true);
-    currentUser$.next({ role: 'member' });
+    currentUser$.next({ id: 1, role: 'member', can_use_member_app: true });
 
     expect(page.showMemberAction).toBeTrue();
   });
@@ -75,15 +75,23 @@ describe('PrayerPage', () => {
   it('shows my prayer requests when the member role casing is inconsistent', () => {
     page.ngOnInit();
     authState$.next(true);
-    currentUser$.next({ role: ' Member ' });
+    currentUser$.next({ id: 2, role: ' Member ', can_use_member_app: true });
 
     expect(page.showMemberAction).toBeTrue();
   });
 
-  it('does not show my prayer requests for authenticated non-members', () => {
+  it('shows my prayer requests for eligible admin-role users', () => {
     page.ngOnInit();
     authState$.next(true);
-    currentUser$.next({ role: 'platform_admin' });
+    currentUser$.next({ id: 3, role: 'platform_admin', can_use_member_app: true });
+
+    expect(page.showMemberAction).toBeTrue();
+  });
+
+  it('does not show my prayer requests for authenticated users without member-app capability', () => {
+    page.ngOnInit();
+    authState$.next(true);
+    currentUser$.next({ id: 4, role: 'platform_admin', can_use_member_app: false });
 
     expect(page.showMemberAction).toBeFalse();
   });
@@ -116,7 +124,7 @@ describe('PrayerPage', () => {
 
   it('renders my prayer requests for authenticated members', () => {
     authState$.next(true);
-    currentUser$.next({ role: 'member' });
+    currentUser$.next({ id: 1, role: 'member', can_use_member_app: true });
 
     const element = createComponent();
 

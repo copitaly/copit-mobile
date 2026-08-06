@@ -38,6 +38,18 @@ describe('PrayerSubmitPage', () => {
     created_at: '2026-07-21T15:00:00Z',
   };
 
+  const memberAppUser = (overrides: Partial<{ id: number; role: string; can_use_member_app: boolean }> = {}) => ({
+    id: overrides.id ?? 1,
+    role: overrides.role ?? 'member',
+    can_use_member_app: overrides.can_use_member_app ?? true,
+  });
+
+  const memberProfile = (overrides: Partial<{ first_name: string; last_name: string; full_name: string }> = {}) => ({
+    first_name: overrides.first_name ?? 'Prayer',
+    last_name: overrides.last_name ?? 'Member',
+    full_name: overrides.full_name ?? 'Prayer Member',
+  });
+
   function createPage(): PrayerSubmitPage {
     return TestBed.runInInjectionContext(() => new PrayerSubmitPage());
   }
@@ -552,14 +564,10 @@ describe('PrayerSubmitPage', () => {
     expect(prayerService.submitPrayerRequest.calls.mostRecent().args[0].submitter_name).toBe('Kwame');
   });
 
-  it('authenticated member selecting Share my name pre-fills the profile full name', () => {
-    authServiceValue.currentUserSnapshot = {
-      first_name: 'Prayer',
-      last_name: 'Member',
-      full_name: 'Prayer Member',
-    };
+  it('authenticated member-app user selecting Share my name pre-fills the profile full name', () => {
+    authServiceValue.currentUserSnapshot = memberProfile();
     authState$.next(true);
-    currentUser$.next({ role: 'member' });
+    currentUser$.next(memberAppUser({ role: 'branch_admin' }));
 
     page.form.patchValue({ is_anonymous_publicly: false });
     page['configureSubmitterValidators']();
@@ -568,13 +576,9 @@ describe('PrayerSubmitPage', () => {
   });
 
   it('combines first_name and last_name when full_name is unavailable', () => {
-    authServiceValue.currentUserSnapshot = {
-      first_name: 'Prayer',
-      last_name: 'Member',
-      full_name: '   ',
-    };
+    authServiceValue.currentUserSnapshot = memberProfile({ full_name: '   ' });
     authState$.next(true);
-    currentUser$.next({ role: 'member' });
+    currentUser$.next(memberAppUser());
 
     page.form.patchValue({ is_anonymous_publicly: false });
     page['configureSubmitterValidators']();
@@ -582,14 +586,10 @@ describe('PrayerSubmitPage', () => {
     expect(page.form.controls.submitter_name.value).toBe('Prayer Member');
   });
 
-  it('member named submission pre-fill stays editable and submits the edited name', () => {
-    authServiceValue.currentUserSnapshot = {
-      first_name: 'Prayer',
-      last_name: 'Member',
-      full_name: 'Prayer Member',
-    };
+  it('member-app named submission pre-fill stays editable and submits the edited name', () => {
+    authServiceValue.currentUserSnapshot = memberProfile();
     authState$.next(true);
-    currentUser$.next({ role: 'member' });
+    currentUser$.next(memberAppUser({ role: 'platform_admin' }));
 
     page.form.patchValue({
       is_anonymous_publicly: false,
@@ -608,13 +608,9 @@ describe('PrayerSubmitPage', () => {
   });
 
   it('editing the prayer display name does not call any profile-update API', () => {
-    authServiceValue.currentUserSnapshot = {
-      first_name: 'Prayer',
-      last_name: 'Member',
-      full_name: 'Prayer Member',
-    };
+    authServiceValue.currentUserSnapshot = memberProfile();
     authState$.next(true);
-    currentUser$.next({ role: 'member' });
+    currentUser$.next(memberAppUser());
 
     page.form.patchValue({ is_anonymous_publicly: false });
     page['configureSubmitterValidators']();
@@ -623,14 +619,10 @@ describe('PrayerSubmitPage', () => {
     expect(authServiceValue.updateMemberProfile).not.toHaveBeenCalled();
   });
 
-  it('member anonymous submission does not require a name', () => {
-    authServiceValue.currentUserSnapshot = {
-      first_name: 'Prayer',
-      last_name: 'Member',
-      full_name: 'Prayer Member',
-    };
+  it('member-app anonymous submission does not require a name', () => {
+    authServiceValue.currentUserSnapshot = memberProfile();
     authState$.next(true);
-    currentUser$.next({ role: 'member' });
+    currentUser$.next(memberAppUser({ role: 'district_admin' }));
 
     page.form.patchValue({
       request_text: 'Please pray.',
@@ -647,13 +639,9 @@ describe('PrayerSubmitPage', () => {
   });
 
   it('switching anonymous to named preserves a previously edited name', () => {
-    authServiceValue.currentUserSnapshot = {
-      first_name: 'Prayer',
-      last_name: 'Member',
-      full_name: 'Prayer Member',
-    };
+    authServiceValue.currentUserSnapshot = memberProfile();
     authState$.next(true);
-    currentUser$.next({ role: 'member' });
+    currentUser$.next(memberAppUser());
 
     page.form.patchValue({ is_anonymous_publicly: false });
     page['configureSubmitterValidators']();
@@ -674,25 +662,21 @@ describe('PrayerSubmitPage', () => {
     });
     page['configureSubmitterValidators']();
 
-    authServiceValue.currentUserSnapshot = {
-      first_name: 'Prayer',
-      last_name: 'Member',
-      full_name: 'Prayer Member',
-    };
+    authServiceValue.currentUserSnapshot = memberProfile();
     authState$.next(true);
-    currentUser$.next({ role: 'member' });
+    currentUser$.next(memberAppUser({ role: 'area_admin' }));
 
     expect(page.form.controls.submitter_name.value).toBe('Already Entered');
   });
 
-  it('member with no usable profile name gets an empty field and must enter a name', () => {
-    authServiceValue.currentUserSnapshot = {
+  it('member-app user with no usable profile name gets an empty field and must enter a name', () => {
+    authServiceValue.currentUserSnapshot = memberProfile({
       first_name: '   ',
       last_name: '',
       full_name: '   ',
-    };
+    });
     authState$.next(true);
-    currentUser$.next({ role: 'member' });
+    currentUser$.next(memberAppUser());
 
     page.form.patchValue({
       request_text: 'Please pray.',
@@ -843,13 +827,13 @@ describe('PrayerSubmitPage', () => {
     expect(page.form.controls.scope.value).toBe('');
   });
 
-  it('does not redirect guests or members away from the submit page', () => {
+  it('does not redirect guests or member-app-capable users away from the submit page', () => {
     authState$.next(false);
     currentUser$.next(null);
     expect(router.navigateByUrl).not.toHaveBeenCalled();
 
     authState$.next(true);
-    currentUser$.next({ role: 'member' });
+    currentUser$.next(memberAppUser({ role: 'branch_admin' }));
     expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 

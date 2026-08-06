@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { CanActivateFn, CanMatchFn, Router } from '@angular/router';
+import { of } from 'rxjs';
 
 import { routes } from './app-routing.module';
 import { AuthService } from './core/services/auth.service';
@@ -109,6 +110,90 @@ describe('app routes', () => {
 
     expect(result.commands).toEqual(['/tabs/profile']);
     expect(result.extras?.queryParams).toEqual({ authMode: 'forgot-password' });
+  });
+
+  it('allows eligible admin-role users into personal member-app routes', async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: AuthService,
+          useValue: {
+            isAuthenticatedSnapshot: true,
+            accessTokenSnapshot: 'token',
+            currentUserSnapshot: {
+              id: 5,
+              role: 'branch_admin',
+              can_use_member_app: true,
+            },
+            getCurrentUser: jasmine.createSpy('getCurrentUser').and.returnValue(of({
+              id: 5,
+              role: 'branch_admin',
+              can_use_member_app: true,
+            })),
+          },
+        },
+        {
+          provide: Router,
+          useValue: {
+            parseUrl: jasmine.createSpy('parseUrl').and.callFake((url: string) => ({ redirectedTo: url })),
+          },
+        },
+        {
+          provide: SentryTelemetryService,
+          useValue: {
+            addFeatureBreadcrumb: jasmine.createSpy('addFeatureBreadcrumb'),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const route = routes.find((item) => item.path === 'my-donations');
+    const guard = route?.canMatch?.[0] as CanMatchFn;
+    const result = TestBed.runInInjectionContext(() => guard?.(route as never, []));
+
+    expect(result).toBeTrue();
+  });
+
+  it('keeps delete-account member-only even for eligible admin-role users', async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: AuthService,
+          useValue: {
+            isAuthenticatedSnapshot: true,
+            accessTokenSnapshot: 'token',
+            currentUserSnapshot: {
+              id: 6,
+              role: 'platform_admin',
+              can_use_member_app: true,
+            },
+            getCurrentUser: jasmine.createSpy('getCurrentUser').and.returnValue(of({
+              id: 6,
+              role: 'platform_admin',
+              can_use_member_app: true,
+            })),
+          },
+        },
+        {
+          provide: Router,
+          useValue: {
+            parseUrl: jasmine.createSpy('parseUrl').and.callFake((url: string) => ({ redirectedTo: url })),
+          },
+        },
+        {
+          provide: SentryTelemetryService,
+          useValue: {
+            addFeatureBreadcrumb: jasmine.createSpy('addFeatureBreadcrumb'),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const route = routes.find((item) => item.path === 'profile/account-settings/delete-account');
+    const guard = route?.canMatch?.[0] as CanMatchFn;
+    const result = TestBed.runInInjectionContext(() => guard?.(route as never, [])) as unknown as { redirectedTo: string };
+
+    expect(result.redirectedTo).toBe('/tabs/profile');
   });
 
   it('allows the Donate tab to render directly without a selected church redirect', () => {

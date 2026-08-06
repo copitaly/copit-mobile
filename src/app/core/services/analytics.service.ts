@@ -8,6 +8,7 @@ import {
 import { FirebaseOptions, getApps, initializeApp } from 'firebase/app';
 
 import { environment } from 'src/environments/environment';
+import { canUseMemberApp } from '../auth/member-app-access';
 import { AuthService } from './auth.service';
 import {
   AnalyticsAmountBucket,
@@ -66,7 +67,7 @@ export class AnalyticsService {
   }
 
   getUserType(): AnalyticsUserType {
-    return this.authService.currentUserSnapshot?.role === 'member' &&
+    return canUseMemberApp(this.authService.currentUserSnapshot) &&
       this.authService.isAuthenticatedSnapshot
       ? 'member'
       : 'guest';

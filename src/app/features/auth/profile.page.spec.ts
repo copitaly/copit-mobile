@@ -28,6 +28,7 @@ describe('ProfilePage', () => {
     first_name: 'Member',
     last_name: 'User',
     role: 'member',
+    can_use_member_app: true,
     phone_number: '+39333111222',
     language: 'en',
     date_joined: '2026-07-01T00:00:00Z',
@@ -170,19 +171,21 @@ describe('ProfilePage', () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith('/saved-churches');
   });
 
-  it('keeps My Prayer Requests visible for members', async () => {
+  it('keeps My Prayer Requests visible for member-app-capable users', async () => {
     await createComponent();
 
     expect(fixture.nativeElement.textContent).toContain('My Prayer Requests');
     expect(fixture.nativeElement.textContent).not.toContain('Share a request or pray with the community');
   });
 
-  it('hides member-only prayer history when the resolved role is not member', async () => {
-    authService.getCurrentUser.and.returnValue(of({ ...profile, role: 'platform_admin' }));
+  it('keeps personal actions visible for eligible admin roles', async () => {
+    authService.getCurrentUser.and.returnValue(of({ ...profile, role: 'platform_admin', can_use_member_app: true }));
 
     await createComponent();
 
-    expect(fixture.nativeElement.textContent).not.toContain('My Prayer Requests');
+    expect(fixture.nativeElement.textContent).toContain('My Prayer Requests');
+    expect(fixture.nativeElement.textContent).toContain('My Offerings');
+    expect(fixture.nativeElement.querySelector('[data-testid="delete-account"]')).toBeNull();
   });
 
   it('keeps visible profile content during a background refresh failure', async () => {
@@ -427,6 +430,15 @@ describe('ProfilePage', () => {
     button?.click();
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/profile/account-settings/delete-account');
+  });
+
+  it('hides Delete Account for admin-role users who can still use member-app features', async () => {
+    authService.getCurrentUser.and.returnValue(of({ ...profile, role: 'branch_admin', can_use_member_app: true }));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="delete-account"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('My Prayer Requests');
   });
 
   it('prevents duplicate quick-action navigation from rapid taps', async () => {

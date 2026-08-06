@@ -4,6 +4,7 @@ export interface AuthUser {
   first_name: string;
   last_name: string;
   role: string;
+  can_use_member_app?: boolean;
   full_name?: string;
   access_scope?: string[];
   assigned_branches?: number[];
