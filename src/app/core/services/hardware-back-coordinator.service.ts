@@ -146,6 +146,21 @@ export class HardwareBackCoordinatorService implements OnDestroy {
     this.backButtonSubscription?.unsubscribe();
   }
 
+  async confirmUnsavedChangesIfNeeded(): Promise<boolean> {
+    const activeHandler = [...this.unsavedHandlers.values()].reverse().find((handler) => handler.isDirty());
+    if (!activeHandler) {
+      return true;
+    }
+
+    const shouldDiscard = await this.confirmDiscardChanges();
+    if (!shouldDiscard) {
+      return false;
+    }
+
+    await activeHandler.onDiscard?.();
+    return true;
+  }
+
   private async dismissAlertOverlay(): Promise<boolean> {
     const alert = await this.alertController.getTop();
     if (!alert) {
@@ -201,17 +216,10 @@ export class HardwareBackCoordinatorService implements OnDestroy {
   }
 
   private async handleUnsavedChanges(): Promise<boolean> {
-    const activeHandler = [...this.unsavedHandlers.values()].reverse().find((handler) => handler.isDirty());
-    if (!activeHandler) {
-      return false;
-    }
-
-    const shouldDiscard = await this.confirmDiscardChanges();
-    if (!shouldDiscard) {
+    const canContinue = await this.confirmUnsavedChangesIfNeeded();
+    if (!canContinue) {
       return true;
     }
-
-    await activeHandler.onDiscard?.();
     return false;
   }
 
@@ -301,12 +309,19 @@ export class HardwareBackCoordinatorService implements OnDestroy {
       return '/tabs/donate';
     }
 
-    if (currentUrl === '/prayer') {
+    if (currentUrl === '/tabs/prayer' || currentUrl === '/prayer') {
       return '/tabs/home';
     }
 
-    if (currentUrl === '/prayer/submit' || currentUrl === '/community' || currentUrl === '/prayer/my-requests') {
-      return '/prayer';
+    if (
+      currentUrl === '/tabs/prayer/community' ||
+      currentUrl === '/tabs/prayer/submit' ||
+      currentUrl === '/tabs/prayer/my-requests' ||
+      currentUrl === '/prayer/submit' ||
+      currentUrl === '/community' ||
+      currentUrl === '/prayer/my-requests'
+    ) {
+      return '/tabs/prayer';
     }
 
     if (currentUrl.startsWith('/bible-study/')) {

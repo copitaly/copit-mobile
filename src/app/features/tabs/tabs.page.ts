@@ -111,6 +111,7 @@ type PrimaryTab = {
 })
 export class TabsPage {
   private readonly router = inject(Router);
+  private readonly homeLinkedPrefixes = ['/tabs/home', '/tabs/prayer'];
   private readonly topLevelTabRoutes = new Set([
     '/tabs/home',
     '/tabs/bible-study',
@@ -165,11 +166,19 @@ export class TabsPage {
   isActiveTab(tabKey: PrimaryTabKey): boolean {
     const url = this.router.url || '';
     const tab = this.tabs.find((item) => item.key === tabKey);
-    return !!tab && url.startsWith(tab.activePrefix);
+    if (!tab) {
+      return false;
+    }
+
+    if (tab.key === 'home') {
+      return this.homeLinkedPrefixes.some((prefix) => url.startsWith(prefix));
+    }
+
+    return url.startsWith(tab.activePrefix);
   }
 
   get showTabBar(): boolean {
     const normalizedUrl = (this.router.url || '').split('?')[0].split('#')[0];
-    return this.topLevelTabRoutes.has(normalizedUrl);
+    return this.topLevelTabRoutes.has(normalizedUrl) || normalizedUrl.startsWith('/tabs/prayer');
   }
 }

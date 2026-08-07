@@ -42,7 +42,7 @@ describe('PrayerMyRequestsPage routing', () => {
     return TestBed.inject(Router);
   }
 
-  it('member can access /prayer/my-requests', async () => {
+  it('member can access /tabs/prayer/my-requests', async () => {
     const router = await configureRouteTest({
       isAuthenticatedSnapshot: true,
       accessTokenSnapshot: 'token',
@@ -95,7 +95,7 @@ describe('PrayerMyRequestsPage routing', () => {
 
     const result = TestBed.runInInjectionContext(() => guard(route, [] as never[])) as UrlTree;
 
-    expect(router.serializeUrl(result)).toBe('/prayer');
+    expect(router.serializeUrl(result)).toBe('/tabs/prayer');
   });
 
   it('platform_admin is blocked by the existing guard', async () => {
@@ -109,7 +109,7 @@ describe('PrayerMyRequestsPage routing', () => {
 
     const result = TestBed.runInInjectionContext(() => guard(route, [] as never[])) as UrlTree;
 
-    expect(router.serializeUrl(result)).toBe('/prayer');
+    expect(router.serializeUrl(result)).toBe('/tabs/prayer');
   });
 });
 
@@ -196,7 +196,7 @@ describe('PrayerMyRequestsPage', () => {
 
   beforeEach(() => {
     prayerService = jasmine.createSpyObj<PrayerService>('PrayerService', ['getMyPrayerRequests', 'getMyPrayerRequest']);
-    router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl'], { url: '/prayer/my-requests' });
+    router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl'], { url: '/tabs/prayer/my-requests' });
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
     stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', [
       'backWithFallback',
@@ -653,7 +653,7 @@ describe('PrayerMyRequestsPage', () => {
     expect(complete).toHaveBeenCalled();
   });
 
-  it('navigates the empty-state submit action to /prayer/submit', async () => {
+  it('navigates the empty-state submit action to /tabs/prayer/submit', async () => {
     prayerService.getMyPrayerRequests.and.returnValue(of(buildResponse([])));
     prayerService.getMyPrayerRequest.and.returnValue(of(basePrayer));
 
@@ -661,7 +661,7 @@ describe('PrayerMyRequestsPage', () => {
 
     page.goToSubmit();
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/prayer/submit');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/prayer/submit');
   });
 
   it('loads member prayer request detail when opening a card', async () => {

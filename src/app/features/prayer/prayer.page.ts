@@ -35,14 +35,14 @@ export class PrayerPage implements OnInit, OnDestroy {
       titleKey: 'prayer.submitActionTitle',
       descriptionKey: 'prayer.submitActionDescription',
       icon: 'heart-outline',
-      route: '/prayer/submit',
+      route: '/tabs/prayer/submit',
       accentClass: 'prayer-action-card--primary',
     },
     {
       titleKey: 'prayer.communityActionTitle',
       descriptionKey: 'prayer.communityActionDescription',
       icon: 'people-outline',
-      route: '/community',
+      route: '/tabs/prayer/community',
       accentClass: 'prayer-action-card--secondary',
     },
   ];
@@ -51,7 +51,7 @@ export class PrayerPage implements OnInit, OnDestroy {
     titleKey: 'prayer.myRequestsActionTitle',
     descriptionKey: 'prayer.myRequestsActionDescription',
     icon: 'document-text-outline',
-    route: '/prayer/my-requests',
+    route: '/tabs/prayer/my-requests',
     accentClass: 'prayer-action-card--member',
   };
 

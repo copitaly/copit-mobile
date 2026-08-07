@@ -59,8 +59,8 @@ describe('PrayerPage', () => {
 
     expect(page.showMemberAction).toBeFalse();
     expect(page.primaryActions.map((action) => action.route)).toEqual([
-      '/prayer/submit',
-      '/community',
+      '/tabs/prayer/submit',
+      '/tabs/prayer/community',
     ]);
   });
 
@@ -97,9 +97,9 @@ describe('PrayerPage', () => {
   });
 
   it('navigates actions to their configured routes', () => {
-    page.openAction('/community');
+    page.openAction('/tabs/prayer/community');
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/community');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/prayer/community');
   });
 
   it('removes the stay connected in prayer intro card', () => {
@@ -131,7 +131,7 @@ describe('PrayerPage', () => {
     expect(element.textContent).toContain('My Prayer Requests');
   });
 
-  it('uses the shared compact mobile header with back navigation because Prayer is a secondary route', () => {
+  it('uses the shared compact mobile header without a back button because Prayer now lives in the tabs shell', () => {
     const componentFixture = TestBed.createComponent(PrayerPage);
     componentFixture.detectChanges();
 
@@ -140,7 +140,7 @@ describe('PrayerPage', () => {
 
     expect(componentFixture.nativeElement.querySelector('.prayer-shell')).not.toBeNull();
     expect(header.fallbackRoute).toBe('/tabs/home');
-    expect(header.showBack).toBeTrue();
+    expect(header.showBack).toBeFalse();
     expect(header.title).toBe('Prayer');
   });
 });

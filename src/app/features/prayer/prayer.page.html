@@ -2,7 +2,9 @@
   <ion-content fullscreen class="prayer-content cop-content--secondary">
     <div class="prayer-shell cop-secondary-shell">
       <header class="prayer-header" [attr.aria-label]="'prayer.title' | t">
+        <p class="prayer-header__eyebrow cop-page-header__eyebrow">{{ 'prayer.title' | t }}</p>
         <app-mobile-header
+          [showBack]="false"
           [title]="'prayer.title' | t"
           [subtitle]="'prayer.subtitle' | t"
           fallbackRoute="/tabs/home"
@@ -10,9 +12,34 @@
         ></app-mobile-header>
       </header>
 
-      <section class="prayer-actions" [attr.aria-label]="'prayer.actionsLabel' | t">
+      <section class="prayer-feature" [attr.aria-label]="primaryActions[0].titleKey | t">
+        <div class="prayer-feature__art" aria-hidden="true">
+          <span class="prayer-feature__halo"></span>
+          <span class="prayer-feature__icon">
+            <ion-icon [name]="primaryActions[0].icon"></ion-icon>
+          </span>
+        </div>
+        <div class="prayer-feature__copy">
+          <p class="prayer-feature__eyebrow">{{ 'prayer.title' | t }}</p>
+          <h2>{{ primaryActions[0].titleKey | t }}</h2>
+          <p>{{ primaryActions[0].descriptionKey | t }}</p>
+        </div>
         <button
-          *ngFor="let action of primaryActions"
+          type="button"
+          class="prayer-feature__action"
+          [attr.aria-label]="primaryActions[0].titleKey | t"
+          (click)="openAction(primaryActions[0].route)"
+        >
+          <span>{{ 'prayer.sharePrayerRequest' | t }}</span>
+          <ion-icon name="arrow-forward" aria-hidden="true"></ion-icon>
+        </button>
+      </section>
+
+      <section class="prayer-actions" [attr.aria-label]="'prayer.actionsLabel' | t">
+        <div class="prayer-actions__eyebrow">{{ 'prayer.communityActionTitle' | t }}</div>
+
+        <button
+          *ngFor="let action of primaryActions.slice(1)"
           type="button"
           class="prayer-action-card"
           [attr.aria-label]="action.titleKey | t"

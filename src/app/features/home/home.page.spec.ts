@@ -292,8 +292,8 @@ describe('HomePage', () => {
 
     expect(router.navigate.calls.allArgs()).toContain([['/tabs/bible-study']]);
     expect(router.navigateByUrl.calls.allArgs()).toContain(['/tabs/devotionals']);
-    expect(router.navigateByUrl.calls.allArgs()).toContain(['/prayer']);
-    expect(router.navigateByUrl.calls.allArgs()).toContain(['/community']);
+    expect(router.navigateByUrl.calls.allArgs()).toContain(['/tabs/prayer']);
+    expect(router.navigateByUrl.calls.allArgs()).toContain(['/tabs/prayer/community']);
   });
 
   it('updates dashboard labels immediately when the locale changes while preserving backend titles', async () => {

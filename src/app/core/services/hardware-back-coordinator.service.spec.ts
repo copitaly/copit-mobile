@@ -137,7 +137,7 @@ describe('HardwareBackCoordinatorService', () => {
   it('navigates to the fallback route after discard is confirmed', async () => {
     spyOn(Capacitor, 'isNativePlatform').and.returnValue(true);
     spyOn(Capacitor, 'getPlatform').and.returnValue('android');
-    currentUrl = '/prayer/submit';
+    currentUrl = '/tabs/prayer/submit';
     alertController.create.and.resolveTo({
       present: jasmine.createSpy('present').and.resolveTo(),
       onDidDismiss: jasmine.createSpy('onDidDismiss').and.resolveTo({ role: 'destructive' }),
@@ -151,7 +151,7 @@ describe('HardwareBackCoordinatorService', () => {
     await service.handleHardwareBack();
 
     expect(onDiscard).toHaveBeenCalled();
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/prayer', { replaceUrl: true });
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/prayer', { replaceUrl: true });
   });
 
   it('pops the Ionic stack when the active outlet can go back', async () => {

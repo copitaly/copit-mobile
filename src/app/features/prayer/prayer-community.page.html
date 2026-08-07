@@ -6,11 +6,12 @@
 
     <div class="community-shell cop-secondary-shell">
       <header class="community-header" [attr.aria-label]="'prayer.communityPageTitle' | t">
+        <p class="community-header__eyebrow cop-page-header__eyebrow">{{ 'prayer.title' | t }}</p>
         <app-mobile-header
           [title]="'prayer.communityPageTitle' | t"
           [subtitle]="'prayer.communityPageSubtitle' | t"
           [showBack]="true"
-          fallbackRoute="/tabs/home"
+          fallbackRoute="/tabs/prayer"
           tone="editorial"
         ></app-mobile-header>
       </header>

@@ -290,7 +290,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   goToCommunity(): void {
-    void this.navigateTo('/community', true);
+    void this.navigateTo('/tabs/prayer/community', true);
   }
 
   goToGive(): void {
@@ -298,7 +298,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   goToPrayer(): void {
-    void this.navigateTo('/prayer', true);
+    void this.navigateTo('/tabs/prayer', true);
   }
 
   goToProfile(): void {

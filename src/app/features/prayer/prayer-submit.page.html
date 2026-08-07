@@ -2,10 +2,11 @@
   <ion-content fullscreen class="prayer-submit-content cop-content--secondary">
     <div class="prayer-submit-shell cop-secondary-shell">
       <header class="prayer-submit-header" [attr.aria-label]="'prayer.submitPageTitle' | t">
+        <p class="prayer-submit-header__eyebrow cop-page-header__eyebrow">{{ 'prayer.title' | t }}</p>
         <app-mobile-header
           [title]="'prayer.submitPageTitle' | t"
           [subtitle]="'prayer.submitPageSubtitle' | t"
-          fallbackRoute="/prayer"
+          fallbackRoute="/tabs/prayer"
           tone="editorial"
         ></app-mobile-header>
       </header>

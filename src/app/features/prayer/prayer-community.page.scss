@@ -6,6 +6,15 @@
   --background: var(--cop-color-background-soft);
 }
 
+.community-header {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.community-header__eyebrow {
+  margin: 0;
+}
+
 .community-surface {
   width: 100%;
   max-width: 32rem;

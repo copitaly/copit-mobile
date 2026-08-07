@@ -13,6 +13,15 @@
   --background: var(--cop-color-background-soft);
 }
 
+.my-prayers-header {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.my-prayers-header__eyebrow {
+  margin: 0;
+}
+
 .my-prayers-surface {
   width: 100%;
   max-width: 32rem;
@@ -23,7 +32,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
-  padding-bottom: calc(1rem + var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)));
+  padding-bottom: calc(5.75rem + var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)));
 }
 
 .my-prayers-filters {

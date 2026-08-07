@@ -383,11 +383,11 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
   }
 
   goBackToPrayer(): void {
-    void this.router.navigateByUrl('/prayer');
+    void this.router.navigateByUrl('/tabs/prayer');
   }
 
   goToMyPrayerRequests(): void {
-    void this.router.navigateByUrl('/prayer/my-requests');
+    void this.router.navigateByUrl('/tabs/prayer/my-requests');
   }
 
   retryAreaLoad(): void {

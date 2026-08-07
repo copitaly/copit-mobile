@@ -1,8 +1,9 @@
 import { inject, NgModule } from '@angular/core';
-import { CanActivateFn, CanMatchFn, PreloadAllModules, Router, RouterModule, Routes } from '@angular/router';
+import { CanActivateFn, CanDeactivateFn, CanMatchFn, PreloadAllModules, Router, RouterModule, Routes } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 import { canUseMemberApp, hasMemberRole } from './core/auth/member-app-access';
 import { AuthService } from './core/services/auth.service';
+import { HardwareBackCoordinatorService } from './core/services/hardware-back-coordinator.service';
 import { FeatureArea, SentryTelemetryService } from './core/services/sentry-telemetry.service';
 import { AUTH_FALLBACK_RETURN_URL, sanitizeAuthReturnUrl } from './features/auth/auth-form.utils';
 
@@ -185,6 +186,25 @@ const allowAuthenticatedMemberRoleOnly: CanMatchFn = (route) => {
   );
 };
 
+type UnsavedPrayerRequestPage = {
+  form?: { dirty?: boolean };
+  showSuccessState?: boolean;
+  isSubmitting?: boolean;
+};
+
+const blockDirtyPrayerRequestExit: CanDeactivateFn<UnsavedPrayerRequestPage> = (component) => {
+  const hardwareBackCoordinator = inject(HardwareBackCoordinatorService);
+  const formDirty = component?.form?.dirty === true;
+  const showSuccessState = component?.showSuccessState === true;
+  const isSubmitting = component?.isSubmitting === true;
+
+  if (!(formDirty && !showSuccessState && !isSubmitting)) {
+    return true;
+  }
+
+  return hardwareBackCoordinator.confirmUnsavedChangesIfNeeded();
+};
+
 export const routes: Routes = [
   {
     path: '',
@@ -205,8 +225,22 @@ export const routes: Routes = [
       },
       {
         path: 'prayer',
-        redirectTo: '/prayer',
-        pathMatch: 'full'
+        loadComponent: () => import('./features/prayer/prayer.page').then(m => m.PrayerPage)
+      },
+      {
+        path: 'prayer/community',
+        loadComponent: () => import('./features/prayer/prayer-community.page').then(m => m.PrayerCommunityPage)
+      },
+      {
+        path: 'prayer/submit',
+        canDeactivate: [blockDirtyPrayerRequestExit],
+        loadComponent: () => import('./features/prayer/prayer-submit.page').then(m => m.PrayerSubmitPage)
+      },
+      {
+        path: 'prayer/my-requests',
+        canMatch: [allowAuthenticatedMemberAppUsersOnly],
+        data: { memberFeature: 'app', unauthenticatedRedirect: '/login', forbiddenRedirect: '/tabs/prayer' },
+        loadComponent: () => import('./features/prayer/prayer-my-requests.page').then(m => m.PrayerMyRequestsPage)
       },
       {
         path: 'devotionals',
@@ -227,11 +261,6 @@ export const routes: Routes = [
       {
         path: 'donate/cancel',
         loadComponent: () => import('./features/donations/cancel.page').then(m => m.DonateCancelPage)
-      },
-      {
-        path: 'community',
-        redirectTo: '/community',
-        pathMatch: 'full'
       },
       {
         path: 'more',
@@ -330,7 +359,8 @@ export const routes: Routes = [
   },
   {
     path: 'prayer',
-    loadComponent: () => import('./features/prayer/prayer.page').then(m => m.PrayerPage)
+    redirectTo: 'tabs/prayer',
+    pathMatch: 'full'
   },
   {
     path: 'bible-study',
@@ -344,7 +374,8 @@ export const routes: Routes = [
   },
   {
     path: 'community',
-    loadComponent: () => import('./features/prayer/prayer-community.page').then(m => m.PrayerCommunityPage)
+    redirectTo: 'tabs/prayer/community',
+    pathMatch: 'full'
   },
   {
     path: 'donate',
@@ -367,18 +398,18 @@ export const routes: Routes = [
   },
   {
     path: 'prayer/submit',
-    loadComponent: () => import('./features/prayer/prayer-submit.page').then(m => m.PrayerSubmitPage)
+    redirectTo: 'tabs/prayer/submit',
+    pathMatch: 'full'
   },
   {
     path: 'prayer/community',
-    redirectTo: 'community',
+    redirectTo: 'tabs/prayer/community',
     pathMatch: 'full'
   },
   {
     path: 'prayer/my-requests',
-    canMatch: [allowAuthenticatedMemberAppUsersOnly],
-    data: { memberFeature: 'app', unauthenticatedRedirect: '/login', forbiddenRedirect: '/prayer' },
-    loadComponent: () => import('./features/prayer/prayer-my-requests.page').then(m => m.PrayerMyRequestsPage)
+    redirectTo: 'tabs/prayer/my-requests',
+    pathMatch: 'full'
   },
   {
     path: 'donate/success',

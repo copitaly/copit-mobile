@@ -90,6 +90,13 @@ describe('TabsPage', () => {
     expect(fixture.componentInstance.isActiveTab('donate')).toBeTrue();
   });
 
+  it('keeps the tab bar visible on prayer routes and treats Home as the active parent tab', async () => {
+    await createComponent('/tabs/prayer/community');
+
+    expect(fixture.nativeElement.querySelector('[data-testid="tabs-bar"]')).not.toBeNull();
+    expect(fixture.componentInstance.isActiveTab('home')).toBeTrue();
+  });
+
   it('marks the Profile tab active on the Profile tab route', async () => {
     await createComponent('/tabs/profile');
 
@@ -135,12 +142,14 @@ describe('Tabs routing', () => {
       'home',
       'bible-study',
       'prayer',
+      'prayer/community',
+      'prayer/submit',
+      'prayer/my-requests',
       'devotionals',
       'devotionals/:slug',
       'donate',
       'donate/success',
       'donate/cancel',
-      'community',
       'more',
       'profile',
       '',
@@ -212,16 +221,18 @@ describe('Tabs routing', () => {
     expect(tabsRoute?.children?.find((child) => child.path === 'more')?.redirectTo).toBe('/tabs/profile');
   });
 
-  it('keeps Prayer and Community as standalone pages outside the primary tab destinations', async () => {
+  it('keeps Prayer under the tabs shell and preserves legacy prayer redirects', async () => {
     const router = await createRouter();
     const prayerRoute = router.config.find((item) => item.path === 'prayer');
     const communityRoute = router.config.find((item) => item.path === 'community');
     const tabsRoute = router.config.find((item) => item.path === 'tabs');
 
-    expect(prayerRoute?.loadComponent).toBeDefined();
-    expect(communityRoute?.loadComponent).toBeDefined();
-    expect(tabsRoute?.children?.find((child) => child.path === 'prayer')?.redirectTo).toBe('/prayer');
-    expect(tabsRoute?.children?.find((child) => child.path === 'community')?.redirectTo).toBe('/community');
+    expect(prayerRoute?.redirectTo).toBe('tabs/prayer');
+    expect(communityRoute?.redirectTo).toBe('tabs/prayer/community');
+    expect(tabsRoute?.children?.find((child) => child.path === 'prayer')?.loadComponent).toBeDefined();
+    expect(tabsRoute?.children?.find((child) => child.path === 'prayer/community')?.loadComponent).toBeDefined();
+    expect(tabsRoute?.children?.find((child) => child.path === 'prayer/submit')?.loadComponent).toBeDefined();
+    expect(tabsRoute?.children?.find((child) => child.path === 'prayer/my-requests')?.loadComponent).toBeDefined();
   });
 
   it('keeps the Bible Study reader route outside the tabs child route tree and redirects legacy detail URLs', async () => {

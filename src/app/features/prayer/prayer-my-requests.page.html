@@ -6,10 +6,11 @@
 
     <div class="my-prayers-shell cop-secondary-shell">
       <header class="my-prayers-header" [attr.aria-label]="'prayer.myRequestsPageTitle' | t">
+        <p class="my-prayers-header__eyebrow cop-page-header__eyebrow">{{ 'prayer.title' | t }}</p>
         <app-mobile-header
           [title]="'prayer.myRequestsPageTitle' | t"
           [subtitle]="'prayer.myRequestsPageSubtitle' | t"
-          fallbackRoute="/tabs/home"
+          fallbackRoute="/tabs/prayer"
           tone="editorial"
         ></app-mobile-header>
       </header>

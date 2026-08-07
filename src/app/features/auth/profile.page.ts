@@ -253,7 +253,7 @@ export class ProfilePage implements OnInit, OnDestroy {
           titleKey: 'profile.myPrayerRequests',
           subtitleKey: 'profile.myPrayerRequestsSubtitle',
           icon: 'chatbubbles-outline',
-          route: '/prayer/my-requests',
+          route: '/tabs/prayer/my-requests',
           requiresMemberAppCapability: true,
           testId: 'my-prayer-requests',
         },

@@ -14,7 +14,7 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
 import { PrayerCommunityPage } from './prayer-community.page';
 
 describe('PrayerCommunityPage routing', () => {
-  it('keeps /prayer/community publicly accessible without a route guard', async () => {
+  it('keeps the canonical /tabs/prayer/community route publicly accessible without a route guard', async () => {
     await TestBed.configureTestingModule({
       imports: [AppRoutingModule],
       providers: [
@@ -31,7 +31,8 @@ describe('PrayerCommunityPage routing', () => {
     }).compileComponents();
 
     const router = TestBed.inject(Router);
-    const route = router.config.find((item) => item.path === 'prayer/community');
+    const tabsRoute = router.config.find((item) => item.path === 'tabs');
+    const route = tabsRoute?.children?.find((item) => item.path === 'prayer/community');
 
     expect(route).toBeDefined();
     expect(route?.canMatch).toBeUndefined();
@@ -105,7 +106,7 @@ describe('PrayerCommunityPage', () => {
 
   beforeEach(() => {
     prayerService = jasmine.createSpyObj<PrayerService>('PrayerService', ['getCommunityPrayers']);
-    router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl'], { url: '/prayer/community' });
+    router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl'], { url: '/tabs/prayer/community' });
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
     stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', [
       'backWithFallback',
@@ -408,7 +409,7 @@ describe('PrayerCommunityPage', () => {
 
     page.goToSubmit();
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/prayer/submit');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/prayer/submit');
   });
 
   it('renders a standard back button because Community is a secondary route', async () => {
@@ -419,7 +420,7 @@ describe('PrayerCommunityPage', () => {
     const header = fixture.debugElement.query(By.directive(MobileHeaderComponent))?.componentInstance as MobileHeaderComponent;
     const headerElement = fixture.nativeElement.querySelector('.app-header__back');
 
-    expect(header.fallbackRoute).toBe('/tabs/home');
+    expect(header.fallbackRoute).toBe('/tabs/prayer');
     expect(header.showBack).toBeTrue();
     expect(headerElement).not.toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Community Prayers');

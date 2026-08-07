@@ -197,7 +197,7 @@ export class PrayerCommunityPage implements OnInit {
   }
 
   goToSubmit(): void {
-    void this.router.navigateByUrl('/prayer/submit');
+    void this.router.navigateByUrl('/tabs/prayer/submit');
   }
 
   formatCategoryLabel(category: PrayerCategory): string {
