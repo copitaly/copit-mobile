@@ -48,7 +48,6 @@ ion-page,
   color: var(--cop-color-text-secondary);
 }
 
-.dashboard-banner,
 .offering-card,
 .feature-card,
 .latest-row {
@@ -58,9 +57,7 @@ ion-page,
 
 .dashboard-banner img {
   width: 100%;
-  height: auto;
   display: block;
-  object-fit: contain;
 }
 
 .offering-card,

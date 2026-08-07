@@ -15,8 +15,17 @@
         </div>
       </section>
 
-      <section class="dashboard-banner" [attr.aria-label]="'home.bannerAlt' | t" style="margin:.35rem 0 1rem;background:#071845;box-shadow:var(--cop-shadow-card-soft)">
-        <img [src]="bannerImagePath" [alt]="'home.bannerAlt' | t" loading="eager" />
+      <section
+        class="dashboard-banner"
+        [attr.aria-label]="'home.bannerAlt' | t"
+        style="margin:.35rem calc(-1 * var(--cop-page-padding-inline-end)) 1rem calc(-1 * var(--cop-page-padding-inline-start));background:#071845"
+      >
+        <img
+          [src]="bannerImagePath"
+          [alt]="'home.bannerAlt' | t"
+          loading="eager"
+          style="width:100%;height:auto;display:block"
+        />
       </section>
 
       <section>
