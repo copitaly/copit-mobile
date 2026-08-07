@@ -58,10 +58,9 @@ ion-page,
 
 .dashboard-banner img {
   width: 100%;
-  height: 100%;
+  height: auto;
   display: block;
-  object-fit: cover;
-  object-position: center 48%;
+  object-fit: contain;
 }
 
 .offering-card,
@@ -136,7 +135,7 @@ ion-page,
 
 .feature-card__body h3 {
   color: var(--cop-color-navy-strong);
-  font-size: 0.86rem;
+  font-size: clamp(0.74rem, 2.8vw, 0.83rem);
   font-weight: 700;
   line-height: 1.1;
   white-space: nowrap;
@@ -146,9 +145,7 @@ ion-page,
   overflow-wrap: normal;
 }
 
-.feature-card__body p {
-  display: none;
-}
+.feature-card__body p { display: none; }
 
 .latest-row {
   display: grid;
@@ -245,22 +242,11 @@ ion-page,
 }
 
 @media (max-width: 389px) {
-  .offering-card__body {
-    width: min(50%, 11rem);
-    padding-left: 1rem;
-  }
-
-  .offering-card__body h2 {
-    font-size: 1.06rem;
-  }
-
-  .feature-card__body h3 {
-    font-size: clamp(0.74rem, 3vw, 0.81rem);
-  }
+  .offering-card__body { width: min(50%, 11rem); padding-left: 1rem; }
+  .offering-card__body h2 { font-size: 1.06rem; }
+  .feature-card__body h3 { font-size: clamp(0.72rem, 2.9vw, 0.79rem); }
 }
 
 @media (min-width: 390px) {
-  .feature-card__body h3 {
-    font-size: clamp(0.77rem, 2.35vw, 0.84rem);
-  }
+  .feature-card__body h3 { font-size: clamp(0.75rem, 2.2vw, 0.82rem); }
 }
