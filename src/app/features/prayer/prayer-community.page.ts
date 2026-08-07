@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit, inject } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { LocaleService } from '../../core/localization/locale.service';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
@@ -27,7 +29,7 @@ type CommunityPrayerScopeFilter = PrayerScope | 'all';
   templateUrl: './prayer-community.page.html',
   styleUrls: ['./prayer-community.page.scss'],
 })
-export class PrayerCommunityPage implements OnInit {
+export class PrayerCommunityPage implements OnInit, OnDestroy {
   private readonly prayerService = inject(PrayerService);
   private readonly router = inject(Router);
   private readonly localeService = inject(LocaleService);
@@ -40,6 +42,7 @@ export class PrayerCommunityPage implements OnInit {
   loadMoreErrorMessage = '';
   nextPageUrl: string | null = null;
   private listRequestId = 0;
+  private readonly destroy$ = new Subject<void>();
 
   selectedCategory: CommunityPrayerCategoryFilter = 'all';
   selectedScope: CommunityPrayerScopeFilter = 'all';
@@ -64,7 +67,18 @@ export class PrayerCommunityPage implements OnInit {
   ];
 
   ngOnInit(): void {
+    this.prayerService.communityFeedRefresh$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.loadInitialPrayers({ preserveExisting: true });
+      });
+
     this.loadInitialPrayers();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   get hasActiveFilters(): boolean {

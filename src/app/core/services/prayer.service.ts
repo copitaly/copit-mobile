@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { Observable, Subject, throwError } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 
 import {
@@ -54,6 +54,7 @@ export class PrayerService {
   private readonly publicChurchesEndpoint = 'public/churches/';
   private readonly myPrayerRequestsEndpoint = 'members/me/prayer-requests/';
   private readonly hierarchyPageSize = 100;
+  private readonly communityFeedRefreshSubject = new Subject<void>();
   private readonly supportedScopes = new Set<PrayerScope>(['global', 'area', 'district', 'local']);
   private readonly supportedVisibilities = new Set<PrayerVisibility>(['private', 'public']);
   private readonly supportedStatuses = new Set<PrayerStatus>(['pending', 'approved', 'rejected', 'resolved']);
@@ -62,6 +63,7 @@ export class PrayerService {
     available: true,
     reason: '',
   };
+  readonly communityFeedRefresh$ = this.communityFeedRefreshSubject.asObservable();
 
   submitPrayerRequest(
     payload: PrayerRequestSubmissionPayload
@@ -209,6 +211,10 @@ export class PrayerService {
         return throwError(() => error);
       })
     );
+  }
+
+  notifyCommunityFeedUpdated(): void {
+    this.communityFeedRefreshSubject.next();
   }
 
   private buildUrl(path: string): string {

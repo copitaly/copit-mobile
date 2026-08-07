@@ -60,6 +60,17 @@ describe('PrayerService', () => {
     expect(responseBody).toEqual({ count: 0, next: null, previous: null, results: [] });
   });
 
+  it('emits a community feed refresh signal when requested', () => {
+    let emissionCount = 0;
+    service.communityFeedRefresh$.subscribe(() => {
+      emissionCount += 1;
+    });
+
+    service.notifyCommunityFeedUpdated();
+
+    expect(emissionCount).toBe(1);
+  });
+
   it('does not include prayer request text in submission telemetry breadcrumbs', () => {
     service
       .submitPrayerRequest({

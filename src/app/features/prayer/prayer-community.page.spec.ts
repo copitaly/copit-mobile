@@ -45,6 +45,7 @@ describe('PrayerCommunityPage', () => {
   let prayerService: jasmine.SpyObj<PrayerService>;
   let router: jasmine.SpyObj<Router>;
   let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
+  let communityFeedRefresh$: Subject<void>;
 
   const firstPrayer: CommunityPrayerRequest = {
     id: 11,
@@ -106,6 +107,11 @@ describe('PrayerCommunityPage', () => {
 
   beforeEach(() => {
     prayerService = jasmine.createSpyObj<PrayerService>('PrayerService', ['getCommunityPrayers']);
+    communityFeedRefresh$ = new Subject<void>();
+    Object.defineProperty(prayerService, 'communityFeedRefresh$', {
+      value: communityFeedRefresh$.asObservable(),
+      configurable: true,
+    });
     router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl'], { url: '/tabs/prayer/community' });
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
     stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', [
@@ -491,5 +497,21 @@ describe('PrayerCommunityPage', () => {
     expect(page.errorMessage).toBe('');
     expect(page.loadMoreErrorMessage).toContain("couldn't refresh community prayers");
     expect(complete).toHaveBeenCalled();
+  });
+
+  it('refreshes the community feed when a successful submission signal arrives', async () => {
+    prayerService.getCommunityPrayers.and.returnValues(
+      of(buildResponse([firstPrayer])),
+      of(buildResponse([{ ...firstPrayer, id: 99, title: 'Freshly submitted' }]))
+    );
+
+    await createComponent();
+    prayerService.getCommunityPrayers.calls.reset();
+
+    communityFeedRefresh$.next();
+    fixture.detectChanges();
+
+    expect(prayerService.getCommunityPrayers).toHaveBeenCalledWith({ page: 1 });
+    expect(page.prayers[0].id).toBe(99);
   });
 });
