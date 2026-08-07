@@ -15,7 +15,7 @@
         </div>
       </section>
 
-      <section class="dashboard-banner" [attr.aria-label]="'home.bannerAlt' | t" style="margin:.35rem 0 1rem;background:#071845;box-shadow:var(--cop-shadow-card-soft);min-height:150px;height:clamp(150px,40vw,165px)">
+      <section class="dashboard-banner" [attr.aria-label]="'home.bannerAlt' | t" style="margin:.35rem 0 1rem;background:#071845;box-shadow:var(--cop-shadow-card-soft);min-height:clamp(152px,42vw,166px);aspect-ratio:16/6.45">
         <img [src]="bannerImagePath" [alt]="'home.bannerAlt' | t" loading="eager" />
       </section>
 
@@ -48,10 +48,10 @@
           class="feature-card feature-card--study ion-activatable"
           data-testid="home-feature-study"
           [attr.aria-label]="'home.studyAria' | t"
-          style="display:grid;grid-template-columns:46px minmax(0,1fr) 18px;gap:.68rem;align-items:center;min-height:74px;padding:.8rem .86rem;border:1px solid rgba(11,29,115,.06);background:linear-gradient(135deg,#f2f6ff,#f8fbff);box-shadow:0 14px 36px rgba(7,24,69,.05)"
+          style="display:grid;grid-template-columns:40px minmax(0,1fr) 14px;gap:.48rem;align-items:center;min-height:72px;padding:.72rem .7rem;border:1px solid rgba(11,29,115,.06);background:linear-gradient(135deg,#f2f6ff,#f8fbff);box-shadow:0 14px 36px rgba(7,24,69,.05)"
           (click)="goToBibleStudy()"
         >
-          <span class="feature-card__icon" aria-hidden="true" style="width:46px;height:46px;border-radius:999px;font-size:1.35rem;background:#1745b4;color:#fff"><ion-icon name="book-outline"></ion-icon></span>
+          <span class="feature-card__icon" aria-hidden="true" style="width:40px;height:40px;border-radius:999px;font-size:1.12rem;background:#1745b4;color:#fff"><ion-icon name="book-outline"></ion-icon></span>
           <div class="feature-card__body">
             <h3>{{ 'home.studyTitle' | t }}</h3>
           </div>
@@ -64,10 +64,10 @@
           class="feature-card feature-card--devotions ion-activatable"
           data-testid="home-feature-devotions"
           [attr.aria-label]="'home.devotionsAria' | t"
-          style="display:grid;grid-template-columns:46px minmax(0,1fr) 18px;gap:.68rem;align-items:center;min-height:74px;padding:.8rem .86rem;border:1px solid rgba(11,29,115,.06);background:linear-gradient(135deg,#fff8e8,#fffdf8);box-shadow:0 14px 36px rgba(7,24,69,.05)"
+          style="display:grid;grid-template-columns:40px minmax(0,1fr) 14px;gap:.48rem;align-items:center;min-height:72px;padding:.72rem .7rem;border:1px solid rgba(11,29,115,.06);background:linear-gradient(135deg,#fff8e8,#fffdf8);box-shadow:0 14px 36px rgba(7,24,69,.05)"
           (click)="goToDevotionals()"
         >
-          <span class="feature-card__icon" aria-hidden="true" style="width:46px;height:46px;border-radius:999px;font-size:1.35rem;background:#e4af24;color:#fff"><ion-icon name="reader-outline"></ion-icon></span>
+          <span class="feature-card__icon" aria-hidden="true" style="width:40px;height:40px;border-radius:999px;font-size:1.12rem;background:#e4af24;color:#fff"><ion-icon name="reader-outline"></ion-icon></span>
           <div class="feature-card__body">
             <h3>{{ 'home.devotionsTitle' | t }}</h3>
           </div>
@@ -80,10 +80,10 @@
           class="feature-card feature-card--prayer ion-activatable"
           data-testid="home-feature-prayer"
           [attr.aria-label]="'home.prayerAria' | t"
-          style="display:grid;grid-template-columns:46px minmax(0,1fr) 18px;gap:.68rem;align-items:center;min-height:74px;padding:.8rem .86rem;border:1px solid rgba(11,29,115,.06);background:linear-gradient(135deg,#eef7f2,#f9fdfb);box-shadow:0 14px 36px rgba(7,24,69,.05)"
+          style="display:grid;grid-template-columns:40px minmax(0,1fr) 14px;gap:.48rem;align-items:center;min-height:72px;padding:.72rem .7rem;border:1px solid rgba(11,29,115,.06);background:linear-gradient(135deg,#eef7f2,#f9fdfb);box-shadow:0 14px 36px rgba(7,24,69,.05)"
           (click)="goToPrayer()"
         >
-          <span class="feature-card__icon" aria-hidden="true" style="width:46px;height:46px;border-radius:999px;font-size:1.35rem;background:#3f7f60;color:#fff"><ion-icon name="hand-left-outline"></ion-icon></span>
+          <span class="feature-card__icon" aria-hidden="true" style="width:40px;height:40px;border-radius:999px;font-size:1.12rem;background:#3f7f60;color:#fff"><ion-icon name="hand-left-outline"></ion-icon></span>
           <div class="feature-card__body">
             <h3>{{ 'home.prayerTitle' | t }}</h3>
           </div>
@@ -96,10 +96,10 @@
           class="feature-card feature-card--community ion-activatable"
           data-testid="home-feature-community"
           [attr.aria-label]="'home.communityAria' | t"
-          style="display:grid;grid-template-columns:46px minmax(0,1fr) 18px;gap:.68rem;align-items:center;min-height:74px;padding:.8rem .86rem;border:1px solid rgba(11,29,115,.06);background:linear-gradient(135deg,#f3efff,#fbf9ff);box-shadow:0 14px 36px rgba(7,24,69,.05)"
+          style="display:grid;grid-template-columns:40px minmax(0,1fr) 14px;gap:.48rem;align-items:center;min-height:72px;padding:.72rem .7rem;border:1px solid rgba(11,29,115,.06);background:linear-gradient(135deg,#f3efff,#fbf9ff);box-shadow:0 14px 36px rgba(7,24,69,.05)"
           (click)="goToCommunity()"
         >
-          <span class="feature-card__icon" aria-hidden="true" style="width:46px;height:46px;border-radius:999px;font-size:1.35rem;background:#6a48b5;color:#fff"><ion-icon name="people-outline"></ion-icon></span>
+          <span class="feature-card__icon" aria-hidden="true" style="width:40px;height:40px;border-radius:999px;font-size:1.12rem;background:#6a48b5;color:#fff"><ion-icon name="people-outline"></ion-icon></span>
           <div class="feature-card__body">
             <h3>{{ 'home.communityLabel' | t }}</h3>
           </div>

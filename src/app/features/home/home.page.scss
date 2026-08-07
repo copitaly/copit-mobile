@@ -61,7 +61,7 @@ ion-page,
   height: 100%;
   display: block;
   object-fit: cover;
-  object-position: center;
+  object-position: center 48%;
 }
 
 .offering-card,
@@ -240,7 +240,7 @@ ion-page,
 }
 
 .home-scroll-spacer {
-  height: calc(var(--cop-tab-bar-height, 5rem) + env(safe-area-inset-bottom, 0px) + 1rem);
+  height: calc(var(--cop-tab-bar-height, 5rem) + env(safe-area-inset-bottom, 0px) + 1.25rem);
   flex-shrink: 0;
 }
 
@@ -255,6 +255,12 @@ ion-page,
   }
 
   .feature-card__body h3 {
-    font-size: 0.79rem;
+    font-size: clamp(0.74rem, 3vw, 0.81rem);
+  }
+}
+
+@media (min-width: 390px) {
+  .feature-card__body h3 {
+    font-size: clamp(0.77rem, 2.35vw, 0.84rem);
   }
 }
