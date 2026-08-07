@@ -117,6 +117,9 @@
               data-testid="community-card"
               tabindex="0"
               [attr.aria-label]="'prayer.communityCardAria' | t:{ name: prayer.display_name }"
+              [attr.role]="'button'"
+              (click)="openPrayerDetail(prayer)"
+              (keydown)="onPrayerCardKeydown($event, prayer)"
             >
               <div class="community-card__top">
                 <span class="category-chip">{{ formatCategoryLabel(prayer.category) }}</span>

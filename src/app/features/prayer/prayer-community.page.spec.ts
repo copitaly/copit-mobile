@@ -418,6 +418,30 @@ describe('PrayerCommunityPage', () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/prayer/submit');
   });
 
+  it('navigates to prayer detail when a community card is opened', async () => {
+    prayerService.getCommunityPrayers.and.returnValue(of(buildResponse([firstPrayer])));
+
+    await createComponent();
+
+    page.openPrayerDetail(firstPrayer);
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/prayer/community/11');
+  });
+
+  it('opens prayer detail from keyboard activation on a community card', async () => {
+    prayerService.getCommunityPrayers.and.returnValue(of(buildResponse([firstPrayer])));
+
+    await createComponent();
+
+    const event = new KeyboardEvent('keydown', { key: 'Enter' });
+    spyOn(event, 'preventDefault');
+
+    page.onPrayerCardKeydown(event, firstPrayer);
+
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/prayer/community/11');
+  });
+
   it('renders a standard back button because Community is a secondary route', async () => {
     prayerService.getCommunityPrayers.and.returnValue(of(buildResponse([firstPrayer])));
 

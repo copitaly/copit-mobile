@@ -60,6 +60,50 @@ describe('PrayerService', () => {
     expect(responseBody).toEqual({ count: 0, next: null, previous: null, results: [] });
   });
 
+  it('calls the public community prayer detail endpoint', () => {
+    let responseBody: unknown;
+
+    service.getCommunityPrayer(18).subscribe((response) => {
+      responseBody = response;
+    });
+
+    const request = httpMock.expectOne((req) => req.url.endsWith('/api/public/prayer-requests/18/'));
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      id: 18,
+      scope: 'local',
+      church: {
+        id: 2,
+        name: 'Torino Central',
+        level: 'local',
+        district: { id: 6, name: 'Torino' },
+        area: { id: 7, name: 'Piemonte' },
+      },
+      category: 'health',
+      title: 'Healing',
+      request_text: 'Please pray for healing.',
+      display_name: 'Anonymous',
+      created_at: '2026-08-05T10:00:00Z',
+    });
+
+    expect(responseBody).toEqual({
+      id: 18,
+      scope: 'local',
+      church: {
+        id: 2,
+        name: 'Torino Central',
+        level: 'local',
+        district: { id: 6, name: 'Torino' },
+        area: { id: 7, name: 'Piemonte' },
+      },
+      category: 'health',
+      title: 'Healing',
+      request_text: 'Please pray for healing.',
+      display_name: 'Anonymous',
+      created_at: '2026-08-05T10:00:00Z',
+    });
+  });
+
   it('emits a community feed refresh signal when requested', () => {
     let emissionCount = 0;
     service.communityFeedRefresh$.subscribe(() => {

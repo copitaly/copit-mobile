@@ -210,6 +210,19 @@ export class PrayerCommunityPage implements OnInit, OnDestroy {
     this.loadInitialPrayers();
   }
 
+  openPrayerDetail(prayer: CommunityPrayerRequest): void {
+    void this.router.navigateByUrl(`/tabs/prayer/community/${prayer.id}`);
+  }
+
+  onPrayerCardKeydown(event: KeyboardEvent, prayer: CommunityPrayerRequest): void {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+
+    event.preventDefault();
+    this.openPrayerDetail(prayer);
+  }
+
   goToSubmit(): void {
     void this.router.navigateByUrl('/tabs/prayer/submit');
   }

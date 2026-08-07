@@ -128,6 +128,36 @@ export class PrayerService {
     );
   }
 
+  getCommunityPrayer(id: number): Observable<CommunityPrayerRequest> {
+    const path = `${this.communityEndpoint}${id}/`;
+
+    this.sentryTelemetry.addFeatureBreadcrumb('app', 'Community prayer detail load started', {
+      prayer_request_id: id,
+    });
+
+    return this.api.get<CommunityPrayerRequest>(path).pipe(
+      map((response) => {
+        const normalized = this.normalizeCommunityPrayerRequest(response);
+        if (!normalized) {
+          throw new Error('Invalid community prayer response.');
+        }
+        return normalized;
+      }),
+      tap((response) => {
+        this.sentryTelemetry.addFeatureBreadcrumb('app', 'Community prayer detail load succeeded', {
+          prayer_request_id: response.id,
+        });
+      }),
+      catchError((error) => {
+        this.sentryTelemetry.captureFeatureError('app', 'Community prayer detail load failed', error, {
+          prayer_request_id: id,
+          status: this.getHttpStatus(error),
+        });
+        return throwError(() => error);
+      })
+    );
+  }
+
   getPublicChurches(
     level: Exclude<PrayerScope, 'global'>,
     parentId?: number

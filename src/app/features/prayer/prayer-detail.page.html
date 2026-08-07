@@ -1,0 +1,67 @@
+<ion-page>
+  <ion-content fullscreen class="detail-content cop-content--secondary">
+    <div class="detail-shell cop-secondary-shell">
+      <header class="detail-header" [attr.aria-label]="'prayer.detailTitle' | t">
+        <p class="detail-header__eyebrow cop-page-header__eyebrow">{{ 'prayer.communityActionTitle' | t }}</p>
+        <app-mobile-header
+          [title]="'prayer.detailTitle' | t"
+          [subtitle]="'prayer.communityPageSubtitle' | t"
+          [showBack]="true"
+          [backAriaLabel]="'prayer.detailBackAria' | t"
+          fallbackRoute="/tabs/prayer/community"
+          tone="editorial"
+        ></app-mobile-header>
+      </header>
+
+      <div class="detail-surface">
+        <div *ngIf="loading" class="detail-card detail-card--loading" data-testid="loading-state" aria-live="polite">
+          <p class="detail-loading-copy">{{ 'prayer.detailLoadingPublic' | t }}</p>
+          <div class="skeleton-stack">
+            <span class="skeleton-pill skeleton-pill--badge"></span>
+            <span class="skeleton-line skeleton-line--title"></span>
+            <span class="skeleton-line skeleton-line--body" *ngFor="let item of skeletonItems"></span>
+          </div>
+        </div>
+
+        <div *ngIf="!loading && notFound" class="state-card" data-testid="not-found-state">
+          <div class="state-copy">
+            <h2>{{ 'prayer.detailUnavailableTitle' | t }}</h2>
+            <p>{{ 'prayer.detailUnavailableMessage' | t }}</p>
+          </div>
+        </div>
+
+        <div *ngIf="!loading && !notFound && errorMessage" class="state-card" data-testid="error-state">
+          <div class="state-copy">
+            <h2>{{ 'prayer.detailLoadErrorTitle' | t }}</h2>
+            <p>{{ errorMessage }}</p>
+          </div>
+          <ion-button expand="block" class="state-button" (click)="retryLoad()">{{ 'common.tryAgain' | t }}</ion-button>
+        </div>
+
+        <article *ngIf="!loading && !notFound && !errorMessage && prayer" class="detail-card" data-testid="prayer-detail">
+          <div class="detail-card__top">
+            <span class="category-chip">{{ formatCategoryLabel(prayer.category) }}</span>
+            <span class="detail-card__date" [attr.aria-label]="formatSubmittedLabel(prayer.created_at)">
+              {{ formatDate(prayer.created_at) }}
+            </span>
+          </div>
+
+          <h2 *ngIf="prayer.title" class="detail-card__title" data-testid="prayer-title">{{ prayer.title }}</h2>
+
+          <p class="detail-card__body" data-testid="prayer-request-text">{{ prayer.request_text }}</p>
+
+          <dl class="detail-meta">
+            <div class="detail-meta__row">
+              <dt>{{ 'prayer.sharedBy' | t }}</dt>
+              <dd data-testid="prayer-display-name">{{ prayer.display_name }}</dd>
+            </div>
+            <div class="detail-meta__row">
+              <dt>{{ 'prayer.detailScope' | t }}</dt>
+              <dd data-testid="prayer-scope-context">{{ formatScopeContext(prayer) }}</dd>
+            </div>
+          </dl>
+        </article>
+      </div>
+    </div>
+  </ion-content>
+</ion-page>
