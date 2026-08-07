@@ -148,10 +148,8 @@ describe('app routes', () => {
     }).compileComponents();
 
     const route = routes.find((item) => item.path === 'my-donations');
-    const guard = route?.canMatch?.[0] as CanMatchFn;
-    const result = TestBed.runInInjectionContext(() => guard?.(route as never, []));
 
-    expect(result).toBeTrue();
+    expect(route?.redirectTo).toBe('tabs/profile/my-donations');
   });
 
   it('keeps delete-account member-only even for eligible admin-role users', async () => {

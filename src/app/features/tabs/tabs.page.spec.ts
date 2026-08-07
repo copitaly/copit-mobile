@@ -97,6 +97,20 @@ describe('TabsPage', () => {
     expect(fixture.componentInstance.isActiveTab('home')).toBeTrue();
   });
 
+  it('keeps the tab bar visible on the My Offerings profile child route while leaving the Profile tab active', async () => {
+    await createComponent('/tabs/profile/my-donations');
+
+    expect(fixture.nativeElement.querySelector('[data-testid="tabs-bar"]')).not.toBeNull();
+    expect(fixture.componentInstance.isActiveTab('profile')).toBeTrue();
+  });
+
+  it('keeps the tab bar visible on the Recurring Offerings profile child route while leaving the Profile tab active', async () => {
+    await createComponent('/tabs/profile/recurring-donations');
+
+    expect(fixture.nativeElement.querySelector('[data-testid="tabs-bar"]')).not.toBeNull();
+    expect(fixture.componentInstance.isActiveTab('profile')).toBeTrue();
+  });
+
   it('marks the Profile tab active on the Profile tab route', async () => {
     await createComponent('/tabs/profile');
 
@@ -150,6 +164,8 @@ describe('Tabs routing', () => {
       'donate',
       'donate/success',
       'donate/cancel',
+      'profile/my-donations',
+      'profile/recurring-donations',
       'more',
       'profile',
       '',
@@ -210,6 +226,18 @@ describe('Tabs routing', () => {
 
     expect(successRoute?.redirectTo).toBe('tabs/donate/success');
     expect(cancelRoute?.redirectTo).toBe('tabs/donate/cancel');
+  });
+
+  it('redirects the legacy offering history routes to their canonical profile tab child routes', async () => {
+    const router = await createRouter();
+    const historyRoute = router.config.find((item) => item.path === 'my-donations');
+    const recurringRoute = router.config.find((item) => item.path === 'profile/recurring-donations');
+    const tabsRoute = router.config.find((item) => item.path === 'tabs');
+
+    expect(historyRoute?.redirectTo).toBe('tabs/profile/my-donations');
+    expect(recurringRoute?.redirectTo).toBe('tabs/profile/recurring-donations');
+    expect(tabsRoute?.children?.find((child) => child.path === 'profile/my-donations')?.loadComponent).toBeDefined();
+    expect(tabsRoute?.children?.find((child) => child.path === 'profile/recurring-donations')?.loadComponent).toBeDefined();
   });
 
   it('redirects the legacy /profile and /tabs/more routes to the canonical Profile tab route', async () => {

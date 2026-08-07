@@ -1723,6 +1723,10 @@ ion-content.recurring-content::part(scroll) {
   max-width: 28rem;
 }
 
+.donate-page-header .cop-page-header__eyebrow {
+  margin-bottom: 0.08rem;
+}
+
 .donate-surface .surface__content {
   overflow: visible;
   padding-bottom: calc(var(--cop-safe-bottom) + 24px);
@@ -1743,7 +1747,11 @@ ion-content.recurring-content::part(scroll) {
 }
 
 .donate-form-card {
-  padding: 1.1rem 1.05rem 1.15rem;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(8, 31, 92, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 24px rgba(7, 24, 69, 0.06);
+  padding: 1rem 1rem 1.08rem;
 }
 
 .donate-branch-summary {
@@ -1810,10 +1818,10 @@ ion-content.recurring-content::part(scroll) {
   display: flex;
   align-items: center;
   gap: 0.82rem;
-  padding: 0.92rem 0.95rem;
+  padding: 0.88rem 0.92rem;
   border: 1px solid rgba(8, 31, 92, 0.1);
-  border-radius: 18px;
-  background: rgba(248, 250, 252, 0.88);
+  border-radius: 14px;
+  background: rgba(248, 250, 252, 0.92);
   color: #0b1d73;
   text-align: left;
 }
@@ -1861,7 +1869,7 @@ ion-modal.donate-branch-sheet-modal {
 .donate-form {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 1rem;
   padding-top: 1rem;
   padding-bottom: calc(env(safe-area-inset-bottom) + 24px);
 }
@@ -1906,13 +1914,6 @@ ion-modal.donate-branch-sheet-modal {
   padding-bottom: 2rem;
 }
 
-.recurring-surface {
-  margin-top: -0.08rem;
-  padding-top: 1.25rem;
-  border-radius: 24px 24px 0 0;
-  box-shadow: 0 -6px 22px rgba(2, 18, 54, 0.08);
-}
-
 .recurring-surface__content {
   width: 100%;
   max-width: 440px;
@@ -1931,16 +1932,17 @@ ion-modal.donate-branch-sheet-modal {
 }
 
 .summary-card {
-  background: linear-gradient(135deg, #0b1d73 0%, #17349a 100%);
-  border-radius: 22px;
+  background: #fff;
+  border: 1px solid rgba(8, 31, 92, 0.08);
+  border-radius: 16px;
   padding: 1rem 1.05rem;
-  color: #ffffff;
-  box-shadow: 0 16px 34px rgba(11, 29, 115, 0.2);
+  color: var(--cop-color-text-primary);
+  box-shadow: 0 10px 22px rgba(7, 24, 69, 0.06);
 }
 
 .summary-card__eyebrow {
-  color: rgba(255, 255, 255, 0.76);
-  font-size: 0.82rem;
+  color: rgba(8, 31, 92, 0.58);
+  font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1948,14 +1950,15 @@ ion-modal.donate-branch-sheet-modal {
 
 .summary-card h2 {
   margin-top: 0.35rem;
-  font-size: 1.8rem;
+  color: var(--cop-color-text-primary);
+  font-size: 1.6rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
 .summary-card__meta {
   margin-top: 0.25rem;
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--cop-color-text-secondary);
   font-size: 0.9rem;
 }
 

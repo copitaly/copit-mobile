@@ -1,13 +1,15 @@
 <ion-page>
   <ion-content fullscreen class="outcome-content cop-page cop-page--warm cop-content--secondary">
     <div class="outcome-shell">
-      <app-mobile-header
-        class="outcome-header"
-        [title]="'donations.status.title' | t"
-        [subtitle]="'donations.status.subtitle' | t"
-        fallbackRoute="/tabs/donate"
-        tone="editorial"
-      ></app-mobile-header>
+      <header class="outcome-header" [attr.aria-label]="'donations.status.title' | t">
+        <p class="cop-page-header__eyebrow">{{ 'navigation.donate' | t }}</p>
+        <app-mobile-header
+          [title]="'donations.status.title' | t"
+          [subtitle]="'donations.status.subtitle' | t"
+          fallbackRoute="/tabs/donate"
+          tone="editorial"
+        ></app-mobile-header>
+      </header>
 
       <div class="outcome-main">
         <section class="outcome-status" aria-live="polite" role="status">

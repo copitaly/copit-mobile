@@ -295,7 +295,9 @@ export class HardwareBackCoordinatorService implements OnDestroy {
       currentUrl === '/profile/account-settings' ||
       currentUrl === '/saved-churches' ||
       currentUrl === '/my-donations' ||
-      currentUrl === '/profile/recurring-donations'
+      currentUrl === '/profile/recurring-donations' ||
+      currentUrl === '/tabs/profile/my-donations' ||
+      currentUrl === '/tabs/profile/recurring-donations'
     ) {
       return '/tabs/profile';
     }

@@ -152,7 +152,7 @@ describe('ProfilePage', () => {
     const button = fixture.nativeElement.querySelector('[data-testid="my-donations"]') as HTMLButtonElement | null;
     button?.click();
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/my-donations');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/profile/my-donations');
   });
 
   it('navigates to Recurring Donations from the giving section', async () => {
@@ -161,7 +161,7 @@ describe('ProfilePage', () => {
     const button = fixture.nativeElement.querySelector('[data-testid="recurring-donations"]') as HTMLButtonElement | null;
     button?.click();
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/profile/recurring-donations');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/profile/recurring-donations');
   });
 
   it('navigates to Saved Churches from the church section', async () => {

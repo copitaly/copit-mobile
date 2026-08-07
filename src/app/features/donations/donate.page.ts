@@ -82,13 +82,14 @@ function amountValidator(control: AbstractControl): ValidationErrors | null {
       <ion-content fullscreen class="donate-content cop-content--tabs" scrollY="true">
         <div class="donate-shell">
         <header class="cop-page-header donate-page-header" [attr.aria-label]="'donations.title' | t">
+          <p class="cop-page-header__eyebrow">{{ 'navigation.donate' | t }}</p>
           <h1 class="cop-page-header__title">{{ 'donations.title' | t }}</h1>
           <p class="cop-page-header__subtitle">{{ 'donations.subtitle' | t }}</p>
         </header>
 
         <div class="surface donate-surface">
           <div class="surface__content">
-              <div class="donate-form-card cop-card cop-card--soft">
+              <div class="donate-form-card">
               <section class="donate-branch-summary" aria-label="Selected church">
                 <div class="donate-branch-summary__top" *ngIf="branch; else chooseChurchField">
                   <div class="donate-branch-summary__copy">

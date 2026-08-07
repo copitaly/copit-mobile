@@ -263,6 +263,18 @@ export const routes: Routes = [
         loadComponent: () => import('./features/donations/cancel.page').then(m => m.DonateCancelPage)
       },
       {
+        path: 'profile/my-donations',
+        canMatch: [allowAuthenticatedMemberAppUsersOnly],
+        data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/tabs/profile' },
+        loadComponent: () => import('./features/donations/my-donations.page').then(m => m.MyDonationsPage)
+      },
+      {
+        path: 'profile/recurring-donations',
+        canMatch: [allowAuthenticatedMemberAppUsersOnly],
+        data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/tabs/profile' },
+        loadComponent: () => import('./features/donations/recurring-donations.page').then(m => m.RecurringDonationsPage)
+      },
+      {
         path: 'more',
         redirectTo: '/tabs/profile',
         pathMatch: 'full'
@@ -326,9 +338,8 @@ export const routes: Routes = [
   },
   {
     path: 'profile/recurring-donations',
-    canMatch: [allowAuthenticatedMemberAppUsersOnly],
-    data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/tabs/profile' },
-    loadComponent: () => import('./features/donations/recurring-donations.page').then(m => m.RecurringDonationsPage)
+    redirectTo: 'tabs/profile/recurring-donations',
+    pathMatch: 'full'
   },
   {
     path: 'profile',
@@ -337,9 +348,8 @@ export const routes: Routes = [
   },
   {
     path: 'my-donations',
-    canMatch: [allowAuthenticatedMemberAppUsersOnly],
-    data: { memberFeature: 'profile', unauthenticatedRedirect: '/login', forbiddenRedirect: '/tabs/profile' },
-    loadComponent: () => import('./features/donations/my-donations.page').then(m => m.MyDonationsPage)
+    redirectTo: 'tabs/profile/my-donations',
+    pathMatch: 'full'
   },
   {
     path: 'splash',

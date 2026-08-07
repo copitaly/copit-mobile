@@ -21,9 +21,10 @@ type RecurringFilter = 'active' | 'pending' | 'cancelled' | 'all';
   selector: 'app-recurring-donations',
   template: `
     <ion-page>
-      <ion-content fullscreen class="recurring-content cop-content--secondary">
+      <ion-content fullscreen class="recurring-content cop-content--tabs">
         <div class="recurring-shell cop-secondary-shell">
           <header class="recurring-header" [attr.aria-label]="'donations.recurringTitle' | t">
+            <p class="cop-page-header__eyebrow">{{ 'navigation.donate' | t }}</p>
             <app-mobile-header
               [title]="'donations.recurringTitle' | t"
               [subtitle]="'donations.recurringSubtitle' | t"

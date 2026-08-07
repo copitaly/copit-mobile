@@ -16,9 +16,10 @@ import { MobileHeaderComponent } from '../../shared/mobile-header.component';
   selector: 'app-my-donations',
   template: `
     <ion-page>
-      <ion-content fullscreen class="donations-content cop-content--secondary">
+      <ion-content fullscreen class="donations-content cop-content--tabs">
         <div class="donations-shell cop-secondary-shell">
           <header class="donations-header" [attr.aria-label]="'donations.historyTitle' | t">
+            <p class="cop-page-header__eyebrow">{{ 'navigation.donate' | t }}</p>
             <app-mobile-header
               [title]="'donations.historyTitle' | t"
               [subtitle]="'donations.historySubtitle' | t"
