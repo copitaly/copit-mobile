@@ -466,14 +466,35 @@ describe('PrayerCommunityPage', () => {
     expect(fixture.nativeElement.textContent).toContain('Pray with requests shared across COP Italy.');
   });
 
-  it('renders the share prayer request action below the header', async () => {
+  it('renders the share prayer request action after the prayer list', async () => {
     prayerService.getCommunityPrayers.and.returnValue(of(buildResponse([firstPrayer])));
 
     await createComponent();
 
     const submitAction = fixture.nativeElement.querySelector('[data-testid="submit-action"]') as HTMLElement | null;
+    const communityCard = fixture.nativeElement.querySelector('[data-testid="community-card"]') as HTMLElement | null;
     expect(submitAction?.textContent).toContain('Share Prayer Request');
+    expect(
+      !!submitAction &&
+        !!communityCard &&
+        !!(communityCard.compareDocumentPosition(submitAction) & Node.DOCUMENT_POSITION_FOLLOWING)
+    ).toBeTrue();
     expect(fixture.nativeElement.textContent).not.toContain('Submit a Prayer Request');
+  });
+
+  it('keeps the share prayer request action below the empty state', async () => {
+    prayerService.getCommunityPrayers.and.returnValue(of(buildResponse([])));
+
+    await createComponent();
+
+    const submitAction = fixture.nativeElement.querySelector('[data-testid="submit-action"]') as HTMLElement | null;
+    const emptyState = fixture.nativeElement.querySelector('[data-testid="empty-state"]') as HTMLElement | null;
+    expect(submitAction?.textContent).toContain('Share Prayer Request');
+    expect(
+      !!submitAction &&
+        !!emptyState &&
+        !!(emptyState.compareDocumentPosition(submitAction) & Node.DOCUMENT_POSITION_FOLLOWING)
+    ).toBeTrue();
   });
 
   it('does not intentionally render private or internal fields', async () => {
