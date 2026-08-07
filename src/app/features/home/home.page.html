@@ -3,48 +3,39 @@
     <p class="sr-only" aria-live="polite">{{ liveStatusMessage }}</p>
 
     <div class="home-shell cop-page-shell">
-      <section class="greet cop-page-header" [attr.aria-label]="'home.greetingAria' | t">
+      <section class="home-topbar" aria-hidden="true">
+        <span class="home-topbar__brand" style="color:rgba(255,255,255,.86)">{{ 'home.brand' | t }}</span>
+      </section>
+
+      <section class="greet home-greeting" [attr.aria-label]="'home.greetingAria' | t" style="padding-bottom:.3rem">
         <div class="greet__copy">
-          <p class="gold-kicker cop-page-header__eyebrow">{{ greeting }}</p>
-          <h1 class="cop-page-header__title">{{ 'home.title' | t }}</h1>
-          <p class="muted-copy cop-page-header__subtitle">{{ greetingSupportText }}</p>
+          <p class="gold-kicker">{{ greeting }}</p>
+          <h1>{{ greetingTitle }}</h1>
+          <p class="muted-copy">{{ greetingSupportText }}</p>
         </div>
       </section>
 
-      <section [attr.aria-label]="'bibleStudy.title' | t">
-        <div *ngIf="featuredManualLoading" class="hero hero--loading cop-card" data-testid="featured-manual-loading">
-          <div class="hero__media hero__media--skel"></div>
-          <div class="hero__body">
-            <div class="skel skel--sm" style="width:42%"></div>
-            <div class="skel skel--lg" style="width:78%"></div>
-            <div class="skel" style="width:58%"></div>
-            <div class="skel skel--pill" style="width:44%"></div>
-          </div>
-        </div>
+      <section class="dashboard-banner" [attr.aria-label]="'home.bannerAlt' | t" style="margin:.15rem 0 1rem;background:#071845;box-shadow:var(--cop-shadow-card-soft);aspect-ratio:2.42">
+        <img [src]="bannerImagePath" [alt]="'home.bannerAlt' | t" loading="eager" />
+      </section>
 
+      <section>
         <button
-          *ngIf="!featuredManualLoading"
           type="button"
-          class="hero hero--btn cop-card cop-card-button ion-activatable"
-          data-testid="featured-manual-card"
-          [attr.aria-label]="featuredHeroAriaLabel"
-          (click)="openFeaturedManual()"
+          class="offering-card ion-activatable"
+          data-testid="home-offering-card"
+          [attr.aria-label]="'home.offeringAria' | t"
+          style="aspect-ratio:16/5.2;box-shadow:var(--cop-shadow-card-soft)"
+          (click)="goToGive()"
         >
-          <div class="hero__media" [class.hero__media--fallback]="!featuredManual?.cover_image_url">
-            <img *ngIf="featuredManual?.cover_image_url; else heroFallback" [src]="featuredManual?.cover_image_url!" [alt]="featuredHeroImageAlt" />
-            <ng-template #heroFallback>
-              <div class="hero__fallback" aria-hidden="true">
-                <ion-icon name="book-outline"></ion-icon>
-              </div>
-            </ng-template>
-          </div>
-
-          <div class="hero__body">
-            <p class="gold-kicker cop-eyebrow">{{ featuredHeroEyebrow }}</p>
-            <h2 data-testid="featured-manual-title">{{ featuredHeroTitle }}</h2>
-            <p class="muted-copy cop-metadata">{{ featuredHeroMeta }}</p>
-            <span class="hero__cta">
-              <span>{{ featuredHeroActionLabel }}</span>
+          <img [src]="offeringImagePath" [alt]="'home.offeringImageAlt' | t" loading="lazy" />
+          <span class="offering-card__overlay" aria-hidden="true"></span>
+          <div class="offering-card__body">
+            <p class="gold-kicker">{{ 'home.offeringLabel' | t }}</p>
+            <h2>{{ 'home.offeringTitle' | t }}</h2>
+            <p style="margin:0;max-width:12rem;color:rgba(255,255,255,.9);font-size:.96rem;line-height:1.4">{{ 'home.offeringSubtitle' | t }}</p>
+            <span class="offering-card__cta">
+              <span>{{ 'home.offeringCta' | t }}</span>
               <ion-icon name="arrow-forward" aria-hidden="true"></ion-icon>
             </span>
           </div>
@@ -52,77 +43,192 @@
         </button>
       </section>
 
-      <section [attr.aria-label]="'home.dailySectionTitle' | t">
-        <div class="sec-head cop-section-heading"><h2 class="cop-section-heading__title">{{ 'home.dailySectionTitle' | t }}</h2></div>
-
-        <div *ngIf="todayDevotionalLoading && !hasTodayDevotional" class="mini mini--load cop-card cop-card--compact" data-testid="today-devotional-loading">
-          <div class="mini__body">
-            <div class="skel skel--sm" style="width:34%"></div>
-            <div class="skel skel--lg" style="width:72%"></div>
-            <div class="skel" style="width:88%"></div>
-            <div class="skel" style="width:64%"></div>
+      <section class="feature-grid" [attr.aria-label]="'home.featureGridAria' | t">
+        <button
+          type="button"
+          class="feature-card feature-card--study ion-activatable"
+          data-testid="home-feature-study"
+          [attr.aria-label]="'home.studyAria' | t"
+          style="display:grid;grid-template-columns:46px minmax(0,1fr) 18px;gap:.75rem;align-items:center;min-height:74px;padding:.85rem .9rem;border:1px solid rgba(11,29,115,.06);background:linear-gradient(135deg,#f2f6ff,#f8fbff);box-shadow:0 14px 36px rgba(7,24,69,.05)"
+          (click)="goToBibleStudy()"
+        >
+          <span class="feature-card__icon" aria-hidden="true" style="width:46px;height:46px;border-radius:999px;font-size:1.35rem;background:#1745b4;color:#fff"><ion-icon name="book-outline"></ion-icon></span>
+          <div class="feature-card__body">
+            <h3>{{ 'home.studyTitle' | t }}</h3>
+            <p>{{ 'home.studySubtitle' | t }}</p>
           </div>
+          <span class="feature-card__arrow" aria-hidden="true"><ion-icon name="arrow-forward"></ion-icon></span>
+          <ion-ripple-effect></ion-ripple-effect>
+        </button>
+
+        <button
+          type="button"
+          class="feature-card feature-card--devotions ion-activatable"
+          data-testid="home-feature-devotions"
+          [attr.aria-label]="'home.devotionsAria' | t"
+          style="display:grid;grid-template-columns:46px minmax(0,1fr) 18px;gap:.75rem;align-items:center;min-height:74px;padding:.85rem .9rem;border:1px solid rgba(11,29,115,.06);background:linear-gradient(135deg,#fff8e8,#fffdf8);box-shadow:0 14px 36px rgba(7,24,69,.05)"
+          (click)="goToDevotionals()"
+        >
+          <span class="feature-card__icon" aria-hidden="true" style="width:46px;height:46px;border-radius:999px;font-size:1.35rem;background:#e4af24;color:#fff"><ion-icon name="reader-outline"></ion-icon></span>
+          <div class="feature-card__body">
+            <h3>{{ 'home.devotionsTitle' | t }}</h3>
+            <p>{{ 'home.devotionsSubtitle' | t }}</p>
+          </div>
+          <span class="feature-card__arrow" aria-hidden="true"><ion-icon name="arrow-forward"></ion-icon></span>
+          <ion-ripple-effect></ion-ripple-effect>
+        </button>
+
+        <button
+          type="button"
+          class="feature-card feature-card--prayer ion-activatable"
+          data-testid="home-feature-prayer"
+          [attr.aria-label]="'home.prayerAria' | t"
+          style="display:grid;grid-template-columns:46px minmax(0,1fr) 18px;gap:.75rem;align-items:center;min-height:74px;padding:.85rem .9rem;border:1px solid rgba(11,29,115,.06);background:linear-gradient(135deg,#eef7f2,#f9fdfb);box-shadow:0 14px 36px rgba(7,24,69,.05)"
+          (click)="goToPrayer()"
+        >
+          <span class="feature-card__icon" aria-hidden="true" style="width:46px;height:46px;border-radius:999px;font-size:1.35rem;background:#3f7f60;color:#fff"><ion-icon name="hand-left-outline"></ion-icon></span>
+          <div class="feature-card__body">
+            <h3>{{ 'home.prayerTitle' | t }}</h3>
+            <p>{{ 'home.prayerSubtitle' | t }}</p>
+          </div>
+          <span class="feature-card__arrow" aria-hidden="true"><ion-icon name="arrow-forward"></ion-icon></span>
+          <ion-ripple-effect></ion-ripple-effect>
+        </button>
+
+        <button
+          type="button"
+          class="feature-card feature-card--community ion-activatable"
+          data-testid="home-feature-community"
+          [attr.aria-label]="'home.communityAria' | t"
+          style="display:grid;grid-template-columns:46px minmax(0,1fr) 18px;gap:.75rem;align-items:center;min-height:74px;padding:.85rem .9rem;border:1px solid rgba(11,29,115,.06);background:linear-gradient(135deg,#f3efff,#fbf9ff);box-shadow:0 14px 36px rgba(7,24,69,.05)"
+          (click)="goToCommunity()"
+        >
+          <span class="feature-card__icon" aria-hidden="true" style="width:46px;height:46px;border-radius:999px;font-size:1.35rem;background:#6a48b5;color:#fff"><ion-icon name="people-outline"></ion-icon></span>
+          <div class="feature-card__body">
+            <h3>{{ 'home.communityLabel' | t }}</h3>
+            <p>{{ 'home.communityGridSubtitle' | t }}</p>
+          </div>
+          <span class="feature-card__arrow" aria-hidden="true"><ion-icon name="arrow-forward"></ion-icon></span>
+          <ion-ripple-effect></ion-ripple-effect>
+        </button>
+      </section>
+
+      <section class="latest" [attr.aria-label]="'home.latestLabel' | t" style="margin-top:1.05rem">
+        <div class="latest__head" style="display:flex;align-items:center;justify-content:space-between">
+          <p class="gold-kicker">{{ 'home.latestLabel' | t }}</p>
+          <button type="button" class="latest__view-all" data-testid="home-latest-view-all" style="display:inline-flex;align-items:center;gap:.18rem;min-height:34px;padding:0;border:0;background:transparent;color:var(--cop-color-navy);font-size:.8rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase" (click)="goToBibleStudy()">
+            <span>{{ 'home.latestViewAll' | t }}</span>
+            <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>
+          </button>
         </div>
 
-        <p *ngIf="hasTodayDevotionalRefreshMessage" class="mini__status" data-testid="today-devotional-refresh-message" aria-live="polite">
-          {{ todayDevotionalStatusMessage }}
-        </p>
+        <div *ngIf="featuredManualLoading" class="latest-row latest-row--loading cop-card" data-testid="featured-manual-loading" style="grid-template-columns:84px minmax(0,1fr) auto;padding:.45rem .6rem;border:1px solid rgba(11,29,115,.08);box-shadow:0 12px 32px rgba(7,24,69,.04)">
+          <div class="latest-row__thumb latest-row__thumb--skeleton" style="height:68px;border-radius:10px"></div>
+          <div class="latest-row__body">
+            <div class="skel skel--sm" style="width:34%"></div>
+            <div class="skel skel--lg" style="width:72%"></div>
+            <div class="skel" style="width:56%"></div>
+          </div>
+          <div class="skel skel--pill latest-row__action-skeleton"></div>
+        </div>
+
+        <button
+          *ngIf="!featuredManualLoading && featuredManual"
+          type="button"
+          class="latest-row latest-row--button cop-card ion-activatable"
+          data-testid="home-latest-study"
+          [attr.aria-label]="featuredHeroAriaLabel"
+          style="grid-template-columns:84px minmax(0,1fr) auto;padding:.45rem .6rem;border:1px solid rgba(11,29,115,.08);box-shadow:0 12px 32px rgba(7,24,69,.04)"
+          (click)="openFeaturedManual()"
+        >
+          <img class="latest-row__thumb" [src]="latestBibleStudyImage" [alt]="featuredHeroImageAlt" loading="lazy" style="height:68px;border-radius:10px" (error)="handleFeaturedManualImageError()" />
+          <div class="latest-row__body">
+            <p class="latest-row__eyebrow">{{ 'home.latestStudyEyebrow' | t }}</p>
+            <h3 data-testid="featured-manual-title">{{ featuredHeroTitle }}</h3>
+            <p class="latest-row__meta">{{ featuredHeroMeta }}</p>
+          </div>
+          <span class="latest-row__action" style="min-width:64px;min-height:36px;padding:.48rem .76rem;font-size:.82rem">
+            <span>{{ 'home.latestReadCta' | t }}</span>
+            <ion-icon name="arrow-forward" aria-hidden="true"></ion-icon>
+          </span>
+          <ion-ripple-effect></ion-ripple-effect>
+        </button>
+
+        <div *ngIf="todayDevotionalLoading && !hasTodayDevotional" class="latest-row latest-row--loading cop-card" data-testid="today-devotional-loading" style="grid-template-columns:84px minmax(0,1fr) auto;padding:.45rem .6rem;border:1px solid rgba(11,29,115,.08);box-shadow:0 12px 32px rgba(7,24,69,.04)">
+          <div class="latest-row__thumb latest-row__thumb--skeleton" style="height:68px;border-radius:10px"></div>
+          <div class="latest-row__body">
+            <div class="skel skel--sm" style="width:30%"></div>
+            <div class="skel skel--lg" style="width:66%"></div>
+            <div class="skel" style="width:78%"></div>
+          </div>
+          <div class="skel skel--pill latest-row__action-skeleton"></div>
+        </div>
 
         <button
           *ngIf="hasTodayDevotional && todayDevotional"
           type="button"
-          class="mini mini--btn mini--devotional cop-card cop-card--compact cop-card-button ion-activatable"
+          class="latest-row latest-row--button cop-card ion-activatable"
           data-testid="today-devotional-card"
           [attr.aria-label]="buildTodayDevotionalAriaLabel()"
           [disabled]="todayDevotionalRefreshing"
+          style="grid-template-columns:84px minmax(0,1fr) auto;padding:.45rem .6rem;border:1px solid rgba(11,29,115,.08);box-shadow:0 12px 32px rgba(7,24,69,.04)"
           (click)="openTodayDevotional()"
         >
-          <div class="mini__body cop-reading-body">
-            <div class="mini__top">
-              <span class="mini__mark" aria-hidden="true"><ion-icon name="book-outline"></ion-icon></span>
-              <span class="mini__cta">{{ 'home.dailyReadCta' | t }} <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon></span>
-            </div>
-            <h3 class="mini__title" data-testid="today-devotional-title">{{ getTodayDevotionalTitle() }}</h3>
-            <p *ngIf="todayDevotionalScriptureSnippet; else devotionalPreview" class="mini__quote">{{ todayDevotionalScriptureSnippet }}</p>
-            <ng-template #devotionalPreview>
-              <p class="mini__quote" data-testid="today-devotional-preview">{{ getTodayDevotionalPreview() }}</p>
-            </ng-template>
-            <div class="mini__foot">
-              <p *ngIf="hasTodayScriptureReference()" class="mini__ref" data-testid="today-devotional-scripture">{{ todayDevotional.scripture_reference }}</p>
-              <p *ngIf="todayDevotionalDateLabel" class="mini__meta">{{ todayDevotionalDateLabel }}</p>
-            </div>
+          <img class="latest-row__thumb" [src]="latestDevotionImage" [alt]="getTodayDevotionalImageAlt()" loading="lazy" style="height:68px;border-radius:10px" (error)="handleTodayDevotionalImageError()" />
+          <div class="latest-row__body">
+            <p class="latest-row__eyebrow">{{ 'home.latestDevotionEyebrow' | t }}</p>
+            <h3 data-testid="today-devotional-title">{{ getTodayDevotionalTitle() }}</h3>
+            <p class="latest-row__excerpt" data-testid="today-devotional-preview">{{ latestDevotionPreview }}</p>
           </div>
+          <span class="latest-row__action" style="min-width:64px;min-height:36px;padding:.48rem .76rem;font-size:.82rem">
+            <span>{{ 'home.latestReadCta' | t }}</span>
+            <ion-icon name="arrow-forward" aria-hidden="true"></ion-icon>
+          </span>
           <ion-ripple-effect></ion-ripple-effect>
         </button>
 
-        <div *ngIf="todayDevotionalError && !hasTodayDevotional" class="mini mini--state cop-card cop-card--compact" data-testid="today-devotional-error" aria-live="polite">
-          <div class="mini__body mini__body--state">
-            <p class="muted-copy">{{ todayDevotionalStatusMessage }}</p>
-            <button type="button" class="soft-btn cop-button-secondary" data-testid="today-devotional-retry" [attr.aria-label]="'home.dailyErrorRetryAria' | t" (click)="retryTodayDevotional()">{{ 'common.retry' | t }}</button>
+        <div
+          *ngIf="todayDevotionalEmpty && !todayDevotionalLoading"
+          class="latest-row latest-row--state cop-card"
+          data-testid="today-devotional-empty"
+          [attr.aria-label]="getEmptyDevotionalAriaLabel()"
+          style="grid-template-columns:84px minmax(0,1fr) auto;padding:.45rem .6rem;border:1px solid rgba(11,29,115,.08);box-shadow:0 12px 32px rgba(7,24,69,.04)"
+          aria-live="polite"
+        >
+          <div class="latest-row__thumb latest-row__thumb--icon" aria-hidden="true" style="height:68px;border-radius:10px">
+            <ion-icon name="reader-outline"></ion-icon>
           </div>
-        </div>
-
-        <div *ngIf="todayDevotionalEmpty && !todayDevotionalLoading" class="mini mini--state cop-card cop-card--compact" data-testid="today-devotional-empty" [attr.aria-label]="getEmptyDevotionalAriaLabel()" aria-live="polite">
-          <div class="mini__body">
+          <div class="latest-row__body latest-row__body--state">
+            <p class="latest-row__eyebrow">{{ 'home.latestDevotionEyebrow' | t }}</p>
             <h3>{{ 'home.dailyEmptyTitle' | t }}</h3>
-            <p class="muted-copy">{{ 'home.dailyEmptySubtitle' | t }}</p>
-            <button type="button" class="soft-btn cop-button-secondary" data-testid="today-devotional-browse" [attr.aria-label]="'home.dailyBrowseCta' | t" (click)="goToDevotionals()">{{ 'home.dailyBrowseCta' | t }}</button>
+            <p class="latest-row__excerpt">{{ 'home.dailyEmptySubtitle' | t }}</p>
           </div>
+          <button
+            type="button"
+            class="latest-row__action latest-row__action--secondary"
+            data-testid="today-devotional-browse"
+            [attr.aria-label]="'home.dailyBrowseCta' | t"
+            style="min-width:64px;min-height:36px;padding:.48rem .76rem;font-size:.82rem"
+            (click)="goToDevotionals()"
+          >
+            <span>{{ 'home.dailyBrowseCta' | t }}</span>
+            <ion-icon name="arrow-forward" aria-hidden="true"></ion-icon>
+          </button>
         </div>
-      </section>
 
-      <section class="utility cop-card" [attr.aria-label]="'home.communityAria' | t">
-        <div class="utility__head">
-          <span class="utility__icon" aria-hidden="true"><ion-icon name="people-outline"></ion-icon></span>
-          <div>
-            <p class="gold-kicker cop-eyebrow">{{ 'home.communityLabel' | t }}</p>
-            <h3>{{ 'home.communityTitle' | t }}</h3>
-            <p class="muted-copy cop-copy-muted">{{ 'home.communitySubtitle' | t }}</p>
+        <div *ngIf="todayDevotionalError && !hasTodayDevotional" class="latest-row latest-row--state cop-card" data-testid="today-devotional-error" style="grid-template-columns:84px minmax(0,1fr) auto;padding:.45rem .6rem;border:1px solid rgba(11,29,115,.08);box-shadow:0 12px 32px rgba(7,24,69,.04)" aria-live="polite">
+          <div class="latest-row__thumb latest-row__thumb--icon" aria-hidden="true" style="height:68px;border-radius:10px">
+            <ion-icon name="alert-circle-outline"></ion-icon>
           </div>
-        </div>
-        <div class="utility__actions">
-          <button type="button" class="utility__btn utility__btn--solid" data-testid="request-prayer-button" (click)="goToPrayer()">{{ 'home.requestPrayer' | t }}</button>
-          <button type="button" class="utility__btn utility__btn--outline" data-testid="community-button" (click)="goToCommunity()">{{ 'home.communityCta' | t }}</button>
+          <div class="latest-row__body latest-row__body--state">
+            <p class="latest-row__eyebrow">{{ 'home.latestDevotionEyebrow' | t }}</p>
+            <h3>{{ 'home.dailyErrorTitle' | t }}</h3>
+            <p class="latest-row__excerpt">{{ todayDevotionalStatusMessage }}</p>
+          </div>
+          <button type="button" class="latest-row__action latest-row__action--secondary" data-testid="today-devotional-retry" [attr.aria-label]="'home.dailyErrorRetryAria' | t" style="min-width:64px;min-height:36px;padding:.48rem .76rem;font-size:.82rem" (click)="retryTodayDevotional()">
+            <span>{{ 'common.retry' | t }}</span>
+            <ion-icon name="refresh" aria-hidden="true"></ion-icon>
+          </button>
         </div>
       </section>
 

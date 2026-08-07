@@ -1,7 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 
+import { environment } from 'src/environments/environment';
 import { LocaleService } from '../localization/locale.service';
 import { DevotionalListFilters, DevotionalPublicDetail, DevotionalPublicListItem } from '../models/devotional.model';
 import { PaginatedResponse } from '../models/pagination.model';
@@ -36,9 +38,47 @@ export class DevotionalService {
   }
 
   getTodayDevotional(): Observable<DevotionalPublicDetail> {
+    const localDate = this.getLocalDateKey(new Date());
+    this.logTodaySelection('resolve:start', { localDate });
+
     return this.api
       .get<DevotionalPublicDetail>(`${this.publicDevotionalsEndpoint}today/`)
-      .pipe(map((response) => this.normalizeDetailResponse(response)));
+      .pipe(
+        map((response) => this.normalizeDetailResponse(response)),
+        switchMap((response) => {
+          const mismatchReason = this.getTodaySelectionMismatchReason(response, localDate);
+          if (!mismatchReason) {
+            this.logTodaySelection('resolve:today-endpoint', {
+              localDate,
+              selectedId: response.id,
+              publicationDate: response.publication_date,
+            });
+            return of(response);
+          }
+
+          this.logTodaySelection('resolve:fallback', {
+            localDate,
+            publicationDate: response.publication_date,
+            reason: mismatchReason,
+          });
+
+          return this.resolveTodayDevotionalFromList(localDate, mismatchReason);
+        }),
+        catchError((error: unknown) => {
+          this.logTodaySelection('resolve:today-endpoint-error', {
+            localDate,
+            reason: this.describeError(error),
+          });
+          return this.resolveTodayDevotionalFromList(localDate, 'today-endpoint-error').pipe(
+            catchError(() => throwError(() => error))
+          );
+        }),
+        switchMap((response) =>
+          response
+            ? of(response)
+            : throwError(() => new HttpErrorResponse({ status: 404, statusText: 'Not Found' }))
+        )
+      );
   }
 
   normalizeImageUrl(value: string | null | undefined): string | null {
@@ -133,5 +173,100 @@ export class DevotionalService {
   private normalizeOptionalText(value: string | null | undefined): string | null {
     const normalized = typeof value === 'string' ? value.trim() : '';
     return normalized || null;
+  }
+
+  private resolveTodayDevotionalFromList(
+    localDate: string,
+    reason: string
+  ): Observable<DevotionalPublicDetail | null> {
+    return this.getDevotionals({ page: 1 }).pipe(
+      map((response) => this.selectTodayDevotionalCandidate(response.results, localDate)),
+      switchMap((candidate) => {
+        if (!candidate?.slug) {
+          this.logTodaySelection('resolve:no-match', { localDate, reason });
+          return of(null);
+        }
+
+        this.logTodaySelection('resolve:list-match', {
+          localDate,
+          selectedId: candidate.id,
+          publicationDate: candidate.publication_date,
+          reason,
+        });
+
+        return this.getDevotionalBySlug(candidate.slug).pipe(
+          map((detail) => {
+            this.logTodaySelection('resolve:detail-match', {
+              localDate,
+              selectedId: detail.id,
+              publicationDate: detail.publication_date,
+            });
+            return detail;
+          })
+        );
+      })
+    );
+  }
+
+  private selectTodayDevotionalCandidate(
+    devotionals: DevotionalPublicListItem[],
+    localDate: string
+  ): DevotionalPublicListItem | null {
+    return devotionals.find((devotional) => devotional.publication_date === localDate) ?? null;
+  }
+
+  private getTodaySelectionMismatchReason(
+    devotional: DevotionalPublicDetail | null | undefined,
+    localDate: string
+  ): string | null {
+    if (!devotional) {
+      return 'empty-response';
+    }
+
+    if (!this.isRenderableDevotional(devotional)) {
+      return 'missing-renderable-content';
+    }
+
+    if (devotional.publication_date !== localDate) {
+      return 'publication-date-mismatch';
+    }
+
+    return null;
+  }
+
+  private isRenderableDevotional(devotional: DevotionalPublicDetail | null | undefined): boolean {
+    if (!devotional) {
+      return false;
+    }
+
+    return !!(
+      this.normalizeOptionalText(devotional.title) ||
+      this.normalizeOptionalText(devotional.content) ||
+      this.normalizeOptionalText(devotional.scripture_reference)
+    );
+  }
+
+  private getLocalDateKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private describeError(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      return `http-${error.status || 0}`;
+    }
+
+    const name = typeof error === 'object' && error && 'name' in error ? String((error as { name?: unknown }).name) : '';
+    return name || 'unknown-error';
+  }
+
+  private logTodaySelection(message: string, details: Record<string, unknown>): void {
+    if (environment.production) {
+      return;
+    }
+
+    console.info('[DevotionalService]', message, details);
   }
 }

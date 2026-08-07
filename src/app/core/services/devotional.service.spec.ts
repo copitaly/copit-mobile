@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
@@ -12,6 +12,9 @@ describe('DevotionalService', () => {
   let httpMock: HttpTestingController;
 
   beforeEach(async () => {
+    jasmine.clock().install();
+    jasmine.clock().mockDate(new Date(2026, 6, 28, 10, 0, 0));
+
     await TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting(), ApiService, DevotionalService],
     }).compileComponents();
@@ -22,6 +25,7 @@ describe('DevotionalService', () => {
 
   afterEach(() => {
     httpMock.verify();
+    jasmine.clock().uninstall();
   });
 
   it('uses the configured API base URL for the public devotionals list endpoint', () => {
@@ -136,6 +140,112 @@ describe('DevotionalService', () => {
       cover_image: null,
       publication_date: '2026-07-28',
     });
+  });
+
+  it('falls back to the public list when the today endpoint resolves a different date than the local app day', () => {
+    let responseBody: DevotionalPublicDetail | undefined;
+
+    service.getTodayDevotional().subscribe((response) => {
+      responseBody = response;
+    });
+
+    const todayRequest = httpMock.expectOne(`${environment.apiBaseUrl}/public/devotionals/today/`);
+    todayRequest.flush({
+      id: 2,
+      title: 'Tomorrow with Christ',
+      slug: 'tomorrow-with-christ',
+      scripture_reference: 'Psalm 46:10',
+      scripture_text: 'Be still, and know that I am God.',
+      content: 'Pause and remember who is with you tomorrow.',
+      reflection_question: null,
+      prayer: null,
+      author_name: null,
+      cover_image: null,
+      publication_date: '2026-07-29',
+    });
+
+    const listRequest = httpMock.expectOne((req) => req.url.endsWith('/api/public/devotionals/'));
+    expect(listRequest.request.params.get('page')).toBe('1');
+    listRequest.flush({
+      count: 2,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: 5,
+          title: 'Steady Grace for Today',
+          slug: 'steady-grace-for-today',
+          scripture_reference: 'Isaiah 41:10',
+          author_name: 'admin admin',
+          cover_image: 'https://example.com/cover.jpg',
+          publication_date: '2026-07-28',
+        },
+        {
+          id: 6,
+          title: 'Tomorrow with Christ',
+          slug: 'tomorrow-with-christ',
+          scripture_reference: 'Psalm 46:10',
+          author_name: 'admin admin',
+          cover_image: 'https://example.com/tomorrow.jpg',
+          publication_date: '2026-07-29',
+        },
+      ],
+    });
+
+    const detailRequest = httpMock.expectOne(
+      `${environment.apiBaseUrl}/public/devotionals/steady-grace-for-today/`
+    );
+    detailRequest.flush({
+      id: 5,
+      title: 'Steady Grace for Today',
+      slug: 'steady-grace-for-today',
+      scripture_reference: 'Isaiah 41:10',
+      scripture_text: 'Fear thou not; for I am with thee.',
+      content: 'Hold fast to God today.',
+      reflection_question: null,
+      prayer: null,
+      author_name: 'admin admin',
+      cover_image: 'https://example.com/cover.jpg',
+      publication_date: '2026-07-28',
+    });
+
+    expect(responseBody?.id).toBe(5);
+    expect(responseBody?.publication_date).toBe('2026-07-28');
+  });
+
+  it('returns a not-found error when no local-date devotion exists in the fallback list', () => {
+    let responseError: HttpErrorResponse | undefined;
+
+    service.getTodayDevotional().subscribe({
+      error: (error) => {
+        responseError = error;
+      },
+    });
+
+    httpMock.expectOne(`${environment.apiBaseUrl}/public/devotionals/today/`).flush(
+      { detail: 'Not found.' },
+      { status: 404, statusText: 'Not Found' }
+    );
+
+    const listRequest = httpMock.expectOne((req) => req.url.endsWith('/api/public/devotionals/'));
+    listRequest.flush({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: 6,
+          title: 'Tomorrow with Christ',
+          slug: 'tomorrow-with-christ',
+          scripture_reference: 'Psalm 46:10',
+          author_name: 'admin admin',
+          cover_image: 'https://example.com/tomorrow.jpg',
+          publication_date: '2026-07-29',
+        },
+      ],
+    });
+
+    expect(responseError?.status).toBe(404);
   });
 
   it('normalizes malformed devotional list payloads safely', () => {

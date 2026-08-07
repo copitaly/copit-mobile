@@ -128,26 +128,54 @@ describe('HomePage', () => {
     localeService = TestBed.inject(LocaleService);
   });
 
-  it('renders the new greeting header and supporting copy', async () => {
+  it('renders the dashboard greeting, navy top bar, and static banner', async () => {
     fixture = await createComponent();
     const text = fixture.nativeElement.textContent;
 
     expect(text).toContain('Welcome back');
-    expect(text).toContain('Find today');
-    expect(fixture.nativeElement.querySelector('.cop-page-shell')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.cop-page-header')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.greet__actions')).toBeNull();
+    expect(text).toContain('Peace be with you.');
+    expect(fixture.nativeElement.querySelector('.home-topbar')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.dashboard-banner img')?.getAttribute('src')).toContain('banner.png');
+    expect(fixture.nativeElement.querySelector('[aria-label="Notifications coming soon"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="account-button"]')).toBeNull();
   });
 
-  it('shows the latest Bible Study manual in the hero section', async () => {
+  it('shows the offering feature card and four dashboard shortcuts', async () => {
+    fixture = await createComponent();
+    const text = fixture.nativeElement.textContent;
+
+    expect(fixture.nativeElement.querySelector('[data-testid="home-offering-card"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="home-feature-study"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="home-feature-devotions"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="home-feature-prayer"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="home-feature-community"]')).not.toBeNull();
+    expect(text).toContain('Give an Offering');
+    expect(text).toContain('Support your local church.');
+    expect(text).toContain('Grow in the Word and knowledge.');
+    expect(text).toContain('Daily inspiration for your walk.');
+  });
+
+  it('shows the latest header with a View All action and the compact Bible Study row', async () => {
     fixture = await createComponent();
 
     expect(bibleStudyService.getPublishedManuals).toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('[data-testid="home-latest-view-all"]')?.textContent).toContain(
+      'View All'
+    );
+    expect(fixture.nativeElement.querySelector('[data-testid="home-latest-study"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="featured-manual-title"]')?.textContent).toContain(
       'Walking in Wisdom'
     );
-    expect(fixture.nativeElement.textContent).toContain('Start Reading');
+    expect(fixture.nativeElement.textContent).toContain('Read');
+  });
+
+  it('routes the latest View All action to the Bible Study tab', async () => {
+    fixture = await createComponent();
+
+    (fixture.nativeElement.querySelector('[data-testid="home-latest-view-all"]') as HTMLButtonElement).click();
+    await Promise.resolve();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/tabs/bible-study']);
   });
 
   it('formats featured Bible Study metadata with a middle-dot separator and correct week range', async () => {
@@ -157,10 +185,10 @@ describe('HomePage', () => {
     expect(page.featuredHeroMeta).not.toContain('\uFFFD');
   });
 
-  it('opens the featured manual detail route from the hero card', async () => {
+  it('opens the latest Bible Study reader route from the compact row', async () => {
     fixture = await createComponent();
 
-    (fixture.nativeElement.querySelector('[data-testid="featured-manual-card"]') as HTMLButtonElement).click();
+    (fixture.nativeElement.querySelector('[data-testid="home-latest-study"]') as HTMLButtonElement).click();
     await Promise.resolve();
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/bible-study/11/read');
@@ -183,36 +211,39 @@ describe('HomePage', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/tabs/bible-study']);
   });
 
-  it('renders the devotion card below the hero when a devotion is available', async () => {
+  it('renders the latest devotion row with compact copy when a devotion is available', async () => {
     devotionalService.getTodayDevotional.and.returnValue(of(todayDevotional));
 
     fixture = await createComponent();
-    const sectionLabels = Array.from(fixture.nativeElement.querySelectorAll('.sec-head h2')).map(
-      (node) => (node as HTMLElement).textContent?.trim() ?? ''
-    );
 
-    expect(sectionLabels).toEqual(['Daily Devotion']);
+    expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-card"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-empty"]')).toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Steady Grace for Today');
-    expect(fixture.nativeElement.textContent).toContain('Isaiah 41:10');
-    expect(
-      fixture.nativeElement.querySelector('[aria-label="Featured Bible Study"]')!.compareDocumentPosition(
-        fixture.nativeElement.querySelector('[aria-label="Daily Devotion"]')
-      ) & Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Fear thou not; for I am with thee.');
   });
 
-  it('uses the calm devotion card treatment with devotion CTA copy', async () => {
-    devotionalService.getTodayDevotional.and.returnValue(of(todayDevotional));
-
+  it('uses the actual Bible Study cover when available and falls back after an image error', async () => {
     fixture = await createComponent();
 
-    expect(fixture.nativeElement.textContent).toContain('Daily Devotion');
-    expect(fixture.nativeElement.textContent).toContain('Read devotion');
-    expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-image"]')).toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-card"]')?.className).toContain('cop-card');
+    expect(page.latestBibleStudyImage).toBe('https://example.com/manual-cover.jpg');
+
+    page.handleFeaturedManualImageError();
+
+    expect(page.latestBibleStudyImage).toBe('assets/img/cop-home-images/bible-study.png');
   });
 
-  it('opens the devotion detail route from the devotion card', async () => {
+  it('uses the actual devotion image when available and falls back after an image error', async () => {
+    devotionalService.getTodayDevotional.and.returnValue(of(todayDevotional));
+    fixture = await createComponent();
+
+    expect(page.latestDevotionImage).toBe('https://example.com/devotional-cover.jpg');
+
+    page.handleTodayDevotionalImageError();
+
+    expect(page.latestDevotionImage).toBe('assets/img/cop-home-images/daily-devotion.png');
+  });
+
+  it('opens the devotion detail route from the latest devotion row', async () => {
     devotionalService.getTodayDevotional.and.returnValue(of(todayDevotional));
 
     fixture = await createComponent();
@@ -223,7 +254,7 @@ describe('HomePage', () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/devotionals/steady-grace-for-today');
   });
 
-  it('shows a devotion empty state when none is available', async () => {
+  it('shows a compact devotion empty state when none is available', async () => {
     devotionalService.getTodayDevotional.and.returnValue(
       throwError(() => new HttpErrorResponse({ status: 404 }))
     );
@@ -231,109 +262,71 @@ describe('HomePage', () => {
     fixture = await createComponent();
 
     expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-empty"]')?.textContent).toContain(
-      "Today's devotion isn't available yet."
+      'Not available yet'
     );
     expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-empty"]')?.textContent).toContain(
       'Check back later today.'
     );
+    expect(fixture.nativeElement.querySelector('[data-testid="today-devotional-browse"]')?.textContent).toContain(
+      'Browse'
+    );
   });
 
-  it('does not render the old Home quick actions section', async () => {
+  it('routes the offering card through the existing offering flow', async () => {
     fixture = await createComponent();
 
-    expect(fixture.nativeElement.textContent).not.toContain('Quick Actions');
-    expect(fixture.nativeElement.querySelector('[data-testid="qa-prayer"]')).toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="qa-profile"]')).toBeNull();
+    (fixture.nativeElement.querySelector('[data-testid="home-offering-card"]') as HTMLButtonElement).click();
+    await Promise.resolve();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/branches']);
   });
 
-  it('renders the Community and Prayer utility card with both actions', async () => {
+  it('routes the dashboard feature cards to the existing destinations', async () => {
     fixture = await createComponent();
 
-    expect(fixture.nativeElement.textContent).toContain('Community');
-    expect(fixture.nativeElement.textContent).toContain("You're not walking this journey alone.");
-    expect(fixture.nativeElement.textContent).toContain('Connect with your church family or share a prayer request.');
-    expect(fixture.nativeElement.querySelector('[data-testid="request-prayer-button"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="community-button"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.utility')?.className).toContain('cop-card');
+    (fixture.nativeElement.querySelector('[data-testid="home-feature-study"]') as HTMLButtonElement).click();
+    (fixture.nativeElement.querySelector('[data-testid="home-feature-devotions"]') as HTMLButtonElement).click();
+    (fixture.nativeElement.querySelector('[data-testid="home-feature-prayer"]') as HTMLButtonElement).click();
+    (fixture.nativeElement.querySelector('[data-testid="home-feature-community"]') as HTMLButtonElement).click();
+    await Promise.resolve();
+
+    expect(router.navigate.calls.allArgs()).toContain([['/tabs/bible-study']]);
+    expect(router.navigateByUrl.calls.allArgs()).toContain(['/tabs/devotionals']);
+    expect(router.navigateByUrl.calls.allArgs()).toContain(['/prayer']);
+    expect(router.navigateByUrl.calls.allArgs()).toContain(['/community']);
   });
 
-  it('updates Home feature labels immediately when the locale changes while preserving backend titles', async () => {
+  it('updates dashboard labels immediately when the locale changes while preserving backend titles', async () => {
     devotionalService.getTodayDevotional.and.returnValue(of(todayDevotional));
 
     fixture = await createComponent();
     await localeService.setLocale('it', { persistGuest: false, source: 'runtime' });
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Ultimo studio biblico');
-    expect(fixture.nativeElement.textContent).toContain('Devozione quotidiana');
-    expect(fixture.nativeElement.textContent).toContain('Comunità');
+    expect(fixture.nativeElement.textContent).toContain('Ultimi contenuti');
+    expect(fixture.nativeElement.textContent).toContain('Studio biblico');
+    expect(fixture.nativeElement.textContent).toContain('Devozioni');
     expect(fixture.nativeElement.textContent).toContain('Walking in Wisdom');
 
     await localeService.setLocale('fr', { persistGuest: false, source: 'runtime' });
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Dernière étude biblique');
-    expect(fixture.nativeElement.textContent).toContain('Dévotion quotidienne');
-    expect(fixture.nativeElement.textContent).toContain('Communauté');
+    expect(fixture.nativeElement.textContent).toContain('Derniers contenus');
+    expect(fixture.nativeElement.textContent).toContain('Étude biblique');
+    expect(fixture.nativeElement.textContent).toContain('Dévotions');
     expect(fixture.nativeElement.textContent).toContain('Steady Grace for Today');
   });
 
-  it('opens Prayer and Community from the utility card', async () => {
-    fixture = await createComponent();
-
-    await page.goToPrayer();
-    await Promise.resolve();
-    await page.goToCommunity();
-    await Promise.resolve();
-
-    expect(router.navigateByUrl.calls.allArgs()).toContain(['/prayer']);
-    expect(router.navigateByUrl.calls.allArgs()).toContain(['/community']);
-  });
-
-  it('does not render the old header utility icons', async () => {
-    authState$.next(true);
-    authServiceStub.isAuthenticatedSnapshot = true;
-
-    fixture = await createComponent();
-
-    expect(fixture.nativeElement.querySelector('[aria-label="Notifications coming soon"]')).toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="account-button"]')).toBeNull();
-  });
-
-  it('shows the authenticated greeting support text when a first name exists', async () => {
+  it('shows the authenticated greeting title when a first name exists', async () => {
     authServiceStub.currentUserSnapshot = { first_name: 'Kojo' };
 
     fixture = await createComponent();
 
-    expect(fixture.nativeElement.textContent).toContain('Peace be with you, Kojo.');
+    expect(fixture.nativeElement.textContent).toContain('Welcome back, Kojo');
+    expect(fixture.nativeElement.textContent).toContain('Peace be with you.');
   });
 
-  it('keeps the lower utility card focused on Prayer and Community even when a branch is selected', async () => {
-    fixture = await createComponent();
-    (page as unknown as { defaultBranch: unknown }).defaultBranch = {
-      id: 9,
-      name: 'Rome Central Assembly',
-      branch_code: 'RCA',
-      level: 'local',
-      district: null,
-      area: null,
-      donations_enabled: true,
-      is_active: true,
-    };
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.textContent).toContain('Request Prayer');
-    expect(fixture.nativeElement.textContent).toContain('Community');
-    expect(fixture.nativeElement.textContent).not.toContain('Rome Central Assembly');
-  });
-
-  it('keeps the upcoming service card hidden when no schedule data exists', async () => {
-    fixture = await createComponent();
-
-    expect(fixture.nativeElement.textContent).not.toContain('Upcoming Service');
-  });
-
-  it('requests both Bible Study and devotion content without blocking the rest of the page', async () => {
+  it('requests both Bible Study and devotion content without blocking the rest of the dashboard', async () => {
     const devotionalResponse$ = new Subject<DevotionalPublicDetail>();
     devotionalService.getTodayDevotional.and.returnValue(devotionalResponse$.asObservable());
 

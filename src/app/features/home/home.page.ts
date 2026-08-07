@@ -47,6 +47,10 @@ export class HomePage implements OnInit, OnDestroy {
   readonly showBuildSafetyLabel = shouldShowBuildSafetyLabel();
   readonly devotionalPreviewMaxLength = 140;
   readonly scriptureSnippetMaxLength = 92;
+  readonly bannerImagePath = 'assets/img/cop-home-images/banner.png';
+  readonly offeringImagePath = 'assets/img/cop-home-images/offering.png';
+  readonly studyImagePath = 'assets/img/cop-home-images/bible-study.png';
+  readonly devotionImagePath = 'assets/img/cop-home-images/daily-devotion.png';
   private readonly destroy$ = new Subject<void>();
   private savedChurches: SavedChurch[] = [];
   private defaultBranch: PublicBranch | null = null;
@@ -56,6 +60,7 @@ export class HomePage implements OnInit, OnDestroy {
   private todayDevotionalRequestInFlight = false;
   private personalizationRequestInFlight = false;
   private featuredManualRequestInFlight = false;
+  private featuredManualImageFailed = false;
   private todayDevotionalImageFailed = false;
   private navigationPending = false;
   private homeRefreshInFlight = false;
@@ -119,14 +124,18 @@ export class HomePage implements OnInit, OnDestroy {
     return this.localeService.translate('home.greeting.evening');
   }
 
-  get greetingSupportText(): string {
+  get greetingTitle(): string {
     const firstName = this.normalizeText(this.authService.currentUserSnapshot?.first_name);
     if (!firstName) {
-      return this.localeService.translate('home.subtitle');
+      return this.localeService.translate('home.title');
     }
 
     const shortenedName = firstName.length > 24 ? `${firstName.slice(0, 24).trim()}...` : firstName;
-    return this.localeService.translate('home.personalizedSubtitle', { name: shortenedName });
+    return this.localeService.translate('home.personalizedTitle', { name: shortenedName });
+  }
+
+  get greetingSupportText(): string {
+    return this.localeService.translate('home.subtitle');
   }
 
   get hasTodayDevotionalRefreshMessage(): boolean {
@@ -163,6 +172,20 @@ export class HomePage implements OnInit, OnDestroy {
     }
 
     return this.localeService.translate('home.featuredAriaFallback');
+  }
+
+  get latestBibleStudyImage(): string {
+    const manualCover = this.normalizeText(this.featuredManual?.cover_image_url);
+    return manualCover && !this.featuredManualImageFailed ? manualCover : this.studyImagePath;
+  }
+
+  get latestDevotionImage(): string {
+    const devotionCover = this.normalizeText(this.todayDevotional?.cover_image);
+    return devotionCover && !this.todayDevotionalImageFailed ? devotionCover : this.devotionImagePath;
+  }
+
+  get latestDevotionPreview(): string {
+    return this.todayDevotionalScriptureSnippet || this.getTodayDevotionalPreview();
   }
 
   get todayDevotionalDateLabel(): string | null {
@@ -308,6 +331,10 @@ export class HomePage implements OnInit, OnDestroy {
     void this.loadTodayDevotional({ preserveCurrent: this.hasTodayDevotional });
   }
 
+  handleFeaturedManualImageError(): void {
+    this.featuredManualImageFailed = true;
+  }
+
   hasTodayScriptureReference(): boolean {
     return !!this.normalizeText(this.todayDevotional?.scripture_reference);
   }
@@ -434,6 +461,7 @@ export class HomePage implements OnInit, OnDestroy {
 
     if (!preserveCurrent) {
       this.featuredManual = null;
+      this.featuredManualImageFailed = false;
     }
 
     try {
@@ -446,6 +474,7 @@ export class HomePage implements OnInit, OnDestroy {
       }
 
       this.featuredManual = Array.isArray(response.results) && response.results.length > 0 ? response.results[0] : null;
+      this.featuredManualImageFailed = false;
       this.featuredManualError = false;
     } catch {
       if (requestId !== this.featuredManualRequestId) {
