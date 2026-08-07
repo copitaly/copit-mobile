@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 
-import { canUseMemberApp, hasMemberRole, normalizeUserRole } from '../../core/auth/member-app-access';
+import { canUseMemberApp, hasMemberRole } from '../../core/auth/member-app-access';
 import { LocaleService } from '../../core/localization/locale.service';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { AuthService } from '../../core/services/auth.service';
@@ -80,7 +80,7 @@ type ProfileActionSection = {
                 <div class="account-copy">
                   <h2 id="account-summary-title">{{ displayName }}</h2>
                   <p class="account-copy__email">{{ profile.email || ('profile.notProvided' | t) }}</p>
-                  <p class="account-meta">{{ membershipLabel }} <span aria-hidden="true">·</span> {{ 'profile.memberSince' | t:{ year: memberSinceLabel } }}</p>
+                  <p class="account-meta">{{ 'profile.memberSince' | t:{ year: memberSinceLabel } }}</p>
                 </div>
               </div>
 
@@ -345,14 +345,6 @@ export class ProfilePage implements OnInit, OnDestroy {
     return joinedDate.getUTCFullYear().toString();
   }
 
-  get membershipLabel(): string {
-    if (this.hasExactMemberRole) {
-      return this.localeService.translate('profile.memberAccount');
-    }
-
-    return this.profile?.role?.trim() || this.localeService.translate('profile.accountActive');
-  }
-
   get profileHeaderSubtitle(): string {
     if (!this.profile) {
       if (this.authMode === 'register') {
@@ -398,10 +390,6 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   get isTabsProfileRoute(): boolean {
     return this.router.url.startsWith('/tabs/profile');
-  }
-
-  get resolvedRole(): string | null {
-    return normalizeUserRole(this.profile?.role);
   }
 
   get hasMemberAppCapability(): boolean {

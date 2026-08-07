@@ -33,6 +33,7 @@ interface AreaBrowseGroup {
 }
 
 interface DonateBranchSheetRow {
+  kind: 'saved-branch' | 'church' | 'district' | 'area';
   icon: string;
   title: string;
   subtitle: string;
@@ -108,8 +109,8 @@ interface DonateBranchSheetRow {
 
             <ng-container *ngIf="!loading && !error">
               <div *ngIf="showSavedChurchesSection" class="donate-branch-sheet__section donate-branch-sheet__section--saved">
-                <div class="donate-branch-sheet__section-label">Saved Churches</div>
-                <p class="donate-branch-sheet__section-copy">Choose from your saved churches for faster giving.</p>
+                <div class="donate-branch-sheet__section-label">{{ localeService.translate('churchSelector.savedChurches') }}</div>
+                <p class="donate-branch-sheet__section-copy">{{ localeService.translate('churchSelector.savedChurchesCopy') }}</p>
               </div>
 
               <div *ngIf="showSavedChurchesSection" class="donate-branch-sheet__rows donate-branch-sheet__rows--saved">
@@ -141,7 +142,7 @@ interface DonateBranchSheetRow {
                 class="donate-branch-sheet__link-action"
                 (click)="showAllSavedChurches = true"
               >
-                View all saved churches
+                {{ localeService.translate('churchSelector.viewAllSavedChurches') }}
               </button>
 
               <div class="donate-branch-sheet__section">
@@ -150,7 +151,8 @@ interface DonateBranchSheetRow {
               </div>
 
               <div *ngIf="allVisibleRows.length === 0" class="donate-branch-sheet__state">
-                <p>{{ emptyMessage }}</p>
+                <p class="donate-branch-sheet__state-title">{{ emptyStateTitle }}</p>
+                <p>{{ emptyStateBody }}</p>
               </div>
 
               <div *ngIf="browseVisibleRows.length > 0" class="donate-branch-sheet__rows">
@@ -416,7 +418,7 @@ export class DonateBranchSheetComponent implements OnChanges {
 
   constructor(
     private readonly branchesService: BranchesService,
-    private readonly localeService: LocaleService
+    readonly localeService: LocaleService
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -468,6 +470,10 @@ export class DonateBranchSheetComponent implements OnChanges {
   }
 
   get sectionLabel(): string {
+    if (this.showingRootSearchResults) {
+      return this.localeService.translate('churchSelector.searchResults');
+    }
+
     if (this.currentLevel === 'churches') {
       return this.localeService.translate('churchSelector.locals');
     }
@@ -482,6 +488,10 @@ export class DonateBranchSheetComponent implements OnChanges {
   }
 
   get sectionCopy(): string {
+    if (this.showingRootSearchResults) {
+      return this.localeService.translate('churchSelector.searchResultsCopy');
+    }
+
     if (this.currentLevel === 'churches') {
       return this.mode === 'save'
         ? this.localeService.translate('churchSelector.selectChurchToSave')
@@ -497,7 +507,27 @@ export class DonateBranchSheetComponent implements OnChanges {
       : this.localeService.translate('churchSelector.selectArea');
   }
 
-  get emptyMessage(): string {
+  get emptyStateTitle(): string {
+    if (this.showingRootSearchResults) {
+      return this.localeService.translate('churchSelector.noMatchesTitle');
+    }
+
+    if (this.currentLevel === 'churches') {
+      return this.localeService.translate('churchSelector.noMatchesTitle');
+    }
+
+    if (this.currentLevel === 'districts') {
+      return this.localeService.translate('churchSelector.noDistrictMatchesTitle');
+    }
+
+    return this.localeService.translate('churchSelector.noMatchesTitle');
+  }
+
+  get emptyStateBody(): string {
+    if (this.showingRootSearchResults) {
+      return this.localeService.translate('churchSelector.noGlobalMatchesBody');
+    }
+
     if (this.currentLevel === 'churches') {
       return this.localeService.translate('churchSelector.noMatchesBody');
     }
@@ -510,15 +540,22 @@ export class DonateBranchSheetComponent implements OnChanges {
   }
 
   get showSavedChurchesSection(): boolean {
-    return this.mode === 'donate' && this.currentLevel === 'areas' && this.visibleSavedChurchRows.length > 0;
+    return this.mode === 'donate'
+      && this.currentLevel === 'areas'
+      && !this.showingRootSearchResults
+      && this.visibleSavedChurchRows.length > 0;
   }
 
   get showViewAllSavedChurchesAction(): boolean {
     return this.mode === 'donate'
       && this.currentLevel === 'areas'
-      && !this.searchTerm.trim()
+      && !this.showingRootSearchResults
       && !this.showAllSavedChurches
       && this.orderedSavedBranches.length > 4;
+  }
+
+  get showingRootSearchResults(): boolean {
+    return this.currentLevel === 'areas' && this.normalizedSearchTerm.length > 0;
   }
 
   get areaGroups(): AreaBrowseGroup[] {
@@ -598,17 +635,18 @@ export class DonateBranchSheetComponent implements OnChanges {
   }
 
   get visibleSavedChurchRows(): DonateBranchSheetRow[] {
-    if (this.mode !== 'donate' || this.currentLevel !== 'areas') {
+    if (this.mode !== 'donate' || this.currentLevel !== 'areas' || this.showingRootSearchResults) {
       return [];
     }
 
-    const query = this.searchTerm.trim().toLowerCase();
+    const query = this.normalizedSearchTerm;
     const matchingBranches = this.orderedSavedBranches.filter((branch) =>
       this.matchesQuery([branch.name, branch.district?.name, branch.area?.name, branch.branch_code], query)
     );
     const visibleBranches = !query && !this.showAllSavedChurches ? matchingBranches.slice(0, 4) : matchingBranches;
 
     return visibleBranches.map((branch) => ({
+      kind: 'saved-branch',
       icon: 'heart-outline',
       title: branch.name,
       subtitle: this.getBranchHierarchy(branch),
@@ -622,17 +660,22 @@ export class DonateBranchSheetComponent implements OnChanges {
   }
 
   get browseVisibleRows(): DonateBranchSheetRow[] {
-    const query = this.searchTerm.trim().toLowerCase();
+    const query = this.normalizedSearchTerm;
+
+    if (this.showingRootSearchResults) {
+      return this.rootSearchRows;
+    }
 
     if (this.currentLevel === 'churches') {
       return this.currentChurches
         .filter((branch) => this.matchesQuery([branch.name, branch.branch_code, branch.district?.name, branch.area?.name], query))
         .map((branch) => ({
+          kind: 'church',
           icon: 'location-outline',
           title: branch.name,
           subtitle: this.getChurchSubtitle(branch),
           ariaLabel: this.mode === 'save' ? `Save church ${branch.name}` : `Choose church ${branch.name}`,
-          disabled: this.isChurchDisabled(branch),
+          disabled: this.isSaveModeBranchDisabled(branch),
           payload: branch,
         }));
     }
@@ -641,6 +684,7 @@ export class DonateBranchSheetComponent implements OnChanges {
       return this.currentDistrictGroups
         .filter((district) => this.matchesQuery([district.name], query))
         .map((district) => ({
+          kind: 'district',
           icon: 'business-outline',
           title: district.name,
           subtitle: `${district.branches.length} church${district.branches.length === 1 ? '' : 'es'}`,
@@ -652,6 +696,7 @@ export class DonateBranchSheetComponent implements OnChanges {
     return this.areaGroups
       .filter((area) => this.matchesQuery([area.name], query))
       .map((area) => ({
+        kind: 'area',
         icon: 'map-outline',
         title: area.name,
         subtitle: `${area.districts.length} district${area.districts.length === 1 ? '' : 's'}`,
@@ -678,6 +723,57 @@ export class DonateBranchSheetComponent implements OnChanges {
       }
       return left.name.localeCompare(right.name);
     });
+  }
+
+  get rootSearchRows(): DonateBranchSheetRow[] {
+    const query = this.normalizedSearchTerm;
+    const allKnownBranches = [...this.allBranches];
+
+    this.orderedSavedBranches.forEach((branch) => {
+      if (!allKnownBranches.some((candidate) => candidate.id === branch.id)) {
+        allKnownBranches.push(branch);
+      }
+    });
+
+    const branchRows = allKnownBranches
+      .filter((branch) => this.matchesQuery([branch.name, branch.branch_code, branch.district?.name, branch.area?.name], query))
+      .sort((left, right) => left.name.localeCompare(right.name))
+      .map((branch) => ({
+        kind: this.savedBranchIds.includes(branch.id) || this.orderedSavedBranches.some((saved) => saved.id === branch.id)
+          ? 'saved-branch'
+          : 'church',
+        icon: this.orderedSavedBranches.some((saved) => saved.id === branch.id) ? 'heart-outline' : 'location-outline',
+        title: branch.name,
+        subtitle: this.getBranchHierarchy(branch),
+        ariaLabel: this.mode === 'save' ? `Save church ${branch.name}` : `Choose church ${branch.name}`,
+        disabled: this.mode === 'save' ? this.isSaveModeBranchDisabled(branch) : false,
+        payload: branch,
+      } satisfies DonateBranchSheetRow));
+
+    const districtRows = this.areaGroups
+      .reduce((districts: DistrictBrowseGroup[], area) => districts.concat(area.districts), [])
+      .filter((district) => this.matchesQuery([district.name, district.areaName], query))
+      .map((district) => ({
+        kind: 'district',
+        icon: 'business-outline',
+        title: district.name,
+        subtitle: `${district.areaName} ${this.localeService.translate('churchSelector.areaLabelSuffix')}`,
+        ariaLabel: `Choose district ${district.name}`,
+        payload: district,
+      } satisfies DonateBranchSheetRow));
+
+    const areaRows = this.areaGroups
+      .filter((area) => this.matchesQuery([area.name], query))
+      .map((area) => ({
+        kind: 'area',
+        icon: 'map-outline',
+        title: area.name,
+        subtitle: `${area.districts.length} district${area.districts.length === 1 ? '' : 's'}`,
+        ariaLabel: `Choose area ${area.name}`,
+        payload: area,
+      } satisfies DonateBranchSheetRow));
+
+    return [...branchRows, ...districtRows, ...areaRows];
   }
 
   loadBranches(): void {
@@ -739,12 +835,17 @@ export class DonateBranchSheetComponent implements OnChanges {
   }
 
   handleRowClick(row: DonateBranchSheetRow): void {
-    if (this.isSavedBranchPayload(row.payload)) {
-      this.branchSelected.emit(row.payload);
+    if (row.kind === 'saved-branch' || row.kind === 'church') {
+      const branch = row.payload as PublicBranch;
+      if (this.mode === 'save' && this.isSaveModeBranchDisabled(branch)) {
+        return;
+      }
+
+      this.branchSelected.emit(branch);
       return;
     }
 
-    if (this.currentLevel === 'areas') {
+    if (row.kind === 'area') {
       const area = row.payload as AreaBrowseGroup;
       this.selectedAreaKey = area.key;
       this.selectedDistrictKey = null;
@@ -753,20 +854,21 @@ export class DonateBranchSheetComponent implements OnChanges {
       return;
     }
 
-    if (this.currentLevel === 'districts') {
+    if (row.kind === 'district') {
       const district = row.payload as DistrictBrowseGroup;
+      const parentArea = this.areaGroups.find((area) => area.districts.some((candidate) => candidate.key === district.key)) ?? null;
+      this.selectedAreaKey = parentArea?.key ?? this.selectedAreaKey;
       this.selectedDistrictKey = district.key;
       this.currentLevel = 'churches';
       this.searchTerm = '';
       return;
     }
 
-    const branch = row.payload as unknown as PublicBranch;
-    if (this.isChurchDisabled(branch)) {
-      return;
-    }
-
-    this.branchSelected.emit(branch);
+    const area = row.payload as AreaBrowseGroup;
+    this.selectedAreaKey = area.key;
+    this.selectedDistrictKey = null;
+    this.currentLevel = 'districts';
+    this.searchTerm = '';
   }
 
   private resetTransientState(): void {
@@ -795,20 +897,26 @@ export class DonateBranchSheetComponent implements OnChanges {
 
   private getChurchSubtitle(branch: PublicBranch): string {
     if (this.mode === 'save') {
-      if (this.savingBranchId === branch.id) {
-        return 'Saving church...';
-      }
-
-      if (this.savedBranchIds.includes(branch.id)) {
-        return 'Already saved';
-      }
+      return this.getSaveModeBranchSubtitle(branch);
     }
 
     return this.getBranchHierarchy(branch);
   }
 
-  private isChurchDisabled(branch: PublicBranch): boolean {
-    if (this.currentLevel !== 'churches' || this.mode !== 'save') {
+  private getSaveModeBranchSubtitle(branch: PublicBranch): string {
+    if (this.savingBranchId === branch.id) {
+      return 'Saving church...';
+    }
+
+    if (this.savedBranchIds.includes(branch.id)) {
+      return 'Already saved';
+    }
+
+    return this.getBranchHierarchy(branch);
+  }
+
+  private isSaveModeBranchDisabled(branch: PublicBranch): boolean {
+    if (this.mode !== 'save') {
       return false;
     }
 
@@ -820,10 +928,18 @@ export class DonateBranchSheetComponent implements OnChanges {
       return true;
     }
 
-    return values.some((value) => value?.toLowerCase().includes(query));
+    return values.some((value) => this.normalizeSearchValue(value).includes(query));
   }
 
-  private isSavedBranchPayload(payload: AreaBrowseGroup | DistrictBrowseGroup | PublicBranch): payload is PublicBranch {
-    return this.currentLevel === 'areas' && 'branch_code' in payload;
+  private get normalizedSearchTerm(): string {
+    return this.normalizeSearchValue(this.searchTerm);
+  }
+
+  private normalizeSearchValue(value: string | null | undefined): string {
+    return (value ?? '')
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
   }
 }

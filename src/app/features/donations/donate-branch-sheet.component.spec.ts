@@ -32,6 +32,17 @@ describe('DonateBranchSheetComponent', () => {
     area: { id: 5, name: 'Veneto' },
   };
 
+  const anconaBranch: PublicBranch = {
+    id: 13,
+    name: 'ANCONA CENTRAL',
+    branch_code: 'ANC-01',
+    level: 'local',
+    donations_enabled: true,
+    is_active: true,
+    district: { id: 6, name: 'ANCONA' },
+    area: { id: 7, name: 'NAPOLI' },
+  };
+
   const makeSavedBranches = (count: number): PublicBranch[] =>
     Array.from({ length: count }, (_, index) => ({
       id: 100 + index,
@@ -106,6 +117,105 @@ describe('DonateBranchSheetComponent', () => {
 
     expect(component.browseVisibleRows.length).toBe(1);
     expect(component.browseVisibleRows[0].title).toBe('Brescia');
+  });
+
+  it('returns nested churches from the root search results', () => {
+    branchesService.getAllBranches.and.returnValue(of([anconaBranch]));
+
+    component.loadBranches();
+    component.searchTerm = 'anco';
+
+    expect(component.showingRootSearchResults).toBeTrue();
+    expect(component.browseVisibleRows.length).toBe(2);
+    expect(component.browseVisibleRows[0].kind).toBe('church');
+    expect(component.browseVisibleRows[0].title).toBe('ANCONA CENTRAL');
+    expect(component.browseVisibleRows[0].subtitle).toContain('ANCONA District');
+    expect(component.browseVisibleRows[0].subtitle).toContain('NAPOLI Area');
+  });
+
+  it('matches root search by church, district, and area names case-insensitively', () => {
+    branchesService.getAllBranches.and.returnValue(of([anconaBranch]));
+
+    component.loadBranches();
+
+    component.searchTerm = '  central ';
+    expect(component.browseVisibleRows.some((row) => row.title === 'ANCONA CENTRAL')).toBeTrue();
+
+    component.searchTerm = 'ancona';
+    expect(component.browseVisibleRows.some((row) => row.title === 'ANCONA CENTRAL')).toBeTrue();
+
+    component.searchTerm = 'napoli';
+    expect(component.browseVisibleRows.some((row) => row.title === 'ANCONA CENTRAL')).toBeTrue();
+  });
+
+  it('navigates into a district from the root search results', () => {
+    branchesService.getAllBranches.and.returnValue(of([anconaBranch]));
+
+    component.loadBranches();
+    component.searchTerm = 'ancona';
+
+    const districtRow = component.browseVisibleRows.find((row) => row.kind === 'district');
+
+    expect(districtRow).toBeDefined();
+
+    component.handleRowClick(districtRow!);
+
+    expect(component.currentLevel).toBe('churches');
+    expect(component.currentDistrictGroup?.name).toBe('ANCONA');
+    expect(component.searchTerm).toBe('');
+  });
+
+  it('selects a searched church immediately in donate mode', () => {
+    branchesService.getAllBranches.and.returnValue(of([anconaBranch]));
+    spyOn(component.branchSelected, 'emit');
+
+    component.mode = 'donate';
+    component.loadBranches();
+    component.searchTerm = 'anco';
+
+    component.handleRowClick(component.browseVisibleRows[0]);
+
+    expect(component.branchSelected.emit).toHaveBeenCalledWith(anconaBranch);
+  });
+
+  it('selects a searched church immediately in save mode', () => {
+    branchesService.getAllBranches.and.returnValue(of([anconaBranch]));
+    spyOn(component.branchSelected, 'emit');
+
+    component.mode = 'save';
+    component.loadBranches();
+    component.searchTerm = 'anco';
+
+    component.handleRowClick(component.browseVisibleRows[0]);
+
+    expect(component.branchSelected.emit).toHaveBeenCalledWith(anconaBranch);
+  });
+
+  it('clearing the root search restores browse by area', () => {
+    branchesService.getAllBranches.and.returnValue(of([anconaBranch]));
+
+    component.loadBranches();
+    component.searchTerm = 'anco';
+    expect(component.showingRootSearchResults).toBeTrue();
+
+    component.searchTerm = '';
+    component.onSearchChange();
+
+    expect(component.showingRootSearchResults).toBeFalse();
+    expect(component.sectionLabel).toBe('churchSelector.browseByArea');
+    expect(component.browseVisibleRows.length).toBe(1);
+    expect(component.browseVisibleRows[0].kind).toBe('area');
+  });
+
+  it('shows the updated no-results copy when root search has no matches', () => {
+    branchesService.getAllBranches.and.returnValue(of([anconaBranch]));
+
+    component.loadBranches();
+    component.searchTerm = 'missing';
+
+    expect(component.browseVisibleRows.length).toBe(0);
+    expect(component.emptyStateTitle).toBe('churchSelector.noMatchesTitle');
+    expect(component.emptyStateBody).toBe('churchSelector.noGlobalMatchesBody');
   });
 
   it('selects a saved church directly from the initial step', () => {

@@ -382,6 +382,7 @@ export class AuthService {
         map((profile) => {
           const normalizedProfile = this.normalizeMemberProfile(profile);
           if (!canUseMemberApp(normalizedProfile)) {
+            this.warnMissingMemberAppCapability(profile);
             this.invalidateMemberAppSession();
             throw new HttpErrorResponse({
               status: 403,
@@ -639,6 +640,17 @@ export class AuthService {
     }
 
     return this.normalizeMemberProfile(profile);
+  }
+
+  private warnMissingMemberAppCapability(profile: MemberProfile): void {
+    if (environment.production || profile.can_use_member_app === true || profile.can_use_member_app === false) {
+      return;
+    }
+
+    console.warn('[AuthService] Invalid /members/me response: missing can_use_member_app.', {
+      userId: profile.id,
+      role: profile.role,
+    });
   }
 
   private get sentryTelemetry(): SentryTelemetryService {

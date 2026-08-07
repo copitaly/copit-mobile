@@ -790,6 +790,10 @@
     "savedChurches": "Églises enregistrées",
     "areas": "Zones",
     "districts": "Districts",
+    "savedChurchesCopy": "Choisissez parmi vos églises enregistrées pour donner plus rapidement.",
+    "viewAllSavedChurches": "Voir toutes les églises enregistrées",
+    "searchResults": "Résultats de la recherche",
+    "searchResultsCopy": "Choisissez directement une église ou ouvrez son district ou sa zone.",
     "locals": "Églises locales",
     "browseByArea": "Parcourir par zone",
     "selectArea": "Sélectionnez votre zone",
@@ -805,6 +809,7 @@
     "districtLabelSuffix": "District",
     "areaLabelSuffix": "Zone",
     "otherAreas": "Autres zones",
+    "noGlobalMatchesBody": "Essayez un autre nom d'église, de district ou de zone.",
     "otherDistricts": "Autres districts",
     "noMatchesTitle": "Aucune église correspondante",
     "noMatchesBody": "Essayez une autre église, un autre district ou une autre zone.",
@@ -816,6 +821,7 @@
     "loadError": "Impossible de charger les branches. Veuillez réessayer.",
     "browseAllByArea": "Parcourez toutes les ?glises par zone.",
     "selectChurchToSave": "S?lectionnez une ?glise ? ajouter ? Mes ?glises.",
+    "noDistrictMatchesTitle": "Aucun district correspondant",
     "noDistrictMatchesBody": "Aucun district correspondant trouv?.",
     "noSavedOrAreaMatchesBody": "Aucune ?glise enregistr?e ou zone correspondante trouv?e."
   }

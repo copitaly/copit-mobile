@@ -105,7 +105,6 @@ describe('ProfilePage', () => {
     expect(text).toContain('Profile');
     expect(text).toContain('Member User');
     expect(text).toContain('member@example.com');
-    expect(text).toContain('Member account');
     expect(text).toContain('Member since 2026');
     expect(text).toContain('Edit Profile');
     expect(fixture.nativeElement.querySelector('.cop-page-header')).not.toBeNull();
@@ -116,8 +115,11 @@ describe('ProfilePage', () => {
     await createComponent();
 
     const summary = fixture.nativeElement.querySelector('.account-meta') as HTMLElement | null;
-    expect(summary?.textContent).toContain('Member account');
     expect(summary?.textContent).toContain('Member since 2026');
+    expect(summary?.textContent).not.toContain('platform_admin');
+    expect(summary?.textContent).not.toContain('branch_admin');
+    expect(summary?.textContent).not.toContain('district_admin');
+    expect(summary?.textContent).not.toContain('area_admin');
   });
 
   it('renders the top-level Profile tab without a back button', async () => {

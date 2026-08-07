@@ -273,7 +273,105 @@ describe('AuthService', () => {
     expect(localeService.handleLogout).toHaveBeenCalled();
   });
 
-  it('rejects member profile responses that do not expose member-app capability', fakeAsync(() => {
+  it('accepts member login only when members/me returns can_use_member_app=true', fakeAsync(() => {
+    let responseBody: MemberProfile | undefined;
+
+    service.login({ identifier: 'member@example.com', password: 'secret' }).subscribe((response) => {
+      responseBody = response;
+    });
+    flushMicrotasks();
+
+    httpMock.expectOne(api('auth/member-token')).flush({
+      access: 'active-token',
+      user: {
+        id: 7,
+        email: 'member@example.com',
+        first_name: 'Member',
+        last_name: 'User',
+        role: 'member',
+      },
+    });
+
+    httpMock.expectOne(api('members/me')).flush({
+      ...profile,
+      can_use_member_app: true,
+    });
+    flushMicrotasks();
+
+    expect(responseBody?.id).toBe(profile.id);
+    expect(responseBody?.can_use_member_app).toBeTrue();
+    expect(service.currentUserSnapshot?.can_use_member_app).toBeTrue();
+  }));
+
+  it('accepts branch_admin login only when members/me returns can_use_member_app=true', fakeAsync(() => {
+    let responseBody: MemberProfile | undefined;
+
+    service.login({ identifier: 'branch@example.com', password: 'secret' }).subscribe((response) => {
+      responseBody = response;
+    });
+    flushMicrotasks();
+
+    httpMock.expectOne(api('auth/member-token')).flush({
+      access: 'active-token',
+      user: {
+        id: 17,
+        email: 'branch@example.com',
+        first_name: 'Branch',
+        last_name: 'Admin',
+        role: 'branch_admin',
+      },
+    });
+
+    httpMock.expectOne(api('members/me')).flush({
+      ...profile,
+      id: 17,
+      email: 'branch@example.com',
+      first_name: 'Branch',
+      last_name: 'Admin',
+      role: 'branch_admin',
+      can_use_member_app: true,
+    });
+    flushMicrotasks();
+
+    expect(responseBody?.role).toBe('branch_admin');
+    expect(responseBody?.can_use_member_app).toBeTrue();
+  }));
+
+  it('accepts platform_admin login only when members/me returns can_use_member_app=true', fakeAsync(() => {
+    let responseBody: MemberProfile | undefined;
+
+    service.login({ identifier: 'platform@example.com', password: 'secret' }).subscribe((response) => {
+      responseBody = response;
+    });
+    flushMicrotasks();
+
+    httpMock.expectOne(api('auth/member-token')).flush({
+      access: 'active-token',
+      user: {
+        id: 27,
+        email: 'platform@example.com',
+        first_name: 'Platform',
+        last_name: 'Admin',
+        role: 'platform_admin',
+      },
+    });
+
+    httpMock.expectOne(api('members/me')).flush({
+      ...profile,
+      id: 27,
+      email: 'platform@example.com',
+      first_name: 'Platform',
+      last_name: 'Admin',
+      role: 'platform_admin',
+      can_use_member_app: true,
+    });
+    flushMicrotasks();
+
+    expect(responseBody?.role).toBe('platform_admin');
+    expect(responseBody?.can_use_member_app).toBeTrue();
+  }));
+
+  it('rejects member profile responses that set can_use_member_app=false', fakeAsync(() => {
     (service as unknown as { accessToken: string | null }).accessToken = 'active-token';
 
     let receivedError: HttpErrorResponse | null = null;
@@ -296,6 +394,107 @@ describe('AuthService', () => {
     expect((receivedError as unknown as HttpErrorResponse).status).toBe(403);
     expect(service.currentUserSnapshot).toBeNull();
     expect(service.accessTokenSnapshot).toBeNull();
+  }));
+
+  it('rejects member profile responses when can_use_member_app is missing', fakeAsync(() => {
+    (service as unknown as { accessToken: string | null }).accessToken = 'active-token';
+
+    let receivedError: HttpErrorResponse | null = null;
+    service.getCurrentUser().subscribe({
+      error: (error) => {
+        receivedError = error;
+      },
+    });
+    flushMicrotasks();
+
+    httpMock.expectOne(api('members/me')).flush({
+      ...profile,
+    });
+    flushMicrotasks();
+
+    expect(receivedError).toEqual(jasmine.any(HttpErrorResponse));
+    expect((receivedError as unknown as HttpErrorResponse).status).toBe(403);
+    expect(service.currentUserSnapshot).toBeNull();
+    expect(service.accessTokenSnapshot).toBeNull();
+  }));
+
+  it('rejects member profile responses when can_use_member_app is undefined', fakeAsync(() => {
+    (service as unknown as { accessToken: string | null }).accessToken = 'active-token';
+
+    let receivedError: HttpErrorResponse | null = null;
+    service.getCurrentUser().subscribe({
+      error: (error) => {
+        receivedError = error;
+      },
+    });
+    flushMicrotasks();
+
+    httpMock.expectOne(api('members/me')).flush({
+      ...profile,
+      can_use_member_app: undefined,
+    });
+    flushMicrotasks();
+
+    expect(receivedError).toEqual(jasmine.any(HttpErrorResponse));
+    expect((receivedError as unknown as HttpErrorResponse).status).toBe(403);
+    expect(service.currentUserSnapshot).toBeNull();
+    expect(service.accessTokenSnapshot).toBeNull();
+  }));
+
+  it('rejects member profile responses when can_use_member_app is null', fakeAsync(() => {
+    (service as unknown as { accessToken: string | null }).accessToken = 'active-token';
+
+    let receivedError: HttpErrorResponse | null = null;
+    service.getCurrentUser().subscribe({
+      error: (error) => {
+        receivedError = error;
+      },
+    });
+    flushMicrotasks();
+
+    httpMock.expectOne(api('members/me')).flush({
+      ...profile,
+      can_use_member_app: null,
+    });
+    flushMicrotasks();
+
+    expect(receivedError).toEqual(jasmine.any(HttpErrorResponse));
+    expect((receivedError as unknown as HttpErrorResponse).status).toBe(403);
+    expect(service.currentUserSnapshot).toBeNull();
+    expect(service.accessTokenSnapshot).toBeNull();
+  }));
+
+  it('rejects users whose members/me response explicitly sets can_use_member_app=false after login', fakeAsync(() => {
+    let receivedError: HttpErrorResponse | null = null;
+
+    service.login({ identifier: 'member@example.com', password: 'secret' }).subscribe({
+      error: (error) => {
+        receivedError = error;
+      },
+    });
+    flushMicrotasks();
+
+    httpMock.expectOne(api('auth/member-token')).flush({
+      access: 'active-token',
+      user: {
+        id: 7,
+        email: 'member@example.com',
+        first_name: 'Member',
+        last_name: 'User',
+        role: 'member',
+        can_use_member_app: true,
+      },
+    });
+
+    httpMock.expectOne(api('members/me')).flush({
+      ...profile,
+      can_use_member_app: false,
+    });
+    flushMicrotasks();
+
+    expect(receivedError).toEqual(jasmine.any(HttpErrorResponse));
+    expect((receivedError as unknown as HttpErrorResponse).status).toBe(403);
+    expect(service.currentUserSnapshot).toBeNull();
   }));
 
   it('sends canonical language in the member profile update payload', fakeAsync(() => {
