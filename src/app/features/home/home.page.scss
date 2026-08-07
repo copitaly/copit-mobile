@@ -9,11 +9,13 @@ ion-page,
 }
 
 .home-topbar {
-  min-height: calc(var(--cop-safe-top, env(safe-area-inset-top, 0px)) + 2.5rem);
+  min-height: calc(var(--cop-safe-top, env(safe-area-inset-top, 0px)) + 2.7rem);
   margin: calc(-1 * var(--cop-page-padding-top, 0px)) calc(-1 * var(--cop-page-padding-inline, 1rem)) 0;
-  padding: calc(var(--cop-safe-top, env(safe-area-inset-top, 0px)) + 0.75rem) var(--cop-page-padding-inline, 1rem)
-    0.65rem;
+  padding: var(--cop-safe-top, env(safe-area-inset-top, 0px)) var(--cop-page-padding-inline, 1rem) 0;
   background: linear-gradient(135deg, #071845, #0b1d73 60%, #113292);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .gold-kicker {
@@ -54,12 +56,12 @@ ion-page,
   border-radius: 20px;
 }
 
-.dashboard-banner{aspect-ratio:16/6}
 .dashboard-banner img {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: contain;
+  object-fit: cover;
+  object-position: center;
 }
 
 .offering-card,
@@ -78,11 +80,10 @@ ion-page,
   object-fit: cover;
 }
 
-.offering-card__overlay,
-.feature-card__scrim {
+.offering-card__overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(7, 24, 69, 0.8), rgba(7, 24, 69, 0.14) 68%, rgba(7, 24, 69, 0));
+  background: linear-gradient(90deg, rgba(7, 24, 69, 0.9) 0%, rgba(7, 24, 69, 0.68) 28%, rgba(7, 24, 69, 0.2) 58%, rgba(7, 24, 69, 0) 76%);
 }
 
 .offering-card__body,
@@ -95,15 +96,19 @@ ion-page,
 .offering-card__body {
   position: absolute;
   left: 0;
+  top: 0;
   bottom: 0;
   z-index: 1;
-  gap: 0.65rem;
-  padding: 1.2rem;
+  justify-content: center;
+  gap: 0.42rem;
+  width: min(48%, 11.75rem);
+  padding: 1rem 0 1rem 1.2rem;
 }
 
-.offering-card__body h2,
-.feature-card__body h3 {
+.offering-card__body h2 {
   color: #fff;
+  font-size: clamp(1.1rem, 3vw, 1.22rem);
+  line-height: 1.08;
 }
 
 .offering-card__cta,
@@ -125,61 +130,38 @@ ion-page,
   font-weight: 700;
 }
 
-.offering-card__cta {
-  background: var(--cop-color-gold);
-  color: #0b1d73;
-}
+.offering-card__cta { background: var(--cop-color-gold); color: #0b1d73; }
 
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
-}
-
-.feature-card__body {
-  gap: 0.12rem;
-  min-width: 0;
-}
+.feature-card__body { min-width: 0; }
 
 .feature-card__body h3 {
   color: var(--cop-color-navy-strong);
-  font-size: 0.82rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  line-height: 1.05;
-  text-transform: uppercase;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .feature-card__body p {
-  display: -webkit-box;
-  overflow: hidden;
-  font-size: 0.82rem;
-  line-height: 1.2;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-.latest {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
+  display: none;
 }
 
 .latest-row {
   display: grid;
-  gap: 0.7rem;
+  gap: 0.58rem;
   align-items: center;
   background: #fff;
-}
-
-.latest-row__thumb,
-.latest-row__thumb--skeleton {
   width: 100%;
+  justify-self: stretch;
+  box-sizing: border-box;
 }
 
 .latest-row__thumb {
   object-fit: cover;
-  background: #f0f3fa;
 }
 
 .latest-row__thumb--icon {
@@ -196,16 +178,13 @@ ion-page,
   background: #edf1f6;
 }
 
-.latest-row__body {
-  gap: 0.12rem;
-  min-width: 0;
-}
+.latest-row__body { min-width: 0; }
 
 .latest-row__body h3 {
   display: -webkit-box;
   overflow: hidden;
-  font-size: 0.92rem;
-  line-height: 1.18;
+  font-size: 1rem;
+  line-height: 1.22;
   color: var(--cop-color-navy-strong);
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -214,8 +193,8 @@ ion-page,
 .latest-row__eyebrow {
   margin: 0;
   color: rgba(11, 29, 115, 0.72);
-  font-size: 0.74rem;
-  line-height: 1.05;
+  font-size: 0.72rem;
+  line-height: 1.1;
 }
 
 .latest-row__meta,
@@ -231,6 +210,7 @@ ion-page,
   align-self: center;
   background: #0b1d73;
   color: #fff;
+  font-weight: 700;
 }
 
 .latest-row__action--secondary {
@@ -266,13 +246,15 @@ ion-page,
 
 @media (max-width: 389px) {
   .offering-card__body {
-    width: min(78%, 16rem);
+    width: min(50%, 11rem);
+    padding-left: 1rem;
   }
 
-  .feature-card__body h3,
-  .feature-card__body p,
-  .latest-row__action,
-  .latest__view-all {
-    font-size: 0.76rem;
+  .offering-card__body h2 {
+    font-size: 1.06rem;
+  }
+
+  .feature-card__body h3 {
+    font-size: 0.79rem;
   }
 }
