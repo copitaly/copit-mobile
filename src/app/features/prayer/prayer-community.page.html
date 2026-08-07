@@ -18,10 +18,6 @@
 
       <div class="community-surface">
         <div class="community-surface__content">
-          <ion-button expand="block" class="submit-button submit-button--header" data-testid="submit-action" (click)="goToSubmit()">
-            {{ 'prayer.sharePrayerRequest' | t }}
-          </ion-button>
-
           <section class="community-filters" [attr.aria-label]="'prayer.communityFiltersAria' | t">
             <label class="filter-chip">
               <span class="sr-only">{{ 'prayer.categoryFilter' | t }}</span>
@@ -117,6 +113,9 @@
               data-testid="community-card"
               tabindex="0"
               [attr.aria-label]="'prayer.communityCardAria' | t:{ name: prayer.display_name }"
+              [attr.role]="'button'"
+              (click)="openPrayerDetail(prayer)"
+              (keydown)="onPrayerCardKeydown($event, prayer)"
             >
               <div class="community-card__top">
                 <span class="category-chip">{{ formatCategoryLabel(prayer.category) }}</span>
@@ -139,6 +138,13 @@
                   <strong>{{ formatScopeContext(prayer) }}</strong>
                 </div>
               </div>
+
+              <div *ngIf="prayer.comment_count > 0" class="community-card__footer">
+                <span class="comment-count" data-testid="community-comment-count">
+                  <ion-icon name="chatbubble-ellipses-outline" aria-hidden="true"></ion-icon>
+                  <span>{{ prayer.comment_count }}</span>
+                </span>
+              </div>
             </article>
 
             <div *ngIf="loadMoreErrorMessage" class="load-more-error" data-testid="load-more-error">
@@ -157,6 +163,16 @@
               <span>{{ loadingMore ? ('prayer.loadingMore' | t) : ('prayer.loadMore' | t) }}</span>
             </ion-button>
           </section>
+
+          <ion-button
+            *ngIf="!loading && !errorMessage"
+            expand="block"
+            class="submit-button submit-button--footer"
+            data-testid="submit-action"
+            (click)="goToSubmit()"
+          >
+            {{ 'prayer.sharePrayerRequest' | t }}
+          </ion-button>
         </div>
       </div>
     </div>

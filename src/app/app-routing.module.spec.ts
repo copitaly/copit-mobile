@@ -7,6 +7,7 @@ import { AuthService } from './core/services/auth.service';
 import { SentryTelemetryService } from './core/services/sentry-telemetry.service';
 import { DevotionalDetailPage } from './features/devotionals/devotional-detail.page';
 import { DevotionalsPage } from './features/devotionals/devotionals.page';
+import { PrayerDetailPage } from './features/prayer/prayer-detail.page';
 
 describe('app routes', () => {
   it('registers the canonical devotionals list route inside the tabs shell', async () => {
@@ -35,6 +36,23 @@ describe('app routes', () => {
     const route = routes.find((item) => item.path === 'devotionals/:slug');
 
     expect(route?.redirectTo).toBe('tabs/devotionals/:slug');
+  });
+
+  it('registers the canonical prayer detail route inside the tabs shell', async () => {
+    const tabsRoute = routes.find((item) => item.path === 'tabs');
+    const route = tabsRoute?.children?.find((item) => item.path === 'prayer/community/:id');
+
+    expect(route).toBeDefined();
+    expect(route?.loadComponent).toBeDefined();
+
+    const loadedComponent = await route?.loadComponent?.();
+    expect(loadedComponent).toBe(PrayerDetailPage);
+  });
+
+  it('redirects the legacy prayer detail route to the canonical tabs detail route', () => {
+    const route = routes.find((item) => item.path === 'prayer/community/:id');
+
+    expect(route?.redirectTo).toBe('tabs/prayer/community/:id');
   });
 
   it('allows /tabs/profile to render directly without the standalone login guard', () => {

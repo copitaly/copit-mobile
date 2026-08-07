@@ -353,6 +353,7 @@ export class PrayerSubmitPage implements OnInit, OnDestroy {
       next: () => {
         this.isSubmitting = false;
         this.lastSubmittedVisibility = payload.visibility;
+        this.prayerService.notifyCommunityFeedUpdated();
         this.showSuccessState = true;
       },
       error: (error) => {

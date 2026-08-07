@@ -1,10 +1,12 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { Observable, Subject, throwError } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 
 import {
   CommunityPrayerRequest,
+  PrayerComment,
+  PrayerCommentCreatePayload,
   MemberPrayerRequest,
   PublicChurchHierarchy,
   PrayerHierarchyDependency,
@@ -54,6 +56,7 @@ export class PrayerService {
   private readonly publicChurchesEndpoint = 'public/churches/';
   private readonly myPrayerRequestsEndpoint = 'members/me/prayer-requests/';
   private readonly hierarchyPageSize = 100;
+  private readonly communityFeedRefreshSubject = new Subject<void>();
   private readonly supportedScopes = new Set<PrayerScope>(['global', 'area', 'district', 'local']);
   private readonly supportedVisibilities = new Set<PrayerVisibility>(['private', 'public']);
   private readonly supportedStatuses = new Set<PrayerStatus>(['pending', 'approved', 'rejected', 'resolved']);
@@ -62,6 +65,7 @@ export class PrayerService {
     available: true,
     reason: '',
   };
+  readonly communityFeedRefresh$ = this.communityFeedRefreshSubject.asObservable();
 
   submitPrayerRequest(
     payload: PrayerRequestSubmissionPayload
@@ -119,6 +123,102 @@ export class PrayerService {
       }),
       catchError((error) => {
         this.sentryTelemetry.captureFeatureError('app', 'Community prayers load failed', error, {
+          status: this.getHttpStatus(error),
+        });
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getCommunityPrayer(id: number): Observable<CommunityPrayerRequest> {
+    const path = `${this.communityEndpoint}${id}/`;
+
+    this.sentryTelemetry.addFeatureBreadcrumb('app', 'Community prayer detail load started', {
+      prayer_request_id: id,
+    });
+
+    return this.api.get<CommunityPrayerRequest>(path).pipe(
+      map((response) => {
+        const normalized = this.normalizeCommunityPrayerRequest(response);
+        if (!normalized) {
+          throw new Error('Invalid community prayer response.');
+        }
+        return normalized;
+      }),
+      tap((response) => {
+        this.sentryTelemetry.addFeatureBreadcrumb('app', 'Community prayer detail load succeeded', {
+          prayer_request_id: response.id,
+        });
+      }),
+      catchError((error) => {
+        this.sentryTelemetry.captureFeatureError('app', 'Community prayer detail load failed', error, {
+          prayer_request_id: id,
+          status: this.getHttpStatus(error),
+        });
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getCommunityPrayerComments(
+    prayerId: number,
+    pathOrUrl?: string
+  ): Observable<PaginatedResponse<PrayerComment>> {
+    const path = pathOrUrl ?? `${this.communityEndpoint}${prayerId}/comments/`;
+
+    this.sentryTelemetry.addFeatureBreadcrumb('app', 'Community prayer comments load started', {
+      prayer_request_id: prayerId,
+      path: pathOrUrl ? 'paginated-next' : `${this.communityEndpoint}{id}/comments/`,
+    });
+
+    return this.api.get<PaginatedResponse<PrayerComment>>(path).pipe(
+      map((response) => ({
+        ...response,
+        results: this.normalizePrayerComments(response.results),
+      })),
+      tap((response) => {
+        this.sentryTelemetry.addFeatureBreadcrumb('app', 'Community prayer comments load succeeded', {
+          prayer_request_id: prayerId,
+          count: response.results.length,
+          has_next_page: !!response.next,
+        });
+      }),
+      catchError((error) => {
+        this.sentryTelemetry.captureFeatureError('app', 'Community prayer comments load failed', error, {
+          prayer_request_id: prayerId,
+          status: this.getHttpStatus(error),
+        });
+        return throwError(() => error);
+      })
+    );
+  }
+
+  createCommunityPrayerComment(
+    prayerId: number,
+    payload: PrayerCommentCreatePayload
+  ): Observable<PrayerComment> {
+    const path = `${this.communityEndpoint}${prayerId}/comments/`;
+
+    this.sentryTelemetry.addFeatureBreadcrumb('app', 'Community prayer comment submission started', {
+      prayer_request_id: prayerId,
+      author_type: payload.guest_name?.trim() ? 'guest_named' : 'guest_or_member',
+    });
+
+    return this.withOptionalAuth((token) =>
+      this.http.post<PrayerComment>(this.buildUrl(path), payload, {
+        headers: token ? this.buildAuthHeaders(token) : undefined,
+      })
+    ).pipe(
+      map((response) => this.normalizePrayerComment(response)),
+      tap((response) => {
+        this.sentryTelemetry.addFeatureBreadcrumb('app', 'Community prayer comment submission succeeded', {
+          prayer_request_id: prayerId,
+          comment_id: response.id,
+        });
+      }),
+      catchError((error) => {
+        this.sentryTelemetry.captureFeatureError('app', 'Community prayer comment submission failed', error, {
+          prayer_request_id: prayerId,
           status: this.getHttpStatus(error),
         });
         return throwError(() => error);
@@ -209,6 +309,10 @@ export class PrayerService {
         return throwError(() => error);
       })
     );
+  }
+
+  notifyCommunityFeedUpdated(): void {
+    this.communityFeedRefreshSubject.next();
   }
 
   private buildUrl(path: string): string {
@@ -309,7 +413,28 @@ export class PrayerService {
       title: typeof prayer?.title === 'string' ? prayer.title : '',
       request_text: typeof prayer?.request_text === 'string' ? prayer.request_text : '',
       display_name: typeof prayer?.display_name === 'string' && prayer.display_name.trim() ? prayer.display_name : 'Anonymous',
+      comment_count: Number.isFinite(Number(prayer?.comment_count)) ? Math.max(0, Number(prayer?.comment_count)) : 0,
       created_at: typeof prayer?.created_at === 'string' ? prayer.created_at : '',
+    };
+  }
+
+  private normalizePrayerComments(results: PrayerComment[] | null | undefined): PrayerComment[] {
+    return (results ?? [])
+      .map((comment) => this.normalizePrayerComment(comment))
+      .filter((comment): comment is PrayerComment => Number.isFinite(comment.id));
+  }
+
+  private normalizePrayerComment(comment: PrayerComment | null | undefined): PrayerComment {
+    return {
+      id: Number(comment?.id),
+      author: {
+        name:
+          typeof comment?.author?.name === 'string' && comment.author.name.trim()
+            ? comment.author.name.trim()
+            : 'Anonymous',
+      },
+      comment_text: typeof comment?.comment_text === 'string' ? comment.comment_text : '',
+      created_at: typeof comment?.created_at === 'string' ? comment.created_at : '',
     };
   }
 

@@ -45,6 +45,7 @@ describe('PrayerCommunityPage', () => {
   let prayerService: jasmine.SpyObj<PrayerService>;
   let router: jasmine.SpyObj<Router>;
   let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
+  let communityFeedRefresh$: Subject<void>;
 
   const firstPrayer: CommunityPrayerRequest = {
     id: 11,
@@ -54,6 +55,7 @@ describe('PrayerCommunityPage', () => {
     title: 'Strength for this week',
     request_text: 'Please pray for peace and strength this week.',
     display_name: 'Efua',
+    comment_count: 4,
     created_at: '2026-07-21T15:00:00Z',
   };
 
@@ -106,6 +108,11 @@ describe('PrayerCommunityPage', () => {
 
   beforeEach(() => {
     prayerService = jasmine.createSpyObj<PrayerService>('PrayerService', ['getCommunityPrayers']);
+    communityFeedRefresh$ = new Subject<void>();
+    Object.defineProperty(prayerService, 'communityFeedRefresh$', {
+      value: communityFeedRefresh$.asObservable(),
+      configurable: true,
+    });
     router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl'], { url: '/tabs/prayer/community' });
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
     stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', [
@@ -161,6 +168,14 @@ describe('PrayerCommunityPage', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('Please pray for peace and strength this week.');
     expect(text).toContain('Efua');
+  });
+
+  it('renders a subtle comment count when comments exist', async () => {
+    prayerService.getCommunityPrayers.and.returnValue(of(buildResponse([firstPrayer])));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="community-comment-count"]')?.textContent).toContain('4');
   });
 
   it('uses a safe preview for long prayer text', async () => {
@@ -412,6 +427,30 @@ describe('PrayerCommunityPage', () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/prayer/submit');
   });
 
+  it('navigates to prayer detail when a community card is opened', async () => {
+    prayerService.getCommunityPrayers.and.returnValue(of(buildResponse([firstPrayer])));
+
+    await createComponent();
+
+    page.openPrayerDetail(firstPrayer);
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/prayer/community/11');
+  });
+
+  it('opens prayer detail from keyboard activation on a community card', async () => {
+    prayerService.getCommunityPrayers.and.returnValue(of(buildResponse([firstPrayer])));
+
+    await createComponent();
+
+    const event = new KeyboardEvent('keydown', { key: 'Enter' });
+    spyOn(event, 'preventDefault');
+
+    page.onPrayerCardKeydown(event, firstPrayer);
+
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/prayer/community/11');
+  });
+
   it('renders a standard back button because Community is a secondary route', async () => {
     prayerService.getCommunityPrayers.and.returnValue(of(buildResponse([firstPrayer])));
 
@@ -427,14 +466,35 @@ describe('PrayerCommunityPage', () => {
     expect(fixture.nativeElement.textContent).toContain('Pray with requests shared across COP Italy.');
   });
 
-  it('renders the share prayer request action below the header', async () => {
+  it('renders the share prayer request action after the prayer list', async () => {
     prayerService.getCommunityPrayers.and.returnValue(of(buildResponse([firstPrayer])));
 
     await createComponent();
 
     const submitAction = fixture.nativeElement.querySelector('[data-testid="submit-action"]') as HTMLElement | null;
+    const communityCard = fixture.nativeElement.querySelector('[data-testid="community-card"]') as HTMLElement | null;
     expect(submitAction?.textContent).toContain('Share Prayer Request');
+    expect(
+      !!submitAction &&
+        !!communityCard &&
+        !!(communityCard.compareDocumentPosition(submitAction) & Node.DOCUMENT_POSITION_FOLLOWING)
+    ).toBeTrue();
     expect(fixture.nativeElement.textContent).not.toContain('Submit a Prayer Request');
+  });
+
+  it('keeps the share prayer request action below the empty state', async () => {
+    prayerService.getCommunityPrayers.and.returnValue(of(buildResponse([])));
+
+    await createComponent();
+
+    const submitAction = fixture.nativeElement.querySelector('[data-testid="submit-action"]') as HTMLElement | null;
+    const emptyState = fixture.nativeElement.querySelector('[data-testid="empty-state"]') as HTMLElement | null;
+    expect(submitAction?.textContent).toContain('Share Prayer Request');
+    expect(
+      !!submitAction &&
+        !!emptyState &&
+        !!(emptyState.compareDocumentPosition(submitAction) & Node.DOCUMENT_POSITION_FOLLOWING)
+    ).toBeTrue();
   });
 
   it('does not intentionally render private or internal fields', async () => {
@@ -491,5 +551,21 @@ describe('PrayerCommunityPage', () => {
     expect(page.errorMessage).toBe('');
     expect(page.loadMoreErrorMessage).toContain("couldn't refresh community prayers");
     expect(complete).toHaveBeenCalled();
+  });
+
+  it('refreshes the community feed when a successful submission signal arrives', async () => {
+    prayerService.getCommunityPrayers.and.returnValues(
+      of(buildResponse([firstPrayer])),
+      of(buildResponse([{ ...firstPrayer, id: 99, title: 'Freshly submitted' }]))
+    );
+
+    await createComponent();
+    prayerService.getCommunityPrayers.calls.reset();
+
+    communityFeedRefresh$.next();
+    fixture.detectChanges();
+
+    expect(prayerService.getCommunityPrayers).toHaveBeenCalledWith({ page: 1 });
+    expect(page.prayers[0].id).toBe(99);
   });
 });

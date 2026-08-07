@@ -78,7 +78,22 @@ export interface CommunityPrayerRequest {
   title: string | null;
   request_text: string;
   display_name: string;
+  comment_count: number;
   created_at: string;
+}
+
+export interface PrayerComment {
+  id: number;
+  author: {
+    name: string;
+  };
+  comment_text: string;
+  created_at: string;
+}
+
+export interface PrayerCommentCreatePayload {
+  guest_name?: string;
+  comment_text: string;
 }
 
 export interface MemberPrayerRequest {

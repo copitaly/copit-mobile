@@ -232,6 +232,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/prayer/prayer-community.page').then(m => m.PrayerCommunityPage)
       },
       {
+        path: 'prayer/community/:id',
+        loadComponent: () => import('./features/prayer/prayer-detail.page').then(m => m.PrayerDetailPage)
+      },
+      {
         path: 'prayer/submit',
         canDeactivate: [blockDirtyPrayerRequestExit],
         loadComponent: () => import('./features/prayer/prayer-submit.page').then(m => m.PrayerSubmitPage)
@@ -414,6 +418,11 @@ export const routes: Routes = [
   {
     path: 'prayer/community',
     redirectTo: 'tabs/prayer/community',
+    pathMatch: 'full'
+  },
+  {
+    path: 'prayer/community/:id',
+    redirectTo: 'tabs/prayer/community/:id',
     pathMatch: 'full'
   },
   {

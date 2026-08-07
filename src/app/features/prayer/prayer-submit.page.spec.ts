@@ -91,7 +91,7 @@ describe('PrayerSubmitPage', () => {
       is_active: true,
     };
 
-    prayerService = jasmine.createSpyObj<PrayerService>('PrayerService', ['submitPrayerRequest', 'getPublicChurches'], {
+    prayerService = jasmine.createSpyObj<PrayerService>('PrayerService', ['submitPrayerRequest', 'getPublicChurches', 'notifyCommunityFeedUpdated'], {
       hierarchyDependency: {
         available: true,
         reason: '',
@@ -723,8 +723,9 @@ describe('PrayerSubmitPage', () => {
     page.submit();
 
     expect(prayerService.submitPrayerRequest).toHaveBeenCalled();
+    expect(prayerService.notifyCommunityFeedUpdated).toHaveBeenCalled();
     expect(page.showSuccessState).toBeTrue();
-    expect(page.successMessage).toContain('submitted for review');
+    expect(page.successMessage).toContain('approved automatically');
   });
 
   it('keeps the submit button disabled while submitting and prevents double submit', () => {

@@ -11,10 +11,6 @@
   gap: 0.35rem;
 }
 
-.community-header__eyebrow {
-  margin: 0;
-}
-
 .community-surface {
   width: 100%;
   max-width: 32rem;
@@ -31,7 +27,7 @@
 
 .community-surface__content {
   gap: 0.8rem;
-  padding-bottom: calc(1rem + var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)));
+  padding-bottom: calc(5.75rem + var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)));
 }
 
 .community-filters {
@@ -105,10 +101,8 @@
   font-weight: 700;
 }
 
-.submit-button--header {
-  align-self: flex-start;
-  margin-bottom: 0.1rem;
-  min-width: 13rem;
+.submit-button--footer {
+  margin-top: 0.4rem;
 }
 
 .community-feed,
@@ -135,6 +129,7 @@
 .community-card {
   padding: 0.9rem 0.92rem;
   outline: none;
+  cursor: pointer;
 }
 
 .community-card:focus-visible {
@@ -190,6 +185,20 @@
   flex-direction: column;
   gap: 0.38rem;
   margin-top: 0.08rem;
+}
+
+.community-card__footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.comment-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  color: rgba(8, 31, 92, 0.54);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .meta-row span {

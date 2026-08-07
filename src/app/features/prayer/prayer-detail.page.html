@@ -1,0 +1,196 @@
+<ion-page>
+  <ion-content fullscreen class="detail-content cop-content--secondary">
+    <div class="detail-shell cop-secondary-shell">
+      <header class="detail-header" [attr.aria-label]="'prayer.detailTitle' | t">
+        <p class="detail-header__eyebrow cop-page-header__eyebrow">{{ 'prayer.communityActionTitle' | t }}</p>
+        <app-mobile-header
+          [title]="'prayer.detailTitle' | t"
+          [subtitle]="'prayer.communityPageSubtitle' | t"
+          [showBack]="true"
+          [backAriaLabel]="'prayer.detailBackAria' | t"
+          fallbackRoute="/tabs/prayer/community"
+          tone="editorial"
+        ></app-mobile-header>
+      </header>
+
+      <div class="detail-surface">
+        <div *ngIf="loading" class="detail-card detail-card--loading" data-testid="loading-state" aria-live="polite">
+          <p class="detail-loading-copy">{{ 'prayer.detailLoadingPublic' | t }}</p>
+          <div class="skeleton-stack">
+            <span class="skeleton-pill skeleton-pill--badge"></span>
+            <span class="skeleton-line skeleton-line--title"></span>
+            <span class="skeleton-line skeleton-line--body" *ngFor="let item of skeletonItems"></span>
+          </div>
+        </div>
+
+        <div *ngIf="!loading && notFound" class="state-card" data-testid="not-found-state">
+          <div class="state-copy">
+            <h2>{{ 'prayer.detailUnavailableTitle' | t }}</h2>
+            <p>{{ 'prayer.detailUnavailableMessage' | t }}</p>
+          </div>
+        </div>
+
+        <div *ngIf="!loading && !notFound && errorMessage" class="state-card" data-testid="error-state">
+          <div class="state-copy">
+            <h2>{{ 'prayer.detailLoadErrorTitle' | t }}</h2>
+            <p>{{ errorMessage }}</p>
+          </div>
+          <ion-button expand="block" class="state-button" (click)="retryLoad()">{{ 'common.tryAgain' | t }}</ion-button>
+        </div>
+
+        <ng-container *ngIf="!loading && !notFound && !errorMessage && prayer">
+          <article class="detail-prayer" data-testid="prayer-detail">
+            <div class="detail-card__top">
+              <span class="category-chip">{{ formatCategoryLabel(prayer.category) }}</span>
+              <span class="detail-card__date" [attr.aria-label]="formatSubmittedLabel(prayer.created_at)">
+                {{ formatDate(prayer.created_at) }}
+              </span>
+            </div>
+
+            <section class="detail-prayer__surface cop-card--prayer" data-testid="prayer-request-surface">
+              <h2 class="detail-prayer__label cop-eyebrow" data-testid="prayer-request-label" style="margin:0">Prayer Request</h2>
+
+              <h3 *ngIf="prayer.title" class="detail-prayer__title" data-testid="prayer-title">{{ prayer.title }}</h3>
+
+              <p class="cop-reading-body" data-testid="prayer-request-text" style="margin:0;white-space:pre-line;overflow-wrap:anywhere">
+                {{ prayer.request_text }}
+              </p>
+            </section>
+
+            <dl class="detail-meta">
+              <div class="detail-meta__row">
+                <dt>{{ 'prayer.sharedBy' | t }}</dt>
+                <dd data-testid="prayer-display-name">{{ prayer.display_name }}</dd>
+              </div>
+              <div class="detail-meta__row">
+                <dt>{{ 'prayer.detailScope' | t }}</dt>
+                <dd data-testid="prayer-scope-context">{{ formatScopeContext(prayer) }}</dd>
+              </div>
+            </dl>
+          </article>
+
+          <section class="detail-card detail-comments" data-testid="comments-section" [attr.aria-label]="'prayer.commentsTitle' | t">
+            <div class="detail-section-heading">
+              <div style="display:inline-flex;align-items:center;gap:.45rem;min-width:0">
+                <ion-icon
+                  name="chatbubble-ellipses-outline"
+                  aria-hidden="true"
+                  style="color:#0b1d73;font-size:1rem;flex-shrink:0"
+                ></ion-icon>
+                <h2>{{ 'prayer.commentsTitle' | t }}</h2>
+              </div>
+              <span
+                data-testid="comments-count-badge"
+                style="display:inline-flex;align-items:center;justify-content:center;min-width:1.6rem;min-height:1.6rem;padding:.1rem .5rem;border-radius:999px;background:rgba(11,29,115,.08);color:#0b1d73;font-size:.78rem;font-weight:700;line-height:1;flex-shrink:0"
+              >
+                {{ displayedCommentCount }}
+              </span>
+            </div>
+
+            <div *ngIf="commentsLoading" class="detail-inline-state" data-testid="comments-loading" aria-live="polite">
+              <p>{{ 'prayer.loadingMore' | t }}</p>
+            </div>
+
+            <div *ngIf="!commentsLoading && commentsErrorMessage" class="detail-inline-state detail-inline-state--error" data-testid="comments-error">
+              <p>{{ commentsErrorMessage }}</p>
+              <button type="button" class="inline-action-button" (click)="retryComments()">{{ 'common.tryAgain' | t }}</button>
+            </div>
+
+            <div
+              *ngIf="!commentsLoading && !commentsErrorMessage && comments.length === 0"
+              class="detail-inline-state"
+              data-testid="comments-empty-state"
+            >
+              <p>{{ 'prayer.commentsEmpty' | t }}</p>
+            </div>
+
+            <div *ngIf="!commentsLoading && comments.length > 0" class="comment-thread">
+              <article class="comment-card" *ngFor="let comment of comments" data-testid="comment-item">
+                <div class="comment-card__top">
+                  <strong class="comment-card__author" data-testid="comment-author">{{ comment.author.name }}</strong>
+                  <span class="comment-card__date">{{ formatCommentDateTime(comment.created_at) }}</span>
+                </div>
+                <p class="comment-card__body" data-testid="comment-text">{{ comment.comment_text }}</p>
+              </article>
+
+              <div *ngIf="commentsLoadMoreErrorMessage" class="detail-inline-state detail-inline-state--error" data-testid="comments-load-more-error">
+                <p>{{ commentsLoadMoreErrorMessage }}</p>
+              </div>
+
+              <button
+                *ngIf="commentsNextPageUrl"
+                type="button"
+                class="inline-action-button inline-action-button--secondary"
+                [disabled]="commentsLoading"
+                (click)="loadMoreComments()"
+              >
+                {{ 'prayer.loadMore' | t }}
+              </button>
+            </div>
+          </section>
+
+          <section class="detail-card detail-card--composer" data-testid="comment-form">
+            <div class="detail-section-heading detail-section-heading--composer">
+              <h2>{{ 'prayer.leaveCommentTitle' | t }}</h2>
+            </div>
+
+            <form class="comment-form" [formGroup]="commentForm" (ngSubmit)="submitComment()">
+              <label *ngIf="isAuthenticatedMember || showGuestComposer" class="comment-field">
+                <span>{{ 'prayer.commentFieldLabel' | t }}</span>
+                <textarea
+                  data-testid="comment-text-field"
+                  rows="4"
+                  formControlName="comment_text"
+                  [attr.maxlength]="maxCommentLength + 20"
+                  [placeholder]="'prayer.commentFieldPlaceholder' | t"
+                  (input)="onCommentFieldInput('comment_text')"
+                ></textarea>
+                <div class="comment-field__footer">
+                  <small *ngIf="commentControlError('comment_text')" class="comment-field__error" role="alert">
+                    {{ commentControlError('comment_text') }}
+                  </small>
+                  <small class="comment-field__count">{{ commentCharacterCount }} / {{ maxCommentLength }}</small>
+                </div>
+              </label>
+
+              <label *ngIf="showGuestComposer" class="comment-field">
+                <span>{{ 'prayer.commentGuestNameLabel' | t }}</span>
+                <input
+                  data-testid="guest-name-field"
+                  type="text"
+                  formControlName="guest_name"
+                  [attr.maxlength]="maxGuestNameLength"
+                  [placeholder]="'prayer.commentGuestNamePlaceholder' | t"
+                  (input)="onCommentFieldInput('guest_name')"
+                />
+                <small *ngIf="commentControlError('guest_name')" class="comment-field__error" role="alert">
+                  {{ commentControlError('guest_name') }}
+                </small>
+              </label>
+
+              <div *ngIf="showAdminCommentMessage" class="detail-inline-state" data-testid="admin-comment-message">
+                <p>{{ 'prayer.commentAdminNotice' | t }}</p>
+              </div>
+
+              <div *ngIf="commentSubmitMessage" class="detail-inline-state detail-inline-state--error" data-testid="comment-submit-error">
+                <p>{{ commentSubmitMessage }}</p>
+              </div>
+
+              <ion-button
+                *ngIf="isAuthenticatedMember || showGuestComposer"
+                type="submit"
+                expand="block"
+                class="state-button"
+                data-testid="post-comment-button"
+                [disabled]="!canSubmitComment"
+              >
+                <ion-spinner *ngIf="commentsSubmitting" slot="start" name="crescent"></ion-spinner>
+                <span>{{ commentsSubmitting ? ('prayer.commentPosting' | t) : ('prayer.commentSubmit' | t) }}</span>
+              </ion-button>
+            </form>
+          </section>
+        </ng-container>
+      </div>
+    </div>
+  </ion-content>
+</ion-page>
