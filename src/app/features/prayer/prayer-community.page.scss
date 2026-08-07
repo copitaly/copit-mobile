@@ -193,6 +193,20 @@
   margin-top: 0.08rem;
 }
 
+.community-card__footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.comment-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  color: rgba(8, 31, 92, 0.54);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 .meta-row span {
   color: rgba(8, 31, 92, 0.54);
   font-size: 0.82rem;

@@ -10,6 +10,8 @@ import { SentryTelemetryService } from './sentry-telemetry.service';
 
 class MockAuthService {
   accessTokenSnapshot: string | null = null;
+  isAuthenticatedSnapshot = false;
+  currentUserSnapshot: unknown = null;
   getCurrentUser = jasmine.createSpy().and.callFake(() => {
     throw new Error('Not implemented in this test.');
   });
@@ -83,6 +85,7 @@ describe('PrayerService', () => {
       title: 'Healing',
       request_text: 'Please pray for healing.',
       display_name: 'Anonymous',
+      comment_count: 3,
       created_at: '2026-08-05T10:00:00Z',
     });
 
@@ -100,7 +103,102 @@ describe('PrayerService', () => {
       title: 'Healing',
       request_text: 'Please pray for healing.',
       display_name: 'Anonymous',
+      comment_count: 3,
       created_at: '2026-08-05T10:00:00Z',
+    });
+  });
+
+  it('calls the public prayer comments endpoint', () => {
+    let responseBody: unknown;
+
+    service.getCommunityPrayerComments(18).subscribe((response) => {
+      responseBody = response;
+    });
+
+    const request = httpMock.expectOne((req) => req.url.endsWith('/api/public/prayer-requests/18/comments/'));
+    expect(request.request.method).toBe('GET');
+    request.flush({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: 4,
+          author: { name: 'Maria' },
+          comment_text: 'We are praying with you.',
+          created_at: '2026-08-07T18:42:00Z',
+        },
+      ],
+    });
+
+    expect(responseBody).toEqual({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: 4,
+          author: { name: 'Maria' },
+          comment_text: 'We are praying with you.',
+          created_at: '2026-08-07T18:42:00Z',
+        },
+      ],
+    });
+  });
+
+  it('posts a guest prayer comment without authentication when no token is present', () => {
+    let responseBody: unknown;
+
+    service
+      .createCommunityPrayerComment(18, { guest_name: 'Maria', comment_text: 'Amen.' })
+      .subscribe((response) => {
+        responseBody = response;
+      });
+
+    const request = httpMock.expectOne((req) => req.url.endsWith('/api/public/prayer-requests/18/comments/'));
+    expect(request.request.method).toBe('POST');
+    expect(request.request.headers.has('Authorization')).toBeFalse();
+    expect(request.request.body).toEqual({ guest_name: 'Maria', comment_text: 'Amen.' });
+    request.flush({
+      id: 9,
+      author: { name: 'Maria' },
+      comment_text: 'Amen.',
+      created_at: '2026-08-07T18:45:00Z',
+    });
+
+    expect(responseBody).toEqual({
+      id: 9,
+      author: { name: 'Maria' },
+      comment_text: 'Amen.',
+      created_at: '2026-08-07T18:45:00Z',
+    });
+  });
+
+  it('posts a member prayer comment with the current bearer token', () => {
+    let responseBody: unknown;
+    const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authService.accessTokenSnapshot = 'member-token';
+
+    service.createCommunityPrayerComment(18, { comment_text: 'Amen.' }).subscribe((response) => {
+      responseBody = response;
+    });
+
+    const request = httpMock.expectOne((req) => req.url.endsWith('/api/public/prayer-requests/18/comments/'));
+    expect(request.request.method).toBe('POST');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer member-token');
+    expect(request.request.body).toEqual({ comment_text: 'Amen.' });
+    request.flush({
+      id: 10,
+      author: { name: 'Member Name' },
+      comment_text: 'Amen.',
+      created_at: '2026-08-07T18:46:00Z',
+    });
+
+    expect(responseBody).toEqual({
+      id: 10,
+      author: { name: 'Member Name' },
+      comment_text: 'Amen.',
+      created_at: '2026-08-07T18:46:00Z',
     });
   });
 

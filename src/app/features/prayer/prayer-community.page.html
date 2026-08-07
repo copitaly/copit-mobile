@@ -142,6 +142,13 @@
                   <strong>{{ formatScopeContext(prayer) }}</strong>
                 </div>
               </div>
+
+              <div *ngIf="prayer.comment_count > 0" class="community-card__footer">
+                <span class="comment-count" data-testid="community-comment-count">
+                  <ion-icon name="chatbubble-ellipses-outline" aria-hidden="true"></ion-icon>
+                  <span>{{ prayer.comment_count }}</span>
+                </span>
+              </div>
             </article>
 
             <div *ngIf="loadMoreErrorMessage" class="load-more-error" data-testid="load-more-error">

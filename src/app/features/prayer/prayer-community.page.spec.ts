@@ -55,6 +55,7 @@ describe('PrayerCommunityPage', () => {
     title: 'Strength for this week',
     request_text: 'Please pray for peace and strength this week.',
     display_name: 'Efua',
+    comment_count: 4,
     created_at: '2026-07-21T15:00:00Z',
   };
 
@@ -167,6 +168,14 @@ describe('PrayerCommunityPage', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('Please pray for peace and strength this week.');
     expect(text).toContain('Efua');
+  });
+
+  it('renders a subtle comment count when comments exist', async () => {
+    prayerService.getCommunityPrayers.and.returnValue(of(buildResponse([firstPrayer])));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="community-comment-count"]')?.textContent).toContain('4');
   });
 
   it('uses a safe preview for long prayer text', async () => {
