@@ -40,6 +40,7 @@ import { HardwareBackCoordinatorService } from '../../core/services/hardware-bac
 import { OverlayDiagnosticsService } from '../../core/services/overlay-diagnostics.service';
 import { DonateBranchSheetComponent } from './donate-branch-sheet.component';
 import { OverlayStateController } from '../../core/utils/overlay-state.controller';
+import { environment } from '../../../environments/environment';
 
 const EURO_SYMBOL = '\u20AC';
 const AMOUNT_PATTERN = /^\d+(\.\d+)?$/;
@@ -397,6 +398,19 @@ export class DonatePage implements AfterViewInit, OnDestroy {
   private savedBranchPrefillInFlight = false;
   private unregisterHardwareBackSelector?: () => void;
 
+  private logDonateDebug(level: 'info' | 'warn', message: string, details?: Record<string, unknown>): void {
+    if (environment.production) {
+      return;
+    }
+
+    if (level === 'warn') {
+      console.warn(message, details ?? {});
+      return;
+    }
+
+    console.info(message, details ?? {});
+  }
+
   get isBranchSheetOpen(): boolean {
     return this.branchSheetState.isOpen;
   }
@@ -523,7 +537,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: response => {
-          console.info('[DonatePage] Hosted checkout ready', {
+          this.logDonateDebug('info', '[DonatePage] Hosted checkout ready', {
             hasCheckoutUrl: !!response.checkout_url,
             transactionReference: response.transaction_reference,
           });
@@ -544,7 +558,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     }
 
     if (this.shouldUseHostedCheckoutFallback()) {
-      console.info('[DonatePage] PaymentSheet unavailable in browser runtime, using hosted checkout fallback');
+      this.logDonateDebug('info', '[DonatePage] PaymentSheet unavailable in browser runtime, using hosted checkout fallback');
       this.submit();
       return;
     }
@@ -567,7 +581,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       .pipe(timeout(CHECKOUT_TIMEOUT_MS))
       .subscribe({
         next: async response => {
-          console.info('[DonatePage] Native checkout created', {
+          this.logDonateDebug('info', '[DonatePage] Native checkout created', {
             donationId: response.donation_id,
             hasClientSecret: !!response.client_secret?.trim(),
             transactionReference: response.transaction_reference,
@@ -587,7 +601,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
           await this.presentPaymentSheet(response.client_secret);
         },
         error: error => {
-          console.warn('[DonatePage] Native checkout failed', {
+          this.logDonateDebug('warn', '[DonatePage] Native checkout failed', {
             churchId: payload.church_id,
             categoryId: payload.category_id,
             status: error instanceof HttpErrorResponse ? error.status : undefined,
@@ -1085,7 +1099,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
     try {
       const recurringCreate$ = this.donationsService.createRecurringDonation(payload).pipe(timeout(CHECKOUT_TIMEOUT_MS));
       const response = await firstValueFrom(recurringCreate$);
-      console.info('[DonatePage] Recurring checkout created', {
+      this.logDonateDebug('info', '[DonatePage] Recurring checkout created', {
         recurringDonationId: response.recurring_donation_id,
         hasClientSecret: !!response.client_secret?.trim(),
         subscriptionId: !!response.subscription_id,
@@ -1104,7 +1118,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
       }
       await this.presentPaymentSheet(response.client_secret, true);
     } catch (error) {
-      console.warn('[DonatePage] Recurring checkout failed', {
+      this.logDonateDebug('warn', '[DonatePage] Recurring checkout failed', {
         churchId: payload.church_id,
         categoryId: payload.category_id,
         status: error instanceof HttpErrorResponse ? error.status : undefined,
@@ -1120,7 +1134,7 @@ export class DonatePage implements AfterViewInit, OnDestroy {
 
   private async presentPaymentSheet(clientSecret: string, isMonthly = false): Promise<void> {
     await this.ensureChurchSelectorClosed();
-    console.info('[DonatePage] Presenting payment sheet', {
+    this.logDonateDebug('info', '[DonatePage] Presenting payment sheet', {
       flow: isMonthly ? 'monthly' : 'one_time',
     });
     const result = await this.stripePaymentService.presentPaymentSheet(

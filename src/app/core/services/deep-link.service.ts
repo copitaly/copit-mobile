@@ -2,6 +2,7 @@ import { Injectable, NgZone, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
 import type { PluginListenerHandle } from '@capacitor/core';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class DeepLinkService implements OnDestroy {
@@ -20,6 +21,18 @@ export class DeepLinkService implements OnDestroy {
     this.init();
   }
 
+  private debugLog(...args: unknown[]): void {
+    if (!environment.production) {
+      console.log(...args);
+    }
+  }
+
+  private debugWarn(...args: unknown[]): void {
+    if (!environment.production) {
+      console.warn(...args);
+    }
+  }
+
   private async init(): Promise<void> {
     try {
       const launchUrl = await App.getLaunchUrl();
@@ -27,7 +40,7 @@ export class DeepLinkService implements OnDestroy {
         this.processUrl(launchUrl.url, 'initial launch');
       }
     } catch (error) {
-      console.warn('[DeepLinkService] failed to read launch URL', error);
+      this.debugWarn('[DeepLinkService] failed to read launch URL', error);
     }
 
     try {
@@ -35,7 +48,7 @@ export class DeepLinkService implements OnDestroy {
         this.processUrl(event.url, 'appUrlOpen');
       });
     } catch (error) {
-      console.warn('[DeepLinkService] failed to register appUrlOpen listener', error);
+      this.debugWarn('[DeepLinkService] failed to register appUrlOpen listener', error);
     }
   }
 
@@ -46,10 +59,10 @@ export class DeepLinkService implements OnDestroy {
   private processUrl(rawUrl: string, source: string): void {
     const parsed = this.parseUrl(rawUrl);
     if (!parsed) {
-      console.warn('[DeepLinkService] unable to parse deep link', { source });
+      this.debugWarn('[DeepLinkService] unable to parse deep link', { source });
       return;
     }
-    console.log('[DeepLinkService] incoming route', {
+    this.debugLog('[DeepLinkService] incoming route', {
       source,
       origin: parsed.origin,
       path: this.describePath(parsed.pathname),
@@ -65,7 +78,7 @@ export class DeepLinkService implements OnDestroy {
       return;
     }
 
-    console.warn('[DeepLinkService] no handler for path', {
+    this.debugWarn('[DeepLinkService] no handler for path', {
       source,
       origin: parsed.origin,
       path: this.describePath(parsed.pathname),
@@ -134,7 +147,7 @@ export class DeepLinkService implements OnDestroy {
       ? this.router.createUrlTree([path], { queryParams }).toString()
       : path;
 
-    console.log('[DeepLinkService] navigation attempt', {
+    this.debugLog('[DeepLinkService] navigation attempt', {
       path: this.describePath(path),
       hasQueryParams: !!queryParams,
     });
@@ -142,7 +155,7 @@ export class DeepLinkService implements OnDestroy {
       this.router
         .navigateByUrl(navigationTarget)
         .then(result => {
-          console.log('[DeepLinkService] navigation result', {
+          this.debugLog('[DeepLinkService] navigation result', {
             path: this.describePath(path),
             result,
           });

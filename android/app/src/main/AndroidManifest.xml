@@ -41,7 +41,7 @@
 
                 <data
                     android:scheme="https"
-                    android:host="copit-staging.web.app"
+                    android:host="copit-production-97631.web.app"
                     android:pathPrefix="/donor-redirect/donate/success"
                 />
             </intent-filter>
@@ -54,21 +54,8 @@
 
                 <data
                     android:scheme="https"
-                    android:host="copit-staging.web.app"
+                    android:host="copit-production-97631.web.app"
                     android:pathPrefix="/donor-redirect/donate/cancel"
-                />
-            </intent-filter>
-
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data
-                    android:scheme="https"
-                    android:host="copit-staging.web.app"
-                    android:pathPrefix="/reset-password/"
                 />
             </intent-filter>
 

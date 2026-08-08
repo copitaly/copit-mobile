@@ -1,11 +1,18 @@
 import { inject, NgModule } from '@angular/core';
 import { CanActivateFn, CanDeactivateFn, CanMatchFn, PreloadAllModules, Router, RouterModule, Routes } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
+import { environment } from '../environments/environment';
 import { canUseMemberApp, hasMemberRole } from './core/auth/member-app-access';
 import { AuthService } from './core/services/auth.service';
 import { HardwareBackCoordinatorService } from './core/services/hardware-back-coordinator.service';
 import { FeatureArea, SentryTelemetryService } from './core/services/sentry-telemetry.service';
 import { AUTH_FALLBACK_RETURN_URL, sanitizeAuthReturnUrl } from './features/auth/auth-form.utils';
+
+const logGuardDebug = (...args: unknown[]): void => {
+  if (!environment.production) {
+    console.log(...args);
+  }
+};
 
 const redirectAuthenticatedAwayFromAuthPages: CanMatchFn = () => {
   const authService = inject(AuthService);
@@ -53,8 +60,8 @@ const allowAuthenticatedMemberAppUsersOnly: CanMatchFn = (route) => {
       route: deniedRoute,
       reason: 'unauthenticated',
     }, 'warning');
-    console.log(`[${feature}] denied reason=unauthenticated`);
-    console.log(`[${feature}] guard result`, {
+    logGuardDebug(`[${feature}] denied reason=unauthenticated`);
+    logGuardDebug(`[${feature}] guard result`, {
       route: deniedRoute,
       isAuthenticated,
       memberProfileLoaded: false,
@@ -76,9 +83,9 @@ const allowAuthenticatedMemberAppUsersOnly: CanMatchFn = (route) => {
         route: deniedRoute,
         reason: deniedReason,
       }, 'warning');
-      console.log(`[${feature}] denied reason=${deniedReason}`);
+      logGuardDebug(`[${feature}] denied reason=${deniedReason}`);
     }
-    console.log(`[${feature}] guard result`, {
+    logGuardDebug(`[${feature}] guard result`, {
       route: deniedRoute,
       isAuthenticated,
       memberProfileLoaded: true,
@@ -91,7 +98,7 @@ const allowAuthenticatedMemberAppUsersOnly: CanMatchFn = (route) => {
     return allowed ? true : router.parseUrl(forbiddenRedirect);
   }
 
-  console.log(`[${feature}] waiting for role/member profile`);
+  logGuardDebug(`[${feature}] waiting for role/member profile`);
 
   return authService.getCurrentUser().pipe(
     map((resolvedProfile) => {
@@ -100,8 +107,8 @@ const allowAuthenticatedMemberAppUsersOnly: CanMatchFn = (route) => {
         sentryTelemetry.addFeatureBreadcrumb(feature, 'Route guard allowed member access', {
           route: deniedRoute,
         });
-        console.log(`[${feature}] allowed after profile load`);
-        console.log(`[${feature}] guard result`, {
+        logGuardDebug(`[${feature}] allowed after profile load`);
+        logGuardDebug(`[${feature}] guard result`, {
           route: deniedRoute,
           isAuthenticated: true,
           memberProfileLoaded: true,
@@ -119,8 +126,8 @@ const allowAuthenticatedMemberAppUsersOnly: CanMatchFn = (route) => {
         route: deniedRoute,
         reason: deniedReason,
       }, 'warning');
-      console.log(`[${feature}] denied reason=${deniedReason}`);
-      console.log(`[${feature}] guard result`, {
+      logGuardDebug(`[${feature}] denied reason=${deniedReason}`);
+      logGuardDebug(`[${feature}] guard result`, {
         route: deniedRoute,
         isAuthenticated: true,
         memberProfileLoaded: !!resolvedProfile,
@@ -141,8 +148,8 @@ const allowAuthenticatedMemberAppUsersOnly: CanMatchFn = (route) => {
         route: deniedRoute,
         reason: 'profile-load-error',
       }, 'error');
-      console.log(`[${feature}] denied reason=profile-load-error`);
-      console.log(`[${feature}] guard result`, {
+      logGuardDebug(`[${feature}] denied reason=profile-load-error`);
+      logGuardDebug(`[${feature}] guard result`, {
         route: deniedRoute,
         isAuthenticated: true,
         memberProfileLoaded: false,
@@ -318,10 +325,10 @@ export const routes: Routes = [
     path: 'reset-password/:uid/:token',
     loadComponent: () => import('./features/auth/reset-password.page').then(m => m.ResetPasswordPage)
   },
-  {
+  ...(!environment.production ? [{
     path: 'auth-layout-debug',
     loadComponent: () => import('./features/auth/auth-layout-debug.page').then(m => m.AuthLayoutDebugPage)
-  },
+  }] : []),
   {
     path: 'profile/account-settings/edit-profile',
     canMatch: [allowAuthenticatedMemberAppUsersOnly],

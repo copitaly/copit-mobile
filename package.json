@@ -11,6 +11,7 @@
     "android:prod:build": "ng build --configuration production",
     "android:sync": "npx cap sync android",
     "android:build": "npm run android:prod:build && npm run android:sync",
+    "validate:locales": "node scripts/check-locale-encoding.mjs",
     "android:open": "npm run android:build && npx cap open android",
     "android:bundle": "npm run android:build && cd android && gradlew bundleRelease",
     "android:run": "ionic build && npx cap sync android && npx cap run android",
