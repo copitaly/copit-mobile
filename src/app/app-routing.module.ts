@@ -311,6 +311,14 @@ export const routes: Routes = [
     loadComponent: () => import('./features/legal/privacy-policy.page').then(m => m.PrivacyPolicyPage)
   },
   {
+    path: 'about',
+    loadComponent: () => import('./features/info/about.page').then(m => m.AboutPage)
+  },
+  {
+    path: 'contact',
+    loadComponent: () => import('./features/info/contact.page').then(m => m.ContactPage)
+  },
+  {
     path: 'terms-and-conditions',
     loadComponent: () => import('./features/legal/terms-and-conditions.page').then(m => m.TermsAndConditionsPage)
   },

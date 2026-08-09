@@ -155,6 +155,43 @@ describe('ProfilePage', () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith('/tabs/profile/my-donations');
   });
 
+  it('shows About, Contact, Privacy, and Terms rows while signed out', async () => {
+    authService.isAuthenticatedSnapshot = false;
+    authService.accessTokenSnapshot = null;
+
+    await createComponent();
+
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('COP ITALY');
+    expect(text).toContain('About COP Italy');
+    expect(text).toContain('Contact Us');
+    expect(text).toContain('LEGAL');
+    expect(text).toContain('Privacy Policy');
+    expect(text).toContain('Terms & Conditions');
+  });
+
+  it('navigates from Profile to About with a profile fallback state', async () => {
+    await createComponent();
+
+    const button = fixture.nativeElement.querySelector('[data-testid="about-cop-italy"]') as HTMLButtonElement | null;
+    button?.click();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/about', {
+      state: { fallbackRoute: '/tabs/profile' },
+    });
+  });
+
+  it('navigates from Profile to Contact with a profile fallback state', async () => {
+    await createComponent();
+
+    const button = fixture.nativeElement.querySelector('[data-testid="contact-us"]') as HTMLButtonElement | null;
+    button?.click();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/contact', {
+      state: { fallbackRoute: '/tabs/profile' },
+    });
+  });
+
   it('navigates to Recurring Donations from the giving section', async () => {
     await createComponent();
 

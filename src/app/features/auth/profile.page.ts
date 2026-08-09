@@ -9,16 +9,20 @@ import { LocaleService } from '../../core/localization/locale.service';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { AuthService } from '../../core/services/auth.service';
 import { MemberProfile } from '../../core/models/user.model';
+import { PUBLIC_INFO_LINKS } from '../../core/constants/public-info-links';
 import { SentryTelemetryService } from '../../core/services/sentry-telemetry.service';
 import { ForgotPasswordFormComponent } from './forgot-password-form.component';
 import { LoginFormComponent } from './login-form.component';
 import { RegisterFormComponent } from './register-form.component';
 
 type ProfileAction = {
-  titleKey: string;
-  subtitleKey: string;
+  titleKey?: string;
+  subtitleKey?: string;
+  title?: string;
+  subtitle?: string;
   icon: string;
   route?: string;
+  state?: Record<string, unknown>;
   requiresMemberAppCapability?: boolean;
   requiresExactMemberRole?: boolean;
   destructive?: boolean;
@@ -27,7 +31,8 @@ type ProfileAction = {
 };
 
 type ProfileActionSection = {
-  titleKey: string;
+  titleKey?: string;
+  title?: string;
   actions: ProfileAction[];
 };
 
@@ -99,10 +104,10 @@ type ProfileActionSection = {
             <section
               class="profile-group"
               *ngFor="let section of visibleSections"
-              [attr.aria-labelledby]="'profile-section-' + section.titleKey"
+              [attr.aria-labelledby]="'profile-section-' + sectionId(section)"
             >
-              <h2 class="profile-group__title" [id]="'profile-section-' + section.titleKey">
-                {{ section.titleKey | t }}
+              <h2 class="profile-group__title" [id]="'profile-section-' + sectionId(section)">
+                {{ sectionTitle(section) }}
               </h2>
 
               <div class="profile-group__card cop-card cop-card--soft">
@@ -120,8 +125,8 @@ type ProfileActionSection = {
                   </span>
 
                   <span class="action-row__copy">
-                    <strong>{{ action.titleKey | t }}</strong>
-                    <small>{{ action.subtitleKey | t }}</small>
+                    <strong>{{ actionTitle(action) }}</strong>
+                    <small>{{ actionSubtitle(action) }}</small>
                   </span>
 
                   <span class="action-row__meta" aria-hidden="true">
@@ -200,6 +205,40 @@ type ProfileActionSection = {
                   <li><span class="profile-benefits__check" aria-hidden="true">&#10003;</span><span>{{ 'auth.benefitSavedChurches' | t }}</span></li>
                   <li><span class="profile-benefits__check" aria-hidden="true">&#10003;</span><span>{{ 'auth.benefitPrayerRequests' | t }}</span></li>
                 </ul>
+              </section>
+
+              <section
+                class="profile-group"
+                *ngFor="let section of publicInfoSections"
+                [attr.aria-labelledby]="'profile-public-section-' + sectionId(section)"
+              >
+                <h2 class="profile-group__title" [id]="'profile-public-section-' + sectionId(section)">
+                  {{ sectionTitle(section) }}
+                </h2>
+
+                <div class="profile-group__card cop-card cop-card--soft">
+                  <button
+                    type="button"
+                    class="action-row"
+                    *ngFor="let action of section.actions; let last = last"
+                    [class.action-row--last]="last"
+                    [attr.data-testid]="actionTestId(action)"
+                    (click)="openAction(action)"
+                  >
+                    <span class="action-row__icon" aria-hidden="true">
+                      <ion-icon [name]="action.icon"></ion-icon>
+                    </span>
+
+                    <span class="action-row__copy">
+                      <strong>{{ actionTitle(action) }}</strong>
+                      <small>{{ actionSubtitle(action) }}</small>
+                    </span>
+
+                    <span class="action-row__meta" aria-hidden="true">
+                      <ion-icon name="chevron-forward"></ion-icon>
+                    </span>
+                  </button>
+                </div>
               </section>
             </section>
           </ng-template>
@@ -304,6 +343,48 @@ export class ProfilePage implements OnInit, OnDestroy {
         },
       ],
     },
+    {
+      title: 'COP ITALY',
+      actions: [
+        {
+          title: 'About COP Italy',
+          subtitle: 'Learn more about the church in Italy',
+          icon: 'information-circle-outline',
+          route: PUBLIC_INFO_LINKS.about,
+          state: { fallbackRoute: this.profileTabRoute },
+          testId: 'about-cop-italy',
+        },
+        {
+          title: 'Contact Us',
+          subtitle: 'Address, phone, and email details',
+          icon: 'mail-open-outline',
+          route: PUBLIC_INFO_LINKS.contact,
+          state: { fallbackRoute: this.profileTabRoute },
+          testId: 'contact-us',
+        },
+      ],
+    },
+    {
+      title: 'LEGAL',
+      actions: [
+        {
+          title: 'Privacy Policy',
+          subtitle: 'Read how your information is handled',
+          icon: 'shield-checkmark-outline',
+          route: PUBLIC_INFO_LINKS.privacyPolicy,
+          state: { fallbackRoute: this.profileTabRoute },
+          testId: 'privacy-policy',
+        },
+        {
+          title: 'Terms & Conditions',
+          subtitle: 'Review the terms for using COP Italy',
+          icon: 'document-text-outline',
+          route: PUBLIC_INFO_LINKS.termsAndConditions,
+          state: { fallbackRoute: this.profileTabRoute },
+          testId: 'terms-and-conditions',
+        },
+      ],
+    },
   ];
 
   constructor(
@@ -388,6 +469,10 @@ export class ProfilePage implements OnInit, OnDestroy {
       .filter((section) => section.actions.length > 0);
   }
 
+  get publicInfoSections(): ProfileActionSection[] {
+    return this.actionSections.filter((section) => section.title === 'COP ITALY' || section.title === 'LEGAL');
+  }
+
   get isTabsProfileRoute(): boolean {
     return this.router.url.startsWith('/tabs/profile');
   }
@@ -450,6 +535,22 @@ export class ProfilePage implements OnInit, OnDestroy {
     return action.testId;
   }
 
+  sectionId(section: ProfileActionSection): string {
+    return section.titleKey ?? section.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-') ?? 'section';
+  }
+
+  sectionTitle(section: ProfileActionSection): string {
+    return section.titleKey ? this.localeService.translate(section.titleKey) : section.title ?? '';
+  }
+
+  actionTitle(action: ProfileAction): string {
+    return action.titleKey ? this.localeService.translate(action.titleKey) : action.title ?? '';
+  }
+
+  actionSubtitle(action: ProfileAction): string {
+    return action.subtitleKey ? this.localeService.translate(action.subtitleKey) : action.subtitle ?? '';
+  }
+
   loadProfile(options?: { preserveCurrent?: boolean }): void {
     if (this.profileRequestInFlight) {
       return;
@@ -497,7 +598,7 @@ export class ProfilePage implements OnInit, OnDestroy {
       return;
     }
 
-    void this.navigateByUrl(action.route);
+    void this.navigateByUrl(action.route, action.state);
   }
 
   logout(): void {
@@ -520,14 +621,14 @@ export class ProfilePage implements OnInit, OnDestroy {
     void this.navigateByUrl('/profile/account-settings/edit-profile');
   }
 
-  private async navigateByUrl(url: string): Promise<void> {
+  private async navigateByUrl(url: string, state?: Record<string, unknown>): Promise<void> {
     if (this.pendingNavigation) {
       return;
     }
 
     this.pendingNavigation = true;
     try {
-      await this.router.navigateByUrl(url);
+      await this.router.navigateByUrl(url, state ? { state } : undefined);
     } finally {
       this.pendingNavigation = false;
     }

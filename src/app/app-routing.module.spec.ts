@@ -7,6 +7,8 @@ import { AuthService } from './core/services/auth.service';
 import { SentryTelemetryService } from './core/services/sentry-telemetry.service';
 import { DevotionalDetailPage } from './features/devotionals/devotional-detail.page';
 import { DevotionalsPage } from './features/devotionals/devotionals.page';
+import { AboutPage } from './features/info/about.page';
+import { ContactPage } from './features/info/contact.page';
 import { PrivacyPolicyPage } from './features/legal/privacy-policy.page';
 import { PrayerDetailPage } from './features/prayer/prayer-detail.page';
 import { TermsAndConditionsPage } from './features/legal/terms-and-conditions.page';
@@ -112,6 +114,26 @@ describe('app routes', () => {
 
     const loadedComponent = await route?.loadComponent?.();
     expect(loadedComponent).toBe(PrivacyPolicyPage);
+  });
+
+  it('registers the public About route outside authentication guards', async () => {
+    const route = routes.find((item) => item.path === 'about');
+
+    expect(route?.canMatch).toBeUndefined();
+    expect(route?.loadComponent).toBeDefined();
+
+    const loadedComponent = await route?.loadComponent?.();
+    expect(loadedComponent).toBe(AboutPage);
+  });
+
+  it('registers the public Contact route outside authentication guards', async () => {
+    const route = routes.find((item) => item.path === 'contact');
+
+    expect(route?.canMatch).toBeUndefined();
+    expect(route?.loadComponent).toBeDefined();
+
+    const loadedComponent = await route?.loadComponent?.();
+    expect(loadedComponent).toBe(ContactPage);
   });
 
   it('registers the public Terms & Conditions route outside authentication guards', async () => {
