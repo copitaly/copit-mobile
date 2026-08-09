@@ -7,7 +7,9 @@ import { AuthService } from './core/services/auth.service';
 import { SentryTelemetryService } from './core/services/sentry-telemetry.service';
 import { DevotionalDetailPage } from './features/devotionals/devotional-detail.page';
 import { DevotionalsPage } from './features/devotionals/devotionals.page';
+import { PrivacyPolicyPage } from './features/legal/privacy-policy.page';
 import { PrayerDetailPage } from './features/prayer/prayer-detail.page';
+import { TermsAndConditionsPage } from './features/legal/terms-and-conditions.page';
 
 describe('app routes', () => {
   it('registers the canonical devotionals list route inside the tabs shell', async () => {
@@ -100,6 +102,26 @@ describe('app routes', () => {
     const route = routes.find((item) => item.path === 'profile');
 
     expect(route?.redirectTo).toBe('tabs/profile');
+  });
+
+  it('registers the public Privacy Policy route outside authentication guards', async () => {
+    const route = routes.find((item) => item.path === 'privacy-policy');
+
+    expect(route?.canMatch).toBeUndefined();
+    expect(route?.loadComponent).toBeDefined();
+
+    const loadedComponent = await route?.loadComponent?.();
+    expect(loadedComponent).toBe(PrivacyPolicyPage);
+  });
+
+  it('registers the public Terms & Conditions route outside authentication guards', async () => {
+    const route = routes.find((item) => item.path === 'terms-and-conditions');
+
+    expect(route?.canMatch).toBeUndefined();
+    expect(route?.loadComponent).toBeDefined();
+
+    const loadedComponent = await route?.loadComponent?.();
+    expect(loadedComponent).toBe(TermsAndConditionsPage);
   });
 
   it('redirects the legacy /forgot-password route into the embedded Profile recovery state', async () => {

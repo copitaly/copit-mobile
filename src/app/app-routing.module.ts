@@ -307,6 +307,14 @@ export const routes: Routes = [
     pathMatch: 'full'
   },
   {
+    path: 'privacy-policy',
+    loadComponent: () => import('./features/legal/privacy-policy.page').then(m => m.PrivacyPolicyPage)
+  },
+  {
+    path: 'terms-and-conditions',
+    loadComponent: () => import('./features/legal/terms-and-conditions.page').then(m => m.TermsAndConditionsPage)
+  },
+  {
     path: 'login',
     canMatch: [redirectAuthenticatedAwayFromAuthPages],
     loadComponent: () => import('./features/auth/login.page').then(m => m.LoginPage)

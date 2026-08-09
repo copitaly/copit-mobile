@@ -282,6 +282,10 @@ export class HardwareBackCoordinatorService implements OnDestroy {
       return '/login';
     }
 
+    if (currentUrl === '/privacy-policy' || currentUrl === '/terms-and-conditions') {
+      return '/login';
+    }
+
     if (currentUrl.startsWith('/reset-password/')) {
       return '/login';
     }

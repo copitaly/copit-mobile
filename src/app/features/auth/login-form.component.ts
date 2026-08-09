@@ -9,7 +9,6 @@ import { LEGAL_LINKS } from '../../core/constants/legal-links';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { LocaleService } from '../../core/localization/locale.service';
 import { AuthService } from '../../core/services/auth.service';
-import { ExternalBrowserService } from '../../core/services/external-browser.service';
 import {
   AUTH_FALLBACK_RETURN_URL,
   getAuthTranslatedNetworkMessage,
@@ -118,8 +117,6 @@ import {
           <a
             class="auth-legal-link"
             [href]="termsUrl"
-            target="_blank"
-            rel="noopener noreferrer"
             [attr.aria-label]="'auth.openTermsPolicyAria' | t"
             (click)="openTerms($event)"
           >
@@ -130,8 +127,6 @@ import {
             <a
               class="auth-legal-link"
               [href]="privacyPolicyUrl"
-              target="_blank"
-              rel="noopener noreferrer"
               [attr.aria-label]="'auth.openPrivacyPolicyAria' | t"
               (click)="openPrivacyPolicy($event)"
             >
@@ -281,8 +276,7 @@ export class LoginFormComponent implements OnDestroy {
     private readonly authService: AuthService,
     private readonly formBuilder: FormBuilder,
     private readonly router: Router,
-    private readonly localeService: LocaleService,
-    private readonly externalBrowserService: ExternalBrowserService
+    private readonly localeService: LocaleService
   ) {}
 
   get identifierInputId(): string {
@@ -380,12 +374,12 @@ export class LoginFormComponent implements OnDestroy {
 
   openTerms(event: Event): void {
     event.preventDefault();
-    void this.externalBrowserService.openUrl(this.termsUrl);
+    void this.openLegalRoute(this.termsUrl);
   }
 
   openPrivacyPolicy(event: Event): void {
     event.preventDefault();
-    void this.externalBrowserService.openUrl(this.privacyPolicyUrl);
+    void this.openLegalRoute(this.privacyPolicyUrl);
   }
 
   async focusIdentifierField(): Promise<void> {
@@ -439,5 +433,23 @@ export class LoginFormComponent implements OnDestroy {
       clearTimeout(this.errorDismissTimer);
       this.errorDismissTimer = null;
     }
+  }
+
+  private openLegalRoute(route: string): Promise<boolean> {
+    return this.router.navigateByUrl(route, {
+      state: {
+        fallbackRoute: this.getLegalFallbackRoute(),
+      },
+    });
+  }
+
+  private getLegalFallbackRoute(): string {
+    if (this.isEmbeddedProfileFlow) {
+      return '/tabs/profile';
+    }
+
+    return this.sanitizedReturnUrl === AUTH_FALLBACK_RETURN_URL
+      ? '/login'
+      : `/login?returnUrl=${encodeURIComponent(this.sanitizedReturnUrl)}`;
   }
 }

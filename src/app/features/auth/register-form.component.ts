@@ -9,7 +9,6 @@ import { LEGAL_LINKS } from '../../core/constants/legal-links';
 import { LocaleService } from '../../core/localization/locale.service';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { AuthService } from '../../core/services/auth.service';
-import { ExternalBrowserService } from '../../core/services/external-browser.service';
 import {
   AUTH_PASSWORD_MIN_LENGTH,
   AUTH_FALLBACK_RETURN_URL,
@@ -203,8 +202,6 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
           <a
             class="auth-legal-link"
             [href]="termsUrl"
-            target="_blank"
-            rel="noopener noreferrer"
             [attr.aria-label]="'auth.openTermsPolicyAria' | t"
             (click)="openTerms($event)"
           >
@@ -215,8 +212,6 @@ function optionalPhoneValidator(control: AbstractControl): ValidationErrors | nu
             <a
               class="auth-legal-link"
               [href]="privacyPolicyUrl"
-              target="_blank"
-              rel="noopener noreferrer"
               [attr.aria-label]="'auth.openPrivacyPolicyAria' | t"
               (click)="openPrivacyPolicy($event)"
             >
@@ -377,8 +372,7 @@ export class RegisterFormComponent implements OnDestroy {
     private readonly authService: AuthService,
     private readonly formBuilder: FormBuilder,
     private readonly router: Router,
-    private readonly localeService: LocaleService,
-    private readonly externalBrowserService: ExternalBrowserService
+    private readonly localeService: LocaleService
   ) {}
 
   get canSubmit(): boolean {
@@ -501,12 +495,12 @@ export class RegisterFormComponent implements OnDestroy {
 
   openTerms(event: Event): void {
     event.preventDefault();
-    void this.externalBrowserService.openUrl(this.termsUrl);
+    void this.openLegalRoute(this.termsUrl);
   }
 
   openPrivacyPolicy(event: Event): void {
     event.preventDefault();
-    void this.externalBrowserService.openUrl(this.privacyPolicyUrl);
+    void this.openLegalRoute(this.privacyPolicyUrl);
   }
 
   private getRegisterPayload() {
@@ -579,5 +573,23 @@ export class RegisterFormComponent implements OnDestroy {
     return password && confirmPassword && password !== confirmPassword
       ? { passwordMismatch: true }
       : null;
+  }
+
+  private openLegalRoute(route: string): Promise<boolean> {
+    return this.router.navigateByUrl(route, {
+      state: {
+        fallbackRoute: this.getLegalFallbackRoute(),
+      },
+    });
+  }
+
+  private getLegalFallbackRoute(): string {
+    if (this.isEmbeddedProfileFlow) {
+      return '/tabs/profile?authMode=register';
+    }
+
+    return this.sanitizedReturnUrl === AUTH_FALLBACK_RETURN_URL
+      ? '/register'
+      : `/register?returnUrl=${encodeURIComponent(this.sanitizedReturnUrl)}`;
   }
 }

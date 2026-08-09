@@ -7,7 +7,6 @@ import { Subject, of, throwError } from 'rxjs';
 
 import { MemberProfile } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
-import { ExternalBrowserService } from '../../core/services/external-browser.service';
 import { RegisterFormComponent } from './register-form.component';
 import { RegisterPage } from './register.page';
 import { LEGAL_LINKS } from '../../core/constants/legal-links';
@@ -17,7 +16,6 @@ describe('RegisterFormComponent', () => {
   let component: RegisterFormComponent;
   let authService: jasmine.SpyObj<AuthService>;
   let router: jasmine.SpyObj<Router>;
-  let externalBrowserService: jasmine.SpyObj<ExternalBrowserService>;
 
   const authResponse = {
     id: 1,
@@ -43,7 +41,6 @@ describe('RegisterFormComponent', () => {
       providers: [
         { provide: AuthService, useValue: authService },
         { provide: Router, useValue: router },
-        { provide: ExternalBrowserService, useValue: externalBrowserService },
       ],
     }).compileComponents();
 
@@ -58,8 +55,6 @@ describe('RegisterFormComponent', () => {
   beforeEach(() => {
     authService = jasmine.createSpyObj<AuthService>('AuthService', ['register']);
     router = jasmine.createSpyObj<Router>('Router', ['navigate', 'navigateByUrl']);
-    externalBrowserService = jasmine.createSpyObj<ExternalBrowserService>('ExternalBrowserService', ['openUrl']);
-    externalBrowserService.openUrl.and.returnValue(Promise.resolve());
     router.navigate.and.returnValue(Promise.resolve(true));
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
   });
@@ -192,26 +187,38 @@ describe('RegisterFormComponent', () => {
     );
   });
 
-  it('opens the canonical Terms link without leaving registration', async () => {
+  it('navigates to the internal Terms page without launching an external browser', async () => {
     await createForm();
 
     const termsLink = fixture.nativeElement.querySelectorAll('.auth-legal-link')[0] as HTMLAnchorElement;
     termsLink.click();
 
-    expect(externalBrowserService.openUrl).toHaveBeenCalledWith(LEGAL_LINKS.termsAndConditions);
+    expect(router.navigateByUrl).toHaveBeenCalledWith(LEGAL_LINKS.termsAndConditions, {
+      state: { fallbackRoute: '/register' },
+    });
     expect(router.navigate).not.toHaveBeenCalled();
-    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
-  it('opens the canonical Privacy Policy link without leaving registration', async () => {
+  it('navigates to the internal Privacy Policy page without launching an external browser', async () => {
     await createForm();
 
     const privacyLink = fixture.nativeElement.querySelectorAll('.auth-legal-link')[1] as HTMLAnchorElement;
     privacyLink.click();
 
-    expect(externalBrowserService.openUrl).toHaveBeenCalledWith(LEGAL_LINKS.privacyPolicy);
+    expect(router.navigateByUrl).toHaveBeenCalledWith(LEGAL_LINKS.privacyPolicy, {
+      state: { fallbackRoute: '/register' },
+    });
     expect(router.navigate).not.toHaveBeenCalled();
-    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('preserves the embedded Profile register fallback when opening legal pages', async () => {
+    await createForm({ appearance: 'embedded', returnUrl: '/tabs/profile' });
+
+    component.openPrivacyPolicy(new MouseEvent('click'));
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith(LEGAL_LINKS.privacyPolicy, {
+      state: { fallbackRoute: '/tabs/profile?authMode=register' },
+    });
   });
 });
 
