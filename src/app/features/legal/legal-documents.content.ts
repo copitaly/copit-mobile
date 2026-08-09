@@ -267,7 +267,7 @@ export const MOBILE_TERMS_AND_CONDITIONS_CONTENT: LegalDocumentContent = {
     {
       heading: 'Contact',
       paragraphs: [
-        'Questions about these terms, account access, offerings, or privacy matters can be sent to copitalyapp@gmail.com. COP Italy may direct specialist payment, privacy, or church-administration issues to the most appropriate internal contact for follow-up.',
+        'Questions about these terms, account access, offerings, or privacy matters can be sent to info@copitaly.org or raised by phone on 0225 397290. COP Italy may direct specialist payment, privacy, or church-administration issues to the most appropriate internal contact for follow-up.',
       ],
     },
   ],
