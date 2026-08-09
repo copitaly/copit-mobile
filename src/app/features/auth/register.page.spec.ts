@@ -7,14 +7,17 @@ import { Subject, of, throwError } from 'rxjs';
 
 import { MemberProfile } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
+import { ExternalBrowserService } from '../../core/services/external-browser.service';
 import { RegisterFormComponent } from './register-form.component';
 import { RegisterPage } from './register.page';
+import { LEGAL_LINKS } from '../../core/constants/legal-links';
 
 describe('RegisterFormComponent', () => {
   let fixture: ComponentFixture<RegisterFormComponent>;
   let component: RegisterFormComponent;
   let authService: jasmine.SpyObj<AuthService>;
   let router: jasmine.SpyObj<Router>;
+  let externalBrowserService: jasmine.SpyObj<ExternalBrowserService>;
 
   const authResponse = {
     id: 1,
@@ -40,6 +43,7 @@ describe('RegisterFormComponent', () => {
       providers: [
         { provide: AuthService, useValue: authService },
         { provide: Router, useValue: router },
+        { provide: ExternalBrowserService, useValue: externalBrowserService },
       ],
     }).compileComponents();
 
@@ -54,6 +58,8 @@ describe('RegisterFormComponent', () => {
   beforeEach(() => {
     authService = jasmine.createSpyObj<AuthService>('AuthService', ['register']);
     router = jasmine.createSpyObj<Router>('Router', ['navigate', 'navigateByUrl']);
+    externalBrowserService = jasmine.createSpyObj<ExternalBrowserService>('ExternalBrowserService', ['openUrl']);
+    externalBrowserService.openUrl.and.returnValue(Promise.resolve());
     router.navigate.and.returnValue(Promise.resolve(true));
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
   });
@@ -184,6 +190,28 @@ describe('RegisterFormComponent', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="register-form-heading"]')?.textContent).toContain(
       'Create your account'
     );
+  });
+
+  it('opens the canonical Terms link without leaving registration', async () => {
+    await createForm();
+
+    const termsLink = fixture.nativeElement.querySelectorAll('.auth-legal-link')[0] as HTMLAnchorElement;
+    termsLink.click();
+
+    expect(externalBrowserService.openUrl).toHaveBeenCalledWith(LEGAL_LINKS.termsAndConditions);
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('opens the canonical Privacy Policy link without leaving registration', async () => {
+    await createForm();
+
+    const privacyLink = fixture.nativeElement.querySelectorAll('.auth-legal-link')[1] as HTMLAnchorElement;
+    privacyLink.click();
+
+    expect(externalBrowserService.openUrl).toHaveBeenCalledWith(LEGAL_LINKS.privacyPolicy);
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 });
 

@@ -5,9 +5,11 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonInput, IonicModule } from '@ionic/angular';
 
+import { LEGAL_LINKS } from '../../core/constants/legal-links';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { LocaleService } from '../../core/localization/locale.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ExternalBrowserService } from '../../core/services/external-browser.service';
 import {
   AUTH_FALLBACK_RETURN_URL,
   getAuthTranslatedNetworkMessage,
@@ -111,7 +113,32 @@ import {
         </p>
 
         <p class="auth-legal">
-          {{ 'auth.termsPrivacyContinue' | t }}
+          <span>{{ 'auth.termsPrivacyContinuePrefix' | t }}</span>
+          <span>&nbsp;</span>
+          <a
+            class="auth-legal-link"
+            [href]="termsUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            [attr.aria-label]="'auth.openTermsPolicyAria' | t"
+            (click)="openTerms($event)"
+          >
+            {{ 'auth.termsLabel' | t }}
+          </a>
+          <span class="auth-legal-group">
+            <span>&nbsp;{{ 'auth.termsPrivacyJoiner' | t }}&nbsp;</span>
+            <a
+              class="auth-legal-link"
+              [href]="privacyPolicyUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              [attr.aria-label]="'auth.openPrivacyPolicyAria' | t"
+              (click)="openPrivacyPolicy($event)"
+            >
+              {{ 'auth.privacyPolicyLabel' | t }}
+            </a>
+            <span>.</span>
+          </span>
         </p>
       </div>
     </div>
@@ -193,9 +220,31 @@ import {
         margin: 0.7rem auto 0;
         text-align: center;
         color: rgba(55, 73, 109, 0.76);
-        font-size: 0.88rem;
+        font-size: 0.84rem;
         line-height: 1.45;
-        padding: 0 0.4rem;
+        padding: 0 0.2rem;
+      }
+
+      .auth-legal-group {
+        white-space: nowrap;
+      }
+
+      .auth-legal-link {
+        display: inline;
+        padding: 0.08rem 0.04rem;
+        margin: 0 -0.04rem;
+        color: #0b2f80;
+        font-weight: 700;
+        text-decoration: underline;
+        text-underline-offset: 0.12rem;
+        line-height: inherit;
+        white-space: nowrap;
+      }
+
+      .auth-legal-link:focus-visible {
+        outline: 2px solid rgba(11, 47, 128, 0.28);
+        outline-offset: 2px;
+        border-radius: 0.35rem;
       }
 
       .login-form-shell--embedded .login-footer {
@@ -224,13 +273,16 @@ export class LoginFormComponent implements OnDestroy {
   loading = false;
   errorMessage = '';
   showPassword = false;
+  readonly termsUrl = LEGAL_LINKS.termsAndConditions;
+  readonly privacyPolicyUrl = LEGAL_LINKS.privacyPolicy;
   private errorDismissTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private readonly authService: AuthService,
     private readonly formBuilder: FormBuilder,
     private readonly router: Router,
-    private readonly localeService: LocaleService
+    private readonly localeService: LocaleService,
+    private readonly externalBrowserService: ExternalBrowserService
   ) {}
 
   get identifierInputId(): string {
@@ -324,6 +376,16 @@ export class LoginFormComponent implements OnDestroy {
     void this.router.navigate(['/forgot-password'], {
       queryParams: this.sanitizedReturnUrl === AUTH_FALLBACK_RETURN_URL ? undefined : { returnUrl: this.sanitizedReturnUrl },
     });
+  }
+
+  openTerms(event: Event): void {
+    event.preventDefault();
+    void this.externalBrowserService.openUrl(this.termsUrl);
+  }
+
+  openPrivacyPolicy(event: Event): void {
+    event.preventDefault();
+    void this.externalBrowserService.openUrl(this.privacyPolicyUrl);
   }
 
   async focusIdentifierField(): Promise<void> {

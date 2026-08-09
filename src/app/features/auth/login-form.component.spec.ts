@@ -6,13 +6,16 @@ import { Subject, of, throwError } from 'rxjs';
 
 import { MemberProfile } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
+import { ExternalBrowserService } from '../../core/services/external-browser.service';
 import { LoginFormComponent } from './login-form.component';
+import { LEGAL_LINKS } from '../../core/constants/legal-links';
 
 describe('LoginFormComponent', () => {
   let fixture: ComponentFixture<LoginFormComponent>;
   let component: LoginFormComponent;
   let authService: jasmine.SpyObj<AuthService>;
   let router: jasmine.SpyObj<Router>;
+  let externalBrowserService: jasmine.SpyObj<ExternalBrowserService>;
 
   const authResponse = {
     id: 1,
@@ -36,6 +39,7 @@ describe('LoginFormComponent', () => {
       providers: [
         { provide: AuthService, useValue: authService },
         { provide: Router, useValue: router },
+        { provide: ExternalBrowserService, useValue: externalBrowserService },
       ],
     }).compileComponents();
 
@@ -50,6 +54,8 @@ describe('LoginFormComponent', () => {
   beforeEach(() => {
     authService = jasmine.createSpyObj<AuthService>('AuthService', ['login']);
     router = jasmine.createSpyObj<Router>('Router', ['navigate', 'navigateByUrl']);
+    externalBrowserService = jasmine.createSpyObj<ExternalBrowserService>('ExternalBrowserService', ['openUrl']);
+    externalBrowserService.openUrl.and.returnValue(Promise.resolve());
     router.navigate.and.returnValue(Promise.resolve(true));
     router.navigateByUrl.and.returnValue(Promise.resolve(true));
   });
@@ -234,5 +240,27 @@ describe('LoginFormComponent', () => {
 
     expect(fixture.debugElement.queryAll(By.css('ion-input')).length).toBe(2);
     expect(fixture.nativeElement.textContent).toContain('Forgot password?');
+  });
+
+  it('opens the canonical Terms link without leaving the auth flow', async () => {
+    await createComponent();
+
+    const termsLink = fixture.nativeElement.querySelectorAll('.auth-legal-link')[0] as HTMLAnchorElement;
+    termsLink.click();
+
+    expect(externalBrowserService.openUrl).toHaveBeenCalledWith(LEGAL_LINKS.termsAndConditions);
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('opens the canonical Privacy Policy link without leaving the auth flow', async () => {
+    await createComponent();
+
+    const privacyLink = fixture.nativeElement.querySelectorAll('.auth-legal-link')[1] as HTMLAnchorElement;
+    privacyLink.click();
+
+    expect(externalBrowserService.openUrl).toHaveBeenCalledWith(LEGAL_LINKS.privacyPolicy);
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 });

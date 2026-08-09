@@ -47,7 +47,7 @@ export class HomePage implements OnInit, OnDestroy {
   readonly showBuildSafetyLabel = shouldShowBuildSafetyLabel();
   readonly devotionalPreviewMaxLength = 140;
   readonly scriptureSnippetMaxLength = 92;
-  readonly bannerImagePath = 'assets/img/cop-home-images/banner.png';
+  readonly bannerImagePath = 'assets/img/cop-home-images/banner2.jpeg';
   readonly offeringImagePath = 'assets/img/cop-home-images/offering.png';
   readonly studyImagePath = 'assets/img/cop-home-images/bible-study.png';
   readonly devotionImagePath = 'assets/img/cop-home-images/daily-devotion.png';
