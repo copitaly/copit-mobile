@@ -27,7 +27,7 @@ export interface LegalDocumentContent {
 export const MOBILE_PRIVACY_POLICY_CONTENT: LegalDocumentContent = {
   title: 'Privacy Policy',
   subtitle: 'Your privacy and how we protect your information.',
-  effectiveDate: '30 May 2026',
+  effectiveDate: '09 August 2026',
   sections: [
     {
       heading: 'Who this policy applies to',
@@ -39,10 +39,12 @@ export const MOBILE_PRIVACY_POLICY_CONTENT: LegalDocumentContent = {
       heading: 'Information we collect',
       intro: 'Depending on how you use the platform, COP Italy may collect:',
       bullets: [
-        'Account data such as name, role, preferred language, and profile details.',
+        'Account data such as name, role, preferred language, profile details, saved churches, and account preferences.',
         'Contact information such as email address and phone number.',
-        'Donation and payment information such as church selected, donation category, amount, currency, and payment status.',
+        'Donation and payment information such as church selected, donation category, amount, currency, payment status, donation history, and recurring donation records.',
         'Authentication information such as access tokens, session state, and security-related login activity.',
+        'Prayer and community content such as prayer request text, optional titles, categories, scope, selected church, visibility choices, optional submitter or display names, comments, guest names, report reasons, and optional report details.',
+        'Bible Study data such as manual access, locally stored reading progress, and user-initiated downloads or shares.',
         'Operational data needed to verify payments, troubleshoot issues, prevent misuse, and support users.',
       ],
     },
@@ -54,8 +56,19 @@ export const MOBILE_PRIVACY_POLICY_CONTENT: LegalDocumentContent = {
         'Authenticate users and protect account access.',
         'Process donations and confirm payment outcomes.',
         'Provide receipts, notifications, and service communications.',
+        'Provide prayer, community, and Bible Study features requested by the user.',
+        'Moderate submissions, review reports, and respond to abuse, safeguarding, or misuse concerns.',
         'Support church administration, local reporting, and operational oversight.',
         'Investigate errors, fraud, abuse, or unauthorized access attempts.',
+      ],
+    },
+    {
+      heading: 'Prayer and community submissions',
+      paragraphs: [
+        'The platform allows users and, in some cases, guests to submit prayer requests, comments, and abuse reports. Depending on the feature used, COP Italy may process prayer request text, optional titles, categories, scope, selected church, visibility settings, optional submitter or display names, comment text, guest names, report reasons, and optional report details.',
+        'Prayer requests, comments, and report details are entered freely by users and may contain personal or sensitive information that the user chooses to provide voluntarily. Users should avoid including information they do not want COP Italy or other permitted viewers to receive.',
+        'If a user chooses anonymous public display for a prayer request or comment, that choice affects how the content appears to other users. It does not necessarily make the submission anonymous to COP Italy internally where an authenticated account, moderation workflow, security review, or legal obligation requires COP Italy to link the submission back to the relevant account or event record.',
+        'COP Italy uses prayer and community information to publish or restrict content according to the selected visibility, support community participation, review reported material, investigate misuse, and protect users and church communities.',
       ],
     },
     {
@@ -71,9 +84,26 @@ export const MOBILE_PRIVACY_POLICY_CONTENT: LegalDocumentContent = {
       ],
     },
     {
+      heading: 'Device and local storage',
+      paragraphs: [
+        'COP Italy uses secure local storage on supported devices to keep authentication tokens and member account state available between app sessions. The platform also uses local or session-based storage for language preferences, temporary feature state, donation flow state, and Bible Study reading progress where those features are used.',
+        'Locally stored data stays on the user device unless the relevant feature separately sends information to COP Italy or another service as part of the normal product flow.',
+      ],
+    },
+    {
+      heading: 'Bible Study content',
+      paragraphs: [
+        'COP Italy may process information needed to let users browse and read Bible Study manuals, resume reading from locally stored progress, and use user-initiated download or sharing actions where those features are available.',
+        'PDF files downloaded through the app may be stored temporarily on the user device or made available through the device share sheet or browser download flow at the user\'s request.',
+      ],
+    },
+    {
       heading: 'Analytics and diagnostics',
       paragraphs: [
-        'COP Italy may collect limited technical information, diagnostic logs, and operational data to maintain platform security, improve reliability, investigate issues, process donations, and provide user support. This information is used solely for operating and improving the platform and is not used for advertising purposes.',
+        'In the current production mobile configuration, Firebase Analytics is disabled and COP Italy does not rely on Firebase Analytics to collect production usage analytics for the mobile app.',
+        'COP Italy currently uses Sentry for crash reporting, error monitoring, and operational diagnostics. Diagnostic information may include app version, platform, route or feature context, HTTP request paths, response status, sanitized error payloads, and limited internal account context such as member identifiers, role, assigned scope counts, and language where needed for troubleshooting.',
+        'COP Italy uses diagnostic information to maintain platform security, improve reliability, investigate issues, process donations, and provide user support. Diagnostic information is not used for advertising purposes.',
+        'COP Italy\'s diagnostic sanitization is intended to exclude passwords, payment card data, authentication tokens, cookies, and similarly sensitive fields from Sentry payloads.',
       ],
     },
     {
@@ -107,7 +137,7 @@ export const MOBILE_PRIVACY_POLICY_CONTENT: LegalDocumentContent = {
     {
       heading: 'Data sharing',
       paragraphs: [
-        'COP Italy does not sell your personal information. Personal data is shared only with trusted service providers where necessary to operate the platform, process donations, deliver communications, secure user accounts, or comply with legal obligations.',
+        'COP Italy does not sell your personal information. Personal data is shared only with trusted service providers where necessary to operate the platform, process donations, deliver communications, secure user accounts, provide diagnostics, moderate reports, or comply with legal obligations.',
       ],
     },
     {
@@ -115,6 +145,7 @@ export const MOBILE_PRIVACY_POLICY_CONTENT: LegalDocumentContent = {
       subheading: 'Children',
       paragraphs: [
         'COP Italy is intended for members of the Church of Pentecost Italy. Where accounts are created for minors, the church will ensure that appropriate consent and safeguarding requirements are followed in accordance with applicable laws.',
+        'Prayer requests, comments, and related reports may contain health, family, spiritual, or other sensitive personal information voluntarily provided by the user. COP Italy processes that information only as needed to operate the requested feature, support moderation and safeguarding, respond to misuse or reports, and manage the church community experience.',
       ],
     },
     {
@@ -122,10 +153,11 @@ export const MOBILE_PRIVACY_POLICY_CONTENT: LegalDocumentContent = {
       intro:
         'For privacy questions, access requests, correction requests, or account/data concerns, contact:',
       links: [
-        { label: 'Email: copitalyapp@gmail.com', url: 'mailto:copitalyapp@gmail.com' },
+        { label: 'Phone: 0225 397290', url: 'tel:0225397290' },
+        { label: 'Email: info@copitaly.org', url: 'mailto:info@copitaly.org' },
         { label: 'Website: https://copitaly.org', url: 'https://copitaly.org' },
       ],
-      paragraphs: ['Church of Pentecost Italy'],
+      paragraphs: ['Church of Pentecost Italy', 'Via Torino 9, 20093 Cologno Monzese (MI)'],
     },
     {
       heading: 'Updates to this policy',
