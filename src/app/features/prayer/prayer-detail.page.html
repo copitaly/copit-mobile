@@ -67,6 +67,16 @@
                 <dd data-testid="prayer-scope-context">{{ formatScopeContext(prayer) }}</dd>
               </div>
             </dl>
+
+            <button
+              type="button"
+              data-testid="report-prayer-button"
+              style="width:fit-content;min-height:44px;padding:0;border:0;background:transparent;color:#0b1d73;font:inherit;font-size:.9rem;font-weight:700;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.16rem"
+              [attr.aria-label]="reportActionLabel()"
+              (click)="openPrayerReport()"
+            >
+              {{ 'prayer.reportAction' | t }}
+            </button>
           </article>
 
           <section class="detail-card detail-comments" data-testid="comments-section" [attr.aria-label]="'prayer.commentsTitle' | t">
@@ -111,6 +121,15 @@
                   <span class="comment-card__date">{{ formatCommentDateTime(comment.created_at) }}</span>
                 </div>
                 <p class="comment-card__body" data-testid="comment-text">{{ comment.comment_text }}</p>
+                <button
+                  type="button"
+                  data-testid="report-comment-button"
+                  style="justify-self:flex-end;min-height:44px;padding:0;border:0;background:transparent;color:#0b1d73;font:inherit;font-size:.82rem;font-weight:700;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.16rem"
+                  [attr.aria-label]="reportActionLabel(comment)"
+                  (click)="openCommentReport(comment)"
+                >
+                  {{ 'prayer.reportAction' | t }}
+                </button>
               </article>
 
               <div *ngIf="commentsLoadMoreErrorMessage" class="detail-inline-state detail-inline-state--error" data-testid="comments-load-more-error">
@@ -194,3 +213,101 @@
     </div>
   </ion-content>
 </ion-page>
+
+<ion-modal [isOpen]="reportModalOpen" (didDismiss)="handleReportDismissed()">
+  <ng-template>
+    <ion-content style="--background:var(--cop-color-background-soft)">
+      <div
+        data-testid="report-modal"
+        style="min-height:100%;padding:calc(var(--cop-safe-top, env(safe-area-inset-top, 0px)) + 1rem) calc(var(--cop-safe-right, env(safe-area-inset-right, 0px)) + 1rem) calc(var(--cop-safe-bottom, env(safe-area-inset-bottom, 0px)) + 1.2rem) calc(var(--cop-safe-left, env(safe-area-inset-left, 0px)) + 1rem);display:grid;gap:1rem"
+      >
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.9rem">
+          <div style="display:grid;gap:.35rem">
+            <p class="cop-page-header__eyebrow">{{ 'prayer.reportAction' | t }}</p>
+            <h2 style="margin:0;color:var(--cop-color-text-primary);font-size:1.26rem;font-weight:800;line-height:1.18;letter-spacing:-.02em">
+              {{ reportTargetHeading() }}
+            </h2>
+            <p style="margin:0;color:rgba(8,31,92,.72);line-height:1.5">{{ 'prayer.reportPrompt' | t }}</p>
+          </div>
+          <button
+            type="button"
+            style="display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border:1px solid rgba(8,31,92,.08);border-radius:999px;background:#fff;color:#0b1d73"
+            [attr.aria-label]="'common.close' | t"
+            (click)="closeReportModal()"
+          >
+            <ion-icon name="close" aria-hidden="true"></ion-icon>
+          </button>
+        </div>
+
+        <form
+          [formGroup]="reportForm"
+          (ngSubmit)="submitReport()"
+          style="display:grid;gap:1rem;padding:1rem;border:1px solid rgba(8,31,92,.08);border-radius:18px;background:#fff;box-shadow:0 10px 22px rgba(7,24,69,.06)"
+        >
+          <fieldset
+            [attr.aria-label]="'prayer.reportReasonsAria' | t"
+            style="display:grid;gap:.68rem;margin:0;padding:0;border:0"
+          >
+            <legend style="margin:0;color:var(--cop-color-text-primary);font-size:.95rem;font-weight:800;line-height:1.4">
+              {{ 'prayer.reportWhy' | t }}
+            </legend>
+
+            <label
+              *ngFor="let option of reportReasonOptions"
+              style="display:flex;align-items:center;gap:.7rem;min-height:44px;padding:.72rem .85rem;border:1px solid rgba(8,31,92,.12);border-radius:14px;background:rgba(11,29,115,.03)"
+            >
+              <input
+                type="radio"
+                formControlName="reason"
+                [value]="option.value"
+                style="flex-shrink:0"
+                (change)="onReportFieldInput('reason')"
+              />
+              <span style="color:var(--cop-color-text-primary);font-size:.92rem;line-height:1.4">{{ option.label | t }}</span>
+            </label>
+          </fieldset>
+
+          <label class="comment-field">
+            <span>{{ 'prayer.reportDetailsLabel' | t }}</span>
+            <textarea
+              data-testid="report-details-field"
+              rows="4"
+              formControlName="details"
+              [placeholder]="'prayer.reportDetailsPlaceholder' | t"
+              (input)="onReportFieldInput('details')"
+            ></textarea>
+            <div class="comment-field__footer">
+              <small class="comment-field__count">{{ reportDetailsCharacterCount }} / {{ maxReportDetailsLength }}</small>
+            </div>
+          </label>
+
+          <div *ngIf="reportSubmitMessage" class="detail-inline-state detail-inline-state--error" data-testid="report-submit-error">
+            <p>{{ reportSubmitMessage }}</p>
+          </div>
+
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+            <ion-button
+              type="button"
+              fill="outline"
+              class="state-button"
+              style="--background:transparent;--color:#0b1d73;--border-color:rgba(8,31,92,.16);--box-shadow:none;flex:1 1 12rem"
+              (click)="closeReportModal()"
+            >
+              {{ 'common.cancel' | t }}
+            </ion-button>
+            <ion-button
+              type="submit"
+              class="state-button"
+              data-testid="submit-report-button"
+              style="flex:1 1 12rem"
+              [disabled]="!canSubmitReport"
+            >
+              <ion-spinner *ngIf="reportSubmitting" slot="start" name="crescent"></ion-spinner>
+              <span>{{ reportSubmitting ? ('prayer.reportSubmitting' | t) : ('prayer.reportSubmit' | t) }}</span>
+            </ion-button>
+          </div>
+        </form>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>

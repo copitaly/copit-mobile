@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, OnInit, inject } from '@angular/core';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidatorFn } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { Subject, combineLatest } from 'rxjs';
@@ -15,7 +15,10 @@ import {
   PrayerCategory,
   PrayerComment,
   PrayerCommentCreatePayload,
+  PrayerReportReason,
+  PrayerContentReportPayload,
 } from '../../core/models/prayer.model';
+import { AppToastService } from '../../core/services/app-toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PrayerService } from '../../core/services/prayer.service';
 import { MobileHeaderComponent } from '../../shared/mobile-header.component';
@@ -40,6 +43,8 @@ type FieldErrorMap = Record<string, string[]>;
 
 const MAX_COMMENT_LENGTH = 1000;
 const MAX_GUEST_NAME_LENGTH = 255;
+const MAX_REPORT_DETAILS_LENGTH = 1000;
+type ReportTarget = { kind: 'prayer'; id: number } | { kind: 'comment'; id: number; authorName: string };
 
 @Component({
   standalone: true,
@@ -68,6 +73,10 @@ export class PrayerDetailPage implements OnInit, OnDestroy {
   commentsSubmitting = false;
   commentSubmitMessage = '';
   commentFieldErrors: FieldErrorMap = {};
+  reportModalOpen = false;
+  reportSubmitting = false;
+  reportSubmitMessage = '';
+  activeReportTarget: ReportTarget | null = null;
   commentsNextPageUrl: string | null = null;
   isAuthenticatedUser = false;
   currentUserRole: string | null = null;
@@ -80,11 +89,26 @@ export class PrayerDetailPage implements OnInit, OnDestroy {
   readonly commentSkeletonItems = [1, 2];
   readonly maxCommentLength = MAX_COMMENT_LENGTH;
   readonly maxGuestNameLength = MAX_GUEST_NAME_LENGTH;
+  readonly maxReportDetailsLength = MAX_REPORT_DETAILS_LENGTH;
+  readonly reportReasonOptions: ReadonlyArray<{ value: PrayerReportReason; label: string }> = [
+    { value: 'inappropriate', label: 'prayer.reportReasonInappropriate' },
+    { value: 'harassment', label: 'prayer.reportReasonHarassment' },
+    { value: 'hate_or_abuse', label: 'prayer.reportReasonHate' },
+    { value: 'spam', label: 'prayer.reportReasonSpam' },
+    { value: 'personal_information', label: 'prayer.reportReasonPersonalInformation' },
+    { value: 'other', label: 'prayer.reportReasonOther' },
+  ];
 
   readonly commentForm = this.formBuilder.group({
     guest_name: ['', [trimmedMaxLengthValidator(MAX_GUEST_NAME_LENGTH)]],
     comment_text: ['', [requiredTrimmedValidator(), trimmedMaxLengthValidator(MAX_COMMENT_LENGTH)]],
   });
+  readonly reportForm = this.formBuilder.group({
+    reason: ['', [Validators.required]],
+    details: ['', [trimmedMaxLengthValidator(MAX_REPORT_DETAILS_LENGTH)]],
+  });
+
+  private readonly appToast = inject(AppToastService);
 
   ngOnInit(): void {
     combineLatest([this.authService.isAuthenticated$, this.authService.currentUser$])
@@ -132,6 +156,18 @@ export class PrayerDetailPage implements OnInit, OnDestroy {
       this.commentForm.valid &&
       !!String(this.commentForm.controls.comment_text.value ?? '').trim()
     );
+  }
+
+  get canSubmitReport(): boolean {
+    return !!this.activeReportTarget && !this.reportSubmitting && this.reportForm.valid && !!this.reportForm.controls.reason.value;
+  }
+
+  get reportDetailsCharacterCount(): number {
+    return String(this.reportForm.controls.details.value ?? '').trim().length;
+  }
+
+  get isReportingPrayer(): boolean {
+    return this.activeReportTarget?.kind === 'prayer';
   }
 
   loadPrayer(): void {
@@ -278,10 +314,82 @@ export class PrayerDetailPage implements OnInit, OnDestroy {
     });
   }
 
+  openPrayerReport(): void {
+    if (!this.prayer?.id) {
+      return;
+    }
+    this.openReportModal({ kind: 'prayer', id: this.prayer.id });
+  }
+
+  openCommentReport(comment: PrayerComment): void {
+    this.openReportModal({
+      kind: 'comment',
+      id: comment.id,
+      authorName: comment.author.name,
+    });
+  }
+
+  closeReportModal(): void {
+    this.reportModalOpen = false;
+  }
+
+  handleReportDismissed(): void {
+    this.reportModalOpen = false;
+    this.reportSubmitting = false;
+    this.reportSubmitMessage = '';
+    this.activeReportTarget = null;
+    this.reportForm.reset({
+      reason: '',
+      details: '',
+    });
+    this.reportForm.markAsPristine();
+    this.reportForm.markAsUntouched();
+  }
+
+  submitReport(): void {
+    if (!this.canSubmitReport || !this.activeReportTarget) {
+      this.reportForm.markAllAsTouched();
+      return;
+    }
+
+    const payload: PrayerContentReportPayload = {
+      reason: this.reportForm.controls.reason.value as PrayerReportReason,
+    };
+    const details = String(this.reportForm.controls.details.value ?? '').trim();
+    if (details) {
+      payload.details = details;
+    }
+
+    this.reportSubmitting = true;
+    this.reportSubmitMessage = '';
+
+    const request$ =
+      this.activeReportTarget.kind === 'prayer'
+        ? this.prayerService.reportPrayerRequest(this.activeReportTarget.id, payload)
+        : this.prayerService.reportPrayerComment(this.activeReportTarget.id, payload);
+
+    request$.subscribe({
+      next: async () => {
+        this.reportSubmitting = false;
+        this.closeReportModal();
+        await this.appToast.success(this.localeService.translate('prayer.reportSubmitted'));
+      },
+      error: (error: unknown) => {
+        this.reportSubmitting = false;
+        this.reportSubmitMessage = this.resolveReportErrorMessage(error);
+      },
+    });
+  }
+
   onCommentFieldInput(field: 'guest_name' | 'comment_text'): void {
     delete this.commentFieldErrors[field];
     this.commentSubmitMessage = '';
     this.commentForm.controls[field].updateValueAndValidity({ emitEvent: false });
+  }
+
+  onReportFieldInput(field: 'reason' | 'details'): void {
+    this.reportSubmitMessage = '';
+    this.reportForm.controls[field].updateValueAndValidity({ emitEvent: false });
   }
 
   commentControlError(field: 'guest_name' | 'comment_text'): string {
@@ -380,6 +488,19 @@ export class PrayerDetailPage implements OnInit, OnDestroy {
       : this.localeService.translate('prayer.submittedOn', { date: formatted });
   }
 
+  reportTargetHeading(): string {
+    return this.activeReportTarget?.kind === 'comment'
+      ? this.localeService.translate('prayer.reportCommentTitle')
+      : this.localeService.translate('prayer.reportPrayerTitle');
+  }
+
+  reportActionLabel(comment?: PrayerComment): string {
+    if (comment) {
+      return this.localeService.translate('prayer.reportCommentAria', { name: comment.author.name });
+    }
+    return this.localeService.translate('prayer.reportPrayerAria');
+  }
+
   private getValidatedPrayerId(): number | null {
     const rawId = this.route.snapshot.paramMap.get('id');
     const normalizedId = Number(rawId);
@@ -439,6 +560,37 @@ export class PrayerDetailPage implements OnInit, OnDestroy {
     }
 
     this.commentSubmitMessage = this.localeService.translate('prayer.commentSubmitFailed');
+  }
+
+  private openReportModal(target: ReportTarget): void {
+    this.activeReportTarget = target;
+    this.reportSubmitMessage = '';
+    this.reportSubmitting = false;
+    this.reportForm.reset({
+      reason: '',
+      details: '',
+    });
+    this.reportForm.markAsPristine();
+    this.reportForm.markAsUntouched();
+    this.reportModalOpen = true;
+  }
+
+  private resolveReportErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      if (error.status === 429) {
+        return this.localeService.translate('prayer.reportThrottleError');
+      }
+      if (error.status === 400) {
+        return this.localeService.translate('prayer.reportValidationFallback');
+      }
+      if (error.status === 404) {
+        return this.localeService.translate('prayer.reportUnavailableError');
+      }
+      if (error.status === 0) {
+        return this.localeService.translate('prayer.reportOfflineError');
+      }
+    }
+    return this.localeService.translate('prayer.reportSubmitFailed');
   }
 
   private mergeComments(existing: PrayerComment[], incoming: PrayerComment[]): PrayerComment[] {

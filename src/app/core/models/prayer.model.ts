@@ -96,6 +96,24 @@ export interface PrayerCommentCreatePayload {
   comment_text: string;
 }
 
+export type PrayerReportReason =
+  | 'inappropriate'
+  | 'harassment'
+  | 'hate_or_abuse'
+  | 'spam'
+  | 'personal_information'
+  | 'other';
+
+export interface PrayerContentReportPayload {
+  reason: PrayerReportReason;
+  details?: string;
+}
+
+export interface PrayerContentReportResponse {
+  id: number;
+  status: 'open' | 'resolved';
+}
+
 export interface MemberPrayerRequest {
   id: number;
   scope: PrayerScope;

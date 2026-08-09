@@ -6,6 +6,7 @@ import { NavController } from '@ionic/angular';
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 
 import { CommunityPrayerRequest, PrayerComment } from '../../core/models/prayer.model';
+import { AppToastService } from '../../core/services/app-toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PrayerService } from '../../core/services/prayer.service';
 import { StackNavigationService } from '../../core/services/stack-navigation.service';
@@ -16,6 +17,7 @@ describe('PrayerDetailPage', () => {
   let page: PrayerDetailPage;
   let prayerService: jasmine.SpyObj<PrayerService>;
   let stackNavigationService: jasmine.SpyObj<StackNavigationService>;
+  let appToast: jasmine.SpyObj<AppToastService>;
   let authState$: BehaviorSubject<boolean>;
   let currentUser$: BehaviorSubject<any>;
 
@@ -65,6 +67,7 @@ describe('PrayerDetailPage', () => {
       providers: [
         { provide: PrayerService, useValue: prayerService },
         { provide: StackNavigationService, useValue: stackNavigationService },
+        { provide: AppToastService, useValue: appToast },
         {
           provide: AuthService,
           useValue: {
@@ -105,8 +108,11 @@ describe('PrayerDetailPage', () => {
       'getCommunityPrayer',
       'getCommunityPrayerComments',
       'createCommunityPrayerComment',
+      'reportPrayerRequest',
+      'reportPrayerComment',
     ]);
     stackNavigationService = jasmine.createSpyObj<StackNavigationService>('StackNavigationService', ['backWithFallback']);
+    appToast = jasmine.createSpyObj<AppToastService>('AppToastService', ['success', 'error', 'warning', 'info', 'show']);
     authState$ = new BehaviorSubject<boolean>(false);
     currentUser$ = new BehaviorSubject<any>(null);
   });
@@ -479,5 +485,113 @@ describe('PrayerDetailPage', () => {
     expect(metadataText).not.toContain('Submitted');
     expect(metadataText).toContain('Shared by');
     expect(metadataText).toContain('Prayer scope');
+  });
+
+  it('renders a report action for the prayer request and visible comments', async () => {
+    prayerService.getCommunityPrayer.and.returnValue(of(prayer));
+    prayerService.getCommunityPrayerComments.and.returnValue(of(buildCommentsResponse(comments)));
+
+    await createComponent();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="report-prayer-button"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('[data-testid="report-comment-button"]').length).toBe(2);
+  });
+
+  it('opens the report modal for the prayer request', async () => {
+    prayerService.getCommunityPrayer.and.returnValue(of(prayer));
+    prayerService.getCommunityPrayerComments.and.returnValue(of(buildCommentsResponse(comments)));
+
+    await createComponent();
+
+    page.openPrayerReport();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="report-modal"]')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Report this prayer');
+  });
+
+  it('requires a report reason before submitting', async () => {
+    prayerService.getCommunityPrayer.and.returnValue(of(prayer));
+    prayerService.getCommunityPrayerComments.and.returnValue(of(buildCommentsResponse(comments)));
+
+    await createComponent();
+
+    page.openPrayerReport();
+    page.submitReport();
+
+    expect(prayerService.reportPrayerRequest).not.toHaveBeenCalled();
+  });
+
+  it('submits a prayer report successfully and closes the modal', async () => {
+    prayerService.getCommunityPrayer.and.returnValue(of(prayer));
+    prayerService.getCommunityPrayerComments.and.returnValue(of(buildCommentsResponse(comments)));
+    prayerService.reportPrayerRequest.and.returnValue(of({ id: 41, status: 'open' }));
+    appToast.success.and.returnValue(Promise.resolve());
+
+    await createComponent();
+
+    page.openPrayerReport();
+    page.reportForm.patchValue({ reason: 'spam', details: 'Repeated promotional posts.' });
+    page.submitReport();
+
+    expect(prayerService.reportPrayerRequest).toHaveBeenCalledWith(prayer.id, {
+      reason: 'spam',
+      details: 'Repeated promotional posts.',
+    });
+    expect(appToast.success).toHaveBeenCalledWith('Report submitted. Thank you for helping keep the community safe.');
+    expect(page.reportModalOpen).toBeFalse();
+  });
+
+  it('submits a comment report successfully', async () => {
+    prayerService.getCommunityPrayer.and.returnValue(of(prayer));
+    prayerService.getCommunityPrayerComments.and.returnValue(of(buildCommentsResponse(comments)));
+    prayerService.reportPrayerComment.and.returnValue(of({ id: 51, status: 'open' }));
+    appToast.success.and.returnValue(Promise.resolve());
+
+    await createComponent();
+
+    page.openCommentReport(comments[0]);
+    page.reportForm.patchValue({ reason: 'harassment' });
+    page.submitReport();
+
+    expect(prayerService.reportPrayerComment).toHaveBeenCalledWith(comments[0].id, {
+      reason: 'harassment',
+    });
+    expect(appToast.success).toHaveBeenCalled();
+  });
+
+  it('keeps the report modal open and shows an error when reporting fails', async () => {
+    prayerService.getCommunityPrayer.and.returnValue(of(prayer));
+    prayerService.getCommunityPrayerComments.and.returnValue(of(buildCommentsResponse(comments)));
+    prayerService.reportPrayerRequest.and.returnValue(throwError(() => new Error('network')));
+
+    await createComponent();
+
+    page.openPrayerReport();
+    page.reportForm.patchValue({ reason: 'other' });
+    page.submitReport();
+    fixture.detectChanges();
+
+    expect(page.reportModalOpen).toBeTrue();
+    expect(fixture.nativeElement.querySelector('[data-testid="report-submit-error"]')?.textContent).toContain(
+      "We couldn't submit your report right now. Please try again."
+    );
+  });
+
+  it('prevents duplicate report submissions while posting', async () => {
+    const submit$ = new Subject<{ id: number; status: 'open' | 'resolved' }>();
+    prayerService.getCommunityPrayer.and.returnValue(of(prayer));
+    prayerService.getCommunityPrayerComments.and.returnValue(of(buildCommentsResponse(comments)));
+    prayerService.reportPrayerRequest.and.returnValue(submit$.asObservable());
+
+    await createComponent();
+
+    page.openPrayerReport();
+    page.reportForm.patchValue({ reason: 'spam' });
+    page.submitReport();
+    page.submitReport();
+
+    expect(prayerService.reportPrayerRequest.calls.count()).toBe(1);
+    submit$.complete();
   });
 });

@@ -7,6 +7,8 @@ import {
   CommunityPrayerRequest,
   PrayerComment,
   PrayerCommentCreatePayload,
+  PrayerContentReportPayload,
+  PrayerContentReportResponse,
   MemberPrayerRequest,
   PublicChurchHierarchy,
   PrayerHierarchyDependency,
@@ -219,6 +221,70 @@ export class PrayerService {
       catchError((error) => {
         this.sentryTelemetry.captureFeatureError('app', 'Community prayer comment submission failed', error, {
           prayer_request_id: prayerId,
+          status: this.getHttpStatus(error),
+        });
+        return throwError(() => error);
+      })
+    );
+  }
+
+  reportPrayerRequest(
+    prayerId: number,
+    payload: PrayerContentReportPayload
+  ): Observable<PrayerContentReportResponse> {
+    const path = `${this.communityEndpoint}${prayerId}/report/`;
+
+    this.sentryTelemetry.addFeatureBreadcrumb('app', 'Community prayer report started', {
+      prayer_request_id: prayerId,
+      reason: payload.reason,
+    });
+
+    return this.withOptionalAuth((token) =>
+      this.http.post<PrayerContentReportResponse>(this.buildUrl(path), payload, {
+        headers: token ? this.buildAuthHeaders(token) : undefined,
+      })
+    ).pipe(
+      tap((response) => {
+        this.sentryTelemetry.addFeatureBreadcrumb('app', 'Community prayer report succeeded', {
+          prayer_request_id: prayerId,
+          report_id: response.id,
+        });
+      }),
+      catchError((error) => {
+        this.sentryTelemetry.captureFeatureError('app', 'Community prayer report failed', error, {
+          prayer_request_id: prayerId,
+          status: this.getHttpStatus(error),
+        });
+        return throwError(() => error);
+      })
+    );
+  }
+
+  reportPrayerComment(
+    commentId: number,
+    payload: PrayerContentReportPayload
+  ): Observable<PrayerContentReportResponse> {
+    const path = `public/prayer-request-comments/${commentId}/report/`;
+
+    this.sentryTelemetry.addFeatureBreadcrumb('app', 'Community prayer comment report started', {
+      comment_id: commentId,
+      reason: payload.reason,
+    });
+
+    return this.withOptionalAuth((token) =>
+      this.http.post<PrayerContentReportResponse>(this.buildUrl(path), payload, {
+        headers: token ? this.buildAuthHeaders(token) : undefined,
+      })
+    ).pipe(
+      tap((response) => {
+        this.sentryTelemetry.addFeatureBreadcrumb('app', 'Community prayer comment report succeeded', {
+          comment_id: commentId,
+          report_id: response.id,
+        });
+      }),
+      catchError((error) => {
+        this.sentryTelemetry.captureFeatureError('app', 'Community prayer comment report failed', error, {
+          comment_id: commentId,
           status: this.getHttpStatus(error),
         });
         return throwError(() => error);
