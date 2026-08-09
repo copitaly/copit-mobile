@@ -9,6 +9,24 @@
         "components": [
           {
             "/": "/reset-password/*/*"
+          },
+          {
+            "/": "/tabs/donate/success"
+          },
+          {
+            "/": "/tabs/donate/cancel"
+          },
+          {
+            "/": "/donate/success"
+          },
+          {
+            "/": "/donate/cancel"
+          },
+          {
+            "/": "/donor-redirect/donate/success"
+          },
+          {
+            "/": "/donor-redirect/donate/cancel"
           }
         ]
       }
