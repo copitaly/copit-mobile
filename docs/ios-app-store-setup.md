@@ -41,12 +41,12 @@ In Xcode:
 
 Current generated values:
 
-- `MARKETING_VERSION`: `1.0.19`
-- `CURRENT_PROJECT_VERSION`: `1`
+- `MARKETING_VERSION`: `1.0.20`
+- `CURRENT_PROJECT_VERSION`: `20`
 
 Before submission:
 
-1. Confirm `1.0.19` is the intended App Store version.
+1. Confirm `1.0.20` is the intended App Store version.
 2. Set a valid build number policy for `CURRENT_PROJECT_VERSION`.
 3. Ensure the build number is unique for every archive uploaded to App Store Connect.
 
@@ -100,12 +100,19 @@ Still required before production use:
 
 No app-level `PrivacyInfo.xcprivacy` has been added in this repository pass.
 
+Current repository evidence:
+
+- The app target's committed native code is limited to the standard `AppDelegate.swift`.
+- Capacitor's committed iOS packages include repo-local privacy manifests under `node_modules/@capacitor/ios`.
+- Additional SDK privacy manifests for resolved iOS dependencies still need to be confirmed from a macOS/Xcode archive environment.
+
 Before submission:
 
-1. Let Xcode resolve all Swift packages.
-2. Inspect bundled SDKs and generated app contents for privacy manifests.
-3. Verify whether an app-level privacy manifest is required in addition to SDK-provided manifests.
-4. Confirm App Store privacy validation passes in Xcode Organizer / App Store Connect.
+1. Let Xcode resolve all Swift packages for the Release archive.
+2. Inspect the archived app contents and bundled frameworks for privacy manifests from Stripe, Firebase Analytics, Sentry, secure storage, and any other resolved iOS SDKs.
+3. Verify whether Xcode/App Store validation still asks for an app-level privacy manifest in addition to SDK-provided manifests.
+4. If Xcode reports missing required-reason APIs or missing privacy declarations, add only the exact declarations supported by the archived app contents.
+5. Confirm App Store privacy validation passes in Xcode Organizer / App Store Connect.
 
 ## Permissions
 
