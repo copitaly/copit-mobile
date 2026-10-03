@@ -51,6 +51,45 @@ jobs:
       - name: Sync Capacitor iOS
         run: npm run ios:sync
 
+      - name: Resolve and diagnose iOS Swift packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_PACKAGES_DIR="$RUNNER_TEMP/COP-SourcePackages"
+          rm -rf "$SOURCE_PACKAGES_DIR"
+          xcodebuild -resolvePackageDependencies \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -clonedSourcePackagesDirPath "$SOURCE_PACKAGES_DIR"
+
+          printf 'Installed @sentry/capacitor version: '
+          node -p "require('./node_modules/@sentry/capacitor/package.json').version"
+
+          RESOLVED_PACKAGE_FILE="$(find ios -path '*/Package.resolved' -print -quit)"
+          if [[ -z "$RESOLVED_PACKAGE_FILE" ]]; then
+            echo "::error::Xcode did not write a Package.resolved file under ios."
+            exit 1
+          fi
+          printf 'Resolved Package.resolved: %s\n' "$RESOLVED_PACKAGE_FILE"
+          python3 - "$RESOLVED_PACKAGE_FILE" <<'PY'
+          import json
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as package_file:
+              pins = json.load(package_file)["pins"]
+
+          wanted = {"sentry-cocoa", "SentryCapacitor"}
+          for pin in pins:
+              identity = pin.get("identity", "")
+              if identity in wanted:
+                  print(f"Resolved {identity}: {pin.get('state', {}).get('version', '<unversioned>')}")
+
+          sentry_pin = next((pin for pin in pins if pin.get("identity") == "sentry-cocoa"), None)
+          if sentry_pin is None or sentry_pin.get("state", {}).get("version") != "9.28.0":
+              raise SystemExit("Resolved sentry-cocoa is not the officially required 9.28.0")
+          PY
+
       - name: Install signing assets
         shell: bash
         run: |
@@ -158,6 +197,8 @@ jobs:
             -configuration Release \
             -sdk iphoneos \
             -archivePath "$RUNNER_TEMP/COP-Italy.xcarchive" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/COP-SourcePackages" \
+            -disableAutomaticPackageResolution \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER"
 
       - name: Export App Store Connect IPA
