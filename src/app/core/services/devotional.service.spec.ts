@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { environment } from 'src/environments/environment';
 import { DevotionalPublicDetail } from '../models/devotional.model';
+import { formatDevotionalAvailability, getRomeDateKey, getEffectiveDevotionalEndDate, normalizeDevotionalFrequency } from '../utils/devotional-date';
 import { ApiService } from './api.service';
 import { DevotionalService } from './devotional.service';
 
@@ -86,6 +87,8 @@ describe('DevotionalService', () => {
       author_name: 'admin admin',
       cover_image: 'https://example.com/cover.jpg',
       publication_date: '2026-07-27',
+      frequency: 'daily',
+      available_until: '2026-07-27',
     });
 
     expect(responseBody).toEqual({
@@ -100,6 +103,8 @@ describe('DevotionalService', () => {
       author_name: 'admin admin',
       cover_image: 'https://example.com/cover.jpg',
       publication_date: '2026-07-27',
+      frequency: 'daily',
+      available_until: '2026-07-27',
     });
   });
 
@@ -125,6 +130,8 @@ describe('DevotionalService', () => {
       author_name: null,
       cover_image: null,
       publication_date: '2026-07-28',
+      frequency: 'daily',
+      available_until: '2026-07-28',
     });
 
     expect(responseBody).toEqual({
@@ -139,10 +146,12 @@ describe('DevotionalService', () => {
       author_name: null,
       cover_image: null,
       publication_date: '2026-07-28',
+      frequency: 'daily',
+      available_until: '2026-07-28',
     });
   });
 
-  it('falls back to the public list when the today endpoint resolves a different date than the local app day', () => {
+  it('treats the backend today response as authoritative for an active weekly devotional', () => {
     let responseBody: DevotionalPublicDetail | undefined;
 
     service.getTodayDevotional().subscribe((response) => {
@@ -151,69 +160,27 @@ describe('DevotionalService', () => {
 
     const todayRequest = httpMock.expectOne(`${environment.apiBaseUrl}/public/devotionals/today/`);
     todayRequest.flush({
-      id: 2,
-      title: 'Tomorrow with Christ',
-      slug: 'tomorrow-with-christ',
-      scripture_reference: 'Psalm 46:10',
-      scripture_text: 'Be still, and know that I am God.',
-      content: 'Pause and remember who is with you tomorrow.',
-      reflection_question: null,
-      prayer: null,
-      author_name: null,
-      cover_image: null,
-      publication_date: '2026-07-29',
-    });
-
-    const listRequest = httpMock.expectOne((req) => req.url.endsWith('/api/public/devotionals/'));
-    expect(listRequest.request.params.get('page')).toBe('1');
-    listRequest.flush({
-      count: 2,
-      next: null,
-      previous: null,
-      results: [
-        {
-          id: 5,
-          title: 'Steady Grace for Today',
-          slug: 'steady-grace-for-today',
-          scripture_reference: 'Isaiah 41:10',
-          author_name: 'admin admin',
-          cover_image: 'https://example.com/cover.jpg',
-          publication_date: '2026-07-28',
-        },
-        {
-          id: 6,
-          title: 'Tomorrow with Christ',
-          slug: 'tomorrow-with-christ',
-          scripture_reference: 'Psalm 46:10',
-          author_name: 'admin admin',
-          cover_image: 'https://example.com/tomorrow.jpg',
-          publication_date: '2026-07-29',
-        },
-      ],
-    });
-
-    const detailRequest = httpMock.expectOne(
-      `${environment.apiBaseUrl}/public/devotionals/steady-grace-for-today/`
-    );
-    detailRequest.flush({
       id: 5,
-      title: 'Steady Grace for Today',
-      slug: 'steady-grace-for-today',
+      title: 'Steady Grace for the Week',
+      slug: 'steady-grace-for-the-week',
       scripture_reference: 'Isaiah 41:10',
       scripture_text: 'Fear thou not; for I am with thee.',
-      content: 'Hold fast to God today.',
+      content: 'Hold fast to God this week.',
       reflection_question: null,
       prayer: null,
       author_name: 'admin admin',
       cover_image: 'https://example.com/cover.jpg',
-      publication_date: '2026-07-28',
+      publication_date: '2026-07-26',
+      frequency: 'weekly',
+      available_until: '2026-08-01',
     });
 
     expect(responseBody?.id).toBe(5);
-    expect(responseBody?.publication_date).toBe('2026-07-28');
+    expect(responseBody?.frequency).toBe('weekly');
+    expect(responseBody?.available_until).toBe('2026-08-01');
   });
 
-  it('returns a not-found error when no local-date devotion exists in the fallback list', () => {
+  it('passes through a 404 from today without querying the public list', () => {
     let responseError: HttpErrorResponse | undefined;
 
     service.getTodayDevotional().subscribe({
@@ -226,24 +193,6 @@ describe('DevotionalService', () => {
       { detail: 'Not found.' },
       { status: 404, statusText: 'Not Found' }
     );
-
-    const listRequest = httpMock.expectOne((req) => req.url.endsWith('/api/public/devotionals/'));
-    listRequest.flush({
-      count: 1,
-      next: null,
-      previous: null,
-      results: [
-        {
-          id: 6,
-          title: 'Tomorrow with Christ',
-          slug: 'tomorrow-with-christ',
-          scripture_reference: 'Psalm 46:10',
-          author_name: 'admin admin',
-          cover_image: 'https://example.com/tomorrow.jpg',
-          publication_date: '2026-07-29',
-        },
-      ],
-    });
 
     expect(responseError?.status).toBe(404);
   });
@@ -289,12 +238,14 @@ describe('DevotionalService', () => {
       results: [
         {
           id: 1,
-          title: 'Devotional',
+          title: 'Devotion',
           slug: 'morning-grace',
           scripture_reference: '',
           author_name: null,
           cover_image: null,
           publication_date: '2026-07-29',
+          frequency: 'daily',
+          available_until: null,
         },
       ],
     });
@@ -324,7 +275,7 @@ describe('DevotionalService', () => {
 
     expect(responseBody).toEqual({
       id: 0,
-      title: 'Devotional',
+      title: 'Devotion',
       slug: '',
       scripture_reference: '',
       scripture_text: null,
@@ -332,8 +283,10 @@ describe('DevotionalService', () => {
       reflection_question: null,
       prayer: null,
       author_name: null,
-      cover_image: null,
-      publication_date: null,
+          cover_image: null,
+          publication_date: null,
+          frequency: 'daily',
+          available_until: null,
     });
   });
 
@@ -344,5 +297,38 @@ describe('DevotionalService', () => {
     expect(service.normalizeImageUrl('http://evil.example.com/cover.jpg')).toBeNull();
     expect(service.normalizeImageUrl('javascript:alert(1)')).toBeNull();
     expect(service.normalizeImageUrl('   ')).toBeNull();
+  });
+
+  it('normalizes legacy and malformed frequency values to daily', () => {
+    expect(normalizeDevotionalFrequency(undefined)).toBe('daily');
+    expect(normalizeDevotionalFrequency(null)).toBe('daily');
+    expect(normalizeDevotionalFrequency('monthly')).toBe('daily');
+    expect(getEffectiveDevotionalEndDate('2026-07-30', 'daily', null)).toBe('2026-07-30');
+  });
+
+  it('formats daily and weekly availability without device-timezone shifting', () => {
+    const translate = (kind: 'daily' | 'weekly', values: { date?: string; start?: string; end?: string }): string =>
+      kind === 'daily' ? `Available ${values.date}` : `Available ${values.start} – ${values.end}`;
+
+    expect(formatDevotionalAvailability(
+      { publication_date: '2026-07-30', frequency: 'daily', available_until: null },
+      'en-GB',
+      translate,
+    )).toBe('Available 30 Jul 2026');
+    expect(formatDevotionalAvailability(
+      { publication_date: '2026-07-30', frequency: 'weekly', available_until: '2026-08-05' },
+      'en-GB',
+      translate,
+    )).toBe('Available 30 Jul – 5 Aug 2026');
+    expect(formatDevotionalAvailability(
+      { publication_date: '2026-12-29', frequency: 'weekly', available_until: '2027-01-04' },
+      'en-GB',
+      translate,
+    )).toBe('Available 29 Dec 2026 – 4 Jan 2027');
+  });
+
+  it('uses the Europe/Rome calendar for date-only comparisons', () => {
+    expect(getRomeDateKey(new Date('2026-07-28T22:30:00.000Z'))).toBe('2026-07-29');
+    expect(getRomeDateKey(new Date('2026-01-15T23:30:00.000Z'))).toBe('2026-01-16');
   });
 });

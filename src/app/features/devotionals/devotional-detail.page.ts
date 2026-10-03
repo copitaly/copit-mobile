@@ -12,6 +12,7 @@ import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { DevotionalPublicDetail } from '../../core/models/devotional.model';
 import { AppToastService } from '../../core/services/app-toast.service';
 import { DevotionalService } from '../../core/services/devotional.service';
+import { formatDevotionalAvailability, normalizeDevotionalFrequency } from '../../core/utils/devotional-date';
 
 @Component({
   standalone: true,
@@ -116,7 +117,28 @@ export class DevotionalDetailPage implements OnInit {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
+      timeZone: 'UTC',
     }).format(parsed);
+  }
+
+  formatAvailability(): string {
+    if (!this.devotional) {
+      return this.localeService.translate('devotions.availableNow');
+    }
+
+    return formatDevotionalAvailability(this.devotional, this.getDateLocale(), (kind, values) =>
+      kind === 'daily'
+        ? this.localeService.translate('devotions.availabilityDaily', values)
+        : this.localeService.translate('devotions.availabilityWeekly', values)
+    ) ?? this.localeService.translate('devotions.availableNow');
+  }
+
+  getFrequencyLabel(): string {
+    return this.localeService.translate(
+      normalizeDevotionalFrequency(this.devotional?.frequency) === 'weekly'
+        ? 'devotions.frequencyWeekly'
+        : 'devotions.frequencyDaily'
+    );
   }
 
   hasText(value: string | null | undefined): boolean {
@@ -259,13 +281,13 @@ export class DevotionalDetailPage implements OnInit {
     const year = Number(yearValue);
     const month = Number(monthValue);
     const day = Number(dayValue);
-    const parsed = new Date(year, month - 1, day);
+    const parsed = new Date(Date.UTC(year, month - 1, day));
 
     if (
       Number.isNaN(parsed.getTime()) ||
-      parsed.getFullYear() !== year ||
-      parsed.getMonth() !== month - 1 ||
-      parsed.getDate() !== day
+      parsed.getUTCFullYear() !== year ||
+      parsed.getUTCMonth() !== month - 1 ||
+      parsed.getUTCDate() !== day
     ) {
       return null;
     }

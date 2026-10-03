@@ -1,3 +1,5 @@
+export type DevotionalFrequency = 'daily' | 'weekly';
+
 export interface DevotionalPublicListItem {
   id: number;
   title: string;
@@ -6,6 +8,8 @@ export interface DevotionalPublicListItem {
   author_name: string | null;
   cover_image: string | null;
   publication_date: string | null;
+  frequency?: DevotionalFrequency;
+  available_until?: string | null;
 }
 
 export interface DevotionalPublicDetail extends DevotionalPublicListItem {

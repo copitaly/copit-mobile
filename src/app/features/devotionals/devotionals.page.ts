@@ -7,6 +7,7 @@ import { LocaleService } from '../../core/localization/locale.service';
 import { TranslatePipe } from '../../core/localization/translate.pipe';
 import { DevotionalPublicListItem } from '../../core/models/devotional.model';
 import { DevotionalService } from '../../core/services/devotional.service';
+import { formatDevotionalAvailability, normalizeDevotionalFrequency } from '../../core/utils/devotional-date';
 
 @Component({
   standalone: true,
@@ -179,7 +180,7 @@ export class DevotionalsPage implements OnInit {
     if (this.hasAuthor(devotional)) {
       parts.push(this.localeService.translate('devotions.byAuthor', { author: devotional.author_name!.trim() }));
     }
-    parts.push(this.formatPublicationDate(devotional.publication_date));
+    parts.push(this.formatAvailability(devotional));
     return parts.join(', ');
   }
 
@@ -205,7 +206,24 @@ export class DevotionalsPage implements OnInit {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
+      timeZone: 'UTC',
     }).format(parsed);
+  }
+
+  formatAvailability(devotional: DevotionalPublicListItem): string {
+    return formatDevotionalAvailability(devotional, this.getDateLocale(), (kind, values) =>
+      kind === 'daily'
+        ? this.localeService.translate('devotions.availabilityDaily', values)
+        : this.localeService.translate('devotions.availabilityWeekly', values)
+    ) ?? this.localeService.translate('devotions.availableNow');
+  }
+
+  getFrequencyLabel(devotional: DevotionalPublicListItem): string {
+    return this.localeService.translate(
+      normalizeDevotionalFrequency(devotional.frequency) === 'weekly'
+        ? 'devotions.frequencyWeekly'
+        : 'devotions.frequencyDaily'
+    );
   }
 
   shouldShowCoverImage(devotional: DevotionalPublicListItem): boolean {
@@ -244,13 +262,13 @@ export class DevotionalsPage implements OnInit {
     const year = Number(yearValue);
     const month = Number(monthValue);
     const day = Number(dayValue);
-    const parsed = new Date(year, month - 1, day);
+    const parsed = new Date(Date.UTC(year, month - 1, day));
 
     if (
       Number.isNaN(parsed.getTime()) ||
-      parsed.getFullYear() !== year ||
-      parsed.getMonth() !== month - 1 ||
-      parsed.getDate() !== day
+      parsed.getUTCFullYear() !== year ||
+      parsed.getUTCMonth() !== month - 1 ||
+      parsed.getUTCDate() !== day
     ) {
       return null;
     }

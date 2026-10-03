@@ -62,7 +62,8 @@
         <section class="reader-article__section reader-article__section--header" data-testid="content-section">
           <h1 data-testid="devotional-title">{{ devotional.title }}</h1>
           <div class="reader-article__meta-group cop-metadata" *ngIf="getHeaderMeta() || devotional.publication_date">
-            <p class="reader-article__date cop-metadata" data-testid="publication-date">{{ formatPublicationDate(devotional.publication_date) }}</p>
+            <p class="reader-article__date cop-metadata" data-testid="publication-date">{{ formatAvailability() }}</p>
+            <p class="reader-article__frequency cop-metadata" data-testid="devotional-frequency">{{ getFrequencyLabel() }}</p>
             <p *ngIf="getHeaderMeta()" class="reader-article__meta cop-metadata" data-testid="scripture-reference">{{ getHeaderMeta() }}</p>
           </div>
 

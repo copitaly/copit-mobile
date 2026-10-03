@@ -85,7 +85,8 @@
             </div>
 
             <div class="featured-card__content">
-              <p class="featured-card__eyebrow cop-eyebrow">{{ formatPublicationDate(featuredDevotional.publication_date) }}</p>
+              <p class="featured-card__eyebrow cop-eyebrow">{{ formatAvailability(featuredDevotional) }}</p>
+              <p class="featured-card__frequency cop-metadata">{{ getFrequencyLabel(featuredDevotional) }}</p>
               <h2 data-testid="devotional-title">{{ featuredDevotional.title }}</h2>
               <p *ngIf="hasScriptureReference(featuredDevotional)" class="featured-card__scripture" data-testid="devotional-scripture">
                 {{ featuredDevotional.scripture_reference }}
@@ -125,8 +126,9 @@
             >
               <div class="recent-card__copy">
                 <p class="recent-card__meta cop-metadata" data-testid="devotional-publication-date">
-                  {{ formatPublicationDate(devotional.publication_date) }}
+                  {{ formatAvailability(devotional) }}
                 </p>
+                <p class="recent-card__frequency cop-metadata">{{ getFrequencyLabel(devotional) }}</p>
                 <div class="recent-card__top">
                   <h4 data-testid="devotional-title">{{ devotional.title }}</h4>
                   <ion-icon name="chevron-forward" aria-hidden="true"></ion-icon>

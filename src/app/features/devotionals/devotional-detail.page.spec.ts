@@ -88,7 +88,7 @@ describe('DevotionalDetailPage', () => {
     const text = fixture.nativeElement.textContent;
     expect(fixture.nativeElement.querySelector('[data-testid="devotional-detail"]')).not.toBeNull();
     expect(text).toContain('Trusting God in Uncertain Times');
-    expect(text).toContain('28 July 2026');
+    expect(text).toContain('Available 28 Jul 2026');
     expect(text).toContain('Proverbs 3:5-6');
     expect(text).toContain('Trust in the Lord with all your heart.');
     expect(text).toContain('When uncertainty rises,');
