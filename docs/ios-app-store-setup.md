@@ -41,12 +41,12 @@ In Xcode:
 
 Current generated values:
 
-- `MARKETING_VERSION`: `1.0.20`
-- `CURRENT_PROJECT_VERSION`: `20`
+- `MARKETING_VERSION`: `1.0.21`
+- `CURRENT_PROJECT_VERSION`: `21`
 
 Before submission:
 
-1. Confirm `1.0.20` is the intended App Store version.
+1. Confirm `1.0.21` is the intended App Store version.
 2. Set a valid build number policy for `CURRENT_PROJECT_VERSION`.
 3. Ensure the build number is unique for every archive uploaded to App Store Connect.
 
