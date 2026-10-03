@@ -49,7 +49,7 @@ jobs:
         run: npm run build
 
       - name: Sync Capacitor iOS
-        run: npx cap sync ios
+        run: npm run ios:sync
 
       - name: Install signing assets
         shell: bash

@@ -22,6 +22,7 @@ let package = Package(
         .package(name: "CapacitorSplashScreen", path: "..\..\..\node_modules\@capacitor\splash-screen"),
         .package(name: "CapacitorStatusBar", path: "..\..\..\node_modules\@capacitor\status-bar"),
         .package(name: "SentryCapacitor", path: "..\..\..\node_modules\@sentry\capacitor"),
+        .package(url: "https://github.com/getsentry/sentry-cocoa", exact: "9.18.0"),
         .package(name: "CapacitorSecureStoragePlugin", path: "..\..\..\node_modules\capacitor-secure-storage-plugin")
     ],
     targets: [
